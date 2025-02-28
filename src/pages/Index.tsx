@@ -7,9 +7,18 @@ import { useToast } from "@/hooks/use-toast";
 import { Toaster } from "@/components/ui/toaster";
 
 const Index = () => {
-  const [url, setUrl] = useState("");
-  const [submitting, setSubmitting] = useState(false);
+  const [initializing, setInitializing] = useState(false);
   const { toast } = useToast();
+
+  // Sample links provided by the user
+  const sampleLinks = [
+    "https://www.target.com/p/panini-squishmallows-trading-card-mega-box-series-1/-/A-93615552",
+    "https://www.pokemoncenter.com/en-nz/product/181-85037/pokemon-tcg-sword-and-shield-astral-radiance-build-and-battle-box",
+    "https://www.pokemoncenter.com/en-nz/product/290-85019/pokemon-tcg-morpeko-v-union-special-collection",
+    "https://www.bestbuy.com/site/pokemon-trading-card-game-scarlet-violet-obsidian-flames-3pk-booster-styles-may-vary/6546725.p?skuId=6546725",
+    "https://www.bestbuy.com/site/pokemon-trading-card-game-charizard-ex-super-premium-collection/6590379.p?skuId=6590379",
+    "https://www.bestbuy.com/site/pokemon-trading-card-game-mabosstiff-ex-box/6569192.p?skuId=6569192"
+  ];
 
   useEffect(() => {
     // Load Inter font
@@ -19,52 +28,41 @@ const Index = () => {
     link.rel = "stylesheet";
     document.head.appendChild(link);
 
+    // Initialize with sample links
+    const initializeSampleLinks = async () => {
+      setInitializing(true);
+      
+      try {
+        // Add each link one by one
+        for (const url of sampleLinks) {
+          await ProductService.addProductLink(url);
+          // Small delay to avoid overwhelming the server
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        
+        toast({
+          title: "Success",
+          description: "Sample products initialized",
+        });
+      } catch (error) {
+        console.error("Error initializing sample links:", error);
+        toast({
+          title: "Warning",
+          description: "Some product links couldn't be added",
+          variant: "destructive",
+        });
+      } finally {
+        setInitializing(false);
+      }
+    };
+    
+    // Check if we should initialize (could add additional logic here to only do this once)
+    initializeSampleLinks();
+
     return () => {
       document.head.removeChild(link);
     };
-  }, []);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!url) {
-      toast({
-        title: "Error",
-        description: "Please enter a product URL",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    setSubmitting(true);
-    
-    try {
-      const result = await ProductService.addProductLink(url);
-      
-      if (result.success) {
-        toast({
-          title: "Success",
-          description: "Product link added successfully",
-        });
-        setUrl("");
-      } else {
-        toast({
-          title: "Error",
-          description: result.error || "Failed to add product link",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      console.error("Error adding product link:", error);
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred",
-        variant: "destructive",
-      });
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  }, [toast]);
 
   return (
     <main
@@ -73,28 +71,11 @@ const Index = () => {
     >
       <Hero />
       
-      <div className="mb-12 max-w-lg mx-auto">
-        <form onSubmit={handleSubmit} className="flex flex-col space-y-4">
-          <h2 className="text-2xl text-[#1E1E1E] font-normal">Check product stock</h2>
-          <div className="flex max-sm:flex-col gap-2">
-            <input
-              type="url"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="Enter product URL"
-              className="flex-1 px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-            <button
-              type="submit"
-              disabled={submitting}
-              className="px-6 py-3 bg-[#8696E8] rounded-lg text-[#1E1E1E] hover:bg-[#7485d7] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {submitting ? "Checking..." : "Check Stock"}
-            </button>
-          </div>
-        </form>
-      </div>
+      {initializing && (
+        <div className="mb-8 text-center">
+          <div className="animate-pulse text-xl">Initializing product data...</div>
+        </div>
+      )}
       
       <CardGrid />
       <Toaster />
