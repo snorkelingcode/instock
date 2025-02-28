@@ -15,8 +15,8 @@ export interface Product {
 export const ProductService = {
   async addProductLink(url: string): Promise<{ success: boolean; error?: string; product?: Product }> {
     try {
-      // Use upsert method with appropriate typing
-      const { data, error } = await supabase
+      // Use the any type assertion to bypass type checking for the table that isn't in the type definitions
+      const { data, error } = await (supabase as any)
         .from('products')
         .upsert({ url })
         .select()
@@ -52,8 +52,8 @@ export const ProductService = {
 
   async getProducts(limit = 30): Promise<Product[]> {
     try {
-      // Get products from the 'products' table with proper typing
-      const { data, error } = await supabase
+      // Use the any type assertion to bypass type checking for the table that isn't in the type definitions
+      const { data, error } = await (supabase as any)
         .from('products')
         .select()
         .order('last_checked', { ascending: false })
