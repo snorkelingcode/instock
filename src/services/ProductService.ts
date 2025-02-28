@@ -15,13 +15,11 @@ export interface Product {
 export const ProductService = {
   async addProductLink(url: string): Promise<{ success: boolean; error?: string; product?: Product }> {
     try {
+      // Use upsert method with appropriate typing
       const { data, error } = await supabase
         .from('products')
-        .upsert(
-          { url },
-          { onConflict: 'url', ignoreDuplicates: false }
-        )
-        .select('*')
+        .upsert({ url })
+        .select()
         .single();
 
       if (error) throw error;
@@ -54,9 +52,10 @@ export const ProductService = {
 
   async getProducts(limit = 30): Promise<Product[]> {
     try {
+      // Get products from the 'products' table with proper typing
       const { data, error } = await supabase
         .from('products')
-        .select('*')
+        .select()
         .order('last_checked', { ascending: false })
         .limit(limit);
 
