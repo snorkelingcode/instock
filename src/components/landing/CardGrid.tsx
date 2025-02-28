@@ -1,30 +1,63 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Card } from "./Card";
+import { ProductService, Product } from "@/services/ProductService";
+import { useToast } from "@/hooks/use-toast";
 
 export const CardGrid: React.FC = () => {
-  const [items, setItems] = useState<number[]>(Array.from({ length: 3 }, (_, i) => i));
+  const [items, setItems] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
   const observer = useRef<IntersectionObserver | null>(null);
   const lastCardRef = useRef<HTMLDivElement | null>(null);
+  const { toast } = useToast();
 
-  const handleListingClick = (index: number) => {
-    console.log(`Listing ${index + 1} clicked`);
+  const handleListingClick = (product: Product) => {
+    if (product.url) {
+      window.open(product.url, "_blank");
+    }
   };
 
-  const loadMoreItems = useCallback(() => {
+  const loadMoreItems = useCallback(async () => {
+    if (loading) return;
+    
     setLoading(true);
-    // Simulate API call with timeout
-    setTimeout(() => {
-      const currentLength = items.length;
-      const newItems = Array.from(
-        { length: 3 },
-        (_, i) => currentLength + i
-      );
-      setItems((prevItems) => [...prevItems, ...newItems]);
+    
+    try {
+      // In a real implementation, you would fetch more products with pagination
+      // For now, we'll simulate by fetching all products each time
+      const products = await ProductService.getProducts(items.length + 9);
+      
+      if (products.length > items.length) {
+        setItems(products);
+      }
+    } catch (error) {
+      console.error("Error loading more products:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load more products",
+        variant: "destructive",
+      });
+    } finally {
       setLoading(false);
-    }, 500);
-  }, [items.length]);
+    }
+  }, [items.length, loading, toast]);
+
+  // Initial load
+  useEffect(() => {
+    const fetchProducts = async () => {
+      setLoading(true);
+      try {
+        const products = await ProductService.getProducts();
+        setItems(products);
+      } catch (error) {
+        console.error("Error fetching products:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
 
   // Setup intersection observer for infinite scrolling
   useEffect(() => {
@@ -69,18 +102,26 @@ export const CardGrid: React.FC = () => {
           key={`row-${rowIndex}`}
           className="flex justify-between gap-[19px] max-md:flex-col max-md:items-center"
         >
-          {row.map((index) => (
+          {row.map((product, index) => (
             <div 
-              key={index} 
-              ref={rowIndex === itemRows.length - 1 && index === row[row.length - 1] ? lastCardRef : null}
+              key={product.id} 
+              ref={rowIndex === itemRows.length - 1 && index === row.length - 1 ? lastCardRef : null}
             >
-              <Card onListingClick={() => handleListingClick(index)} />
+              <Card 
+                productLine={product.product_line || "Product Line"}
+                product={product.product_name || "Product"}
+                source={product.source || "Source"}
+                inStock={product.in_stock}
+                url={product.url}
+                lastChecked={product.last_checked}
+                onListingClick={() => handleListingClick(product)} 
+              />
             </div>
           ))}
           {/* Fill empty spaces in the last row to maintain layout */}
           {rowIndex === itemRows.length - 1 && row.length < 3 && 
             Array(3 - row.length).fill(0).map((_, i) => (
-              <div key={`empty-${i}`} className="w-[340px] h-[295px] invisible max-md:hidden" />
+              <Card key={`empty-${i}`} isPlaceholder={true} />
             ))
           }
         </div>
