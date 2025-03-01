@@ -20,6 +20,7 @@ export const Card: React.FC<CardProps> = ({
   index = 0,
 }) => {
   const [colorIndex, setColorIndex] = useState(0);
+  const [isHovered, setIsHovered] = useState(false);
   const intervalRef = useRef<number | null>(null);
   
   // Disco colors array - vibrant colors for the effect
@@ -59,12 +60,19 @@ export const Card: React.FC<CardProps> = ({
       
       intervalRef.current = window.setTimeout(
         changeColor, 
-        Math.floor(Math.random() * 800) + 1200 // Random interval between 1200-2000ms
+        isHovered 
+          ? Math.floor(Math.random() * 100) + 100 // Super fast when hovered: 100-200ms
+          : Math.floor(Math.random() * 800) + 1200 // Normal speed: 1200-2000ms
       );
     };
     
     // Start the initial timeout
-    intervalRef.current = window.setTimeout(changeColor, Math.floor(Math.random() * 800) + 1200);
+    intervalRef.current = window.setTimeout(
+      changeColor, 
+      isHovered 
+        ? Math.floor(Math.random() * 100) + 100 
+        : Math.floor(Math.random() * 800) + 1200
+    );
 
     // Clean up on unmount
     return () => {
@@ -72,7 +80,7 @@ export const Card: React.FC<CardProps> = ({
         window.clearTimeout(intervalRef.current);
       }
     };
-  }, [index]);
+  }, [index, isHovered]);
 
   const handleClick = () => {
     if (listingLink) {
@@ -101,10 +109,13 @@ export const Card: React.FC<CardProps> = ({
       </div>
       <button
         onClick={handleClick}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
         className="text-2xl italic font-light text-[#1E1E1E] absolute -translate-x-2/4 w-[257px] h-[66px] bg-[#D9D9D9] rounded-[22px] left-2/4 bottom-[9px] max-sm:w-4/5 transition-all duration-800 flex items-center justify-center"
         style={{
           border: `3px solid ${discoColors[colorIndex]}`,
-          boxShadow: `0px 0px 8px 2px ${discoColors[colorIndex]}`
+          boxShadow: `0px 0px ${isHovered ? '12px 4px' : '8px 2px'} ${discoColors[colorIndex]}`,
+          transition: isHovered ? 'all 0.2s ease' : 'all 0.8s ease'
         }}
       >
         Listing
