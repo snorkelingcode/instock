@@ -52,7 +52,7 @@ export const CardGrid: React.FC = () => {
   };
 
   // Create fallback cards if no products are available
-  const displayProducts = products.length > 0 ? products : Array.from({ length: 3 }, (_, i) => ({
+  const displayProducts = products.length > 0 ? products : Array.from({ length: 5 }, (_, i) => ({
     id: i,
     product_line: "Product Line",
     product: "Product",
