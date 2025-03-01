@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 
 interface CardProps {
   productLine?: string;
@@ -20,6 +20,7 @@ export const Card: React.FC<CardProps> = ({
   index = 0,
 }) => {
   const [colorIndex, setColorIndex] = useState(0);
+  const intervalRef = useRef<number | null>(null);
   
   // Disco colors array - vibrant colors for the effect
   const discoColors = [
@@ -28,20 +29,49 @@ export const Card: React.FC<CardProps> = ({
     "#FFCC33", // Yellow
     "#33FF99", // Green
     "#CC33FF", // Purple
-    "#FF6633"  // Orange
+    "#FF6633",  // Orange
+    "#66FF33", // Lime
+    "#FF33CC", // Magenta
+    "#3366FF", // Royal Blue
+    "#FF9933"  // Orange-Yellow
   ];
+
+  // Function to get a random color index
+  const getRandomColorIndex = () => {
+    const newIndex = Math.floor(Math.random() * discoColors.length);
+    // Avoid same color twice in a row
+    return newIndex === colorIndex ? (newIndex + 1) % discoColors.length : newIndex;
+  };
 
   useEffect(() => {
     // Start each card at a different position in the color array based on its index
     // This ensures cards have different colors from each other
     setColorIndex((index % discoColors.length));
     
-    // Change the color every 1 second for the disco effect
-    const interval = setInterval(() => {
-      setColorIndex((prevIndex) => (prevIndex + 1) % discoColors.length);
-    }, 1000);
+    // Change the color at random intervals between 300-700ms for more dynamics
+    const changeColor = () => {
+      setColorIndex(getRandomColorIndex());
+      
+      // Set next interval with random timing
+      if (intervalRef.current) {
+        window.clearTimeout(intervalRef.current);
+      }
+      
+      intervalRef.current = window.setTimeout(
+        changeColor, 
+        Math.floor(Math.random() * 400) + 300 // Random interval between 300-700ms
+      );
+    };
+    
+    // Start the initial timeout
+    intervalRef.current = window.setTimeout(changeColor, Math.floor(Math.random() * 400) + 300);
 
-    return () => clearInterval(interval);
+    // Clean up on unmount
+    return () => {
+      if (intervalRef.current) {
+        window.clearTimeout(intervalRef.current);
+      }
+    };
   }, [index]);
 
   const handleClick = () => {
@@ -55,7 +85,7 @@ export const Card: React.FC<CardProps> = ({
 
   return (
     <div
-      className="w-[340px] h-[300px] relative bg-[#D9D9D9] rounded-[10px] max-md:mb-5 max-sm:w-full transition-all duration-1000"
+      className="w-[340px] h-[300px] relative bg-[#D9D9D9] rounded-[10px] max-md:mb-5 max-sm:w-full transition-all duration-500"
       role="article"
       style={{
         boxShadow: `0px 4px 30px 10px ${discoColors[colorIndex]}`,
@@ -71,7 +101,11 @@ export const Card: React.FC<CardProps> = ({
       </div>
       <button
         onClick={handleClick}
-        className="text-2xl italic font-light text-[#1E1E1E] absolute -translate-x-2/4 w-[257px] h-[66px] bg-[#DADCE6] rounded-[22px] left-2/4 bottom-[9px] max-sm:w-4/5 hover:bg-[#7485d7] transition-colors duration-200 flex items-center justify-center"
+        className="text-2xl italic font-light text-[#1E1E1E] absolute -translate-x-2/4 w-[257px] h-[66px] bg-[#D9D9D9] rounded-[22px] left-2/4 bottom-[9px] max-sm:w-4/5 transition-all duration-300 flex items-center justify-center"
+        style={{
+          border: `3px solid ${discoColors[colorIndex]}`,
+          boxShadow: `0px 0px 8px 2px ${discoColors[colorIndex]}`
+        }}
       >
         Listing
       </button>
