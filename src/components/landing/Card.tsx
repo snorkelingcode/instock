@@ -1,4 +1,3 @@
-
 import React from "react";
 
 interface CardProps {
@@ -29,21 +28,21 @@ export const Card: React.FC<CardProps> = ({
 
   return (
     <div
-      className="w-full max-w-[340px] h-[295px] shadow-[0px_4px_250px_0px_#000] relative bg-[#9A9A9A] rounded-[10px] flex flex-col"
+      className="w-full max-w-[250px] h-auto shadow-[0px_4px_24px_0px_rgba(0,0,0,0.15)] relative bg-[#9A9A9A] rounded-[10px] flex flex-col"
       role="article"
     >
-      <div className="px-[41px] py-[30px] flex-grow">
-        <div className="text-xl text-[#1E1E1E] mb-[5px]">{productLine}</div>
-        <div className="text-xl text-[#1E1E1E] mb-[5px]">{product}</div>
-        <div className="text-xl text-[#1E1E1E] mb-[5px]">{source}</div>
+      <div className="px-4 py-3 flex-grow">
+        <div className="text-base text-[#1E1E1E] mb-1">{productLine}</div>
+        <div className="text-base text-[#1E1E1E] mb-1">{product}</div>
+        <div className="text-base text-[#1E1E1E] mb-1">{source}</div>
         {price && (
-          <div className="text-xl text-[#1E1E1E] mb-[5px]">${price.toFixed(2)}</div>
+          <div className="text-base text-[#1E1E1E] mb-1">${price.toFixed(2)}</div>
         )}
       </div>
-      <div className="flex justify-center pb-[9px]">
+      <div className="flex justify-center pb-2">
         <button
           onClick={handleClick}
-          className="text-2xl italic font-light text-[#1E1E1E] w-[80%] max-w-[257px] h-[66px] bg-[#8696E8] rounded-[22px] hover:bg-[#7485d7] transition-colors duration-200 flex items-center justify-center"
+          className="text-xl italic font-light text-[#1E1E1E] w-[80%] max-w-[200px] h-[50px] bg-[#8696E8] rounded-[22px] hover:bg-[#7485d7] transition-colors duration-200 flex items-center justify-center"
         >
           Listing
         </button>
