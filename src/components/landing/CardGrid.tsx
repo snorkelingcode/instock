@@ -61,10 +61,10 @@ export const CardGrid: React.FC = () => {
     listing_link: ""
   }));
 
-  // Create groups of 3 items for grid rows
+  // Create groups of 5 items for grid rows
   const itemRows = [];
-  for (let i = 0; i < displayProducts.length; i += 3) {
-    itemRows.push(displayProducts.slice(i, i + 3));
+  for (let i = 0; i < displayProducts.length; i += 5) {
+    itemRows.push(displayProducts.slice(i, i + 5));
   }
 
   return (
