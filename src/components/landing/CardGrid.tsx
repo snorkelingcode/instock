@@ -1,10 +1,9 @@
-
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { Card } from "./Card";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-interface product {
+interface Product {
   id: number;
   product_line: string;
   product: string;
@@ -83,18 +82,24 @@ export const CardGrid: React.FC = () => {
             key={`row-${rowIndex}`}
             className="flex justify-between gap-[19px] max-md:flex-col max-md:items-center"
           >
-            {row.map((product) => (
-              <div key={product.id}>
-                <Card 
-                  productLine={product.product_line}
-                  product={product.product}
-                  source={product.source}
-                  price={product.price}
-                  listingLink={product.listing_link}
-                  onListingClick={() => handleListingClick(product.id)}
-                />
-              </div>
-            ))}
+            {row.map((product, idx) => {
+              // Calculate a unique index for each card based on its position
+              const cardIndex = rowIndex * 5 + idx;
+              
+              return (
+                <div key={product.id}>
+                  <Card 
+                    productLine={product.product_line}
+                    product={product.product}
+                    source={product.source}
+                    price={product.price}
+                    listingLink={product.listing_link}
+                    onListingClick={() => handleListingClick(product.id)}
+                    index={cardIndex} // Pass the unique index to the Card
+                  />
+                </div>
+              );
+            })}
             {/* Fill empty spaces in the last row to maintain layout */}
             {rowIndex === itemRows.length - 1 && row.length < 3 && 
               Array(3 - row.length).fill(0).map((_, i) => (
