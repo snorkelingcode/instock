@@ -19,8 +19,8 @@ export const Card: React.FC<CardProps> = ({
   onListingClick,
   index = 0,
 }) => {
-  const [cardColorIndex, setCardColorIndex] = useState(0);
-  const [buttonColorIndex, setButtonColorIndex] = useState(0);
+  const [cardColor, setCardColor] = useState("");
+  const [buttonColor, setButtonColor] = useState("");
   const [isButtonHovered, setIsButtonHovered] = useState(false);
   const cardIntervalRef = useRef<number | null>(null);
   const buttonIntervalRef = useRef<number | null>(null);
@@ -32,91 +32,90 @@ export const Card: React.FC<CardProps> = ({
     "#FFCC33", // Yellow
     "#33FF99", // Green
     "#CC33FF", // Purple
-    "#FF6633",  // Orange
+    "#FF6633", // Orange
     "#66FF33", // Lime
     "#FF33CC", // Magenta
     "#3366FF", // Royal Blue
     "#FF9933"  // Orange-Yellow
   ];
 
-  // Function to get a random color index
-  const getRandomColorIndex = (currentIndex: number) => {
-    const newIndex = Math.floor(Math.random() * discoColors.length);
-    // Avoid same color twice in a row
-    return newIndex === currentIndex ? (newIndex + 1) % discoColors.length : newIndex;
+  // Function to get a random color that's different from the current one
+  const getRandomColor = (currentColor: string) => {
+    const filteredColors = discoColors.filter(color => color !== currentColor);
+    return filteredColors[Math.floor(Math.random() * filteredColors.length)];
   };
 
-  // Card animation effect
+  // Card animation effect (normal speed always)
   useEffect(() => {
-    // Start each card at a different position in the color array based on its index
-    setCardColorIndex((index % discoColors.length));
+    // Initialize with a color based on index to make cards different
+    setCardColor(discoColors[index % discoColors.length]);
     
-    // Change the color at random intervals for the card (always at normal speed)
-    const changeCardColor = () => {
-      setCardColorIndex(getRandomColorIndex(cardColorIndex));
+    const animateCard = () => {
+      const newColor = getRandomColor(cardColor);
+      setCardColor(newColor);
       
-      // Set next interval with random timing
+      // Clear any existing timeout
       if (cardIntervalRef.current) {
         window.clearTimeout(cardIntervalRef.current);
       }
       
+      // Schedule next color change
       cardIntervalRef.current = window.setTimeout(
-        changeCardColor, 
-        Math.floor(Math.random() * 800) + 1200 // Always normal speed for card: 1200-2000ms
+        animateCard, 
+        Math.floor(Math.random() * 800) + 1200 // Normal speed: 1200-2000ms
       );
     };
     
-    // Start the initial timeout for card
-    cardIntervalRef.current = window.setTimeout(
-      changeCardColor, 
-      Math.floor(Math.random() * 800) + 1200
-    );
-
-    // Clean up on unmount
+    // Start the animation
+    cardIntervalRef.current = window.setTimeout(animateCard, 1200);
+    
+    // Clean up on unmount or when dependencies change
     return () => {
       if (cardIntervalRef.current) {
         window.clearTimeout(cardIntervalRef.current);
       }
     };
-  }, [index, cardColorIndex]);
+  }, [cardColor, index]);
 
-  // Button animation effect (separate from card)
+  // Button animation effect (speed varies with hover)
   useEffect(() => {
-    // Start at a different color than the card
-    setButtonColorIndex(((index + 3) % discoColors.length));
+    // Initialize with a different color than the card
+    if (!buttonColor) {
+      const startIndex = (index + 3) % discoColors.length;
+      setButtonColor(discoColors[startIndex]);
+    }
     
-    // Change the color at random intervals for the button
-    const changeButtonColor = () => {
-      setButtonColorIndex(getRandomColorIndex(buttonColorIndex));
+    const animateButton = () => {
+      const newColor = getRandomColor(buttonColor);
+      setButtonColor(newColor);
       
-      // Set next interval with random timing
+      // Clear any existing timeout
       if (buttonIntervalRef.current) {
         window.clearTimeout(buttonIntervalRef.current);
       }
       
+      // Schedule next color change at speed based on hover state
       buttonIntervalRef.current = window.setTimeout(
-        changeButtonColor, 
+        animateButton, 
         isButtonHovered 
-          ? Math.floor(Math.random() * 100) + 100 // Super fast when hovered: 100-200ms
-          : Math.floor(Math.random() * 800) + 1200 // Normal speed: 1200-2000ms
+          ? Math.floor(Math.random() * 100) + 100 // Super fast: 100-200ms
+          : Math.floor(Math.random() * 800) + 1200 // Normal: 1200-2000ms
       );
     };
     
-    // Start the initial timeout for button
+    // Start the animation at appropriate speed
     buttonIntervalRef.current = window.setTimeout(
-      changeButtonColor, 
-      isButtonHovered 
-        ? Math.floor(Math.random() * 100) + 100 
-        : Math.floor(Math.random() * 800) + 1200
+      animateButton, 
+      isButtonHovered ? 150 : 1200
     );
-
-    // Clean up on unmount
+    
+    // Clean up on unmount or when dependencies change
     return () => {
       if (buttonIntervalRef.current) {
         window.clearTimeout(buttonIntervalRef.current);
       }
     };
-  }, [index, buttonColorIndex, isButtonHovered]);
+  }, [buttonColor, isButtonHovered, index]);
 
   const handleClick = () => {
     if (listingLink) {
@@ -132,7 +131,7 @@ export const Card: React.FC<CardProps> = ({
       className="w-[340px] h-[300px] relative bg-[#D9D9D9] rounded-[10px] max-md:mb-5 max-sm:w-full transition-all duration-800"
       role="article"
       style={{
-        boxShadow: `0px 4px 30px 10px ${discoColors[cardColorIndex]}`,
+        boxShadow: cardColor ? `0px 4px 30px 10px ${cardColor}` : undefined
       }}
     >
       <div className="px-[41px] py-[30px]">
@@ -148,11 +147,11 @@ export const Card: React.FC<CardProps> = ({
         onMouseEnter={() => setIsButtonHovered(true)}
         onMouseLeave={() => setIsButtonHovered(false)}
         className="text-2xl italic font-light text-[#1E1E1E] absolute -translate-x-2/4 w-[257px] h-[66px] bg-[#D9D9D9] rounded-[22px] left-2/4 bottom-[9px] max-sm:w-4/5 transition-all duration-800 flex items-center justify-center"
-        style={{
-          border: `3px solid ${discoColors[buttonColorIndex]}80`, // Added 80 hex for 50% opacity
-          boxShadow: `0px 0px ${isButtonHovered ? '12px 4px' : '8px 2px'} ${discoColors[buttonColorIndex]}60`, // Added 60 hex for ~40% opacity
+        style={buttonColor ? {
+          border: `3px solid ${buttonColor}80`, // 50% opacity
+          boxShadow: `0px 0px ${isButtonHovered ? '12px 4px' : '8px 2px'} ${buttonColor}60`, // 40% opacity
           transition: isButtonHovered ? 'all 0.2s ease' : 'all 0.8s ease'
-        }}
+        } : undefined}
       >
         Listing
       </button>
