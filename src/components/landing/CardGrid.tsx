@@ -4,7 +4,7 @@ import { Card } from "./Card";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-interface Product {
+interface product {
   id: number;
   product_line: string;
   product: string;
