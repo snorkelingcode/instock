@@ -59,12 +59,12 @@ export const Card: React.FC<CardProps> = ({
       
       intervalRef.current = window.setTimeout(
         changeColor, 
-        Math.floor(Math.random() * 400) + 300 // Random interval between 300-700ms
+        Math.floor(Math.random() * 800) + 1200 // Random interval between 1200-2000ms
       );
     };
     
     // Start the initial timeout
-    intervalRef.current = window.setTimeout(changeColor, Math.floor(Math.random() * 400) + 300);
+    intervalRef.current = window.setTimeout(changeColor, Math.floor(Math.random() * 800) + 1200);
 
     // Clean up on unmount
     return () => {
@@ -85,7 +85,7 @@ export const Card: React.FC<CardProps> = ({
 
   return (
     <div
-      className="w-[340px] h-[300px] relative bg-[#D9D9D9] rounded-[10px] max-md:mb-5 max-sm:w-full transition-all duration-500"
+      className="w-[340px] h-[300px] relative bg-[#D9D9D9] rounded-[10px] max-md:mb-5 max-sm:w-full transition-all duration-800"
       role="article"
       style={{
         boxShadow: `0px 4px 30px 10px ${discoColors[colorIndex]}`,
@@ -101,7 +101,7 @@ export const Card: React.FC<CardProps> = ({
       </div>
       <button
         onClick={handleClick}
-        className="text-2xl italic font-light text-[#1E1E1E] absolute -translate-x-2/4 w-[257px] h-[66px] bg-[#D9D9D9] rounded-[22px] left-2/4 bottom-[9px] max-sm:w-4/5 transition-all duration-300 flex items-center justify-center"
+        className="text-2xl italic font-light text-[#1E1E1E] absolute -translate-x-2/4 w-[257px] h-[66px] bg-[#D9D9D9] rounded-[22px] left-2/4 bottom-[9px] max-sm:w-4/5 transition-all duration-800 flex items-center justify-center"
         style={{
           border: `3px solid ${discoColors[colorIndex]}`,
           boxShadow: `0px 0px 8px 2px ${discoColors[colorIndex]}`
