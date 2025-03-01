@@ -7,6 +7,7 @@ interface CardProps {
   price?: number;
   listingLink?: string;
   onListingClick?: () => void;
+  index?: number;
 }
 
 export const Card: React.FC<CardProps> = ({
@@ -16,6 +17,7 @@ export const Card: React.FC<CardProps> = ({
   price,
   listingLink,
   onListingClick,
+  index = 0,
 }) => {
   const [colorIndex, setColorIndex] = useState(0);
   
@@ -30,13 +32,17 @@ export const Card: React.FC<CardProps> = ({
   ];
 
   useEffect(() => {
+    // Start each card at a different position in the color array based on its index
+    // This ensures cards have different colors from each other
+    setColorIndex((index % discoColors.length));
+    
     // Change the color every 1 second for the disco effect
     const interval = setInterval(() => {
       setColorIndex((prevIndex) => (prevIndex + 1) % discoColors.length);
     }, 1000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [index]);
 
   const handleClick = () => {
     if (listingLink) {
