@@ -1,35 +1,17 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 
-interface CardProps {
-  productLine?: string;
-  product?: string;
-  source?: string;
-  price?: number;
-  listingLink?: string;
-  onListingClick?: () => void;
-  index?: number;
-}
-
-export const Card: React.FC<CardProps> = ({
-  productLine = "Product Line",
-  product = "Product",
-  source = "Source",
-  price,
-  listingLink,
-  onListingClick,
-  index = 0,
-}) => {
+export const Hero: React.FC = () => {
   const [colorIndex, setColorIndex] = useState(0);
   const intervalRef = useRef<number | null>(null);
-  
-  // Disco colors array - vibrant colors for the effect
+
+  // Disco colors array - same as in Card component for consistency
   const discoColors = [
     "#FF3366", // Pink
     "#33CCFF", // Blue
     "#FFCC33", // Yellow
     "#33FF99", // Green
     "#CC33FF", // Purple
-    "#FF6633",  // Orange
+    "#FF6633", // Orange
     "#66FF33", // Lime
     "#FF33CC", // Magenta
     "#3366FF", // Royal Blue
@@ -44,11 +26,7 @@ export const Card: React.FC<CardProps> = ({
   };
 
   useEffect(() => {
-    // Start each card at a different position in the color array based on its index
-    // This ensures cards have different colors from each other
-    setColorIndex((index % discoColors.length));
-    
-    // Change the color at random intervals between 300-700ms for more dynamics
+    // Change the color at random intervals between 300-700ms for dynamics
     const changeColor = () => {
       setColorIndex(getRandomColorIndex());
       
@@ -72,43 +50,33 @@ export const Card: React.FC<CardProps> = ({
         window.clearTimeout(intervalRef.current);
       }
     };
-  }, [index]);
+  }, []);
 
-  const handleClick = () => {
-    if (listingLink) {
-      window.open(listingLink, "_blank");
-    }
-    if (onListingClick) {
-      onListingClick();
-    }
+  // Text styling with disco effect - blurred version
+  const textStyle = {
+    textShadow: `0 0 4px ${discoColors[colorIndex]}, 
+                 0 0 10px ${discoColors[colorIndex]}, 
+                 0 0 15px ${discoColors[colorIndex]}, 
+                 0 0 20px ${discoColors[colorIndex]}`,
+    // Removed the hard WebkitTextStroke for a softer look
+    transition: 'all 0.8s ease',
+    color: '#1E1E1E', // Keep text dark
   };
 
   return (
-    <div
-      className="w-[340px] h-[300px] relative bg-[#D9D9D9] rounded-[10px] max-md:mb-5 max-sm:w-full transition-all duration-800"
-      role="article"
-      style={{
-        boxShadow: `0px 4px 30px 10px ${discoColors[colorIndex]}`,
-      }}
-    >
-      <div className="px-[41px] py-[30px]">
-        <div className="text-xl text-[#1E1E1E] mb-[5px]">{productLine}</div>
-        <div className="text-xl text-[#1E1E1E] mb-[5px]">{product}</div>
-        <div className="text-xl text-[#1E1E1E] mb-[5px]">{source}</div>
-        {price && (
-          <div className="text-xl text-[#1E1E1E] mb-[5px]">${price.toFixed(2)}</div>
-        )}
-      </div>
-      <button
-        onClick={handleClick}
-        className="text-2xl italic font-light text-[#1E1E1E] absolute -translate-x-2/4 w-[257px] h-[66px] bg-[#D9D9D9] rounded-[22px] left-2/4 bottom-[9px] max-sm:w-4/5 transition-all duration-800 flex items-center justify-center"
-        style={{
-          border: `3px solid ${discoColors[colorIndex]}`,
-          boxShadow: `0px 0px 8px 2px ${discoColors[colorIndex]}`
-        }}
+    <header className="mb-[164px] max-md:mb-20 max-sm:mb-10" role="banner">
+      <h1 
+        className="text-[64px] text-[#1E1E1E] font-normal max-md:text-5xl max-sm:text-4xl"
+        style={textStyle}
       >
-        Listing
-      </button>
-    </div>
+        Find everything in stock.
+      </h1>
+      <h2 
+        className="text-[64px] text-[#1E1E1E] font-normal max-md:text-5xl max-sm:text-4xl"
+        style={textStyle}
+      >
+        In one place.
+      </h2>
+    </header>
   );
 };
