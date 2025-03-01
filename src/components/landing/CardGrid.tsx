@@ -22,7 +22,8 @@ export const CardGrid: React.FC = () => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
-        const { data, error } = await supabase
+        // Use type assertion to bypass TypeScript error
+        const { data, error } = await (supabase as any)
           .from('products')
           .select('*')
           .order('id', { ascending: true });
