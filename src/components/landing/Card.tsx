@@ -48,32 +48,25 @@ export const Card: React.FC<CardProps> = ({
   // Card animation effect (normal speed always)
   useEffect(() => {
     // Initialize with a color based on index to make cards different
-    setCardColor(discoColors[index % discoColors.length]);
+    if (!cardColor) {
+      setCardColor(discoColors[index % discoColors.length]);
+      return; // Exit after initial setup to avoid immediate color change
+    }
     
     const animateCard = () => {
       const newColor = getRandomColor(cardColor);
       setCardColor(newColor);
-      
-      // Clear any existing timeout
-      if (cardIntervalRef.current) {
-        window.clearTimeout(cardIntervalRef.current);
-      }
-      
-      // Schedule next color change
-      cardIntervalRef.current = window.setTimeout(
-        animateCard, 
-        Math.floor(Math.random() * 800) + 1200 // Normal speed: 1200-2000ms
-      );
     };
     
-    // Start the animation
-    cardIntervalRef.current = window.setTimeout(animateCard, 1200);
+    // Create the animation interval
+    const intervalId = window.setInterval(
+      animateCard, 
+      Math.floor(Math.random() * 800) + 1200 // Normal speed: 1200-2000ms
+    );
     
     // Clean up on unmount or when dependencies change
     return () => {
-      if (cardIntervalRef.current) {
-        window.clearTimeout(cardIntervalRef.current);
-      }
+      window.clearInterval(intervalId);
     };
   }, [cardColor, index]);
 
@@ -83,37 +76,24 @@ export const Card: React.FC<CardProps> = ({
     if (!buttonColor) {
       const startIndex = (index + 3) % discoColors.length;
       setButtonColor(discoColors[startIndex]);
+      return; // Exit after initial setup to avoid immediate color change
     }
     
     const animateButton = () => {
       const newColor = getRandomColor(buttonColor);
       setButtonColor(newColor);
-      
-      // Clear any existing timeout
-      if (buttonIntervalRef.current) {
-        window.clearTimeout(buttonIntervalRef.current);
-      }
-      
-      // Schedule next color change at speed based on hover state
-      buttonIntervalRef.current = window.setTimeout(
-        animateButton, 
-        isButtonHovered 
-          ? Math.floor(Math.random() * 100) + 100 // Super fast: 100-200ms
-          : Math.floor(Math.random() * 800) + 1200 // Normal: 1200-2000ms
-      );
     };
     
-    // Start the animation at appropriate speed
-    buttonIntervalRef.current = window.setTimeout(
-      animateButton, 
-      isButtonHovered ? 150 : 1200
-    );
+    // Create the animation interval with speed based on hover state
+    const intervalSpeed = isButtonHovered 
+      ? Math.floor(Math.random() * 100) + 100 // Super fast: 100-200ms
+      : Math.floor(Math.random() * 800) + 1200; // Normal: 1200-2000ms
+    
+    const intervalId = window.setInterval(animateButton, intervalSpeed);
     
     // Clean up on unmount or when dependencies change
     return () => {
-      if (buttonIntervalRef.current) {
-        window.clearTimeout(buttonIntervalRef.current);
-      }
+      window.clearInterval(intervalId);
     };
   }, [buttonColor, isButtonHovered, index]);
 
