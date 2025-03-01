@@ -1,52 +1,92 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { Card } from "./Card";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
-interface CardProps {
-  productLine?: string;
-  product?: string;
-  source?: string;
-  price?: number;
-  listingLink?: string;
-  onListingClick?: () => void;
+interface Product {
+  id: number;
+  product_line: string;
+  product: string;
+  source: string;
+  price: number;
+  listing_link: string;
 }
 
-export const Card: React.FC<CardProps> = ({
-  productLine = "Product Line",
-  product = "Product",
-  source = "Source",
-  price,
-  listingLink,
-  onListingClick,
-}) => {
-  const handleClick = () => {
-    if (listingLink) {
-      window.open(listingLink, "_blank");
-    }
-    if (onListingClick) {
-      onListingClick();
-    }
+export const CardGrid: React.FC = () => {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        // Use type assertion to bypass TypeScript error
+        const { data, error } = await (supabase as any)
+          .from('products')
+          .select('*')
+          .order('id', { ascending: true });
+
+        if (error) {
+          throw error;
+        }
+
+        setProducts(data || []);
+      } catch (error) {
+        console.error('Error fetching products:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load products",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, [toast]);
+
+  const handleListingClick = (index: number) => {
+    console.log(`Listing ${index + 1} clicked`);
   };
 
+  // Create fallback cards if no products are available
+  const displayProducts = products.length > 0 ? products : Array.from({ length: 24 }, (_, i) => ({
+    id: i,
+    product_line: "Product Line",
+    product: "Product",
+    source: "Source",
+    price: 0,
+    listing_link: ""
+  }));
+
   return (
-    <div
-      className="w-full h-full shadow-[0px_4px_24px_0px_rgba(0,0,0,0.15)] relative bg-[#9A9A9A] rounded-[10px] flex flex-col"
-      role="article"
+    <div 
+      className="flex flex-col" 
+      role="region" 
+      aria-label="Product listings"
     >
-      <div className="px-3 py-2 flex-grow">
-        <div className="text-sm text-[#1E1E1E] mb-1 truncate">{productLine}</div>
-        <div className="text-sm text-[#1E1E1E] mb-1 truncate">{product}</div>
-        <div className="text-sm text-[#1E1E1E] mb-1 truncate">{source}</div>
-        {price && (
-          <div className="text-sm text-[#1E1E1E] mb-1">${price.toFixed(2)}</div>
-        )}
-      </div>
-      <div className="flex justify-center pb-2 mt-auto">
-        <button
-          onClick={handleClick}
-          className="text-lg italic font-light text-[#1E1E1E] w-[90%] h-[45px] bg-[#8696E8] rounded-[22px] hover:bg-[#7485d7] transition-colors duration-200 flex items-center justify-center"
-        >
-          Listing
-        </button>
-      </div>
+      {loading ? (
+        <div className="flex justify-center py-4">
+          <div className="animate-pulse text-xl">Loading products...</div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3">
+          {displayProducts.map((product) => (
+            <div key={product.id} className="h-full">
+              <Card 
+                productLine={product.product_line}
+                product={product.product}
+                source={product.source}
+                price={product.price}
+                listingLink={product.listing_link}
+                onListingClick={() => handleListingClick(product.id)}
+              />
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
