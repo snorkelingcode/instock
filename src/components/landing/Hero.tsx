@@ -52,11 +52,15 @@ export const Hero: React.FC = () => {
     };
   }, []);
 
-  // Text styling with disco effect
+  // Text styling with disco effect - blurred version
   const textStyle = {
-    textShadow: `0 0 2px ${discoColors[colorIndex]}, 0 0 10px ${discoColors[colorIndex]}`,
-    WebkitTextStroke: `2px ${discoColors[colorIndex]}`,
+    textShadow: `0 0 4px ${discoColors[colorIndex]}, 
+                 0 0 10px ${discoColors[colorIndex]}, 
+                 0 0 15px ${discoColors[colorIndex]}, 
+                 0 0 20px ${discoColors[colorIndex]}`,
+    // Removed the hard WebkitTextStroke for a softer look
     transition: 'all 0.4s ease',
+    color: '#1E1E1E', // Keep text dark
   };
 
   return (
