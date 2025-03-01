@@ -73,9 +73,9 @@ export const CardGrid: React.FC = () => {
           <div className="animate-pulse text-xl">Loading products...</div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 px-4">
           {displayProducts.map((product) => (
-            <div key={product.id} className="flex justify-center">
+            <div key={product.id} className="h-full">
               <Card 
                 productLine={product.product_line}
                 product={product.product}

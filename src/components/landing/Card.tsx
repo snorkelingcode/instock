@@ -19,11 +19,13 @@ export const Card: React.FC<CardProps> = ({
   onListingClick,
 }) => {
   return (
-    <div className="w-full max-w-[280px] bg-white rounded-lg shadow-md p-4">
-      <div className="text-sm text-gray-600">{productLine}</div>
-      <div className="text-lg font-medium mt-1">{product}</div>
-      <div className="text-sm text-gray-600 mt-2">{source}</div>
-      <div className="text-lg font-medium mt-1">${price.toFixed(2)}</div>
+    <div className="w-full h-full bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300 p-4 flex flex-col">
+      <div className="flex-grow">
+        <div className="text-sm text-gray-600">{productLine}</div>
+        <div className="text-lg font-medium mt-1">{product}</div>
+        <div className="text-sm text-gray-600 mt-2">{source}</div>
+        <div className="text-lg font-medium mt-1">${price.toFixed(2)}</div>
+      </div>
       <a
         href={listingLink}
         target="_blank"
