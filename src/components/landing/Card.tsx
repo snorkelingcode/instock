@@ -71,7 +71,7 @@ export const Card: React.FC<CardProps> = ({
       </div>
       <button
         onClick={handleClick}
-        className="text-2xl italic font-light text-[#1E1E1E] absolute -translate-x-2/4 w-[257px] h-[66px] bg-[#AEFD9A] rounded-[22px] left-2/4 bottom-[9px] max-sm:w-4/5 hover:bg-[#7485d7] transition-colors duration-200 flex items-center justify-center"
+        className="text-2xl italic font-light text-[#1E1E1E] absolute -translate-x-2/4 w-[257px] h-[66px] bg-[#E1E5D0] rounded-[22px] left-2/4 bottom-[9px] max-sm:w-4/5 hover:bg-[#7485d7] transition-colors duration-200 flex items-center justify-center"
       >
         Listing
       </button>
