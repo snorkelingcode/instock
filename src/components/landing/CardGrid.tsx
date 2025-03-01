@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { Card } from "./Card";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -53,7 +52,7 @@ export const CardGrid: React.FC = () => {
   };
 
   // Create fallback cards if no products are available
-  const displayProducts = products.length > 0 ? products : Array.from({ length: 3 }, (_, i) => ({
+  const displayProducts = products.length > 0 ? products : Array.from({ length: 12 }, (_, i) => ({
     id: i,
     product_line: "Product Line",
     product: "Product",
@@ -64,7 +63,7 @@ export const CardGrid: React.FC = () => {
 
   return (
     <div 
-      className="flex flex-col gap-8" 
+      className="flex flex-col" 
       role="region" 
       aria-label="Product listings"
     >
@@ -73,7 +72,7 @@ export const CardGrid: React.FC = () => {
           <div className="animate-pulse text-xl">Loading products...</div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
           {displayProducts.map((product) => (
             <div key={product.id} className="flex justify-center">
               <Card 
