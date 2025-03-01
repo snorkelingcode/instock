@@ -113,8 +113,8 @@ export const Card: React.FC<CardProps> = ({
         onMouseLeave={() => setIsHovered(false)}
         className="text-2xl italic font-light text-[#1E1E1E] absolute -translate-x-2/4 w-[257px] h-[66px] bg-[#D9D9D9] rounded-[22px] left-2/4 bottom-[9px] max-sm:w-4/5 transition-all duration-800 flex items-center justify-center"
         style={{
-          border: `3px solid ${discoColors[colorIndex]}`,
-          boxShadow: `0px 0px ${isHovered ? '12px 4px' : '8px 2px'} ${discoColors[colorIndex]}`,
+          border: `3px solid ${discoColors[colorIndex]}80`, // Added 80 hex for 50% opacity
+          boxShadow: `0px 0px ${isHovered ? '12px 4px' : '8px 2px'} ${discoColors[colorIndex]}60`, // Added 60 hex for ~40% opacity
           transition: isHovered ? 'all 0.2s ease' : 'all 0.8s ease'
         }}
       >
