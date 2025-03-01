@@ -19,9 +19,11 @@ export const Card: React.FC<CardProps> = ({
   onListingClick,
   index = 0,
 }) => {
-  const [colorIndex, setColorIndex] = useState(0);
-  const [isHovered, setIsHovered] = useState(false);
-  const intervalRef = useRef<number | null>(null);
+  const [cardColorIndex, setCardColorIndex] = useState(0);
+  const [buttonColorIndex, setButtonColorIndex] = useState(0);
+  const [isButtonHovered, setIsButtonHovered] = useState(false);
+  const cardIntervalRef = useRef<number | null>(null);
+  const buttonIntervalRef = useRef<number | null>(null);
   
   // Disco colors array - vibrant colors for the effect
   const discoColors = [
@@ -38,49 +40,83 @@ export const Card: React.FC<CardProps> = ({
   ];
 
   // Function to get a random color index
-  const getRandomColorIndex = () => {
+  const getRandomColorIndex = (currentIndex: number) => {
     const newIndex = Math.floor(Math.random() * discoColors.length);
     // Avoid same color twice in a row
-    return newIndex === colorIndex ? (newIndex + 1) % discoColors.length : newIndex;
+    return newIndex === currentIndex ? (newIndex + 1) % discoColors.length : newIndex;
   };
 
+  // Card animation effect
   useEffect(() => {
     // Start each card at a different position in the color array based on its index
-    // This ensures cards have different colors from each other
-    setColorIndex((index % discoColors.length));
+    setCardColorIndex((index % discoColors.length));
     
-    // Change the color at random intervals between 300-700ms for more dynamics
-    const changeColor = () => {
-      setColorIndex(getRandomColorIndex());
+    // Change the color at random intervals for the card (always at normal speed)
+    const changeCardColor = () => {
+      setCardColorIndex(getRandomColorIndex(cardColorIndex));
       
       // Set next interval with random timing
-      if (intervalRef.current) {
-        window.clearTimeout(intervalRef.current);
+      if (cardIntervalRef.current) {
+        window.clearTimeout(cardIntervalRef.current);
       }
       
-      intervalRef.current = window.setTimeout(
-        changeColor, 
-        isHovered 
+      cardIntervalRef.current = window.setTimeout(
+        changeCardColor, 
+        Math.floor(Math.random() * 800) + 1200 // Always normal speed for card: 1200-2000ms
+      );
+    };
+    
+    // Start the initial timeout for card
+    cardIntervalRef.current = window.setTimeout(
+      changeCardColor, 
+      Math.floor(Math.random() * 800) + 1200
+    );
+
+    // Clean up on unmount
+    return () => {
+      if (cardIntervalRef.current) {
+        window.clearTimeout(cardIntervalRef.current);
+      }
+    };
+  }, [index, cardColorIndex]);
+
+  // Button animation effect (separate from card)
+  useEffect(() => {
+    // Start at a different color than the card
+    setButtonColorIndex(((index + 3) % discoColors.length));
+    
+    // Change the color at random intervals for the button
+    const changeButtonColor = () => {
+      setButtonColorIndex(getRandomColorIndex(buttonColorIndex));
+      
+      // Set next interval with random timing
+      if (buttonIntervalRef.current) {
+        window.clearTimeout(buttonIntervalRef.current);
+      }
+      
+      buttonIntervalRef.current = window.setTimeout(
+        changeButtonColor, 
+        isButtonHovered 
           ? Math.floor(Math.random() * 100) + 100 // Super fast when hovered: 100-200ms
           : Math.floor(Math.random() * 800) + 1200 // Normal speed: 1200-2000ms
       );
     };
     
-    // Start the initial timeout
-    intervalRef.current = window.setTimeout(
-      changeColor, 
-      isHovered 
+    // Start the initial timeout for button
+    buttonIntervalRef.current = window.setTimeout(
+      changeButtonColor, 
+      isButtonHovered 
         ? Math.floor(Math.random() * 100) + 100 
         : Math.floor(Math.random() * 800) + 1200
     );
 
     // Clean up on unmount
     return () => {
-      if (intervalRef.current) {
-        window.clearTimeout(intervalRef.current);
+      if (buttonIntervalRef.current) {
+        window.clearTimeout(buttonIntervalRef.current);
       }
     };
-  }, [index, isHovered]);
+  }, [index, buttonColorIndex, isButtonHovered]);
 
   const handleClick = () => {
     if (listingLink) {
@@ -96,7 +132,7 @@ export const Card: React.FC<CardProps> = ({
       className="w-[340px] h-[300px] relative bg-[#D9D9D9] rounded-[10px] max-md:mb-5 max-sm:w-full transition-all duration-800"
       role="article"
       style={{
-        boxShadow: `0px 4px 30px 10px ${discoColors[colorIndex]}`,
+        boxShadow: `0px 4px 30px 10px ${discoColors[cardColorIndex]}`,
       }}
     >
       <div className="px-[41px] py-[30px]">
@@ -109,13 +145,13 @@ export const Card: React.FC<CardProps> = ({
       </div>
       <button
         onClick={handleClick}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
+        onMouseEnter={() => setIsButtonHovered(true)}
+        onMouseLeave={() => setIsButtonHovered(false)}
         className="text-2xl italic font-light text-[#1E1E1E] absolute -translate-x-2/4 w-[257px] h-[66px] bg-[#D9D9D9] rounded-[22px] left-2/4 bottom-[9px] max-sm:w-4/5 transition-all duration-800 flex items-center justify-center"
         style={{
-          border: `3px solid ${discoColors[colorIndex]}80`, // Added 80 hex for 50% opacity
-          boxShadow: `0px 0px ${isHovered ? '12px 4px' : '8px 2px'} ${discoColors[colorIndex]}60`, // Added 60 hex for ~40% opacity
-          transition: isHovered ? 'all 0.2s ease' : 'all 0.8s ease'
+          border: `3px solid ${discoColors[buttonColorIndex]}80`, // Added 80 hex for 50% opacity
+          boxShadow: `0px 0px ${isButtonHovered ? '12px 4px' : '8px 2px'} ${discoColors[buttonColorIndex]}60`, // Added 60 hex for ~40% opacity
+          transition: isButtonHovered ? 'all 0.2s ease' : 'all 0.8s ease'
         }}
       >
         Listing
