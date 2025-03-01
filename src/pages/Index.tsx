@@ -1,4 +1,3 @@
-
 import React, { useEffect } from "react";
 import { Hero } from "@/components/landing/Hero";
 import { CardGrid } from "@/components/landing/CardGrid";
@@ -19,7 +18,7 @@ const Index = () => {
 
   return (
     <main
-      className="min-h-screen bg-[#D9D9D9] px-[86px] py-[65px] max-md:p-10 max-sm:p-5 font-['Inter']"
+      className="min-h-screen bg-[#D9D9D9] px-4 sm:px-6 md:px-10 lg:px-16 py-8 font-['Inter'] max-w-[2000px] mx-auto"
       role="main"
     >
       <Hero />
