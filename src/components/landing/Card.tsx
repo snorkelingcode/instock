@@ -55,7 +55,7 @@ export const Card: React.FC<CardProps> = ({
 
   return (
     <div
-      className="w-[340px] h-[200px] relative bg-[#D9D9D9] rounded-[10px] max-md:mb-5 max-sm:w-full transition-all duration-1000"
+      className="w-[340px] h-[300px] relative bg-[#D9D9D9] rounded-[10px] max-md:mb-5 max-sm:w-full transition-all duration-1000"
       role="article"
       style={{
         boxShadow: `0px 4px 30px 10px ${discoColors[colorIndex]}`,
