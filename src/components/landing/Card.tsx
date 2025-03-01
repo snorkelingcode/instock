@@ -1,5 +1,4 @@
-
-import React from "react";
+import React, { useEffect, useState } from "react";
 
 interface CardProps {
   productLine?: string;
@@ -18,6 +17,27 @@ export const Card: React.FC<CardProps> = ({
   listingLink,
   onListingClick,
 }) => {
+  const [colorIndex, setColorIndex] = useState(0);
+  
+  // Disco colors array - vibrant colors for the effect
+  const discoColors = [
+    "#FF3366", // Pink
+    "#33CCFF", // Blue
+    "#FFCC33", // Yellow
+    "#33FF99", // Green
+    "#CC33FF", // Purple
+    "#FF6633"  // Orange
+  ];
+
+  useEffect(() => {
+    // Change the color every 1 second for the disco effect
+    const interval = setInterval(() => {
+      setColorIndex((prevIndex) => (prevIndex + 1) % discoColors.length);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   const handleClick = () => {
     if (listingLink) {
       window.open(listingLink, "_blank");
@@ -29,8 +49,11 @@ export const Card: React.FC<CardProps> = ({
 
   return (
     <div
-      className="w-[340px] h-[295px] shadow-[0px_4px_250px_0px_#000] relative bg-[#9A9A9A] rounded-[10px] max-md:mb-5 max-sm:w-full"
+      className="w-[340px] h-[295px] relative bg-[#9A9A9A] rounded-[10px] max-md:mb-5 max-sm:w-full transition-all duration-1000"
       role="article"
+      style={{
+        boxShadow: `0px 4px 30px 10px ${discoColors[colorIndex]}`,
+      }}
     >
       <div className="px-[41px] py-[30px]">
         <div className="text-xl text-[#1E1E1E] mb-[5px]">{productLine}</div>
