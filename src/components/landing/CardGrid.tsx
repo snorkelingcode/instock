@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Card } from "./Card";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -22,8 +22,7 @@ export const CardGrid: React.FC = () => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
-        // Use type assertion to bypass TypeScript error
-        const { data, error } = await (supabase as any)
+        const { data, error } = await supabase
           .from('products')
           .select('*')
           .order('id', { ascending: true });
@@ -53,7 +52,7 @@ export const CardGrid: React.FC = () => {
   };
 
   // Create fallback cards if no products are available
-  const displayProducts = products.length > 0 ? products : Array.from({ length: 12 }, (_, i) => ({
+  const displayProducts = products.length > 0 ? products : Array.from({ length: 3 }, (_, i) => ({
     id: i,
     product_line: "Product Line",
     product: "Product",
@@ -62,9 +61,15 @@ export const CardGrid: React.FC = () => {
     listing_link: ""
   }));
 
+  // Create groups of 3 items for grid rows
+  const itemRows = [];
+  for (let i = 0; i < displayProducts.length; i += 3) {
+    itemRows.push(displayProducts.slice(i, i + 3));
+  }
+
   return (
     <div 
-      className="flex flex-col" 
+      className="flex flex-col gap-8" 
       role="region" 
       aria-label="Product listings"
     >
@@ -73,20 +78,31 @@ export const CardGrid: React.FC = () => {
           <div className="animate-pulse text-xl">Loading products...</div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 px-4">
-          {displayProducts.map((product) => (
-            <div key={product.id} className="h-full">
-              <Card 
-                productLine={product.product_line}
-                product={product.product}
-                source={product.source}
-                price={product.price}
-                listingLink={product.listing_link}
-                onListingClick={() => handleListingClick(product.id)}
-              />
-            </div>
-          ))}
-        </div>
+        itemRows.map((row, rowIndex) => (
+          <div 
+            key={`row-${rowIndex}`}
+            className="flex justify-between gap-[19px] max-md:flex-col max-md:items-center"
+          >
+            {row.map((product) => (
+              <div key={product.id}>
+                <Card 
+                  productLine={product.product_line}
+                  product={product.product}
+                  source={product.source}
+                  price={product.price}
+                  listingLink={product.listing_link}
+                  onListingClick={() => handleListingClick(product.id)}
+                />
+              </div>
+            ))}
+            {/* Fill empty spaces in the last row to maintain layout */}
+            {rowIndex === itemRows.length - 1 && row.length < 3 && 
+              Array(3 - row.length).fill(0).map((_, i) => (
+                <div key={`empty-${i}`} className="w-[340px] h-[295px] invisible max-md:hidden" />
+              ))
+            }
+          </div>
+        ))
       )}
     </div>
   );
