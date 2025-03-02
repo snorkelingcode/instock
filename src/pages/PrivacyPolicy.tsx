@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
 // Reuse Navigation and Footer components in a real implementation
-
 const Navigation = () => (
   <nav className="bg-white p-4 rounded-lg shadow-md mb-8 flex justify-between items-center">
     <Link to="/" className="text-xl font-bold">Pokemon In-Stock Tracker</Link>
@@ -54,7 +53,16 @@ const Footer = () => (
   </footer>
 );
 
-const PrivacyPolicyPage = () => {
+const AdBanner = () => (
+  <section className="bg-gray-200 p-6 rounded-lg mb-12 text-center">
+    <p className="text-gray-700">Advertisement</p>
+    <div className="h-16 flex items-center justify-center border border-dashed border-gray-400">
+      <p className="text-gray-500">Google AdSense Banner (728×90)</p>
+    </div>
+  </section>
+);
+
+const PrivacyPolicy = () => {
   return (
     <div className="min-h-screen bg-[#F5F5F7] font-['Inter']">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -78,6 +86,36 @@ const PrivacyPolicyPage = () => {
             <section className="mb-8">
               <h2 className="text-2xl font-semibold mb-4">Information We Collect</h2>
               <p className="mb-4">We may collect several types of information from and about users of our Site, including:</p>
+              
+              <h3 className="text-xl font-medium mt-6 mb-3">Personal Information</h3>
+              <p className="mb-4">
+                When you register for an account, sign up for alerts, or contact us, we may collect personally identifiable information, such as:
+              </p>
+              <ul className="list-disc pl-6 mb-4">
+                <li>Your name</li>
+                <li>Email address</li>
+                <li>Phone number (if you opt for SMS alerts)</li>
+                <li>Account credentials</li>
+                <li>Product preferences</li>
+              </ul>
+              
+              <h3 className="text-xl font-medium mt-6 mb-3">Usage Information</h3>
+              <p className="mb-4">
+                We may also collect information about how you access and use our Site, including:
+              </p>
+              <ul className="list-disc pl-6 mb-4">
+                <li>IP address</li>
+                <li>Browser type and version</li>
+                <li>Device information</li>
+                <li>Pages you visit</li>
+                <li>Time and date of your visits</li>
+                <li>Referring website addresses</li>
+                <li>Other statistics about your interactions with our Site</li>
+              </ul>
+            </section>
+            
+            <section className="mb-8">
+              <h2 className="text-2xl font-semibold mb-4">How We Collect Information</h2>
               
               <h3 className="text-xl font-medium mt-6 mb-3">Direct Collection</h3>
               <p className="mb-4">
@@ -219,34 +257,10 @@ const PrivacyPolicyPage = () => {
           </div>
         </div>
         
-        <Footer />3">Personal Information</h3>
-              <p className="mb-4">
-                When you register for an account, sign up for alerts, or contact us, we may collect personally identifiable information, such as:
-              </p>
-              <ul className="list-disc pl-6 mb-4">
-                <li>Your name</li>
-                <li>Email address</li>
-                <li>Phone number (if you opt for SMS alerts)</li>
-                <li>Account credentials</li>
-                <li>Product preferences</li>
-              </ul>
-              
-              <h3 className="text-xl font-medium mt-6 mb-3">Usage Information</h3>
-              <p className="mb-4">
-                We may also collect information about how you access and use our Site, including:
-              </p>
-              <ul className="list-disc pl-6 mb-4">
-                <li>IP address</li>
-                <li>Browser type and version</li>
-                <li>Device information</li>
-                <li>Pages you visit</li>
-                <li>Time and date of your visits</li>
-                <li>Referring website addresses</li>
-                <li>Other statistics about your interactions with our Site</li>
-              </ul>
-            </section>
-            
-            <section className="mb-8">
-              <h2 className="text-2xl font-semibold mb-4">How We Collect Information</h2>
-              
-              <h3 className="text-xl font-medium mt-6 mb-
+        <Footer />
+      </div>
+    </div>
+  );
+};
+
+export default PrivacyPolicy;
