@@ -1,54 +1,54 @@
-                  </div>
-                </li>
-                <li className="border-b border-gray-200 pb-4">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="font-medium">Pokemon 151</h3>
-                      <p className="text-sm text-gray-700">Special Set</p>
-                    </div>
-                    <span className="text-sm text-gray-600">June 7, 2025</span>
-                  </div>
-                </li>
-                <li className="border-b border-gray-200 pb-4">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="font-medium">Champion's Path 2</h3>
-                      <p className="text-sm text-gray-700">Premium Collection</p>
-                    </div>
-                    <span className="text-sm text-gray-600">July 12, 2025</span>
-                  </div>
-                </li>
-                <li>
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="font-medium">Temporal Forces</h3>
-                      <p className="text-sm text-gray-700">Main Set</p>
-                    </div>
-                    <span className="text-sm text-gray-600">August 23, 2025</span>
-                  </div>
-                </li>
-              </ul>
-              <div className="mt-4">
-                <Button asChild variant="outline" size="sm" className="w-full">
-                  <Link to="/products/upcoming">View All Upcoming Releases</Link>
-                </Button>
-              </div>
-            </div>
-            
-            {/* Advertisement in sidebar */}
-            <div className="bg-gray-100 p-6 rounded-lg text-center">
-              <p className="text-sm text-gray-500 mb-2">Advertisement</p>
-              <div className="h-64 flex items-center justify-center border border-dashed border-gray-400">
-                <p className="text-gray-500">Google AdSense (300×250)</p>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <Footer />
-      </div>
-    </div>
-  );
-};
+import React from "react";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 
-export default NewsPage;
+// Navigation component from other pages
+const Navigation = () => (
+  <nav className="bg-white p-4 rounded-lg shadow-md mb-8 flex justify-between items-center">
+    <Link to="/" className="text-xl font-bold">Pokemon In-Stock Tracker</Link>
+    
+    <div className="hidden md:flex space-x-6">
+      <Link to="/" className="text-gray-700 hover:text-blue-600">Home</Link>
+      <Link to="/products" className="text-gray-700 hover:text-blue-600">Products</Link>
+      <Link to="/news" className="text-gray-700 hover:text-blue-600 font-medium">News</Link>
+      <Link to="/about" className="text-gray-700 hover:text-blue-600">About</Link>
+      <Link to="/contact" className="text-gray-700 hover:text-blue-600">Contact</Link>
+    </div>
+    
+    <Button className="md:hidden">Menu</Button>
+  </nav>
+);
+
+// Footer component from other pages
+const Footer = () => (
+  <footer className="bg-white p-8 rounded-lg shadow-md mt-16">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div>
+        <h3 className="font-semibold mb-4">Pokemon In-Stock Tracker</h3>
+        <p className="text-gray-600 mb-4">
+          Helping Pokemon fans find products in stock since 2024.
+        </p>
+        <p className="text-gray-600">© 2025 In-Stock Tracker. All rights reserved.</p>
+      </div>
+      
+      <div>
+        <h3 className="font-semibold mb-4">Site Links</h3>
+        <ul className="space-y-2">
+          <li><Link to="/" className="text-gray-600 hover:text-blue-600">Home</Link></li>
+          <li><Link to="/products" className="text-gray-700 hover:text-blue-600">Products</Link></li>
+          <li><Link to="/news" className="text-gray-600 hover:text-blue-600">News</Link></li>
+          <li><Link to="/about" className="text-gray-600 hover:text-blue-600">About</Link></li>
+          <li><Link to="/contact" className="text-gray-600 hover:text-blue-600">Contact</Link></li>
+        </ul>
+      </div>
+      
+      <div>
+        <h3 className="font-semibold mb-4">Legal</h3>
+        <ul className="space-y-2">
+          <li><Link to="/privacy" className="text-gray-600 hover:text-blue-600">Privacy Policy</Link></li>
+          <li><Link to="/terms" className="text-gray-600 hover:text-blue-600">Terms of Service</Link></li>
+          <li><Link to="/cookies" className="text-gray-600 hover:text-blue-600">Cookie Policy</Link></li>
+        </ul>
