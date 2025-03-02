@@ -316,7 +316,7 @@ const ProductsPage = () => {
           </div>
           
           {/* Main content */}
-          <div className="flex-1">
+          <div className="flex-1 min-w-0 overflow-x-hidden">
             <div className="bg-white p-6 rounded-lg shadow-md mb-8">
               <h1 className="text-2xl font-bold mb-2">Pokemon TCG Products</h1>
               <p className="text-gray-700 mb-6">
@@ -350,7 +350,7 @@ const ProductsPage = () => {
               </div>
               
               <h2 className="text-xl font-semibold mb-4">Featured Products</h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-8">
                 {featuredProducts.map((product, index) => (
                   <FeaturedProduct key={index} {...product} />
                 ))}
