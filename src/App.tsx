@@ -20,11 +20,14 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
-          
-          {/* Add only the routes for pages you've created */}
+          <Route path="/" element={<Index />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/products" element={<Products />} />
+          <Route path="/news" element={<News />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
-          {/* Add other routes as you create those pages */}
-          
+          <Route path="*" element={<NotFound />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
           {/* Keep your existing catch-all route */}
           <Route path="*" element={<NotFound />} />
         </Routes>
