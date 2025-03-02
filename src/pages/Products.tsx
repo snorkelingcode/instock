@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -60,29 +60,118 @@ const Footer = () => (
   </footer>
 );
 
-// Featured product component
-const FeaturedProduct = ({ title, description, imageUrl, price, retailer, inStock }) => (
-  <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition duration-300">
-    <div className="aspect-video bg-gray-200 rounded-md mb-4 flex items-center justify-center">
-      <span className="text-gray-500">{imageUrl || "Product Image"}</span>
+// Featured product component with disco effect (similar to Index page)
+const FeaturedProduct = ({ title, description, imageUrl, price, retailer, inStock, index = 0 }) => {
+  const [cardColor, setCardColor] = useState("");
+  const [buttonColor, setButtonColor] = useState("");
+  const [isButtonHovered, setIsButtonHovered] = useState(false);
+  const cardIntervalRef = useRef(null);
+  const buttonIntervalRef = useRef(null);
+  
+  // Disco colors array - same as in Card component for consistency
+  const discoColors = [
+    "#FF3366", // Pink
+    "#33CCFF", // Blue
+    "#FFCC33", // Yellow
+    "#33FF99", // Green
+    "#CC33FF", // Purple
+    "#FF6633", // Orange
+    "#66FF33", // Lime
+    "#FF33CC", // Magenta
+    "#3366FF", // Royal Blue
+    "#FF9933"  // Orange-Yellow
+  ];
+
+  // Function to get a random color that's different from the current one
+  const getRandomColor = (currentColor) => {
+    const filteredColors = discoColors.filter(color => color !== currentColor);
+    return filteredColors[Math.floor(Math.random() * filteredColors.length)];
+  };
+
+  // Card animation effect (normal speed always)
+  useEffect(() => {
+    // Initialize with a color based on index to make cards different
+    if (!cardColor) {
+      setCardColor(discoColors[index % discoColors.length]);
+      return; // Exit after initial setup to avoid immediate color change
+    }
+    
+    const animateCard = () => {
+      const newColor = getRandomColor(cardColor);
+      setCardColor(newColor);
+    };
+    
+    // Create the animation interval
+    const intervalId = window.setInterval(
+      animateCard, 
+      Math.floor(Math.random() * 800) + 1200 // Normal speed: 1200-2000ms
+    );
+    
+    // Clean up on unmount or when dependencies change
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [cardColor, index]);
+
+  // Button animation effect (speed varies with hover)
+  useEffect(() => {
+    // Initialize with a different color than the card
+    if (!buttonColor) {
+      const startIndex = (index + 3) % discoColors.length;
+      setButtonColor(discoColors[startIndex]);
+      return; // Exit after initial setup to avoid immediate color change
+    }
+    
+    const animateButton = () => {
+      const newColor = getRandomColor(buttonColor);
+      setButtonColor(newColor);
+    };
+    
+    // Create the animation interval with speed based on hover state
+    const intervalSpeed = isButtonHovered 
+      ? Math.floor(Math.random() * 100) + 100 // Super fast: 100-200ms
+      : Math.floor(Math.random() * 800) + 1200; // Normal: 1200-2000ms
+    
+    const intervalId = window.setInterval(animateButton, intervalSpeed);
+    
+    // Clean up on unmount or when dependencies change
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [buttonColor, isButtonHovered, index]);
+
+  return (
+    <div
+      className="w-[340px] h-[300px] relative bg-[#D9D9D9] rounded-[10px] max-md:mb-5 max-sm:w-full transition-all duration-800"
+      style={{
+        boxShadow: cardColor ? `0px 4px 30px 10px ${cardColor}` : undefined
+      }}
+    >
+      <div className="px-[41px] py-[30px]">
+        <div className="text-xl text-[#1E1E1E] mb-[5px]">{title}</div>
+        <div className="text-sm text-[#1E1E1E] mb-[5px]">{description}</div>
+        <div className="text-lg text-[#1E1E1E] mb-[5px] font-medium">${price.toFixed(2)}</div>
+        <div className="text-sm text-[#1E1E1E] mb-[5px]">at {retailer}</div>
+        <div className={`text-sm font-medium ${inStock ? "text-green-600" : "text-red-600"}`}>
+          {inStock ? "In Stock" : "Out of Stock"}
+        </div>
+      </div>
+      <button
+        onClick={() => {}}
+        onMouseEnter={() => setIsButtonHovered(true)}
+        onMouseLeave={() => setIsButtonHovered(false)}
+        className="text-2xl italic font-light text-[#1E1E1E] absolute -translate-x-2/4 w-[257px] h-[66px] bg-[#D9D9D9] rounded-[22px] left-2/4 bottom-[9px] max-sm:w-4/5 transition-all duration-800 flex items-center justify-center"
+        style={buttonColor ? {
+          border: `3px solid ${buttonColor}80`, // 50% opacity
+          boxShadow: `0px 0px ${isButtonHovered ? '12px 4px' : '8px 2px'} ${buttonColor}60`, // 40% opacity
+          transition: isButtonHovered ? 'all 0.2s ease' : 'all 0.8s ease'
+        } : undefined}
+      >
+        Listing
+      </button>
     </div>
-    <div className="flex justify-between items-start mb-2">
-      <h3 className="text-lg font-semibold">{title}</h3>
-      <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">Featured</span>
-    </div>
-    <p className="text-gray-700 text-sm mb-3">{description}</p>
-    <div className="flex justify-between items-center mb-3">
-      <span className="font-medium">${price.toFixed(2)}</span>
-      <span className="text-sm text-gray-600">at {retailer}</span>
-    </div>
-    <div className="flex justify-between items-center">
-      <span className={`text-sm ${inStock ? "text-green-600" : "text-red-600"}`}>
-        {inStock ? "In Stock" : "Out of Stock"}
-      </span>
-      <Button size="sm">View Listing</Button>
-    </div>
-  </div>
-);
+  );
+};
 
 // Recent release component
 const RecentRelease = ({ name, releaseDate, description, popularity }) => (
@@ -305,14 +394,6 @@ const ProductsPage = () => {
                 </div>
               )}
             </div>
-            
-            {/* Advertisement in sidebar */}
-            <div className="bg-gray-100 p-4 rounded-lg mt-8 text-center sticky top-96">
-              <p className="text-sm text-gray-500 mb-2">Advertisement</p>
-              <div className="h-64 flex items-center justify-center border border-dashed border-gray-400">
-                <p className="text-gray-500">Google AdSense (300×600)</p>
-              </div>
-            </div>
           </div>
           
           {/* Main content */}
@@ -350,9 +431,11 @@ const ProductsPage = () => {
               </div>
               
               <h2 className="text-xl font-semibold mb-4">Featured Products</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-8">
+              <div className="flex justify-center gap-[19px] max-md:flex-col max-md:items-center mb-8">
                 {featuredProducts.map((product, index) => (
-                  <FeaturedProduct key={index} {...product} />
+                  <div key={index}>
+                    <FeaturedProduct {...product} index={index} />
+                  </div>
                 ))}
               </div>
               
