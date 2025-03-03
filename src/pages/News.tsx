@@ -1,15 +1,17 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import DiscoCardEffect from "@/components/DiscoCardEffect";
+import NewsPreview from "@/components/news/NewsPreview";
+import FeaturedNews from "@/components/news/FeaturedNews";
+import RecentRelease from "@/components/news/RecentRelease";
 
 // Navigation component from other pages
 const Navigation = () => (
-  <DiscoCardEffect index={index} className="mb-4 last:mb-0">
   <nav className="bg-white p-4 rounded-lg shadow-md mb-8 flex justify-between items-center">
-    <Link to="/" className="text-xl font-bold">Trading Card In-Stock Tracker</Link>
+    <Link to="/" className="text-xl font-bold">Pokemon In-Stock Tracker</Link>
     
     <div className="hidden md:flex space-x-6">
       <Link to="/" className="text-gray-700 hover:text-blue-600">Home</Link>
@@ -21,18 +23,16 @@ const Navigation = () => (
     
     <Button className="md:hidden">Menu</Button>
   </nav>
-  </DiscoCardEffect>
 );
 
 // Footer component from other pages
 const Footer = () => (
-  <DiscoCardEffect index={index} className="mb-4 last:mb-0">
   <footer className="bg-white p-8 rounded-lg shadow-md mt-16">
     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
       <div>
-        <h3 className="font-semibold mb-4">Trading Card In-Stock Tracker</h3>
+        <h3 className="font-semibold mb-4">Pokemon In-Stock Tracker</h3>
         <p className="text-gray-600 mb-4">
-          Helping degens find products in stock since 2024.
+          Helping Pokemon fans find products in stock since 2024.
         </p>
         <p className="text-gray-600">© 2025 In-Stock Tracker. All rights reserved.</p>
       </div>
@@ -58,74 +58,20 @@ const Footer = () => (
       </div>
     </div>
   </footer>
-    </DiscoCardEffect>
 );
 
-// Single news article preview
-const NewsPreview = ({ title, date, category, excerpt, featured = false, index = 0 }) => (
-  <DiscoCardEffect index={index}>
-    <Card className={`h-full transition-all ${featured ? 'border-blue-300' : ''}`}>
-      <CardHeader className="pb-2">
-        <div className="flex justify-between items-start mb-1">
-          <Badge variant={category === 'Product News' ? 'default' : category === 'Release Dates' ? 'secondary' : 'outline'}>
-            {category}
-          </Badge>
-          {featured && <Badge className="bg-blue-500">Featured</Badge>}
-        </div>
-        <CardTitle className="text-xl">{title}</CardTitle>
-        <CardDescription className="text-gray-500">{date}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <p className="text-gray-700">{excerpt}</p>
-      </CardContent>
-    </Card>
-  </DiscoCardEffect>
-);
-
-// Featured news article
-const FeaturedNews = ({ title, date, category, content, index = 0 }) => (
-  <DiscoCardEffect index={index}>
-    <div className="bg-white rounded-lg border border-blue-200 mb-8">
-      <div className="p-6">
-        <div className="flex justify-between items-start mb-2">
-          <Badge variant="default">{category}</Badge>
-          <Badge className="bg-blue-500">Featured Story</Badge>
-        </div>
-        <h2 className="text-2xl font-bold mb-2">{title}</h2>
-        <p className="text-gray-500 mb-4">{date}</p>
-        <div className="prose max-w-none">
-          <p className="text-gray-700">{content}</p>
-        </div>
-      </div>
-    </div>
-  </DiscoCardEffect>
-);
-
-// Recent release component moved from Products page
-const RecentRelease = ({ name, releaseDate, description, popularity, index = 0 }) => (
-  <DiscoCardEffect index={index}>
-    <div className="flex border-b border-gray-200 py-4 last:border-0 bg-white rounded-lg p-3">
-      <div className="w-24 h-24 bg-gray-200 rounded-md flex items-center justify-center flex-shrink-0">
-        <span className="text-xs text-gray-500">Image</span>
-      </div>
-      <div className="ml-4 flex-1">
-        <div className="flex justify-between">
+// Upcoming release item with disco effect
+const UpcomingReleaseItem = ({ name, type, releaseDate, index = 0 }) => (
+  <DiscoCardEffect index={index} className="mb-4 last:mb-0">
+    <li className="border-b border-gray-200 pb-4 bg-white rounded-lg p-3">
+      <div className="flex justify-between items-start">
+        <div>
           <h3 className="font-medium">{name}</h3>
-          <span className="text-xs text-gray-600">Released: {releaseDate}</span>
+          <p className="text-sm text-gray-700">{type}</p>
         </div>
-        <p className="text-sm text-gray-700 mt-1">{description}</p>
-        <div className="flex items-center mt-2">
-          <span className="text-xs text-gray-600 mr-2">Popularity:</span>
-          <div className="h-2 w-24 bg-gray-200 rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-blue-600 rounded-full" 
-              style={{ width: `${popularity}%` }}
-            ></div>
-          </div>
-          <span className="text-xs text-gray-600 ml-2">{popularity}%</span>
-        </div>
+        <span className="text-sm text-gray-600">{releaseDate}</span>
       </div>
-    </div>
+    </li>
   </DiscoCardEffect>
 );
 
@@ -219,7 +165,7 @@ const NewsPage = () => {
     }
   ];
   
-  // Recent set releases data (moved from Products page)
+  // Recent set releases data
   const recentReleases = [
     {
       name: "Twilight Masquerade",
@@ -241,6 +187,46 @@ const NewsPage = () => {
     }
   ];
   
+  // Upcoming releases data
+  const upcomingReleases = [
+    {
+      name: "Twilight Masquerade",
+      type: "Main Set",
+      releaseDate: "May 10, 2025"
+    },
+    {
+      name: "Gardevoir ex Collection",
+      type: "Special Collection",
+      releaseDate: "April 19, 2025"
+    },
+    {
+      name: "Pokemon 151",
+      type: "Special Set",
+      releaseDate: "June 7, 2025"
+    },
+    {
+      name: "Champion's Path 2",
+      type: "Premium Collection",
+      releaseDate: "July 12, 2025"
+    },
+    {
+      name: "Temporal Forces",
+      type: "Main Set",
+      releaseDate: "August 23, 2025"
+    }
+  ];
+  
+  // Tournament results with disco effect
+  const TournamentResult = ({ title, date, content, index = 0 }) => (
+    <DiscoCardEffect index={index + 10}>
+      <div className="border-b border-gray-200 pb-4 bg-white rounded-lg p-4">
+        <h3 className="text-lg font-medium mb-1">{title}</h3>
+        <p className="text-gray-500 text-sm mb-2">{date}</p>
+        <p className="text-gray-700">{content}</p>
+      </div>
+    </DiscoCardEffect>
+  );
+  
   return (
     <div className="min-h-screen bg-[#F5F5F7] font-['Inter']">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -252,14 +238,14 @@ const NewsPage = () => {
             Stay up-to-date with the latest Pokemon TCG news, release dates, restock alerts, and market analysis. We cover product announcements, retailer restocks, tournament news, and more to keep you informed on everything happening in the world of Pokemon cards.
           </p>
           
-          <FeaturedNews {...featuredArticle} />
+          <FeaturedNews {...featuredArticle} index={0} />
           
           {/* Recent Set Releases section moved from Products page */}
           <h2 className="text-xl font-semibold mb-4">Recent Set Releases</h2>
           <div className="bg-gray-50 rounded-lg p-6 mb-8">
-            <div className="space-y-2">
+            <div className="space-y-4">
               {recentReleases.map((release, index) => (
-                <RecentRelease key={index} {...release} />
+                <RecentRelease key={index} {...release} index={index + 5} />
               ))}
             </div>
             <div className="mt-4 text-center">
@@ -286,7 +272,7 @@ const NewsPage = () => {
             <TabsContent value="all">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {recentNews.slice(0, 3).map((article, index) => (
-                  <NewsPreview key={index} {...article} featured={index === 0} />
+                  <NewsPreview key={index} {...article} featured={index === 0} index={index + 8} />
                 ))}
               </div>
               
@@ -300,7 +286,7 @@ const NewsPage = () => {
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {recentNews.slice(3).map((article, index) => (
-                  <NewsPreview key={index + 3} {...article} />
+                  <NewsPreview key={index + 3} {...article} index={index + 11} />
                 ))}
               </div>
               
@@ -309,11 +295,13 @@ const NewsPage = () => {
                   <h2 className="text-xl font-semibold mb-4">Latest Restock Alerts</h2>
                   <div className="space-y-6">
                     {restockAlerts.slice(0, 2).map((article, index) => (
-                      <div key={index} className="border-b border-gray-200 pb-4 last:border-0">
-                        <h3 className="text-lg font-medium mb-1">{article.title}</h3>
-                        <p className="text-gray-500 text-sm mb-2">{article.date}</p>
-                        <p className="text-gray-700">{article.excerpt}</p>
-                      </div>
+                      <DiscoCardEffect key={index} index={index + 14} className="mb-4">
+                        <div className="border-b border-gray-200 pb-4 last:border-0 bg-white rounded-lg p-4">
+                          <h3 className="text-lg font-medium mb-1">{article.title}</h3>
+                          <p className="text-gray-500 text-sm mb-2">{article.date}</p>
+                          <p className="text-gray-700">{article.excerpt}</p>
+                        </div>
+                      </DiscoCardEffect>
                     ))}
                   </div>
                 </div>
@@ -322,11 +310,13 @@ const NewsPage = () => {
                   <h2 className="text-xl font-semibold mb-4">Market Analysis</h2>
                   <div className="space-y-6">
                     {marketAnalysis.slice(0, 2).map((article, index) => (
-                      <div key={index} className="border-b border-gray-200 pb-4 last:border-0">
-                        <h3 className="text-lg font-medium mb-1">{article.title}</h3>
-                        <p className="text-gray-500 text-sm mb-2">{article.date}</p>
-                        <p className="text-gray-700">{article.excerpt}</p>
-                      </div>
+                      <DiscoCardEffect key={index} index={index + 16} className="mb-4">
+                        <div className="border-b border-gray-200 pb-4 last:border-0 bg-white rounded-lg p-4">
+                          <h3 className="text-lg font-medium mb-1">{article.title}</h3>
+                          <p className="text-gray-500 text-sm mb-2">{article.date}</p>
+                          <p className="text-gray-700">{article.excerpt}</p>
+                        </div>
+                      </DiscoCardEffect>
                     ))}
                   </div>
                 </div>
@@ -336,7 +326,7 @@ const NewsPage = () => {
             <TabsContent value="product">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {recentNews.filter(article => article.category === "Product News").map((article, index) => (
-                  <NewsPreview key={index} {...article} featured={index === 0} />
+                  <NewsPreview key={index} {...article} featured={index === 0} index={index + 18} />
                 ))}
               </div>
             </TabsContent>
@@ -344,7 +334,7 @@ const NewsPage = () => {
             <TabsContent value="restocks">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {restockAlerts.map((article, index) => (
-                  <NewsPreview key={index} {...article} featured={index === 0} />
+                  <NewsPreview key={index} {...article} featured={index === 0} index={index + 21} />
                 ))}
               </div>
             </TabsContent>
@@ -352,7 +342,7 @@ const NewsPage = () => {
             <TabsContent value="market">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {marketAnalysis.map((article, index) => (
-                  <NewsPreview key={index} {...article} featured={index === 0} />
+                  <NewsPreview key={index} {...article} featured={index === 0} index={index + 24} />
                 ))}
               </div>
             </TabsContent>
@@ -370,75 +360,39 @@ const NewsPage = () => {
           <div className="md:col-span-2 bg-white p-6 rounded-lg shadow-md">
             <h2 className="text-xl font-semibold mb-4">Recent Tournament Results</h2>
             <div className="space-y-6">
-              <div className="border-b border-gray-200 pb-4">
-                <h3 className="text-lg font-medium mb-1">Charlotte Regional Championships Results</h3>
-                <p className="text-gray-500 text-sm mb-2">February 24, 2025</p>
-                <p className="text-gray-700">
-                  The Charlotte Regional Championships concluded this weekend with Jason Mitchell securing first place using a Mew VMAX/Gengar deck in a field dominated by Paldean variants. The tournament saw over 800 Masters Division competitors with surprising representation from Zoroark ex/Slowking decks in the top 32.
-                </p>
-              </div>
+              <TournamentResult 
+                title="Charlotte Regional Championships Results" 
+                date="February 24, 2025"
+                content="The Charlotte Regional Championships concluded this weekend with Jason Mitchell securing first place using a Mew VMAX/Gengar deck in a field dominated by Paldean variants. The tournament saw over 800 Masters Division competitors with surprising representation from Zoroark ex/Slowking decks in the top 32."
+                index={0}
+              />
               
-              <div className="border-b border-gray-200 pb-4">
-                <h3 className="text-lg font-medium mb-1">Special Event: 25th Anniversary Invitational Top 8 Decklists</h3>
-                <p className="text-gray-500 text-sm mb-2">February 17, 2025</p>
-                <p className="text-gray-700">
-                  The Pokemon Company International's 25th Anniversary Invitational showcased innovative decks from the game's top players. We break down the top 8 decklists and the surprising tech choices that helped these players advance.
-                </p>
-              </div>
+              <TournamentResult 
+                title="Special Event: 25th Anniversary Invitational Top 8 Decklists" 
+                date="February 17, 2025"
+                content="The Pokemon Company International's 25th Anniversary Invitational showcased innovative decks from the game's top players. We break down the top 8 decklists and the surprising tech choices that helped these players advance."
+                index={1}
+              />
             </div>
           </div>
           
           <div>
-            <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-              <h2 className="text-xl font-semibold mb-4">Upcoming Releases</h2>
-              <ul className="space-y-4">
-                <li className="border-b border-gray-200 pb-4">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="font-medium">Twilight Masquerade</h3>
-                      <p className="text-sm text-gray-700">Main Set</p>
-                    </div>
-                    <span className="text-sm text-gray-600">May 10, 2025</span>
-                  </div>
-                </li>
-                <li className="border-b border-gray-200 pb-4">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="font-medium">Gardevoir ex Collection</h3>
-                      <p className="text-sm text-gray-700">Special Collection</p>
-                    </div>
-                    <span className="text-sm text-gray-600">April 19, 2025</span>
-                  </div>
-                </li>
-                <li className="border-b border-gray-200 pb-4">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="font-medium">Pokemon 151</h3>
-                      <p className="text-sm text-gray-700">Special Set</p>
-                    </div>
-                    <span className="text-sm text-gray-600">June 7, 2025</span>
-                  </div>
-                </li>
-                <li className="border-b border-gray-200 pb-4">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="font-medium">Champion's Path 2</h3>
-                      <p className="text-sm text-gray-700">Premium Collection</p>
-                    </div>
-                    <span className="text-sm text-gray-600">July 12, 2025</span>
-                  </div>
-                </li>
-                <li>
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="font-medium">Temporal Forces</h3>
-                      <p className="text-sm text-gray-700">Main Set</p>
-                    </div>
-                    <span className="text-sm text-gray-600">August 23, 2025</span>
-                  </div>
-                </li>
-              </ul>
-            </div>
+            <DiscoCardEffect index={27} className="mb-8">
+              <div className="bg-white p-6 rounded-lg shadow-md">
+                <h2 className="text-xl font-semibold mb-4">Upcoming Releases</h2>
+                <ul className="space-y-4">
+                  {upcomingReleases.map((release, index) => (
+                    <UpcomingReleaseItem 
+                      key={index} 
+                      name={release.name} 
+                      type={release.type} 
+                      releaseDate={release.releaseDate} 
+                      index={index + 28}
+                    />
+                  ))}
+                </ul>
+              </div>
+            </DiscoCardEffect>
             
             {/* Advertisement in sidebar */}
             <div className="bg-gray-100 p-6 rounded-lg text-center">
