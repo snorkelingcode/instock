@@ -1,7 +1,10 @@
-import React from "react";
+
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { CardGrid } from "@/components/landing/CardGrid";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 // Navigation component from other pages
 const Navigation = () => (
@@ -168,30 +171,82 @@ const FeaturedProduct = ({ title, description, price, retailer, inStock, index =
   );
 };
 
+// Interface for product data
+interface Product {
+  id: number;
+  product_line: string;
+  product: string;
+  source: string;
+  price: number;
+  listing_link: string;
+  in_stock?: boolean;
+}
+
 const ProductsPage = () => {
-  const featuredProducts = [
-    {
-      title: "Scarlet & Violet Twilight Masquerade Booster Box",
-      description: "36 booster packs with 10 cards each from the latest expansion.",
-      price: 149.99,
-      retailer: "Pokemon Center",
-      inStock: true
-    },
-    {
-      title: "Pokemon TCG: Charizard ex Premium Collection",
-      description: "Features Charizard ex foil promo card, oversized card, and 6 booster packs.",
-      price: 39.99,
-      retailer: "Target",
-      inStock: false
-    },
-    {
-      title: "Paldean Fates Elite Trainer Box",
-      description: "Contains 10 booster packs, 65 card sleeves, and various accessories.",
-      price: 49.99,
-      retailer: "Walmart",
-      inStock: true
-    }
-  ];
+  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+  
+  useEffect(() => {
+    const fetchFeaturedProducts = async () => {
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from('products')
+          .select('*')
+          .order('id', { ascending: true })
+          .limit(3);
+
+        if (error) {
+          throw error;
+        }
+
+        setFeaturedProducts(data || []);
+      } catch (error) {
+        console.error('Error fetching featured products:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load featured products",
+          variant: "destructive",
+        });
+        
+        // Fallback data if fetch fails
+        setFeaturedProducts([
+          {
+            id: 1,
+            product_line: "Scarlet & Violet",
+            product: "Twilight Masquerade Booster Box",
+            source: "Pokemon Center",
+            price: 149.99,
+            listing_link: "",
+            in_stock: true
+          },
+          {
+            id: 2,
+            product_line: "Pokemon TCG",
+            product: "Charizard ex Premium Collection",
+            source: "Target",
+            price: 39.99,
+            listing_link: "",
+            in_stock: false
+          },
+          {
+            id: 3,
+            product_line: "Paldean Fates",
+            product: "Elite Trainer Box",
+            source: "Walmart",
+            price: 49.99,
+            listing_link: "",
+            in_stock: true
+          }
+        ]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFeaturedProducts();
+  }, [toast]);
   
   return (
     <div className="min-h-screen bg-[#F5F5F7] font-['Inter']">
@@ -206,13 +261,26 @@ const ProductsPage = () => {
           </p>
           
           <h2 className="text-xl font-semibold mb-4">Featured Products</h2>
-          <div className="flex justify-center gap-[19px] max-md:flex-col max-md:items-center mb-8">
-            {featuredProducts.map((product, index) => (
-              <div key={index}>
-                <FeaturedProduct {...product} index={index} />
-              </div>
-            ))}
-          </div>
+          {loading ? (
+            <div className="flex justify-center py-4">
+              <div className="animate-pulse text-xl">Loading featured products...</div>
+            </div>
+          ) : (
+            <div className="flex justify-center gap-[19px] max-md:flex-col max-md:items-center mb-8">
+              {featuredProducts.map((product, index) => (
+                <div key={product.id}>
+                  <FeaturedProduct 
+                    title={`${product.product_line} ${product.product}`}
+                    description={`${product.product_line} ${product.product} available at ${product.source}`}
+                    price={product.price}
+                    retailer={product.source}
+                    inStock={product.in_stock || Math.random() > 0.5}
+                    index={index}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
           
           {/* Advertisement between content sections */}
           <div className="my-8 p-6 bg-gray-100 rounded-lg text-center">
