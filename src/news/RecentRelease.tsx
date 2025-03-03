@@ -1,8 +1,21 @@
 import React from "react";
 import DiscoCardEffect from "@/components/DiscoCardEffect";
 
-// Updated recent release component with disco effect
-const RecentRelease = ({ name, releaseDate, description, popularity, index = 0 }) => (
+interface RecentReleaseProps {
+  name: string;
+  releaseDate: string;
+  description: string;
+  popularity: number;
+  index?: number;
+}
+
+const RecentRelease: React.FC<RecentReleaseProps> = ({ 
+  name, 
+  releaseDate, 
+  description, 
+  popularity, 
+  index = 0 
+}) => (
   <DiscoCardEffect index={index}>
     <div className="flex border-b border-gray-200 py-4 last:border-0 bg-white rounded-lg p-3">
       <div className="w-24 h-24 bg-gray-200 rounded-md flex items-center justify-center flex-shrink-0">
@@ -28,5 +41,3 @@ const RecentRelease = ({ name, releaseDate, description, popularity, index = 0 }
     </div>
   </DiscoCardEffect>
 );
-
-export default RecentRelease;
