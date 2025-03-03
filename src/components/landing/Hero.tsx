@@ -27,7 +27,7 @@ export const Hero: React.FC = () => {
   };
 
   useEffect(() => {
-    // Change the color at random intervals between 300-700ms for dynamics
+    // Change the color at random intervals between 1200-2000ms for dynamics
     const changeColor = () => {
       setColorIndex(getRandomColorIndex());
       
@@ -82,3 +82,5 @@ export const Hero: React.FC = () => {
     </DiscoCardEffect>
   );
 };
+
+export default Hero;
