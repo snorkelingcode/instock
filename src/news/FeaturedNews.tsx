@@ -1,9 +1,22 @@
 import React from "react";
 import { Badge } from "@/components/ui/badge";
-import DiscoCardEffect from "@/components/DiscoCardEffect"; // Import the new component
+import DiscoCardEffect from "@/components/DiscoCardEffect";
 
-// Updated featured news article with disco effect
-const FeaturedNews = ({ title, date, category, content, index = 0 }) => (
+interface FeaturedNewsProps {
+  title: string;
+  date: string;
+  category: string;
+  content: string;
+  index?: number;
+}
+
+const FeaturedNews: React.FC<FeaturedNewsProps> = ({ 
+  title, 
+  date, 
+  category, 
+  content, 
+  index = 0 
+}) => (
   <DiscoCardEffect index={index}>
     <div className="bg-white rounded-lg border border-blue-200 mb-8">
       <div className="p-6">
