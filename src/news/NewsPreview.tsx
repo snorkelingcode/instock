@@ -1,10 +1,25 @@
 import React from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import DiscoCardEffect from "@/components/DiscoCardEffect"; // Import the new component
+import DiscoCardEffect from "@/components/DiscoCardEffect";
 
-// Updated news article preview with disco effect
-const NewsPreview = ({ title, date, category, excerpt, featured = false, index = 0 }) => (
+interface NewsPreviewProps {
+  title: string;
+  date: string;
+  category: string;
+  excerpt: string;
+  featured?: boolean;
+  index?: number;
+}
+
+const NewsPreview: React.FC<NewsPreviewProps> = ({ 
+  title, 
+  date, 
+  category, 
+  excerpt, 
+  featured = false, 
+  index = 0 
+}) => (
   <DiscoCardEffect index={index}>
     <Card className={`h-full transition-all ${featured ? 'border-blue-300' : ''}`}>
       <CardHeader className="pb-2">
