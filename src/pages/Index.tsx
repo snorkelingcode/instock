@@ -26,7 +26,7 @@ const Navigation = () => (
 // Site introduction with real content
 const SiteIntro = () => (
   <section className="mb-12 bg-white p-6 rounded-lg shadow-md">
-    <h2 className="text-2xl font-semibold mb-4">Welcome to our TCG In-Stock Tracker</h2>
+    <h2 className="text-2xl font-semibold mb-4">Welcome to Pokemon In-Stock Tracker</h2>
     <p className="text-gray-700 mb-4">
       Finding your favorite trading card products shouldn't be a challenge in 2025. Our mission is to help collectors and players
       locate in-stock trading cards, boxes, and accessories from all major retailers in one convenient place.
@@ -71,6 +71,60 @@ const FeaturedProduct = ({ title, imageText, price, retailer, inStock, descripti
   </Card>
 );
 
+const FeaturedSection = () => {
+  // Realistic featured product data
+  const featuredProducts = [
+    {
+      title: "Twilight Masquerade Elite Trainer Box",
+      imageText: "Elite Trainer Box Image",
+      price: 49.99,
+      retailer: "Pokemon Center",
+      inStock: true,
+      description: "Contains 9 booster packs, 65 card sleeves, energy cards, dice, and more. Pre-orders now available with May 10 release."
+    },
+    {
+      title: "Charizard ex Premium Collection",
+      imageText: "Premium Collection Image",
+      price: 39.99,
+      retailer: "Target",
+      inStock: false,
+      description: "Includes 1 Charizard ex foil promo card, 1 oversized card, 6 booster packs, and a collector's pin. Next restock expected March 7."
+    },
+    {
+      title: "Paldean Fates Booster Box",
+      imageText: "Booster Box Image",
+      price: 119.99,
+      retailer: "GameStop",
+      inStock: true,
+      description: "36 booster packs featuring shiny Pokemon from the Paldea region. Limited stock available with purchases limited to 2 per customer."
+    },
+    {
+      title: "151 Collection Collector's Chest",
+      imageText: "Collector's Chest Image",
+      price: 29.99,
+      retailer: "Walmart",
+      inStock: true,
+      description: "Commemorative tin featuring the original 151 Pokemon with 5 booster packs, 3 promo cards, and collector items."
+    }
+  ];
+
+  return (
+    <section className="mb-12">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-semibold">Featured Products</h2>
+        <Button variant="ghost" asChild className="text-blue-600">
+          <Link to="/products">View All</Link>
+        </Button>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {featuredProducts.map((product, index) => (
+          <FeaturedProduct key={index} {...product} />
+        ))}
+      </div>
+    </section>
+  );
+};
 
 // News article preview component
 const NewsArticle = ({ title, date, category, excerpt }) => (
