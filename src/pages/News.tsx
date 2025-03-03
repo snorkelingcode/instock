@@ -60,13 +60,6 @@ const Footer = () => (
 // Single news article preview
 const NewsPreview = ({ title, date, category, excerpt, url, featured = false }) => (
   <Card className={`transition-all ${featured ? 'border-blue-300 shadow-md' : ''}`}>
-    <div className="aspect-video bg-gray-200 flex items-center justify-center">
-      {image ? (
-        <img src={image} alt={title} className="w-full h-full object-cover" />
-      ) : (
-        <span className="text-gray-500">News Image</span>
-      )}
-    </div>
     <CardHeader className="pb-2">
       <div className="flex justify-between items-start mb-1">
         <Badge variant={category === 'Product News' ? 'default' : category === 'Release Dates' ? 'secondary' : 'outline'}>
@@ -89,15 +82,8 @@ const NewsPreview = ({ title, date, category, excerpt, url, featured = false }) 
 );
 
 // Featured news article
-const FeaturedNews = ({ title, date, category, content, image, url }) => (
-  <div className="bg-white rounded-lg overflow-hidden shadow-md border border-blue-200 mb-8">
-    <div className="aspect-video bg-gray-200 flex items-center justify-center">
-      {image ? (
-        <img src={image} alt={title} className="w-full h-full object-cover" />
-      ) : (
-        <span className="text-gray-500">Featured News Image</span>
-      )}
-    </div>
+const FeaturedNews = ({ title, date, category, content, url }) => (
+  <div className="bg-white rounded-lg shadow-md border border-blue-200 mb-8">
     <div className="p-6">
       <div className="flex justify-between items-start mb-2">
         <Badge variant="default">{category}</Badge>
