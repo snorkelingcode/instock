@@ -1,12 +1,7 @@
-import React, { useState, useEffect, useRef } from "react";
+import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import { CardGrid } from "@/components/landing/CardGrid";
-import { Separator } from "@/components/ui/separator";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 // Navigation component from other pages
 const Navigation = () => (
@@ -61,12 +56,12 @@ const Footer = () => (
 );
 
 // Featured product component with disco effect (similar to Index page)
-const FeaturedProduct = ({ title, description, imageUrl, price, retailer, inStock, index = 0 }) => {
-  const [cardColor, setCardColor] = useState("");
-  const [buttonColor, setButtonColor] = useState("");
-  const [isButtonHovered, setIsButtonHovered] = useState(false);
-  const cardIntervalRef = useRef(null);
-  const buttonIntervalRef = useRef(null);
+const FeaturedProduct = ({ title, description, price, retailer, inStock, index = 0 }) => {
+  const [cardColor, setCardColor] = React.useState("");
+  const [buttonColor, setButtonColor] = React.useState("");
+  const [isButtonHovered, setIsButtonHovered] = React.useState(false);
+  const cardIntervalRef = React.useRef(null);
+  const buttonIntervalRef = React.useRef(null);
   
   // Disco colors array - same as in Card component for consistency
   const discoColors = [
@@ -89,7 +84,7 @@ const FeaturedProduct = ({ title, description, imageUrl, price, retailer, inStoc
   };
 
   // Card animation effect (normal speed always)
-  useEffect(() => {
+  React.useEffect(() => {
     // Initialize with a color based on index to make cards different
     if (!cardColor) {
       setCardColor(discoColors[index % discoColors.length]);
@@ -114,7 +109,7 @@ const FeaturedProduct = ({ title, description, imageUrl, price, retailer, inStoc
   }, [cardColor, index]);
 
   // Button animation effect (speed varies with hover)
-  useEffect(() => {
+  React.useEffect(() => {
     // Initialize with a different color than the card
     if (!buttonColor) {
       const startIndex = (index + 3) % discoColors.length;
@@ -173,36 +168,7 @@ const FeaturedProduct = ({ title, description, imageUrl, price, retailer, inStoc
   );
 };
 
-// Recent release component
-const RecentRelease = ({ name, releaseDate, description, popularity }) => (
-  <div className="flex border-b border-gray-200 py-4 last:border-0">
-    <div className="w-24 h-24 bg-gray-200 rounded-md flex items-center justify-center flex-shrink-0">
-      <span className="text-xs text-gray-500">Image</span>
-    </div>
-    <div className="ml-4 flex-1">
-      <div className="flex justify-between">
-        <h3 className="font-medium">{name}</h3>
-        <span className="text-xs text-gray-600">Released: {releaseDate}</span>
-      </div>
-      <p className="text-sm text-gray-700 mt-1">{description}</p>
-      <div className="flex items-center mt-2">
-        <span className="text-xs text-gray-600 mr-2">Popularity:</span>
-        <div className="h-2 w-24 bg-gray-200 rounded-full overflow-hidden">
-          <div 
-            className="h-full bg-blue-600 rounded-full" 
-            style={{ width: `${popularity}%` }}
-          ></div>
-        </div>
-        <span className="text-xs text-gray-600 ml-2">{popularity}%</span>
-      </div>
-    </div>
-  </div>
-);
-
 const ProductsPage = () => {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filtersVisible, setFiltersVisible] = useState(true);
-  
   const featuredProducts = [
     {
       title: "Scarlet & Violet Twilight Masquerade Booster Box",
@@ -227,194 +193,18 @@ const ProductsPage = () => {
     }
   ];
   
-  const recentReleases = [
-    {
-      name: "Twilight Masquerade",
-      releaseDate: "February 15, 2025",
-      description: "Introducing new Legendary Pokemon and ex mechanics with a focus on Psychic and Ghost types.",
-      popularity: 85
-    },
-    {
-      name: "Paldean Fates",
-      releaseDate: "January 10, 2025",
-      description: "Special shiny collection featuring Paradox Pokemon and Terastal phenomenon.",
-      popularity: 92
-    },
-    {
-      name: "Temporal Forces",
-      releaseDate: "December 5, 2024",
-      description: "Expanded support for competitive archetypes with new Trainer cards and strategies.",
-      popularity: 78
-    }
-  ];
-  
   return (
     <div className="min-h-screen bg-[#F5F5F7] font-['Inter']">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Navigation />
         
-        {/* Main content with filters at the top */}
+        {/* Main content */}
         <div className="bg-white p-6 rounded-lg shadow-md mb-8">
           <h1 className="text-2xl font-bold mb-2">Pokemon TCG Products</h1>
           <p className="text-gray-700 mb-6">
             Find all Pokemon TCG products with real-time stock information from major retailers. We track booster boxes, elite trainer boxes, special collections, and more.
           </p>
           
-          {/* Search and sort bar */}
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-            <div className="w-full md:w-auto">
-              <Input 
-                placeholder="Search all products..." 
-                className="max-w-md"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-            <div className="flex items-center gap-4">
-              <Label htmlFor="sortBy" className="whitespace-nowrap">Sort by:</Label>
-              <Select defaultValue="relevance">
-                <SelectTrigger id="sortBy" className="w-40">
-                  <SelectValue placeholder="Relevance" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="relevance">Relevance</SelectItem>
-                  <SelectItem value="price-low">Price: Low to High</SelectItem>
-                  <SelectItem value="price-high">Price: High to Low</SelectItem>
-                  <SelectItem value="newest">Newest First</SelectItem>
-                  <SelectItem value="popularity">Popularity</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          
-          {/* Filters section at the top */}
-          <div className="mb-8">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold">Filters</h2>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => setFiltersVisible(!filtersVisible)}
-              >
-                {filtersVisible ? "Hide Filters" : "Show Filters"}
-              </Button>
-            </div>
-            
-            {filtersVisible && (
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                  {/* Product Type */}
-                  <div>
-                    <h3 className="font-medium mb-2">Product Type</h3>
-                    <div className="space-y-2">
-                      <div className="flex items-center space-x-2">
-                        <Checkbox id="boosterBox" />
-                        <Label htmlFor="boosterBox" className="font-normal text-sm">Booster Box</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox id="eliteTrainer" />
-                        <Label htmlFor="eliteTrainer" className="font-normal text-sm">Elite Trainer Box</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox id="specialCollection" />
-                        <Label htmlFor="specialCollection" className="font-normal text-sm">Special Collection</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox id="boosterPack" />
-                        <Label htmlFor="boosterPack" className="font-normal text-sm">Booster Pack</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox id="deck" />
-                        <Label htmlFor="deck" className="font-normal text-sm">Theme/Battle Deck</Label>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Retailer */}
-                  <div>
-                    <h3 className="font-medium mb-2">Retailer</h3>
-                    <div className="space-y-2">
-                      <div className="flex items-center space-x-2">
-                        <Checkbox id="pokemonCenter" />
-                        <Label htmlFor="pokemonCenter" className="font-normal text-sm">Pokemon Center</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox id="target" />
-                        <Label htmlFor="target" className="font-normal text-sm">Target</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox id="walmart" />
-                        <Label htmlFor="walmart" className="font-normal text-sm">Walmart</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox id="bestBuy" />
-                        <Label htmlFor="bestBuy" className="font-normal text-sm">Best Buy</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox id="gamestop" />
-                        <Label htmlFor="gamestop" className="font-normal text-sm">GameStop</Label>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Set and Price Range */}
-                  <div>
-                    <h3 className="font-medium mb-2">Set</h3>
-                    <Select>
-                      <SelectTrigger className="mb-4">
-                        <SelectValue placeholder="Select a set" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Sets</SelectItem>
-                        <SelectItem value="twilight-masquerade">Twilight Masquerade</SelectItem>
-                        <SelectItem value="paldean-fates">Paldean Fates</SelectItem>
-                        <SelectItem value="temporal-forces">Temporal Forces</SelectItem>
-                        <SelectItem value="paradox-rift">Paradox Rift</SelectItem>
-                        <SelectItem value="scarlet-violet">Scarlet & Violet</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    
-                    <h3 className="font-medium mb-2 mt-4">Price Range</h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="minPrice" className="text-xs">Min</Label>
-                        <Input id="minPrice" placeholder="$0" />
-                      </div>
-                      <div>
-                        <Label htmlFor="maxPrice" className="text-xs">Max</Label>
-                        <Input id="maxPrice" placeholder="$200" />
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Availability and Apply Filters */}
-                  <div>
-                    <h3 className="font-medium mb-2">Availability</h3>
-                    <div className="space-y-2 mb-6">
-                      <div className="flex items-center space-x-2">
-                        <Checkbox id="inStock" defaultChecked />
-                        <Label htmlFor="inStock" className="font-normal text-sm">In Stock</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox id="outOfStock" />
-                        <Label htmlFor="outOfStock" className="font-normal text-sm">Out of Stock</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox id="preOrder" />
-                        <Label htmlFor="preOrder" className="font-normal text-sm">Pre-Order Available</Label>
-                      </div>
-                    </div>
-                    
-                    <div className="flex gap-2">
-                      <Button className="flex-1">Apply Filters</Button>
-                      <Button variant="outline">Reset</Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-            
           <h2 className="text-xl font-semibold mb-4">Featured Products</h2>
           <div className="flex justify-center gap-[19px] max-md:flex-col max-md:items-center mb-8">
             {featuredProducts.map((product, index) => (
@@ -429,18 +219,6 @@ const ProductsPage = () => {
             <p className="text-sm text-gray-500 mb-2">Advertisement</p>
             <div className="h-24 flex items-center justify-center border border-dashed border-gray-400">
               <p className="text-gray-500">Google AdSense Banner (728×90)</p>
-            </div>
-          </div>
-          
-          <h2 className="text-xl font-semibold mb-4">Recent Set Releases</h2>
-          <div className="bg-gray-50 rounded-lg p-6 mb-8">
-            <div className="space-y-2">
-              {recentReleases.map((release, index) => (
-                <RecentRelease key={index} {...release} />
-              ))}
-            </div>
-            <div className="mt-4 text-center">
-              <Button variant="outline">View All Sets</Button>
             </div>
           </div>
           
