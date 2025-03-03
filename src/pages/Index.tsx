@@ -9,7 +9,7 @@ import { Link } from "react-router-dom";
 // Navigation component used across pages
 const Navigation = () => (
   <nav className="bg-white p-4 rounded-lg shadow-md mb-8 flex justify-between items-center">
-    <Link to="/" className="text-xl font-bold">Pokemon In-Stock Tracker</Link>
+    <Link to="/" className="text-xl font-bold">TCG In-Stock Tracker</Link>
     
     <div className="hidden md:flex space-x-6">
       <Link to="/" className="text-gray-700 hover:text-blue-600 font-medium">Home</Link>
@@ -28,8 +28,8 @@ const SiteIntro = () => (
   <section className="mb-12 bg-white p-6 rounded-lg shadow-md">
     <h2 className="text-2xl font-semibold mb-4">Welcome to Pokemon In-Stock Tracker</h2>
     <p className="text-gray-700 mb-4">
-      Finding your favorite Pokemon products shouldn't be a challenge in 2025. Our mission is to help collectors and players
-      locate in-stock Pokemon cards, boxes, and accessories from all major retailers in one convenient place.
+      Finding your favorite trading card products shouldn't be a challenge in 2025. Our mission is to help collectors and players
+      locate in-stock trading cards, boxes, and accessories from all major retailers in one convenient place.
     </p>
     <p className="text-gray-700 mb-4">
       We track inventory from Pokemon Center, Target, Walmart, GameStop, and other retailers in real-time,
@@ -284,9 +284,9 @@ const HowItWorksSection = () => (
         <div className="rounded-full bg-blue-100 w-16 h-16 flex items-center justify-center mx-auto mb-4">
           <span className="text-blue-600 text-2xl font-bold">1</span>
         </div>
-        <h3 className="text-lg font-medium mb-2">Real-Time Tracking</h3>
+        <h3 className="text-lg font-medium mb-2">Data Responsible Tracking</h3>
         <p className="text-gray-700">
-          Our system constantly monitors inventory at major retailers. For high-demand products, we check stock multiple times per minute to ensure you're getting the most up-to-date information.
+          We constantly monitor inventory manually at major retailers. For high-demand products, we check stock multiple times per day to ensure you're getting the most up-to-date information.
         </p>
       </div>
       
@@ -296,7 +296,7 @@ const HowItWorksSection = () => (
         </div>
         <h3 className="text-lg font-medium mb-2">Instant Alerts</h3>
         <p className="text-gray-700">
-          Create a free account to set up alerts for specific products, retailers, or product categories. Receive notifications via email, text message, or push notification when items come back in stock.
+          Subscribe to set up alerts for specific products, retailers, or product categories. Receive notifications via email, text message, or push notification when items come back in stock.
         </p>
       </div>
       
@@ -318,9 +318,9 @@ const Footer = () => (
   <footer className="bg-white p-8 rounded-lg shadow-md mt-16">
     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
       <div>
-        <h3 className="font-semibold mb-4">Pokemon In-Stock Tracker</h3>
+        <h3 className="font-semibold mb-4">TCG In-Stock Tracker</h3>
         <p className="text-gray-600 mb-4">
-          Helping Pokemon fans find products in stock since 2024.
+          Helping trading card fans find products in stock since 2024.
         </p>
         <p className="text-gray-600">© 2025 In-Stock Tracker. All rights reserved.</p>
       </div>
@@ -359,7 +359,7 @@ const Index = () => {
     // Set proper meta description for SEO and AdSense
     const metaDescription = document.createElement("meta");
     metaDescription.name = "description";
-    metaDescription.content = "Find Pokemon TCG products in stock at major retailers. Track inventory for Pokemon Center, Target, Walmart, and more in real-time.";
+    metaDescription.content = "Find TCG products in stock at major retailers. Track inventory for Pokemon Center, Target, Walmart, and more.";
     document.head.appendChild(metaDescription);
 
     return () => {
