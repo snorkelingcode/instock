@@ -58,8 +58,8 @@ const Footer = () => (
 );
 
 // Single news article preview
-const NewsPreview = ({ title, date, category, excerpt, image, url, featured = false }) => (
-  <Card className={`overflow-hidden transition-all ${featured ? 'border-blue-300 shadow-md' : ''}`}>
+const NewsPreview = ({ title, date, category, excerpt, url, featured = false }) => (
+  <Card className={`transition-all ${featured ? 'border-blue-300 shadow-md' : ''}`}>
     <div className="aspect-video bg-gray-200 flex items-center justify-center">
       {image ? (
         <img src={image} alt={title} className="w-full h-full object-cover" />
