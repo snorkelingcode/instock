@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -59,7 +58,7 @@ const Footer = () => (
 );
 
 // Featured product component with disco effect (similar to Index page)
-const FeaturedProduct = ({ title, description, price, retailer, inStock, index = 0 }) => {
+const FeaturedProduct = ({ title, description, price, retailer, index = 0 }) => {
   const [cardColor, setCardColor] = React.useState("");
   const [buttonColor, setButtonColor] = React.useState("");
   const [isButtonHovered, setIsButtonHovered] = React.useState(false);
@@ -150,8 +149,8 @@ const FeaturedProduct = ({ title, description, price, retailer, inStock, index =
         <div className="text-sm text-[#1E1E1E] mb-[5px]">{description}</div>
         <div className="text-lg text-[#1E1E1E] mb-[5px] font-medium">${price.toFixed(2)}</div>
         <div className="text-sm text-[#1E1E1E] mb-[5px]">at {retailer}</div>
-        <div className={`text-sm font-medium ${inStock ? "text-green-600" : "text-red-600"}`}>
-          {inStock ? "In Stock" : "Out of Stock"}
+        <div className="text-sm font-medium text-green-600">
+          In Stock
         </div>
       </div>
       <button
@@ -274,7 +273,6 @@ const ProductsPage = () => {
                     description={`${product.product_line} ${product.product} available at ${product.source}`}
                     price={product.price}
                     retailer={product.source}
-                    inStock={product.in_stock || Math.random() > 0.5}
                     index={index}
                   />
                 </div>
