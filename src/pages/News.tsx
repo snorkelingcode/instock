@@ -1,12 +1,10 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import DiscoCardEffect from "@/components/DiscoCardEffect";
-import NewsPreview from "@/components/news/NewsPreview";
-import FeaturedNews from "@/components/news/FeaturedNews";
-import RecentRelease from "@/components/news/RecentRelease";
 
 // Navigation component from other pages
 const Navigation = () => (
@@ -60,18 +58,71 @@ const Footer = () => (
   </footer>
 );
 
-// Upcoming release item with disco effect
-const UpcomingReleaseItem = ({ name, type, releaseDate, index = 0 }) => (
-  <DiscoCardEffect index={index} className="mb-4 last:mb-0">
-    <li className="border-b border-gray-200 pb-4 bg-white rounded-lg p-3">
-      <div className="flex justify-between items-start">
-        <div>
-          <h3 className="font-medium">{name}</h3>
-          <p className="text-sm text-gray-700">{type}</p>
+// Single news article preview with disco effect
+const NewsPreview = ({ title, date, category, excerpt, featured = false, index = 0 }) => (
+  <DiscoCardEffect index={index}>
+    <Card className={`h-full transition-all ${featured ? 'border-blue-300' : ''}`}>
+      <CardHeader className="pb-2">
+        <div className="flex justify-between items-start mb-1">
+          <Badge variant={category === 'Product News' ? 'default' : category === 'Release Dates' ? 'secondary' : 'outline'}>
+            {category}
+          </Badge>
+          {featured && <Badge className="bg-blue-500">Featured</Badge>}
         </div>
-        <span className="text-sm text-gray-600">{releaseDate}</span>
+        <CardTitle className="text-xl">{title}</CardTitle>
+        <CardDescription className="text-gray-500">{date}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <p className="text-gray-700">{excerpt}</p>
+      </CardContent>
+    </Card>
+  </DiscoCardEffect>
+);
+
+// Featured news article with disco effect
+const FeaturedNews = ({ title, date, category, content, index = 0 }) => (
+  <DiscoCardEffect index={index}>
+    <div className="bg-white rounded-lg border border-blue-200 mb-8">
+      <div className="p-6">
+        <div className="flex justify-between items-start mb-2">
+          <Badge variant="default">{category}</Badge>
+          <Badge className="bg-blue-500">Featured Story</Badge>
+        </div>
+        <h2 className="text-2xl font-bold mb-2">{title}</h2>
+        <p className="text-gray-500 mb-4">{date}</p>
+        <div className="prose max-w-none">
+          <p className="text-gray-700">{content}</p>
+        </div>
       </div>
-    </li>
+    </div>
+  </DiscoCardEffect>
+);
+
+// Recent release component with disco effect
+const RecentRelease = ({ name, releaseDate, description, popularity, index = 0 }) => (
+  <DiscoCardEffect index={index}>
+    <div className="flex border-b border-gray-200 py-4 last:border-0 bg-white rounded-lg p-3">
+      <div className="w-24 h-24 bg-gray-200 rounded-md flex items-center justify-center flex-shrink-0">
+        <span className="text-xs text-gray-500">Image</span>
+      </div>
+      <div className="ml-4 flex-1">
+        <div className="flex justify-between">
+          <h3 className="font-medium">{name}</h3>
+          <span className="text-xs text-gray-600">Released: {releaseDate}</span>
+        </div>
+        <p className="text-sm text-gray-700 mt-1">{description}</p>
+        <div className="flex items-center mt-2">
+          <span className="text-xs text-gray-600 mr-2">Popularity:</span>
+          <div className="h-2 w-24 bg-gray-200 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-blue-600 rounded-full" 
+              style={{ width: `${popularity}%` }}
+            ></div>
+          </div>
+          <span className="text-xs text-gray-600 ml-2">{popularity}%</span>
+        </div>
+      </div>
+    </div>
   </DiscoCardEffect>
 );
 
@@ -165,7 +216,7 @@ const NewsPage = () => {
     }
   ];
   
-  // Recent set releases data
+  // Recent set releases data (moved from Products page)
   const recentReleases = [
     {
       name: "Twilight Masquerade",
@@ -186,6 +237,32 @@ const NewsPage = () => {
       popularity: 78
     }
   ];
+
+  // Tournament results with disco effect
+  const TournamentResult = ({ title, date, content, index = 0 }) => (
+    <DiscoCardEffect index={index + 10}>
+      <div className="border-b border-gray-200 pb-4 bg-white rounded-lg p-4">
+        <h3 className="text-lg font-medium mb-1">{title}</h3>
+        <p className="text-gray-500 text-sm mb-2">{date}</p>
+        <p className="text-gray-700">{content}</p>
+      </div>
+    </DiscoCardEffect>
+  );
+
+  // Upcoming release item with disco effect
+  const UpcomingReleaseItem = ({ name, type, releaseDate, index = 0 }) => (
+    <DiscoCardEffect index={index} className="mb-4 last:mb-0">
+      <li className="border-b border-gray-200 pb-4 bg-white rounded-lg p-3">
+        <div className="flex justify-between items-start">
+          <div>
+            <h3 className="font-medium">{name}</h3>
+            <p className="text-sm text-gray-700">{type}</p>
+          </div>
+          <span className="text-sm text-gray-600">{releaseDate}</span>
+        </div>
+      </li>
+    </DiscoCardEffect>
+  );
   
   // Upcoming releases data
   const upcomingReleases = [
@@ -215,17 +292,6 @@ const NewsPage = () => {
       releaseDate: "August 23, 2025"
     }
   ];
-  
-  // Tournament results with disco effect
-  const TournamentResult = ({ title, date, content, index = 0 }) => (
-    <DiscoCardEffect index={index + 10}>
-      <div className="border-b border-gray-200 pb-4 bg-white rounded-lg p-4">
-        <h3 className="text-lg font-medium mb-1">{title}</h3>
-        <p className="text-gray-500 text-sm mb-2">{date}</p>
-        <p className="text-gray-700">{content}</p>
-      </div>
-    </DiscoCardEffect>
-  );
   
   return (
     <div className="min-h-screen bg-[#F5F5F7] font-['Inter']">
