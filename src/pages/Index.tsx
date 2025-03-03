@@ -26,7 +26,7 @@ const Navigation = () => (
 // Site introduction with real content
 const SiteIntro = () => (
   <section className="mb-12 bg-white p-6 rounded-lg shadow-md">
-    <h2 className="text-2xl font-semibold mb-4">Welcome to Pokemon In-Stock Tracker</h2>
+    <h2 className="text-2xl font-semibold mb-4">Welcome to our TCG In-Stock Tracker</h2>
     <p className="text-gray-700 mb-4">
       Finding your favorite trading card products shouldn't be a challenge in 2025. Our mission is to help collectors and players
       locate in-stock trading cards, boxes, and accessories from all major retailers in one convenient place.
