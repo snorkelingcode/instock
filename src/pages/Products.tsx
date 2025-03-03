@@ -201,7 +201,7 @@ const RecentRelease = ({ name, releaseDate, description, popularity }) => (
 
 const ProductsPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterExpanded, setFilterExpanded] = useState(true);
+  const [filtersVisible, setFiltersVisible] = useState(true);
   
   const featuredProducts = [
     {
@@ -253,93 +253,115 @@ const ProductsPage = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Navigation />
         
-        <div className="flex flex-col md:flex-row gap-8 mb-12">
-          {/* Sidebar with filters */}
-          <div className="w-full md:w-64 flex-shrink-0">
-            <div className="bg-white p-6 rounded-lg shadow-md sticky top-8">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold">Filters</h2>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => setFilterExpanded(!filterExpanded)}
-                >
-                  {filterExpanded ? "Collapse" : "Expand"}
-                </Button>
-              </div>
-              
-              {filterExpanded && (
-                <div className="space-y-6">
-                  <div>
-                    <Label htmlFor="productSearch" className="mb-2 block">Search</Label>
-                    <Input 
-                      id="productSearch" 
-                      placeholder="Search products..." 
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                    />
-                  </div>
-                  
+        {/* Main content with filters at the top */}
+        <div className="bg-white p-6 rounded-lg shadow-md mb-8">
+          <h1 className="text-2xl font-bold mb-2">Pokemon TCG Products</h1>
+          <p className="text-gray-700 mb-6">
+            Find all Pokemon TCG products with real-time stock information from major retailers. We track booster boxes, elite trainer boxes, special collections, and more.
+          </p>
+          
+          {/* Search and sort bar */}
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+            <div className="w-full md:w-auto">
+              <Input 
+                placeholder="Search all products..." 
+                className="max-w-md"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <div className="flex items-center gap-4">
+              <Label htmlFor="sortBy" className="whitespace-nowrap">Sort by:</Label>
+              <Select defaultValue="relevance">
+                <SelectTrigger id="sortBy" className="w-40">
+                  <SelectValue placeholder="Relevance" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="relevance">Relevance</SelectItem>
+                  <SelectItem value="price-low">Price: Low to High</SelectItem>
+                  <SelectItem value="price-high">Price: High to Low</SelectItem>
+                  <SelectItem value="newest">Newest First</SelectItem>
+                  <SelectItem value="popularity">Popularity</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          {/* Filters section at the top */}
+          <div className="mb-8">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-semibold">Filters</h2>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setFiltersVisible(!filtersVisible)}
+              >
+                {filtersVisible ? "Hide Filters" : "Show Filters"}
+              </Button>
+            </div>
+            
+            {filtersVisible && (
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                  {/* Product Type */}
                   <div>
                     <h3 className="font-medium mb-2">Product Type</h3>
                     <div className="space-y-2">
                       <div className="flex items-center space-x-2">
                         <Checkbox id="boosterBox" />
-                        <Label htmlFor="boosterBox" className="font-normal">Booster Box</Label>
+                        <Label htmlFor="boosterBox" className="font-normal text-sm">Booster Box</Label>
                       </div>
                       <div className="flex items-center space-x-2">
                         <Checkbox id="eliteTrainer" />
-                        <Label htmlFor="eliteTrainer" className="font-normal">Elite Trainer Box</Label>
+                        <Label htmlFor="eliteTrainer" className="font-normal text-sm">Elite Trainer Box</Label>
                       </div>
                       <div className="flex items-center space-x-2">
                         <Checkbox id="specialCollection" />
-                        <Label htmlFor="specialCollection" className="font-normal">Special Collection</Label>
+                        <Label htmlFor="specialCollection" className="font-normal text-sm">Special Collection</Label>
                       </div>
                       <div className="flex items-center space-x-2">
                         <Checkbox id="boosterPack" />
-                        <Label htmlFor="boosterPack" className="font-normal">Booster Pack</Label>
+                        <Label htmlFor="boosterPack" className="font-normal text-sm">Booster Pack</Label>
                       </div>
                       <div className="flex items-center space-x-2">
                         <Checkbox id="deck" />
-                        <Label htmlFor="deck" className="font-normal">Theme/Battle Deck</Label>
+                        <Label htmlFor="deck" className="font-normal text-sm">Theme/Battle Deck</Label>
                       </div>
                     </div>
                   </div>
                   
-                  <Separator />
-                  
+                  {/* Retailer */}
                   <div>
                     <h3 className="font-medium mb-2">Retailer</h3>
                     <div className="space-y-2">
                       <div className="flex items-center space-x-2">
                         <Checkbox id="pokemonCenter" />
-                        <Label htmlFor="pokemonCenter" className="font-normal">Pokemon Center</Label>
+                        <Label htmlFor="pokemonCenter" className="font-normal text-sm">Pokemon Center</Label>
                       </div>
                       <div className="flex items-center space-x-2">
                         <Checkbox id="target" />
-                        <Label htmlFor="target" className="font-normal">Target</Label>
+                        <Label htmlFor="target" className="font-normal text-sm">Target</Label>
                       </div>
                       <div className="flex items-center space-x-2">
                         <Checkbox id="walmart" />
-                        <Label htmlFor="walmart" className="font-normal">Walmart</Label>
+                        <Label htmlFor="walmart" className="font-normal text-sm">Walmart</Label>
                       </div>
                       <div className="flex items-center space-x-2">
                         <Checkbox id="bestBuy" />
-                        <Label htmlFor="bestBuy" className="font-normal">Best Buy</Label>
+                        <Label htmlFor="bestBuy" className="font-normal text-sm">Best Buy</Label>
                       </div>
                       <div className="flex items-center space-x-2">
                         <Checkbox id="gamestop" />
-                        <Label htmlFor="gamestop" className="font-normal">GameStop</Label>
+                        <Label htmlFor="gamestop" className="font-normal text-sm">GameStop</Label>
                       </div>
                     </div>
                   </div>
                   
-                  <Separator />
-                  
+                  {/* Set and Price Range */}
                   <div>
                     <h3 className="font-medium mb-2">Set</h3>
                     <Select>
-                      <SelectTrigger>
+                      <SelectTrigger className="mb-4">
                         <SelectValue placeholder="Select a set" />
                       </SelectTrigger>
                       <SelectContent>
@@ -351,12 +373,8 @@ const ProductsPage = () => {
                         <SelectItem value="scarlet-violet">Scarlet & Violet</SelectItem>
                       </SelectContent>
                     </Select>
-                  </div>
-                  
-                  <Separator />
-                  
-                  <div>
-                    <h3 className="font-medium mb-2">Price Range</h3>
+                    
+                    <h3 className="font-medium mb-2 mt-4">Price Range</h3>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <Label htmlFor="minPrice" className="text-xs">Min</Label>
@@ -369,124 +387,89 @@ const ProductsPage = () => {
                     </div>
                   </div>
                   
-                  <Separator />
-                  
+                  {/* Availability and Apply Filters */}
                   <div>
                     <h3 className="font-medium mb-2">Availability</h3>
-                    <div className="space-y-2">
+                    <div className="space-y-2 mb-6">
                       <div className="flex items-center space-x-2">
                         <Checkbox id="inStock" defaultChecked />
-                        <Label htmlFor="inStock" className="font-normal">In Stock</Label>
+                        <Label htmlFor="inStock" className="font-normal text-sm">In Stock</Label>
                       </div>
                       <div className="flex items-center space-x-2">
                         <Checkbox id="outOfStock" />
-                        <Label htmlFor="outOfStock" className="font-normal">Out of Stock</Label>
+                        <Label htmlFor="outOfStock" className="font-normal text-sm">Out of Stock</Label>
                       </div>
                       <div className="flex items-center space-x-2">
                         <Checkbox id="preOrder" />
-                        <Label htmlFor="preOrder" className="font-normal">Pre-Order Available</Label>
+                        <Label htmlFor="preOrder" className="font-normal text-sm">Pre-Order Available</Label>
                       </div>
                     </div>
+                    
+                    <div className="flex gap-2">
+                      <Button className="flex-1">Apply Filters</Button>
+                      <Button variant="outline">Reset</Button>
+                    </div>
                   </div>
-                  
-                  <Button className="w-full">Apply Filters</Button>
-                  <Button variant="outline" className="w-full mt-2">Reset</Button>
                 </div>
-              )}
+              </div>
+            )}
+          </div>
+            
+          <h2 className="text-xl font-semibold mb-4">Featured Products</h2>
+          <div className="flex justify-center gap-[19px] max-md:flex-col max-md:items-center mb-8">
+            {featuredProducts.map((product, index) => (
+              <div key={index}>
+                <FeaturedProduct {...product} index={index} />
+              </div>
+            ))}
+          </div>
+          
+          {/* Advertisement between content sections */}
+          <div className="my-8 p-6 bg-gray-100 rounded-lg text-center">
+            <p className="text-sm text-gray-500 mb-2">Advertisement</p>
+            <div className="h-24 flex items-center justify-center border border-dashed border-gray-400">
+              <p className="text-gray-500">Google AdSense Banner (728×90)</p>
             </div>
           </div>
           
-          {/* Main content */}
-          <div className="flex-1 min-w-0 overflow-x-hidden">
-            <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-              <h1 className="text-2xl font-bold mb-2">Pokemon TCG Products</h1>
-              <p className="text-gray-700 mb-6">
-                Find all Pokemon TCG products with real-time stock information from major retailers. We track booster boxes, elite trainer boxes, special collections, and more.
-              </p>
-              
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-                <div className="w-full md:w-auto">
-                  <Input 
-                    placeholder="Search all products..." 
-                    className="max-w-md"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                </div>
-                <div className="flex items-center gap-4">
-                  <Label htmlFor="sortBy" className="whitespace-nowrap">Sort by:</Label>
-                  <Select defaultValue="relevance">
-                    <SelectTrigger id="sortBy" className="w-40">
-                      <SelectValue placeholder="Relevance" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="relevance">Relevance</SelectItem>
-                      <SelectItem value="price-low">Price: Low to High</SelectItem>
-                      <SelectItem value="price-high">Price: High to Low</SelectItem>
-                      <SelectItem value="newest">Newest First</SelectItem>
-                      <SelectItem value="popularity">Popularity</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              
-              <h2 className="text-xl font-semibold mb-4">Featured Products</h2>
-              <div className="flex justify-center gap-[19px] max-md:flex-col max-md:items-center mb-8">
-                {featuredProducts.map((product, index) => (
-                  <div key={index}>
-                    <FeaturedProduct {...product} index={index} />
-                  </div>
-                ))}
-              </div>
-              
-              {/* Advertisement between content sections */}
-              <div className="my-8 p-6 bg-gray-100 rounded-lg text-center">
-                <p className="text-sm text-gray-500 mb-2">Advertisement</p>
-                <div className="h-24 flex items-center justify-center border border-dashed border-gray-400">
-                  <p className="text-gray-500">Google AdSense Banner (728×90)</p>
-                </div>
-              </div>
-              
-              <h2 className="text-xl font-semibold mb-4">Recent Set Releases</h2>
-              <div className="bg-gray-50 rounded-lg p-6 mb-8">
-                <div className="space-y-2">
-                  {recentReleases.map((release, index) => (
-                    <RecentRelease key={index} {...release} />
-                  ))}
-                </div>
-                <div className="mt-4 text-center">
-                  <Button variant="outline">View All Sets</Button>
-                </div>
-              </div>
-              
-              <h2 className="text-xl font-semibold mb-4">All Products</h2>
-              <p className="text-gray-700 mb-6">
-                Below are all Pokemon products currently tracked. Products shown as in-stock have been verified within the last 15 minutes.
-              </p>
-              
-              <CardGrid />
-              
-              <div className="mt-8 flex justify-center">
-                <Button>Load More Products</Button>
-              </div>
+          <h2 className="text-xl font-semibold mb-4">Recent Set Releases</h2>
+          <div className="bg-gray-50 rounded-lg p-6 mb-8">
+            <div className="space-y-2">
+              {recentReleases.map((release, index) => (
+                <RecentRelease key={index} {...release} />
+              ))}
             </div>
-            
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <h2 className="text-xl font-semibold mb-4">About Pokemon TCG Product Tracking</h2>
-              <p className="text-gray-700 mb-4">
-                The Pokemon Trading Card Game continues to be one of the most popular collectible card games worldwide. Due to high demand, many products quickly sell out at major retailers, making it difficult for collectors and players to find items at retail prices.
-              </p>
-              <p className="text-gray-700 mb-4">
-                Our real-time inventory tracking system continuously monitors stock levels at Pokemon Center, Target, Walmart, Best Buy, GameStop, and dozens of other retailers to provide you with the most up-to-date information on product availability.
-              </p>
-              <p className="text-gray-700 mb-4">
-                We check inventory multiple times per minute for high-demand products, ensuring you're among the first to know when restocks happen. For users who create a free account, we offer customizable alerts via email, text message, or push notification when specific products come back in stock.
-              </p>
-              <p className="text-gray-700">
-                While we strive for 100% accuracy, inventory systems can sometimes experience delays. We recommend acting quickly when you receive an in-stock notification, as popular products may sell out within minutes.
-              </p>
+            <div className="mt-4 text-center">
+              <Button variant="outline">View All Sets</Button>
             </div>
           </div>
+          
+          <h2 className="text-xl font-semibold mb-4">All Products</h2>
+          <p className="text-gray-700 mb-6">
+            Below are all Pokemon products currently tracked. Products shown as in-stock have been verified within the last 15 minutes.
+          </p>
+          
+          <CardGrid />
+          
+          <div className="mt-8 flex justify-center">
+            <Button>Load More Products</Button>
+          </div>
+        </div>
+        
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h2 className="text-xl font-semibold mb-4">About Pokemon TCG Product Tracking</h2>
+          <p className="text-gray-700 mb-4">
+            The Pokemon Trading Card Game continues to be one of the most popular collectible card games worldwide. Due to high demand, many products quickly sell out at major retailers, making it difficult for collectors and players to find items at retail prices.
+          </p>
+          <p className="text-gray-700 mb-4">
+            Our real-time inventory tracking system continuously monitors stock levels at Pokemon Center, Target, Walmart, Best Buy, GameStop, and dozens of other retailers to provide you with the most up-to-date information on product availability.
+          </p>
+          <p className="text-gray-700 mb-4">
+            We check inventory multiple times per minute for high-demand products, ensuring you're among the first to know when restocks happen. For users who create a free account, we offer customizable alerts via email, text message, or push notification when specific products come back in stock.
+          </p>
+          <p className="text-gray-700">
+            While we strive for 100% accuracy, inventory systems can sometimes experience delays. We recommend acting quickly when you receive an in-stock notification, as popular products may sell out within minutes.
+          </p>
         </div>
         
         <Footer />
