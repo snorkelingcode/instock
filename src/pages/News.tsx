@@ -7,7 +7,6 @@ import { Badge } from "@/components/ui/badge";
 
 // Navigation component from other pages
 const Navigation = () => (
-  <DiscoCardEffect index={index} className="mb-4 last:mb-0">
   <nav className="bg-white p-4 rounded-lg shadow-md mb-8 flex justify-between items-center">
     <Link to="/" className="text-xl font-bold">Trading Card In-Stock Tracker</Link>
     
@@ -21,12 +20,10 @@ const Navigation = () => (
     
     <Button className="md:hidden">Menu</Button>
   </nav>
-  </DiscoCardEffect>
 );
 
 // Footer component from other pages
 const Footer = () => (
-  <DiscoCardEffect index={index} className="mb-4 last:mb-0">
   <footer className="bg-white p-8 rounded-lg shadow-md mt-16">
     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
       <div>
@@ -58,7 +55,6 @@ const Footer = () => (
       </div>
     </div>
   </footer>
-    </DiscoCardEffect>
 );
 
 // Single news article preview
