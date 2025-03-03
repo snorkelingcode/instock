@@ -180,15 +180,6 @@ const ContactPage = () => {
                 </div>
                 
                 <div>
-                  <p className="font-medium">Social Media</p>
-                  <div className="flex space-x-4 mt-2">
-                    <a href="#" className="text-gray-700 hover:text-blue-600">Twitter</a>
-                    <a href="#" className="text-gray-700 hover:text-blue-600">Instagram</a>
-                    <a href="#" className="text-gray-700 hover:text-blue-600">Discord</a>
-                  </div>
-                </div>
-                
-                <div>
                   <p className="font-medium">Hours of Operation</p>
                   <p className="text-gray-700">Our support team is available:</p>
                   <p className="text-gray-700">Monday - Friday: 9am - 5pm EST</p>
