@@ -58,7 +58,7 @@ const Footer = () => (
 );
 
 // Featured product component with disco effect (similar to Index page)
-const FeaturedProduct = ({ title, description, price, retailer, index = 0 }) => {
+const FeaturedProduct = ({ title, description, price, retailer, listingLink, index = 0 }) => {
   const [cardColor, setCardColor] = React.useState("");
   const [buttonColor, setButtonColor] = React.useState("");
   const [isButtonHovered, setIsButtonHovered] = React.useState(false);
@@ -137,6 +137,13 @@ const FeaturedProduct = ({ title, description, price, retailer, index = 0 }) => 
     };
   }, [buttonColor, isButtonHovered, index]);
 
+  // Handle button click to open the listing URL
+  const handleListingClick = () => {
+    if (listingLink) {
+      window.open(listingLink, "_blank");
+    }
+  };
+
   return (
     <div
       className="w-[340px] h-[300px] relative bg-[#D9D9D9] rounded-[10px] max-md:mb-5 max-sm:w-full transition-all duration-800"
@@ -154,7 +161,7 @@ const FeaturedProduct = ({ title, description, price, retailer, index = 0 }) => 
         </div>
       </div>
       <button
-        onClick={() => {}}
+        onClick={handleListingClick}
         onMouseEnter={() => setIsButtonHovered(true)}
         onMouseLeave={() => setIsButtonHovered(false)}
         className="text-2xl italic font-light text-[#1E1E1E] absolute -translate-x-2/4 w-[257px] h-[66px] bg-[#D9D9D9] rounded-[22px] left-2/4 bottom-[9px] max-sm:w-4/5 transition-all duration-800 flex items-center justify-center"
@@ -273,6 +280,7 @@ const ProductsPage = () => {
                     description={`${product.product_line} ${product.product} available at ${product.source}`}
                     price={product.price}
                     retailer={product.source}
+                    listingLink={product.listing_link}
                     index={index}
                   />
                 </div>
