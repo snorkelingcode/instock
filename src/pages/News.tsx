@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 // Navigation component from other pages
 const Navigation = () => (
   <nav className="bg-white p-4 rounded-lg shadow-md mb-8 flex justify-between items-center">
-    <Link to="/" className="text-xl font-bold">Pokemon In-Stock Tracker</Link>
+    <Link to="/" className="text-xl font-bold">Trading Card In-Stock Tracker</Link>
     
     <div className="hidden md:flex space-x-6">
       <Link to="/" className="text-gray-700 hover:text-blue-600">Home</Link>
@@ -27,9 +27,9 @@ const Footer = () => (
   <footer className="bg-white p-8 rounded-lg shadow-md mt-16">
     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
       <div>
-        <h3 className="font-semibold mb-4">Pokemon In-Stock Tracker</h3>
+        <h3 className="font-semibold mb-4">Trading Card In-Stock Tracker</h3>
         <p className="text-gray-600 mb-4">
-          Helping Pokemon fans find products in stock since 2024.
+          Helping degens find products in stock since 2024.
         </p>
         <p className="text-gray-600">© 2025 In-Stock Tracker. All rights reserved.</p>
       </div>
