@@ -1,4 +1,3 @@
-
 import React, { useEffect } from "react";
 import { Hero } from "@/components/landing/Hero";
 import { CardGrid } from "@/components/landing/CardGrid";
@@ -64,7 +63,6 @@ const NewsArticle = ({ title, date, category, excerpt }) => (
 );
 
 const NewsSection = () => {
-  // Realistic news data
   const newsArticles = [
     {
       title: "Twilight Masquerade Set Revealed: New Trainer Gallery and Ancient Pokemon",
@@ -107,95 +105,6 @@ const AdBanner = () => (
     </div>
   </section>
 );
-
-// Recent Restocks section with real content
-const RecentRestocksSection = () => {
-  const recentRestocks = [
-    {
-      product: "Scarlet & Violet Ultra Premium Collection",
-      retailer: "Pokemon Center",
-      time: "Today, 10:35 AM EST",
-      price: 89.99,
-      status: "In Stock",
-      url: "/products/sv-ultra-premium-collection"
-    },
-    {
-      product: "Paldean Fates Elite Trainer Box",
-      retailer: "GameStop",
-      time: "Today, 9:22 AM EST",
-      price: 59.99,
-      status: "In Stock",
-      url: "/products/paldean-fates-etb"
-    },
-    {
-      product: "151 Ultra Premium Collection",
-      retailer: "Target",
-      time: "Yesterday, 3:15 PM EST",
-      price: 119.99,
-      status: "Limited Stock",
-      url: "/products/151-ultra-premium-collection"
-    },
-    {
-      product: "Charizard ex Premium Collection",
-      retailer: "Best Buy",
-      time: "Yesterday, 1:48 PM EST",
-      price: 39.99,
-      status: "In Stock",
-      url: "/products/charizard-ex-premium-collection"
-    }
-  ];
-
-  return (
-    <section className="mb-12 bg-white p-6 rounded-lg shadow-md">
-      <h2 className="text-2xl font-semibold mb-4">Recent Restocks</h2>
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Retailer</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {recentRestocks.map((restock, index) => (
-              <tr key={index}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{restock.product}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{restock.retailer}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{restock.time}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${restock.price.toFixed(2)}</td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                    restock.status === "In Stock" 
-                      ? "bg-green-100 text-green-800" 
-                      : restock.status === "Limited Stock" 
-                        ? "bg-yellow-100 text-yellow-800" 
-                        : "bg-red-100 text-red-800"
-                  }`}>
-                    {restock.status}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm">
-                  <Button asChild variant="outline" size="sm">
-                    <Link to={restock.url}>View</Link>
-                  </Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <div className="mt-4 text-center">
-        <Button asChild>
-          <Link to="/restocks">View All Restocks</Link>
-        </Button>
-      </div>
-    </section>
-  );
-};
 
 // How it works section with real content
 const HowItWorksSection = () => (
@@ -272,13 +181,11 @@ const Footer = () => (
 
 const Index = () => {
   useEffect(() => {
-    // Load Inter font
     const link = document.createElement("link");
     link.href = "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap";
     link.rel = "stylesheet";
     document.head.appendChild(link);
 
-    // Set proper meta description for SEO and AdSense
     const metaDescription = document.createElement("meta");
     metaDescription.name = "description";
     metaDescription.content = "Find TCG products in stock at major retailers. Track inventory for Pokemon Center, Target, Walmart, and more.";
@@ -296,28 +203,19 @@ const Index = () => {
         <Navigation />
         <Hero />
         
-        {/* Site intro with valuable content */}
         <SiteIntro />
         
-        {/* Advertisement properly placed between content sections */}
         <AdBanner />
         
-        {/* How it works section */}
         <HowItWorksSection />
         
-        {/* Advertisement properly placed between content sections */}
         <AdBanner />
-        
-        {/* Recent restocks with real data */}
-        <RecentRestocksSection />
         
         <h2 className="text-2xl font-semibold mb-6">Latest In-Stock Products</h2>
         <CardGrid />
         
-        {/* Advertisement properly placed between content sections */}
         <AdBanner />
         
-        {/* News section */}
         <NewsSection />
         
         <Footer />
