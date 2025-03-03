@@ -132,59 +132,6 @@ const AboutPage = () => {
           </div>
           
           <section className="mb-12">
-            <h2 className="text-2xl font-semibold mb-4">Our Team</h2>
-            <p className="text-gray-700 mb-4">
-              Pokemon In-Stock Tracker is maintained by a dedicated team of Pokemon enthusiasts and web developers who share a passion for making the hobby more accessible.
-            </p>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
-              <div className="flex items-center space-x-4">
-                <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center">
-                  <span className="text-blue-600 font-semibold text-xl">DA</span>
-                </div>
-                <div>
-                  <h3 className="text-xl font-medium">Dane Anderson</h3>
-                  <p className="text-gray-600">Founder & Lead Developer</p>
-                  <p className="text-gray-700 mt-2">TCG player since Base Set and competitive VGC battler.</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center space-x-4">
-                <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center">
-                  <span className="text-green-600 font-semibold text-xl">JS</span>
-                </div>
-                <div>
-                  <h3 className="text-xl font-medium">Jessica Smith</h3>
-                  <p className="text-gray-600">Community Manager</p>
-                  <p className="text-gray-700 mt-2">Collector specializing in full-art trainer cards.</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center space-x-4">
-                <div className="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center">
-                  <span className="text-purple-600 font-semibold text-xl">MR</span>
-                </div>
-                <div>
-                  <h3 className="text-xl font-medium">Michael Rodriguez</h3>
-                  <p className="text-gray-600">Backend Engineer</p>
-                  <p className="text-gray-700 mt-2">Infrastructure specialist and competitive TCG player.</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center space-x-4">
-                <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center">
-                  <span className="text-red-600 font-semibold text-xl">AK</span>
-                </div>
-                <div>
-                  <h3 className="text-xl font-medium">Aisha Kahn</h3>
-                  <p className="text-gray-600">Content Creator</p>
-                  <p className="text-gray-700 mt-2">Pokemon researcher and YouTube personality.</p>
-                </div>
-              </div>
-            </div>
-          </section>
-          
-          <section className="mb-12">
             <h2 className="text-2xl font-semibold mb-4">Contact Us</h2>
             <p className="text-gray-700 mb-6">
               Have questions, suggestions, or want to partner with us? We'd love to hear from you!
