@@ -58,7 +58,7 @@ const Footer = () => (
 );
 
 // Single news article preview
-const NewsPreview = ({ title, date, category, excerpt, url, featured = false }) => (
+const NewsPreview = ({ title, date, category, excerpt, featured = false }) => (
   <Card className={`transition-all ${featured ? 'border-blue-300 shadow-md' : ''}`}>
     <CardHeader className="pb-2">
       <div className="flex justify-between items-start mb-1">
@@ -73,16 +73,11 @@ const NewsPreview = ({ title, date, category, excerpt, url, featured = false }) 
     <CardContent>
       <p className="text-gray-700">{excerpt}</p>
     </CardContent>
-    <CardFooter>
-      <Button variant="outline" size="sm" onClick={() => window.scrollTo(0, 0)}>
-        Read Full Article
-      </Button>
-    </CardFooter>
   </Card>
 );
 
 // Featured news article
-const FeaturedNews = ({ title, date, category, content, url }) => (
+const FeaturedNews = ({ title, date, category, content }) => (
   <div className="bg-white rounded-lg shadow-md border border-blue-200 mb-8">
     <div className="p-6">
       <div className="flex justify-between items-start mb-2">
@@ -91,12 +86,9 @@ const FeaturedNews = ({ title, date, category, content, url }) => (
       </div>
       <h2 className="text-2xl font-bold mb-2">{title}</h2>
       <p className="text-gray-500 mb-4">{date}</p>
-      <div className="prose max-w-none mb-6">
+      <div className="prose max-w-none">
         <p className="text-gray-700">{content}</p>
       </div>
-      <Button onClick={() => window.scrollTo(0, 0)}>
-        Read Full Article
-      </Button>
     </div>
   </div>
 );
@@ -107,8 +99,7 @@ const NewsPage = () => {
     title: "Twilight Masquerade Set Revealed: New Trainer Gallery and Ancient Pokemon",
     date: "March 1, 2025",
     category: "Product News",
-    content: "The Pokemon Company has officially unveiled the next major expansion for the Pokemon Trading Card Game: Twilight Masquerade. Set to release on May 10, 2025, this expansion introduces over 190 new cards, including 15 Pokemon ex, 3 Ace Spec Trainer cards, and a special Trainer Gallery subset featuring alternate-art Pokemon paired with popular characters from the games. The set also introduces Ancient Pokemon as a new mechanic, with special abilities that activate when specific energy combinations are attached. Pre-orders are expected to open at major retailers in early April, with Elite Trainer Boxes, booster boxes, and special collections already announced.",
-    url: "/news/twilight-masquerade-reveal"
+    content: "The Pokemon Company has officially unveiled the next major expansion for the Pokemon Trading Card Game: Twilight Masquerade. Set to release on May 10, 2025, this expansion introduces over 190 new cards, including 15 Pokemon ex, 3 Ace Spec Trainer cards, and a special Trainer Gallery subset featuring alternate-art Pokemon paired with popular characters from the games. The set also introduces Ancient Pokemon as a new mechanic, with special abilities that activate when specific energy combinations are attached. Pre-orders are expected to open at major retailers in early April, with Elite Trainer Boxes, booster boxes, and special collections already announced."
   };
   
   const recentNews = [
@@ -116,43 +107,37 @@ const NewsPage = () => {
       title: "Target Announces New Pokemon TCG Restock Policy",
       date: "February 27, 2025",
       category: "Retailer Updates",
-      excerpt: "Target has announced changes to their Pokemon TCG restocking process to ensure fair distribution and combat scalping. Starting March 15, purchases of certain high-demand products will be limited to 2 per customer, with select items moving behind customer service counters.",
-      url: "/news/target-restock-policy"
+      excerpt: "Target has announced changes to their Pokemon TCG restocking process to ensure fair distribution and combat scalping. Starting March 15, purchases of certain high-demand products will be limited to 2 per customer, with select items moving behind customer service counters."
     },
     {
       title: "Paldean Fates Restock Coming to Pokemon Center Next Week",
       date: "February 25, 2025",
       category: "Restocks",
-      excerpt: "The Pokemon Company has confirmed that Pokemon Center will be restocking Paldean Fates Elite Trainer Boxes and booster boxes next Tuesday at 10am EST. This marks the third restock since the popular set sold out within minutes of its initial release.",
-      url: "/news/paldean-fates-restock"
+      excerpt: "The Pokemon Company has confirmed that Pokemon Center will be restocking Paldean Fates Elite Trainer Boxes and booster boxes next Tuesday at 10am EST. This marks the third restock since the popular set sold out within minutes of its initial release."
     },
     {
       title: "Pokemon TCG Championship Series 2025 Dates Announced",
       date: "February 20, 2025",
       category: "Events",
-      excerpt: "The Pokemon Company International has revealed dates for the 2025 Championship Series, with Regional Championships scheduled across North America, Europe, Latin America, and Oceania. The World Championships will be held in Tokyo, Japan from August 15-17, 2025.",
-      url: "/news/championship-series-2025"
+      excerpt: "The Pokemon Company International has revealed dates for the 2025 Championship Series, with Regional Championships scheduled across North America, Europe, Latin America, and Oceania. The World Championships will be held in Tokyo, Japan from August 15-17, 2025."
     },
     {
       title: "Upcoming 151 Set: What We Know So Far",
       date: "February 18, 2025",
       category: "Release Dates",
-      excerpt: "The highly anticipated Pokemon TCG 151 set is coming soon. The set will focus on the original 151 Pokemon with modern card designs and mechanics. Here's everything we know about the release date, card list, and where to pre-order.",
-      url: "/news/upcoming-151-set"
+      excerpt: "The highly anticipated Pokemon TCG 151 set is coming soon. The set will focus on the original 151 Pokemon with modern card designs and mechanics. Here's everything we know about the release date, card list, and where to pre-order."
     },
     {
       title: "Pokemon GO Crossover Cards Coming to TCG in Summer 2025",
       date: "February 15, 2025",
       category: "Product News",
-      excerpt: "The Pokemon Company has announced a new collaboration between Pokemon GO and the TCG, featuring unique cards that showcase Pokemon with GO-inspired artwork and special mechanics related to the mobile game.",
-      url: "/news/pokemon-go-tcg-crossover"
+      excerpt: "The Pokemon Company has announced a new collaboration between Pokemon GO and the TCG, featuring unique cards that showcase Pokemon with GO-inspired artwork and special mechanics related to the mobile game."
     },
     {
       title: "Walmart Expanding Trading Card Section in Stores Nationwide",
       date: "February 10, 2025",
       category: "Retailer Updates",
-      excerpt: "Walmart has announced plans to expand its trading card sections in stores nationwide, with dedicated space for Pokemon TCG products. The expansion includes better security measures and an improved display system.",
-      url: "/news/walmart-card-section-expansion"
+      excerpt: "Walmart has announced plans to expand its trading card sections in stores nationwide, with dedicated space for Pokemon TCG products. The expansion includes better security measures and an improved display system."
     }
   ];
 
@@ -161,22 +146,19 @@ const NewsPage = () => {
       title: "Paldean Fates Singles: Price Trends and Investment Opportunities",
       date: "February 26, 2025",
       category: "Market Analysis",
-      excerpt: "An in-depth look at the secondary market for Paldean Fates singles, including which cards are holding value and which may be undervalued for collectors and investors.",
-      url: "/news/paldean-fates-market-analysis"
+      excerpt: "An in-depth look at the secondary market for Paldean Fates singles, including which cards are holding value and which may be undervalued for collectors and investors."
     },
     {
       title: "The Rising Value of Alternate Art Cards: A Collector's Guide",
       date: "February 19, 2025",
       category: "Market Analysis",
-      excerpt: "Alternate art cards have seen significant price growth over the past year. We analyze the trends and offer insights on collecting these popular chase cards.",
-      url: "/news/alternate-art-value-guide"
+      excerpt: "Alternate art cards have seen significant price growth over the past year. We analyze the trends and offer insights on collecting these popular chase cards."
     },
     {
       title: "Pokemon TCG Market Report: February 2025",
       date: "February 12, 2025",
       category: "Market Analysis",
-      excerpt: "Our monthly market report examines sales data, price movements, and market sentiment across the Pokemon TCG ecosystem, with a focus on modern sets and sealed product.",
-      url: "/news/february-market-report"
+      excerpt: "Our monthly market report examines sales data, price movements, and market sentiment across the Pokemon TCG ecosystem, with a focus on modern sets and sealed product."
     }
   ];
 
@@ -185,29 +167,21 @@ const NewsPage = () => {
       title: "GameStop Restocking Charizard ex Premium Collections Today",
       date: "March 2, 2025",
       category: "Restocks",
-      excerpt: "GameStop has confirmed they'll be restocking the popular Charizard ex Premium Collection today at 12pm EST online and in select stores. Learn how to maximize your chances of getting one.",
-      url: "/news/gamestop-charizard-restock"
+      excerpt: "GameStop has confirmed they'll be restocking the popular Charizard ex Premium Collection today at 12pm EST online and in select stores. Learn how to maximize your chances of getting one."
     },
     {
       title: "Pokemon Center Scarlet & Violet Ultra Premium Collection Back in Stock",
       date: "February 28, 2025",
       category: "Restocks",
-      excerpt: "The highly-sought Scarlet & Violet Ultra Premium Collection is back in stock at Pokemon Center with a limit of 1 per customer. These sold out quickly during previous restocks.",
-      url: "/news/sv-upc-restock"
+      excerpt: "The highly-sought Scarlet & Violet Ultra Premium Collection is back in stock at Pokemon Center with a limit of 1 per customer. These sold out quickly during previous restocks."
     },
     {
       title: "Best Buy Adding Ancient Legends ETBs to Inventory This Week",
       date: "February 22, 2025",
       category: "Restocks",
-      excerpt: "Best Buy will be adding Ancient Legends Elite Trainer Boxes to their inventory this week, with online availability expected starting Thursday morning.",
-      url: "/news/best-buy-etb-restock"
+      excerpt: "Best Buy will be adding Ancient Legends Elite Trainer Boxes to their inventory this week, with online availability expected starting Thursday morning."
     }
   ];
-
-  // Handle newsletter subscription
-  const handleSubscribe = () => {
-    window.alert("Thank you for subscribing to our newsletter!");
-  };
   
   return (
     <div className="min-h-screen bg-[#F5F5F7] font-['Inter']">
@@ -267,14 +241,7 @@ const NewsPage = () => {
                       <div key={index} className="border-b border-gray-200 pb-4 last:border-0">
                         <h3 className="text-lg font-medium mb-1">{article.title}</h3>
                         <p className="text-gray-500 text-sm mb-2">{article.date}</p>
-                        <p className="text-gray-700 mb-2">{article.excerpt}</p>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => window.scrollTo(0, 0)}
-                        >
-                          Read More
-                        </Button>
+                        <p className="text-gray-700">{article.excerpt}</p>
                       </div>
                     ))}
                   </div>
@@ -287,14 +254,7 @@ const NewsPage = () => {
                       <div key={index} className="border-b border-gray-200 pb-4 last:border-0">
                         <h3 className="text-lg font-medium mb-1">{article.title}</h3>
                         <p className="text-gray-500 text-sm mb-2">{article.date}</p>
-                        <p className="text-gray-700 mb-2">{article.excerpt}</p>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => window.scrollTo(0, 0)}
-                        >
-                          Read More
-                        </Button>
+                        <p className="text-gray-700">{article.excerpt}</p>
                       </div>
                     ))}
                   </div>
@@ -332,7 +292,6 @@ const NewsPage = () => {
               <h2 className="text-xl font-semibold mb-2">Never Miss a Restock or Announcement</h2>
               <p className="text-gray-700">Subscribe to our newsletter for breaking Pokemon TCG news delivered to your inbox.</p>
             </div>
-            <Button onClick={handleSubscribe}>Subscribe Now</Button>
           </div>
         </div>
         
@@ -343,31 +302,17 @@ const NewsPage = () => {
               <div className="border-b border-gray-200 pb-4">
                 <h3 className="text-lg font-medium mb-1">Charlotte Regional Championships Results</h3>
                 <p className="text-gray-500 text-sm mb-2">February 24, 2025</p>
-                <p className="text-gray-700 mb-4">
+                <p className="text-gray-700">
                   The Charlotte Regional Championships concluded this weekend with Jason Mitchell securing first place using a Mew VMAX/Gengar deck in a field dominated by Paldean variants. The tournament saw over 800 Masters Division competitors with surprising representation from Zoroark ex/Slowking decks in the top 32.
                 </p>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => window.scrollTo(0, 0)}
-                >
-                  Read Full Coverage
-                </Button>
               </div>
               
               <div className="border-b border-gray-200 pb-4">
                 <h3 className="text-lg font-medium mb-1">Special Event: 25th Anniversary Invitational Top 8 Decklists</h3>
                 <p className="text-gray-500 text-sm mb-2">February 17, 2025</p>
-                <p className="text-gray-700 mb-4">
+                <p className="text-gray-700">
                   The Pokemon Company International's 25th Anniversary Invitational showcased innovative decks from the game's top players. We break down the top 8 decklists and the surprising tech choices that helped these players advance.
                 </p>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => window.scrollTo(0, 0)}
-                >
-                  View Decklists
-                </Button>
               </div>
             </div>
           </div>
@@ -422,18 +367,6 @@ const NewsPage = () => {
                   </div>
                 </li>
               </ul>
-              <div className="mt-4">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="w-full"
-                  onClick={() => {
-                    window.location.href = "/products";
-                  }}
-                >
-                  View All Upcoming Releases
-                </Button>
-              </div>
             </div>
             
             {/* Advertisement in sidebar */}
