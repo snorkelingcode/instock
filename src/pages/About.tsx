@@ -140,7 +140,6 @@ const AboutPage = () => {
             <div className="bg-gray-50 p-6 rounded-lg border border-gray-100">
               <p className="mb-2"><strong>Email:</strong> <a href="mailto:info@pokemoninstocktracker.com" className="text-blue-600 hover:underline">info@pokemoninstocktracker.com</a></p>
               <p className="mb-2"><strong>Contact Form:</strong> <Link to="/contact" className="text-blue-600 hover:underline">Fill out our contact form</Link></p>
-              <p><strong>Social Media:</strong> Follow us on <a href="#" className="text-blue-600 hover:underline">Twitter</a>, <a href="#" className="text-blue-600 hover:underline">Instagram</a>, and <a href="#" className="text-blue-600 hover:underline">Discord</a></p>
             </div>
             
             <div className="mt-8">
