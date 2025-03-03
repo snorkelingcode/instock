@@ -60,15 +60,16 @@ export const CardGrid: React.FC = () => {
     listing_link: ""
   }));
 
-  // Create groups of 5 items for grid rows
+  // Set 3 items per row for all pages
+  const itemsPerRow = 3;
   const itemRows = [];
-  for (let i = 0; i < displayProducts.length; i += 5) {
-    itemRows.push(displayProducts.slice(i, i + 5));
+  for (let i = 0; i < displayProducts.length; i += itemsPerRow) {
+    itemRows.push(displayProducts.slice(i, i + itemsPerRow));
   }
 
   return (
     <div 
-      className="flex flex-col gap-8 max-w-[1800px] mx-auto" 
+      className="flex flex-col gap-8 mx-auto max-w-[1200px]" 
       role="region" 
       aria-label="Product listings"
     >
@@ -80,11 +81,11 @@ export const CardGrid: React.FC = () => {
         itemRows.map((row, rowIndex) => (
           <div 
             key={`row-${rowIndex}`}
-            className="flex justify-center gap-[19px] max-md:flex-col max-md:items-center"
+            className="flex justify-center gap-[19px] max-md:flex-col max-md:items-center mx-auto"
           >
             {row.map((product, idx) => {
               // Calculate a unique index for each card based on its position
-              const cardIndex = rowIndex * 5 + idx;
+              const cardIndex = rowIndex * itemsPerRow + idx;
               
               return (
                 <div key={product.id}>
@@ -101,8 +102,8 @@ export const CardGrid: React.FC = () => {
               );
             })}
             {/* Fill empty spaces in the last row to maintain layout */}
-            {rowIndex === itemRows.length - 1 && row.length < 5 && 
-              Array(5 - row.length).fill(0).map((_, i) => (
+            {rowIndex === itemRows.length - 1 && row.length < itemsPerRow && 
+              Array(itemsPerRow - row.length).fill(0).map((_, i) => (
                 <div key={`empty-${i}`} className="w-[340px] h-[295px] invisible max-md:hidden" />
               ))
             }
