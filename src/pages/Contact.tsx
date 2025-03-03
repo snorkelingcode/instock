@@ -178,6 +178,8 @@ const ContactPage = () => {
                     info@pokemoninstocktracker.com
                   </a>
                 </div>
+              </div>
+            </div>
             
             <div className="bg-white p-8 rounded-lg shadow-md mb-8">
               <h2 className="text-xl font-semibold mb-4">Frequently Asked Questions</h2>
