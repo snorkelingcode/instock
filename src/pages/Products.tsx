@@ -261,7 +261,7 @@ const ProductsPage = () => {
         
         {/* Main content */}
         <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-          <h1 className="text-2xl font-bold mb-2">Pokemon TCG Products</h1>
+          <h1 className="text-2xl font-bold mb-2">TCG Products</h1>
           <p className="text-gray-700 mb-6">
             Find all TCG products with real-time stock information from major retailers. We track booster boxes, elite trainer boxes, special collections, and more.
           </p>
