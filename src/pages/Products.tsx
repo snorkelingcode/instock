@@ -2,7 +2,6 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { CardGrid } from "@/components/landing/CardGrid";
-import DiscoCardEffect from "@/components/DiscoCardEffect";
 
 // Navigation component from other pages
 const Navigation = () => (
@@ -56,12 +55,93 @@ const Footer = () => (
   </footer>
 );
 
-// Featured product component using our DiscoCardEffect
+// Featured product component with disco effect (similar to Index page)
 const FeaturedProduct = ({ title, description, price, retailer, inStock, index = 0 }) => {
+  const [cardColor, setCardColor] = React.useState("");
+  const [buttonColor, setButtonColor] = React.useState("");
   const [isButtonHovered, setIsButtonHovered] = React.useState(false);
+  const cardIntervalRef = React.useRef(null);
+  const buttonIntervalRef = React.useRef(null);
   
+  // Disco colors array - same as in Card component for consistency
+  const discoColors = [
+    "#FF3366", // Pink
+    "#33CCFF", // Blue
+    "#FFCC33", // Yellow
+    "#33FF99", // Green
+    "#CC33FF", // Purple
+    "#FF6633", // Orange
+    "#66FF33", // Lime
+    "#FF33CC", // Magenta
+    "#3366FF", // Royal Blue
+    "#FF9933"  // Orange-Yellow
+  ];
+
+  // Function to get a random color that's different from the current one
+  const getRandomColor = (currentColor) => {
+    const filteredColors = discoColors.filter(color => color !== currentColor);
+    return filteredColors[Math.floor(Math.random() * filteredColors.length)];
+  };
+
+  // Card animation effect (normal speed always)
+  React.useEffect(() => {
+    // Initialize with a color based on index to make cards different
+    if (!cardColor) {
+      setCardColor(discoColors[index % discoColors.length]);
+      return; // Exit after initial setup to avoid immediate color change
+    }
+    
+    const animateCard = () => {
+      const newColor = getRandomColor(cardColor);
+      setCardColor(newColor);
+    };
+    
+    // Create the animation interval
+    const intervalId = window.setInterval(
+      animateCard, 
+      Math.floor(Math.random() * 800) + 1200 // Normal speed: 1200-2000ms
+    );
+    
+    // Clean up on unmount or when dependencies change
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [cardColor, index]);
+
+  // Button animation effect (speed varies with hover)
+  React.useEffect(() => {
+    // Initialize with a different color than the card
+    if (!buttonColor) {
+      const startIndex = (index + 3) % discoColors.length;
+      setButtonColor(discoColors[startIndex]);
+      return; // Exit after initial setup to avoid immediate color change
+    }
+    
+    const animateButton = () => {
+      const newColor = getRandomColor(buttonColor);
+      setButtonColor(newColor);
+    };
+    
+    // Create the animation interval with speed based on hover state
+    const intervalSpeed = isButtonHovered 
+      ? Math.floor(Math.random() * 100) + 100 // Super fast: 100-200ms
+      : Math.floor(Math.random() * 800) + 1200; // Normal: 1200-2000ms
+    
+    const intervalId = window.setInterval(animateButton, intervalSpeed);
+    
+    // Clean up on unmount or when dependencies change
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [buttonColor, isButtonHovered, index]);
+
   return (
-    <DiscoCardEffect index={index} className="w-[340px] h-[300px] rounded-[10px] max-md:mb-5 max-sm:w-full bg-[#D9D9D9]">
+    <div
+      className="w-[340px] h-[300px] relative bg-[#D9D9D9] rounded-[10px] max-md:mb-5 max-sm:w-full transition-all duration-800"
+      style={{
+        boxShadow: cardColor ? `0px 4px 30px 10px ${cardColor}` : undefined
+      }}
+    >
       <div className="px-[41px] py-[30px]">
         <div className="text-xl text-[#1E1E1E] mb-[5px]">{title}</div>
         <div className="text-sm text-[#1E1E1E] mb-[5px]">{description}</div>
@@ -71,20 +151,20 @@ const FeaturedProduct = ({ title, description, price, retailer, inStock, index =
           {inStock ? "In Stock" : "Out of Stock"}
         </div>
       </div>
-      <DiscoCardEffect index={index + 10} className="absolute -translate-x-2/4 w-[257px] h-[66px] bg-[#D9D9D9] rounded-[22px] left-2/4 bottom-[9px] max-sm:w-4/5">
-        <button
-          onClick={() => {}}
-          onMouseEnter={() => setIsButtonHovered(true)}
-          onMouseLeave={() => setIsButtonHovered(false)}
-          className="w-full h-full text-2xl italic font-light text-[#1E1E1E] flex items-center justify-center transition-all"
-          style={{
-            transition: isButtonHovered ? 'all 0.2s ease' : 'all 0.8s ease'
-          }}
-        >
-          Listing
-        </button>
-      </DiscoCardEffect>
-    </DiscoCardEffect>
+      <button
+        onClick={() => {}}
+        onMouseEnter={() => setIsButtonHovered(true)}
+        onMouseLeave={() => setIsButtonHovered(false)}
+        className="text-2xl italic font-light text-[#1E1E1E] absolute -translate-x-2/4 w-[257px] h-[66px] bg-[#D9D9D9] rounded-[22px] left-2/4 bottom-[9px] max-sm:w-4/5 transition-all duration-800 flex items-center justify-center"
+        style={buttonColor ? {
+          border: `3px solid ${buttonColor}80`, // 50% opacity
+          boxShadow: `0px 0px ${isButtonHovered ? '12px 4px' : '8px 2px'} ${buttonColor}60`, // 40% opacity
+          transition: isButtonHovered ? 'all 0.2s ease' : 'all 0.8s ease'
+        } : undefined}
+      >
+        Listing
+      </button>
+    </div>
   );
 };
 
@@ -119,7 +199,7 @@ const ProductsPage = () => {
         <Navigation />
         
         {/* Main content */}
-        <DiscoCardEffect index={30} className="bg-white p-6 rounded-lg shadow-md mb-8">
+        <div className="bg-white p-6 rounded-lg shadow-md mb-8">
           <h1 className="text-2xl font-bold mb-2">Pokemon TCG Products</h1>
           <p className="text-gray-700 mb-6">
             Find all Pokemon TCG products with real-time stock information from major retailers. We track booster boxes, elite trainer boxes, special collections, and more.
@@ -152,9 +232,9 @@ const ProductsPage = () => {
           <div className="mt-8 flex justify-center">
             <Button>Load More Products</Button>
           </div>
-        </DiscoCardEffect>
+        </div>
         
-        <DiscoCardEffect index={31} className="bg-white p-6 rounded-lg shadow-md">
+        <div className="bg-white p-6 rounded-lg shadow-md">
           <h2 className="text-xl font-semibold mb-4">About Pokemon TCG Product Tracking</h2>
           <p className="text-gray-700 mb-4">
             The Pokemon Trading Card Game continues to be one of the most popular collectible card games worldwide. Due to high demand, many products quickly sell out at major retailers, making it difficult for collectors and players to find items at retail prices.
@@ -168,7 +248,7 @@ const ProductsPage = () => {
           <p className="text-gray-700">
             While we strive for 100% accuracy, inventory systems can sometimes experience delays. We recommend acting quickly when you receive an in-stock notification, as popular products may sell out within minutes.
           </p>
-        </DiscoCardEffect>
+        </div>
         
         <Footer />
       </div>

@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
-import DiscoCardEffect from "@/components/DiscoCardEffect";
 
 export const Hero: React.FC = () => {
   const [colorIndex, setColorIndex] = useState(0);
   const intervalRef = useRef<number | null>(null);
 
-  // Disco colors array - same as in DiscoCardEffect for consistency
+  // Disco colors array - same as in Card component for consistency
   const discoColors = [
     "#FF3366", // Pink
     "#33CCFF", // Blue
@@ -27,7 +26,7 @@ export const Hero: React.FC = () => {
   };
 
   useEffect(() => {
-    // Change the color at random intervals between 1200-2000ms for dynamics
+    // Change the color at random intervals between 300-700ms for dynamics
     const changeColor = () => {
       setColorIndex(getRandomColorIndex());
       
@@ -59,28 +58,25 @@ export const Hero: React.FC = () => {
                  0 0 10px ${discoColors[colorIndex]}, 
                  0 0 15px ${discoColors[colorIndex]}, 
                  0 0 20px ${discoColors[colorIndex]}`,
+    // Removed the hard WebkitTextStroke for a softer look
     transition: 'all 0.8s ease',
     color: '#1E1E1E', // Keep text dark
   };
 
   return (
-    <DiscoCardEffect index={99} className="mb-[164px] max-md:mb-20 max-sm:mb-10 bg-white rounded-lg p-8">
-      <header role="banner">
-        <h1 
-          className="text-[64px] text-[#1E1E1E] font-normal max-md:text-5xl max-sm:text-4xl"
-          style={textStyle}
-        >
-          Find everything in stock.
-        </h1>
-        <h2 
-          className="text-[64px] text-[#1E1E1E] font-normal max-md:text-5xl max-sm:text-4xl"
-          style={textStyle}
-        >
-          In one place.
-        </h2>
-      </header>
-    </DiscoCardEffect>
+    <header className="mb-[164px] max-md:mb-20 max-sm:mb-10" role="banner">
+      <h1 
+        className="text-[64px] text-[#1E1E1E] font-normal max-md:text-5xl max-sm:text-4xl"
+        style={textStyle}
+      >
+        Find everything in stock.
+      </h1>
+      <h2 
+        className="text-[64px] text-[#1E1E1E] font-normal max-md:text-5xl max-sm:text-4xl"
+        style={textStyle}
+      >
+        In one place.
+      </h2>
+    </header>
   );
 };
-
-export default Hero;
