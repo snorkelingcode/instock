@@ -29,7 +29,7 @@ const Footer = () => (
       <div>
         <h3 className="font-semibold mb-4">TCG In-Stock Tracker</h3>
         <p className="text-gray-600 mb-4">
-          Helping Pokemon fans find products in stock since 2024.
+          Helping TCG fans find products in stock since 2024.
         </p>
         <p className="text-gray-600">© 2025 In-Stock Tracker. All rights reserved.</p>
       </div>
