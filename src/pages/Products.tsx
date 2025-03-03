@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 // Navigation component from other pages
 const Navigation = () => (
   <nav className="bg-white p-4 rounded-lg shadow-md mb-8 flex justify-between items-center">
-    <Link to="/" className="text-xl font-bold">Pokemon In-Stock Tracker</Link>
+    <Link to="/" className="text-xl font-bold">TCG In-Stock Tracker</Link>
     
     <div className="hidden md:flex space-x-6">
       <Link to="/" className="text-gray-700 hover:text-blue-600">Home</Link>
@@ -27,7 +27,7 @@ const Footer = () => (
   <footer className="bg-white p-8 rounded-lg shadow-md mt-16">
     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
       <div>
-        <h3 className="font-semibold mb-4">Pokemon In-Stock Tracker</h3>
+        <h3 className="font-semibold mb-4">TCG In-Stock Tracker</h3>
         <p className="text-gray-600 mb-4">
           Helping Pokemon fans find products in stock since 2024.
         </p>
@@ -263,7 +263,7 @@ const ProductsPage = () => {
         <div className="bg-white p-6 rounded-lg shadow-md mb-8">
           <h1 className="text-2xl font-bold mb-2">Pokemon TCG Products</h1>
           <p className="text-gray-700 mb-6">
-            Find all Pokemon TCG products with real-time stock information from major retailers. We track booster boxes, elite trainer boxes, special collections, and more.
+            Find all TCG products with real-time stock information from major retailers. We track booster boxes, elite trainer boxes, special collections, and more.
           </p>
           
           <h2 className="text-xl font-semibold mb-4">Featured Products</h2>
@@ -298,7 +298,7 @@ const ProductsPage = () => {
           
           <h2 className="text-xl font-semibold mb-4">All Products</h2>
           <p className="text-gray-700 mb-6">
-            Below are all Pokemon products currently tracked. Products shown as in-stock have been verified within the last 15 minutes.
+            Below are all TCG products currently tracked. Products shown as in-stock have been verified within the last 15 minutes.
           </p>
           
           <CardGrid />
@@ -309,15 +309,15 @@ const ProductsPage = () => {
         </div>
         
         <div className="bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-xl font-semibold mb-4">About Pokemon TCG Product Tracking</h2>
+          <h2 className="text-xl font-semibold mb-4">About TCG Product Tracking</h2>
           <p className="text-gray-700 mb-4">
             The Pokemon Trading Card Game continues to be one of the most popular collectible card games worldwide. Due to high demand, many products quickly sell out at major retailers, making it difficult for collectors and players to find items at retail prices.
           </p>
           <p className="text-gray-700 mb-4">
-            Our real-time inventory tracking system continuously monitors stock levels at Pokemon Center, Target, Walmart, Best Buy, GameStop, and dozens of other retailers to provide you with the most up-to-date information on product availability.
+          We continuously monitor stock levels, manually at Pokemon Center, Target, Walmart, Best Buy, GameStop, and dozens of other retailers to provide you with the most up-to-date information on product availability.
           </p>
           <p className="text-gray-700 mb-4">
-            We check inventory multiple times per minute for high-demand products, ensuring you're among the first to know when restocks happen. For users who create a free account, we offer customizable alerts via email, text message, or push notification when specific products come back in stock.
+            We check inventory multiple times per day for high-demand products, ensuring you're among the first to know when restocks happen. For users who create a free account, we offer customizable alerts via email, text message, or push notification when specific products come back in stock.
           </p>
           <p className="text-gray-700">
             While we strive for 100% accuracy, inventory systems can sometimes experience delays. We recommend acting quickly when you receive an in-stock notification, as popular products may sell out within minutes.
