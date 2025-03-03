@@ -93,6 +93,32 @@ const FeaturedNews = ({ title, date, category, content }) => (
   </div>
 );
 
+// Recent release component moved from Products page
+const RecentRelease = ({ name, releaseDate, description, popularity }) => (
+  <div className="flex border-b border-gray-200 py-4 last:border-0">
+    <div className="w-24 h-24 bg-gray-200 rounded-md flex items-center justify-center flex-shrink-0">
+      <span className="text-xs text-gray-500">Image</span>
+    </div>
+    <div className="ml-4 flex-1">
+      <div className="flex justify-between">
+        <h3 className="font-medium">{name}</h3>
+        <span className="text-xs text-gray-600">Released: {releaseDate}</span>
+      </div>
+      <p className="text-sm text-gray-700 mt-1">{description}</p>
+      <div className="flex items-center mt-2">
+        <span className="text-xs text-gray-600 mr-2">Popularity:</span>
+        <div className="h-2 w-24 bg-gray-200 rounded-full overflow-hidden">
+          <div 
+            className="h-full bg-blue-600 rounded-full" 
+            style={{ width: `${popularity}%` }}
+          ></div>
+        </div>
+        <span className="text-xs text-gray-600 ml-2">{popularity}%</span>
+      </div>
+    </div>
+  </div>
+);
+
 const NewsPage = () => {
   // Sample news data
   const featuredArticle = {
@@ -183,6 +209,28 @@ const NewsPage = () => {
     }
   ];
   
+  // Recent set releases data (moved from Products page)
+  const recentReleases = [
+    {
+      name: "Twilight Masquerade",
+      releaseDate: "February 15, 2025",
+      description: "Introducing new Legendary Pokemon and ex mechanics with a focus on Psychic and Ghost types.",
+      popularity: 85
+    },
+    {
+      name: "Paldean Fates",
+      releaseDate: "January 10, 2025",
+      description: "Special shiny collection featuring Paradox Pokemon and Terastal phenomenon.",
+      popularity: 92
+    },
+    {
+      name: "Temporal Forces",
+      releaseDate: "December 5, 2024",
+      description: "Expanded support for competitive archetypes with new Trainer cards and strategies.",
+      popularity: 78
+    }
+  ];
+  
   return (
     <div className="min-h-screen bg-[#F5F5F7] font-['Inter']">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -195,6 +243,19 @@ const NewsPage = () => {
           </p>
           
           <FeaturedNews {...featuredArticle} />
+          
+          {/* Recent Set Releases section moved from Products page */}
+          <h2 className="text-xl font-semibold mb-4">Recent Set Releases</h2>
+          <div className="bg-gray-50 rounded-lg p-6 mb-8">
+            <div className="space-y-2">
+              {recentReleases.map((release, index) => (
+                <RecentRelease key={index} {...release} />
+              ))}
+            </div>
+            <div className="mt-4 text-center">
+              <Button variant="outline">View All Sets</Button>
+            </div>
+          </div>
           
           {/* Advertisement placed within content after featured article */}
           <div className="my-8 p-6 bg-gray-100 rounded-lg text-center">
