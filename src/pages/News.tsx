@@ -74,8 +74,8 @@ const NewsPreview = ({ title, date, category, excerpt, url, featured = false }) 
       <p className="text-gray-700">{excerpt}</p>
     </CardContent>
     <CardFooter>
-      <Button asChild variant="outline" size="sm">
-        <Link to={url || "#"}>Read Full Article</Link>
+      <Button variant="outline" size="sm" onClick={() => window.scrollTo(0, 0)}>
+        Read Full Article
       </Button>
     </CardFooter>
   </Card>
@@ -94,8 +94,8 @@ const FeaturedNews = ({ title, date, category, content, url }) => (
       <div className="prose max-w-none mb-6">
         <p className="text-gray-700">{content}</p>
       </div>
-      <Button asChild>
-        <Link to={url || "#"}>Read Full Article</Link>
+      <Button onClick={() => window.scrollTo(0, 0)}>
+        Read Full Article
       </Button>
     </div>
   </div>
@@ -203,6 +203,11 @@ const NewsPage = () => {
       url: "/news/best-buy-etb-restock"
     }
   ];
+
+  // Handle newsletter subscription
+  const handleSubscribe = () => {
+    window.alert("Thank you for subscribing to our newsletter!");
+  };
   
   return (
     <div className="min-h-screen bg-[#F5F5F7] font-['Inter']">
@@ -263,8 +268,12 @@ const NewsPage = () => {
                         <h3 className="text-lg font-medium mb-1">{article.title}</h3>
                         <p className="text-gray-500 text-sm mb-2">{article.date}</p>
                         <p className="text-gray-700 mb-2">{article.excerpt}</p>
-                        <Button asChild variant="outline" size="sm">
-                          <Link to={article.url}>Read More</Link>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => window.scrollTo(0, 0)}
+                        >
+                          Read More
                         </Button>
                       </div>
                     ))}
@@ -279,8 +288,12 @@ const NewsPage = () => {
                         <h3 className="text-lg font-medium mb-1">{article.title}</h3>
                         <p className="text-gray-500 text-sm mb-2">{article.date}</p>
                         <p className="text-gray-700 mb-2">{article.excerpt}</p>
-                        <Button asChild variant="outline" size="sm">
-                          <Link to={article.url}>Read More</Link>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => window.scrollTo(0, 0)}
+                        >
+                          Read More
                         </Button>
                       </div>
                     ))}
@@ -319,7 +332,7 @@ const NewsPage = () => {
               <h2 className="text-xl font-semibold mb-2">Never Miss a Restock or Announcement</h2>
               <p className="text-gray-700">Subscribe to our newsletter for breaking Pokemon TCG news delivered to your inbox.</p>
             </div>
-            <Button>Subscribe Now</Button>
+            <Button onClick={handleSubscribe}>Subscribe Now</Button>
           </div>
         </div>
         
@@ -333,8 +346,12 @@ const NewsPage = () => {
                 <p className="text-gray-700 mb-4">
                   The Charlotte Regional Championships concluded this weekend with Jason Mitchell securing first place using a Mew VMAX/Gengar deck in a field dominated by Paldean variants. The tournament saw over 800 Masters Division competitors with surprising representation from Zoroark ex/Slowking decks in the top 32.
                 </p>
-                <Button asChild variant="outline" size="sm">
-                  <Link to="/news/charlotte-regionals-results">Read Full Coverage</Link>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => window.scrollTo(0, 0)}
+                >
+                  Read Full Coverage
                 </Button>
               </div>
               
@@ -344,8 +361,12 @@ const NewsPage = () => {
                 <p className="text-gray-700 mb-4">
                   The Pokemon Company International's 25th Anniversary Invitational showcased innovative decks from the game's top players. We break down the top 8 decklists and the surprising tech choices that helped these players advance.
                 </p>
-                <Button asChild variant="outline" size="sm">
-                  <Link to="/news/anniversary-invitational-decklists">View Decklists</Link>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => window.scrollTo(0, 0)}
+                >
+                  View Decklists
                 </Button>
               </div>
             </div>
@@ -402,8 +423,15 @@ const NewsPage = () => {
                 </li>
               </ul>
               <div className="mt-4">
-                <Button asChild variant="outline" size="sm" className="w-full">
-                  <Link to="/products/upcoming">View All Upcoming Releases</Link>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full"
+                  onClick={() => {
+                    window.location.href = "/products";
+                  }}
+                >
+                  View All Upcoming Releases
                 </Button>
               </div>
             </div>
