@@ -77,9 +77,6 @@ const NewsArticle = ({ title, date, category, excerpt }) => (
     </div>
     <h3 className="text-xl font-medium mb-2">{title}</h3>
     <p className="text-gray-700 mb-4">{excerpt}</p>
-    <Button variant="outline" asChild>
-      <Link to={`/news/${title.toLowerCase().replace(/\s+/g, '-')}`}>Read More</Link>
-    </Button>
   </article>
 );
 
@@ -102,7 +99,7 @@ const NewsSection = () => {
   return (
     <section className="mb-12">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-semibold">Latest Pokemon TCG News</h2>
+        <h2 className="text-2xl font-semibold">Latest TCG News</h2>
         <Button variant="ghost" asChild className="text-blue-600">
           <Link to="/news">All News</Link>
         </Button>
