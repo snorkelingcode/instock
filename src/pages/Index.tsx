@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { Hero } from "@/components/landing/Hero";
 import { CardGrid } from "@/components/landing/CardGrid";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 
 // Navigation component used across pages
