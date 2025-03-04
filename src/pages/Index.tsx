@@ -83,39 +83,6 @@ const NewsArticle = ({ title, date, category, excerpt }) => (
   </article>
 );
 
-const NewsSection = () => {
-  const newsArticles = [
-    {
-      title: "Twilight Masquerade Set Revealed: New Trainer Gallery and Ancient Pokemon",
-      date: "March 1, 2025",
-      category: "Product News",
-      excerpt: "The Pokemon Company has officially unveiled the next major expansion for the Pokemon Trading Card Game: Twilight Masquerade. Set to release on May 10, 2025, this expansion introduces over 190 new cards."
-    },
-    {
-      title: "Target Announces New Pokemon TCG Restock Policy",
-      date: "February 27, 2025",
-      category: "Retailer Updates",
-      excerpt: "Target has announced changes to their Pokemon TCG restocking process to ensure fair distribution and combat scalping. Starting March 15, purchases of certain high-demand products will be limited to 2 per customer."
-    }
-  ];
-
-  return (
-    <section className="mb-12">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-semibold">Latest Pokemon TCG News</h2>
-        <Button variant="ghost" asChild className="text-blue-600">
-          <Link to="/news">All News</Link>
-        </Button>
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {newsArticles.map((article, index) => (
-          <NewsArticle key={index} {...article} />
-        ))}
-      </div>
-    </section>
-  );
-};
 
 // Improved AdBanner component with better placement
 const AdBanner = () => (
