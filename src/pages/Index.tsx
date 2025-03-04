@@ -54,7 +54,7 @@ const SiteIntro = () => (
     </p>
     <p className="text-gray-700 mb-4">
       We track inventory from Pokemon Center, Target, Walmart, GameStop, and other retailers in real-time,
-      so you never miss a restock or new release. Our automated system checks for product availability multiple times per minute
+      so you never miss a restock or new release. We check for product availability multiple times per day
       for high-demand items and provides accurate, up-to-date information on what's currently available at retail prices.
     </p>
     <div className="flex gap-4 mt-6">
