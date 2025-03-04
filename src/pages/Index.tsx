@@ -2,8 +2,6 @@ import React, { useEffect } from "react";
 import { Hero } from "@/components/landing/Hero";
 import { CardGrid } from "@/components/landing/CardGrid";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 
 // Navigation component used across pages
@@ -114,16 +112,6 @@ const NewsSection = () => {
   );
 };
 
-// Improved AdBanner component with better placement
-const AdBanner = () => (
-  <section className="bg-white p-6 rounded-lg mb-12 text-center">
-    <p className="text-sm text-gray-500 mb-2">Advertisement</p>
-    <div className="h-24 flex items-center justify-center border border-dashed border-gray-400">
-      <p className="text-gray-500">Google AdSense Banner (728×90)</p>
-    </div>
-  </section>
-);
-
 // How it works section with real content
 const HowItWorksSection = () => (
   <section className="mb-12 bg-white p-6 rounded-lg shadow-md">
@@ -223,16 +211,10 @@ const Index = () => {
         
         <SiteIntro />
         
-        <AdBanner />
-        
         <HowItWorksSection />
-        
-        <AdBanner />
         
         <h2 className="text-2xl font-semibold mb-6">Latest In-Stock Products</h2>
         <CardGrid />
-        
-        <AdBanner />
         
         <NewsSection />
         
