@@ -26,7 +26,7 @@ const Footer = () => (
       <div>
         <h3 className="font-semibold mb-4">Pokemon In-Stock Tracker</h3>
         <p className="text-gray-600 mb-4">
-          Helping Pokemon fans find products in stock since 2024.
+          Helping degens find products in stock since 2024.
         </p>
         <p className="text-gray-600">© 2025 In-Stock Tracker. All rights reserved.</p>
       </div>
@@ -66,13 +66,13 @@ const AboutPage = () => {
           <section className="mb-12">
             <h2 className="text-2xl font-semibold mb-4">Our Mission</h2>
             <p className="text-gray-700 mb-4">
-              Pokemon In-Stock Tracker was created with a simple mission: to help Pokemon fans find the products they love without the frustration of constant sellouts and scalping.
+              TCG In-Stock Tracker was created with a simple mission: to help Pokemon fans find the products they love without the frustration of constant sellouts and scalping.
             </p>
             <p className="text-gray-700 mb-4">
-              In today's Pokemon TCG market, finding products at retail prices can be challenging. Popular sets sell out quickly, and many collectors miss out on new releases. We believe everyone should have a fair chance to enjoy this hobby without paying inflated prices on the secondary market.
+              In today's TCG market, finding products at retail prices can be challenging. Popular sets sell out quickly, and many collectors miss out on new releases. We believe everyone should have a fair chance to enjoy this hobby without paying inflated prices on the secondary market.
             </p>
             <p className="text-gray-700 mb-4">
-              By providing real-time stock updates from major retailers, we help level the playing field and make the hobby more accessible to all fans, whether you're a competitive player, collector, or parent looking for a gift.
+              By providing daily stock updates from major retailers, we help level the playing field and make the hobby more accessible to all fans, whether you're a competitive player, collector, or parent looking for a gift.
             </p>
           </section>
           
@@ -87,13 +87,13 @@ const AboutPage = () => {
           <section className="mb-12">
             <h2 className="text-2xl font-semibold mb-4">Our Story</h2>
             <p className="text-gray-700 mb-4">
-              Pokemon In-Stock Tracker began in early 2024 during a period of unprecedented demand for Pokemon cards. As lifelong Pokemon fans ourselves, we experienced firsthand the frustration of missing out on new releases and seeing prices skyrocket on the secondary market.
+             TCG In-Stock Tracker began in early 2024 during a period of unprecedented demand for Pokemon cards. As lifelong Pokemon fans ourselves, we experienced firsthand the frustration of missing out on new releases and seeing prices skyrocket on the secondary market.
             </p>
             <p className="text-gray-700 mb-4">
-              What started as a simple Discord bot tracking inventory at a few retailers quickly grew into a comprehensive website serving thousands of Pokemon enthusiasts daily. Our community has grown through word of mouth as collectors share their success stories of finally finding products at MSRP thanks to our alerts.
+              What started as a simple idea quickly grew into a comprehensive website serving hundreds of Pokemon enthusiasts daily. Our community has grown through word of mouth as collectors share their success stories of finally finding products at MSRP thanks to our alerts.
             </p>
             <p className="text-gray-700 mb-4">
-              Today, we track inventory across dozens of retailers including Pokemon Center, Target, Walmart, Best Buy, GameStop, and many local game stores that have partnered with us. Our automated systems check for restocks 24/7, ensuring you never miss an opportunity to add to your collection.
+              Today, we track inventory across dozens of retailers including Pokemon Center, Target, Walmart, Best Buy, GameStop, and many local game stores that have partnered with us. We manually check for restocks daily, ensuring you never miss an opportunity to add to your collection.
             </p>
           </section>
           
@@ -103,21 +103,21 @@ const AboutPage = () => {
               <div className="bg-gray-50 p-6 rounded-lg border border-gray-100">
                 <h3 className="text-xl font-medium mb-3">1. Automated Tracking</h3>
                 <p className="text-gray-700">
-                  Our systems continuously monitor inventory across major retailers using advanced APIs and web scraping technologies. We check for restocks multiple times per minute on high-demand items.
+                  We manually monitor inventory across major retailers, due to many sites having privacy policies that makes webscraping unethical. We check for restocks multiple times per day on high-demand items.
                 </p>
               </div>
               
               <div className="bg-gray-50 p-6 rounded-lg border border-gray-100">
                 <h3 className="text-xl font-medium mb-3">2. Real-Time Updates</h3>
                 <p className="text-gray-700">
-                  When a product comes back in stock, it's immediately displayed on our website. For registered users, we send instant notifications via email, SMS, or push notifications based on your preferences.
+                  When a product comes back in stock, we display it on our website. For subscribed users, we send instant notifications via email, SMS, or push notifications based on your preferences.
                 </p>
               </div>
               
               <div className="bg-gray-50 p-6 rounded-lg border border-gray-100">
                 <h3 className="text-xl font-medium mb-3">3. Direct Links</h3>
                 <p className="text-gray-700">
-                  We provide direct links to product pages, allowing you to skip the search process and checkout quickly before items sell out again. Our affiliate partnerships ensure we can keep this service free for users.
+                  We provide direct links to product pages, allowing you to skip the search process and checkout quickly before items sell out again. All services on this site are 100% free, as this site was built to help people, not take from them.
                 </p>
               </div>
             </div>
