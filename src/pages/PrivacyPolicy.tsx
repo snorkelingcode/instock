@@ -166,18 +166,12 @@ const PrivacyPolicy = () => {
             </section>
             
             <section className="mb-8">
-              <h2 className="text-2xl font-semibold mb-4">Google AdSense</h2>
+              <h2 className="text-2xl font-semibold mb-4">Analytics</h2>
               <p className="mb-4">
-                We use Google AdSense, a web advertising service provided by Google Inc., to display advertisements on our Site. Google AdSense uses cookies to serve ads based on your prior visits to our Site or other websites.
+                We use analytics services such as Google Analytics to help us understand how users engage with our Site. These tools may use cookies and similar technologies to collect information about your use of the Site and your device.
               </p>
               <p className="mb-4">
-                Google's use of advertising cookies enables it and its partners to serve ads to you based on your visit to our Site and/or other websites on the Internet. You may opt out of personalized advertising by visiting <a href="https://www.google.com/settings/ads" className="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">Google Ads Settings</a>.
-              </p>
-              <p className="mb-4">
-                Please note that Google has its own privacy policy, which we encourage you to review. Google's privacy policy can be found at <a href="https://policies.google.com/privacy" className="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">https://policies.google.com/privacy</a>.
-              </p>
-              <p className="mb-4">
-                We have no control over these third parties' tracking technologies or how they may be used. If you have any questions about an advertisement, you should contact the responsible advertiser directly.
+                You can learn more about how Google uses your data when you use our Site by visiting <a href="https://policies.google.com/privacy" className="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">https://policies.google.com/privacy</a>.
               </p>
             </section>
             
