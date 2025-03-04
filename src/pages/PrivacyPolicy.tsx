@@ -75,15 +75,6 @@ const Footer = () => (
   </footer>
 );
 
-const AdBanner = () => (
-  <section className="bg-gray-200 p-6 rounded-lg mb-12 text-center">
-    <p className="text-gray-700">Advertisement</p>
-    <div className="h-16 flex items-center justify-center border border-dashed border-gray-400">
-      <p className="text-gray-500">Google AdSense Banner (728×90)</p>
-    </div>
-  </section>
-);
-
 const PrivacyPolicy = () => {
   return (
     <div className="min-h-screen bg-[#F5F5F7] font-['Inter']">
