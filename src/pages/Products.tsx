@@ -325,7 +325,6 @@ const ProductsPage = () => {
           <CardGrid />
           
           <div className="mt-8 flex justify-center">
-            <Button>Load More Products</Button>
           </div>
         </div>
         
