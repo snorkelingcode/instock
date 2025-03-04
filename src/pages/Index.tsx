@@ -68,21 +68,6 @@ const SiteIntro = () => (
   </section>
 );
 
-// News article preview component
-const NewsArticle = ({ title, date, category, excerpt }) => (
-  <article className="bg-white p-6 rounded-lg shadow-md">
-    <div className="flex gap-2 mb-2">
-      <Badge>{category}</Badge>
-      <span className="text-gray-600 text-sm">{date}</span>
-    </div>
-    <h3 className="text-xl font-medium mb-2">{title}</h3>
-    <p className="text-gray-700 mb-4">{excerpt}</p>
-    <Button variant="outline" asChild>
-      <Link to={`/news/${title.toLowerCase().replace(/\s+/g, '-')}`}>Read More</Link>
-    </Button>
-  </article>
-);
-
 
 // Improved AdBanner component with better placement
 const AdBanner = () => (
