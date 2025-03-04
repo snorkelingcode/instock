@@ -130,14 +130,6 @@ const TermsOfService = () => {
               </ul>
             </section>
             
-            {/* Advertisement in content */}
-            <div className="my-8 p-6 bg-gray-100 rounded-lg text-center">
-              <p className="text-sm text-gray-500 mb-2">Advertisement</p>
-              <div className="h-24 flex items-center justify-center border border-dashed border-gray-400">
-                <p className="text-gray-500">Google AdSense Banner (728×90)</p>
-              </div>
-            </div>
-            
             <section className="mb-8">
               <h2 className="text-2xl font-semibold mb-4">Accuracy of Information</h2>
               <p className="mb-4">
@@ -180,15 +172,7 @@ const TermsOfService = () => {
                 TO THE FULLEST EXTENT PROVIDED BY LAW, IN NO EVENT WILL TCG IN-STOCK TRACKER, ITS AFFILIATES, OR THEIR LICENSORS, SERVICE PROVIDERS, EMPLOYEES, AGENTS, OFFICERS, OR DIRECTORS BE LIABLE FOR DAMAGES OF ANY KIND, UNDER ANY LEGAL THEORY, ARISING OUT OF OR IN CONNECTION WITH YOUR USE, OR INABILITY TO USE, THE SITE, ANY WEBSITES LINKED TO IT, ANY CONTENT ON THE SITE OR SUCH OTHER WEBSITES, INCLUDING ANY DIRECT, INDIRECT, SPECIAL, INCIDENTAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING BUT NOT LIMITED TO, PERSONAL INJURY, PAIN AND SUFFERING, EMOTIONAL DISTRESS, LOSS OF REVENUE, LOSS OF PROFITS, LOSS OF BUSINESS OR ANTICIPATED SAVINGS, LOSS OF USE, LOSS OF GOODWILL, LOSS OF DATA, AND WHETHER CAUSED BY TORT (INCLUDING NEGLIGENCE), BREACH OF CONTRACT, OR OTHERWISE, EVEN IF FORESEEABLE.
               </p>
             </section>
-            
-            {/* Advertisement in content */}
-            <div className="my-8 p-6 bg-gray-100 rounded-lg text-center">
-              <p className="text-sm text-gray-500 mb-2">Advertisement</p>
-              <div className="h-24 flex items-center justify-center border border-dashed border-gray-400">
-                <p className="text-gray-500">Google AdSense Banner (728×90)</p>
-              </div>
-            </div>
-            
+                        
             <section className="mb-8">
               <h2 className="text-2xl font-semibold mb-4">Indemnification</h2>
               <p className="mb-4">
