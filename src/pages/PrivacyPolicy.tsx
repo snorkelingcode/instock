@@ -3,21 +3,43 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
 // Reuse Navigation and Footer components in a real implementation
-const Navigation = () => (
-  <nav className="bg-white p-4 rounded-lg shadow-md mb-8 flex justify-between items-center">
-    <Link to="/" className="text-xl font-bold">Pokemon In-Stock Tracker</Link>
-    
-    <div className="hidden md:flex space-x-6">
-      <Link to="/" className="text-gray-700 hover:text-blue-600">Home</Link>
-      <Link to="/products" className="text-gray-700 hover:text-blue-600">Products</Link>
-      <Link to="/news" className="text-gray-700 hover:text-blue-600">News</Link>
-      <Link to="/about" className="text-gray-700 hover:text-blue-600">About</Link>
-      <Link to="/contact" className="text-gray-700 hover:text-blue-600">Contact</Link>
-    </div>
-    
-    <Button className="md:hidden">Menu</Button>
-  </nav>
-);
+const Navigation = () => {
+  const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+  
+  return (
+    <nav className="bg-white p-4 rounded-lg shadow-md mb-8 flex flex-col">
+      <div className="flex justify-between items-center w-full">
+        <Link to="/" className="text-xl font-bold">Pokemon In-Stock Tracker</Link>
+        
+        <div className="hidden md:flex space-x-6">
+          <Link to="/" className="text-gray-700 hover:text-blue-600">Home</Link>
+          <Link to="/products" className="text-gray-700 hover:text-blue-600">Products</Link>
+          <Link to="/news" className="text-gray-700 hover:text-blue-600">News</Link>
+          <Link to="/about" className="text-gray-700 hover:text-blue-600">About</Link>
+          <Link to="/contact" className="text-gray-700 hover:text-blue-600">Contact</Link>
+        </div>
+        
+        <Button 
+          className="md:hidden" 
+          onClick={() => setIsMenuOpen(!isMenuOpen)}
+        >
+          Menu
+        </Button>
+      </div>
+      
+      {isMenuOpen && (
+        <div className="md:hidden w-full mt-4 flex flex-col space-y-3 pt-3 border-t border-gray-200">
+          <Link to="/" className="text-gray-700 hover:text-blue-600 py-2">Home</Link>
+          <Link to="/products" className="text-gray-700 hover:text-blue-600 py-2">Products</Link>
+          <Link to="/news" className="text-gray-700 hover:text-blue-600 py-2">News</Link>
+          <Link to="/about" className="text-gray-700 hover:text-blue-600 py-2">About</Link>
+          <Link to="/contact" className="text-gray-700 hover:text-blue-600 py-2">Contact</Link>
+          <Link to="/privacy" className="text-gray-700 hover:text-blue-600 font-medium py-2">Privacy Policy</Link>
+        </div>
+      )}
+    </nav>
+  );
+};
 
 const Footer = () => (
   <footer className="bg-white p-8 rounded-lg shadow-md mt-16">
