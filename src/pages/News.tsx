@@ -278,14 +278,6 @@ const NewsPage = () => {
             </div>
           </div>
           
-          {/* Advertisement placed within content after featured article */}
-          <div className="my-8 p-6 bg-gray-100 rounded-lg text-center">
-            <p className="text-sm text-gray-500 mb-2">Advertisement</p>
-            <div className="h-24 flex items-center justify-center border border-dashed border-gray-400">
-              <p className="text-gray-500">Google AdSense Banner (728×90)</p>
-            </div>
-          </div>
-          
           <Tabs defaultValue="all" className="w-full">
             <TabsList className="mb-6">
               <TabsTrigger value="all">All News</TabsTrigger>
@@ -301,15 +293,7 @@ const NewsPage = () => {
                 ))}
               </div>
               
-              {/* Advertisement placed between content rows */}
-              <div className="my-8 p-6 bg-gray-100 rounded-lg text-center">
-                <p className="text-sm text-gray-500 mb-2">Advertisement</p>
-                <div className="h-24 flex items-center justify-center border border-dashed border-gray-400">
-                  <p className="text-gray-500">Google AdSense Banner (728×90)</p>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
                 {recentNews.slice(3).map((article, index) => (
                   <NewsPreview key={index + 3} {...article} />
                 ))}
@@ -449,14 +433,6 @@ const NewsPage = () => {
                   </div>
                 </li>
               </ul>
-            </div>
-            
-            {/* Advertisement in sidebar */}
-            <div className="bg-gray-100 p-6 rounded-lg text-center">
-              <p className="text-sm text-gray-500 mb-2">Advertisement</p>
-              <div className="h-64 flex items-center justify-center border border-dashed border-gray-400">
-                <p className="text-gray-500">Google AdSense (300×250)</p>
-              </div>
             </div>
           </div>
         </div>
