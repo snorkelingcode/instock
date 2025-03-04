@@ -126,22 +126,11 @@ const CookiePolicy = () => {
                 We use Google Analytics to gather statistical information about the use of our Site. Google Analytics stores information about what pages you visit, how long you are on the site, how you got here, and what you click on.
               </p>
               
-              <h3 className="text-xl font-medium mt-6 mb-3">Advertising Cookies</h3>
+              <h3 className="text-xl font-medium mt-6 mb-3">Preference Cookies</h3>
               <p className="mb-4">
-                These cookies are used to make advertising messages more relevant to you. They perform functions like preventing the same ad from continuously reappearing, ensuring that ads are properly displayed, and in some cases selecting advertisements that are based on your interests.
-              </p>
-              <p className="mb-4">
-                We use Google AdSense to display advertisements on our Site. Google AdSense may use cookies to personalize the advertisements you see based on your browsing history.
+                These cookies allow our Site to remember choices you make and provide enhanced, more personal features. For example, these cookies can be used to remember your login details or language preference.
               </p>
             </section>
-            
-            {/* Advertisement in content */}
-            <div className="my-8 p-6 bg-gray-100 rounded-lg text-center">
-              <p className="text-sm text-gray-500 mb-2">Advertisement</p>
-              <div className="h-24 flex items-center justify-center border border-dashed border-gray-400">
-                <p className="text-gray-500">Google AdSense Banner (728×90)</p>
-              </div>
-            </div>
             
             <section className="mb-8">
               <h2 className="text-2xl font-semibold mb-4">Third-Party Cookies</h2>
@@ -149,7 +138,7 @@ const CookiePolicy = () => {
                 Some cookies are placed by third parties on our website. These third parties may include:
               </p>
               <ul className="list-disc pl-6 mb-4">
-                <li>Google (for Analytics and AdSense)</li>
+                <li>Google (for Analytics)</li>
                 <li>Social media platforms (if you use social sharing features)</li>
                 <li>Other analytics providers</li>
               </ul>
@@ -175,9 +164,6 @@ const CookiePolicy = () => {
               <h3 className="text-xl font-medium mt-6 mb-3">Managing Google Cookies</h3>
               <p className="mb-4">
                 You can opt out of Google Analytics tracking by installing the <a href="https://tools.google.com/dlpage/gaoptout" className="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">Google Analytics Opt-out Browser Add-on</a>.
-              </p>
-              <p className="mb-4">
-                To opt out of personalized advertising by Google, you can visit <a href="https://www.google.com/settings/ads" className="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">Google Ads Settings</a>.
               </p>
             </section>
             
