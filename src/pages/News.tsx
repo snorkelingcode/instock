@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 // Navigation component from other pages
 const Navigation = () => (
   <nav className="bg-white p-4 rounded-lg shadow-md mb-8 flex justify-between items-center">
-    <Link to="/" className="text-xl font-bold">Trading Card In-Stock Tracker</Link>
+    <Link to="/" className="text-xl font-bold">TCG In-Stock Tracker</Link>
     
     <div className="hidden md:flex space-x-6">
       <Link to="/" className="text-gray-700 hover:text-blue-600">Home</Link>
@@ -237,9 +237,9 @@ const NewsPage = () => {
         <Navigation />
         
         <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-          <h1 className="text-3xl font-bold mb-6">Pokemon TCG News & Updates</h1>
+          <h1 className="text-3xl font-bold mb-6">TCG News & Updates</h1>
           <p className="text-gray-700 mb-8">
-            Stay up-to-date with the latest Pokemon TCG news, release dates, restock alerts, and market analysis. We cover product announcements, retailer restocks, tournament news, and more to keep you informed on everything happening in the world of Pokemon cards.
+            Stay up-to-date with the latest TCG news, release dates, restock alerts, and market analysis. We cover product announcements, retailer restocks, tournament news, and more to keep you informed on everything happening in the world of Pokemon cards.
           </p>
           
           <FeaturedNews {...featuredArticle} />
