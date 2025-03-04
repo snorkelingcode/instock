@@ -4,45 +4,45 @@ export const Hero: React.FC = () => {
   const [colorIndex, setColorIndex] = useState(0);
   const intervalRef = useRef<number | null>(null);
 
-  // Disco colors array - same as in Card component for consistency
-  const discoColors = [
-    "#FF3366", // Pink
-    "#33CCFF", // Blue
-    "#FFCC33", // Yellow
-    "#33FF99", // Green
-    "#CC33FF", // Purple
-    "#FF6633", // Orange
-    "#66FF33", // Lime
-    "#FF33CC", // Magenta
-    "#3366FF", // Royal Blue
-    "#FF9933"  // Orange-Yellow
+  // Softer color palette matching the card component
+  const softColors = [
+    "#5B8BF0", // Soft blue
+    "#63AABF", // Teal blue
+    "#4E9D63", // Forest green
+    "#7E7ED4", // Lavender
+    "#8E87C0", // Muted purple
+    "#DC8A86", // Dusty rose
+    "#E6A971", // Soft orange
+    "#68B9C0", // Turquoise
+    "#7FB88F", // Sage green
+    "#9F8FC1"  // Periwinkle
   ];
 
   // Function to get a random color index
   const getRandomColorIndex = () => {
-    const newIndex = Math.floor(Math.random() * discoColors.length);
+    const newIndex = Math.floor(Math.random() * softColors.length);
     // Avoid same color twice in a row
-    return newIndex === colorIndex ? (newIndex + 1) % discoColors.length : newIndex;
+    return newIndex === colorIndex ? (newIndex + 1) % softColors.length : newIndex;
   };
 
   useEffect(() => {
-    // Change the color at random intervals between 300-700ms for dynamics
+    // Change the color at slower intervals (5-7 seconds)
     const changeColor = () => {
       setColorIndex(getRandomColorIndex());
       
-      // Set next interval with random timing
+      // Set next interval with slower timing
       if (intervalRef.current) {
         window.clearTimeout(intervalRef.current);
       }
       
       intervalRef.current = window.setTimeout(
         changeColor, 
-        Math.floor(Math.random() * 800) + 1200 // Random interval between 1200-2000ms
+        Math.floor(Math.random() * 2000) + 5000 // Random interval between 5000-7000ms
       );
     };
     
     // Start the initial timeout
-    intervalRef.current = window.setTimeout(changeColor, Math.floor(Math.random() * 800) + 1200);
+    intervalRef.current = window.setTimeout(changeColor, Math.floor(Math.random() * 2000) + 5000);
 
     // Clean up on unmount
     return () => {
@@ -52,14 +52,11 @@ export const Hero: React.FC = () => {
     };
   }, []);
 
-  // Text styling with disco effect - blurred version
+  // Text styling with subtle glow effect
   const textStyle = {
-    textShadow: `0 0 4px ${discoColors[colorIndex]}, 
-                 0 0 10px ${discoColors[colorIndex]}, 
-                 0 0 15px ${discoColors[colorIndex]}, 
-                 0 0 20px ${discoColors[colorIndex]}`,
-    // Removed the hard WebkitTextStroke for a softer look
-    transition: 'all 0.8s ease',
+    textShadow: `0 0 2px ${softColors[colorIndex]}80, 
+                 0 0 5px ${softColors[colorIndex]}40`,
+    transition: 'all 1.2s ease', // Slower transition
     color: '#1E1E1E', // Keep text dark
   };
 
