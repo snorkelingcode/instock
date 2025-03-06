@@ -100,17 +100,20 @@ const NewsPage = () => {
     {
       name: "Prismatic Evolutions",
       releaseDate: "February 15, 2025",
-      popularity: 100
+      popularity: 100,
+      imageUrl: "https://comicbook.com/wp-content/uploads/sites/4/2024/11/Pokemon-TCG-Prismatic-Evolutions.jpg?resize=1024"
     },
     {
       name: "Surging Sparks",
       releaseDate: "January 10, 2025",
-      popularity: 100
+      popularity: 100,
+      imageUrl: "https://tcgplayer-cdn.tcgplayer.com/set_icon/SV08SurgingSparks.png"
     },
     {
       name: "Stellar Crown",
       releaseDate: "December 5, 2024",
-      popularity: 82
+      popularity: 82,
+      imageUrl: "https://happytcg.ca/wp-content/uploads/2024/06/GRFQGGfXEAAJIrh.jpg"
     }
   ];
   

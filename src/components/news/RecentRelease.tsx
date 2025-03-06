@@ -3,12 +3,17 @@ interface RecentReleaseProps {
   name: string;
   releaseDate: string;
   popularity: number;
+  imageUrl?: string;
 }
 
-const RecentRelease = ({ name, releaseDate, popularity }: RecentReleaseProps) => (
+const RecentRelease = ({ name, releaseDate, popularity, imageUrl }: RecentReleaseProps) => (
   <div className="flex border-b border-gray-200 py-4 last:border-0">
-    <div className="w-24 h-24 bg-gray-200 rounded-md flex items-center justify-center flex-shrink-0">
-      <span className="text-xs text-gray-500">Image</span>
+    <div className="w-24 h-24 bg-gray-200 rounded-md flex items-center justify-center flex-shrink-0 overflow-hidden">
+      {imageUrl ? (
+        <img src={imageUrl} alt={name} className="w-full h-full object-cover" />
+      ) : (
+        <span className="text-xs text-gray-500">Image</span>
+      )}
     </div>
     <div className="ml-4 flex-1">
       <div className="flex justify-between">
