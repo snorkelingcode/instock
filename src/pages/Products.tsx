@@ -26,28 +26,60 @@ const ProductsPage = () => {
   const { toast } = useToast();
   
   useEffect(() => {
-    const fetchFeaturedProducts = async () => {
+    const fetchRandomFeaturedProducts = async () => {
       try {
         setLoading(true);
-        const { data, error } = await supabase
+        // Get the count of all products
+        const { count, error: countError } = await supabase
           .from('products')
-          .select('*')
-          .order('id', { ascending: true })
-          .limit(3);
-
-        if (error) {
-          throw error;
+          .select('*', { count: 'exact', head: true });
+          
+        if (countError) {
+          throw countError;
         }
-
-        setFeaturedProducts(data || []);
+        
+        // If there are products, get 3 random ones
+        if (count && count > 0) {
+          // Generate 3 random unique indices
+          const totalProducts = count;
+          const randomIndices = new Set<number>();
+          
+          // Make sure we don't try to get more products than exist
+          const numToFetch = Math.min(3, totalProducts);
+          
+          while (randomIndices.size < numToFetch) {
+            const randomIndex = Math.floor(Math.random() * totalProducts);
+            randomIndices.add(randomIndex);
+          }
+          
+          // Convert the set to an array of indices
+          const indicesArray = Array.from(randomIndices);
+          
+          // Fetch the products at those random positions
+          const promises = indicesArray.map(async (index) => {
+            const { data, error } = await supabase
+              .from('products')
+              .select('*')
+              .range(index, index);
+              
+            if (error) throw error;
+            return data?.[0];
+          });
+          
+          const randomProducts = await Promise.all(promises);
+          setFeaturedProducts(randomProducts.filter(Boolean) as Product[]);
+        } else {
+          throw new Error('No products found');
+        }
       } catch (error) {
-        console.error('Error fetching featured products:', error);
+        console.error('Error fetching random featured products:', error);
         toast({
           title: "Error",
           description: "Failed to load featured products",
           variant: "destructive",
         });
         
+        // Fallback featured products
         setFeaturedProducts([
           {
             id: 1,
@@ -85,7 +117,7 @@ const ProductsPage = () => {
       }
     };
 
-    fetchFeaturedProducts();
+    fetchRandomFeaturedProducts();
   }, [toast]);
   
   return (
