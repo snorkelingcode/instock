@@ -25,12 +25,13 @@ const RedirectHandler = () => {
     // Check for the redirect path in sessionStorage
     const storedPath = sessionStorage.getItem('spa_redirect_path');
     if (storedPath) {
+      // Clear the storage right away to prevent future issues
       sessionStorage.removeItem('spa_redirect_path');
       setRedirectPath(storedPath);
     }
   }, []);
 
-  // If we have a redirect path, navigate to it
+  // If we have a redirect path, navigate to it once
   if (redirectPath) {
     return <Navigate to={redirectPath} replace />;
   }
