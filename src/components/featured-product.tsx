@@ -67,9 +67,9 @@ const FeaturedProduct = ({ title, description, price, retailer, listingLink, ima
         width: 'min(340px, 100%)', // Ensures card never exceeds container width
       }}
     >
-      {/* Square image container */}
+      {/* Updated image container to match the Card component size */}
       {imageLink && (
-        <div className="w-[120px] h-[120px] mx-auto mt-6 overflow-hidden rounded-md bg-white">
+        <div className="w-[140px] h-[140px] mx-auto mt-6 overflow-hidden rounded-md bg-white">
           <img 
             src={imageLink} 
             alt={`${title} image`}
