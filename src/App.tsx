@@ -18,12 +18,13 @@ const queryClient = new QueryClient();
 // Component to handle redirects from the 404.html page
 const RedirectHandler = () => {
   useEffect(() => {
-    const query = new URLSearchParams(window.location.search);
-    const redirectPath = query.get('redirect');
-    
-    if (redirectPath) {
-      // Remove the redirect query parameter and navigate to the original path
-      window.history.replaceState(null, '', redirectPath);
+    // Check if we're on a redirected route with the ?/ format
+    const path = window.location.search;
+    if (path.includes('?/')) {
+      // Extract the path from the search (everything after the ?/)
+      const redirectPath = path.substring(2);
+      // Remove the query string and replace with the actual path
+      window.history.replaceState(null, '', '/' + redirectPath);
       console.log("Redirected to:", redirectPath);
     }
   }, []);
