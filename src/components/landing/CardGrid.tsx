@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Card } from "./Card";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,6 +11,7 @@ interface Product {
   source: string;
   price: number;
   listing_link: string;
+  image_link?: string; // Add the new image_link field
 }
 
 export const CardGrid: React.FC = () => {
@@ -57,7 +59,8 @@ export const CardGrid: React.FC = () => {
     product: "Charizard ex Super",
     source: "Target",
     price: 69.99,
-    listing_link: ""
+    listing_link: "",
+    image_link: "" // Empty image link for fallback
   }));
 
   // Set 3 items per row for all pages
@@ -95,6 +98,7 @@ export const CardGrid: React.FC = () => {
                     source={product.source}
                     price={product.price}
                     listingLink={product.listing_link}
+                    imageLink={product.image_link} // Pass the image link to the Card
                     onListingClick={() => handleListingClick(product.id)}
                     index={cardIndex} // Pass the unique index to the Card
                   />

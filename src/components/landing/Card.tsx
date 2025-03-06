@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef } from "react";
 
 interface CardProps {
@@ -6,6 +7,7 @@ interface CardProps {
   source?: string;
   price?: number;
   listingLink?: string;
+  imageLink?: string; // New prop for image link
   onListingClick?: () => void;
   index?: number;
 }
@@ -16,6 +18,7 @@ export const Card: React.FC<CardProps> = ({
   source = "Source",
   price,
   listingLink,
+  imageLink, // Add image link prop
   onListingClick,
   index = 0,
 }) => {
@@ -78,14 +81,29 @@ export const Card: React.FC<CardProps> = ({
 
   return (
     <div
-      className="w-[340px] h-[300px] relative bg-[#F5F5F7] rounded-[10px] max-md:mb-5 max-sm:w-full transition-all duration-1000"
+      className="w-[340px] h-[300px] relative bg-[#F5F5F7] rounded-[10px] max-md:mb-5 max-sm:w-full transition-all duration-1000 overflow-hidden"
       role="article"
       style={{
         boxShadow: cardColor ? `0px 2px 15px 2px ${cardColor}40` : undefined, // Reduced glow with 25% opacity
         border: cardColor ? `1px solid ${cardColor}60` : undefined, // Subtle border
       }}
     >
-      <div className="px-[41px] py-[30px]">
+      {/* Image container */}
+      {imageLink && (
+        <div className="w-full h-[140px] overflow-hidden">
+          <img 
+            src={imageLink} 
+            alt={`${product} image`}
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              // Set a fallback image or hide on error
+              e.currentTarget.style.display = 'none';
+            }}
+          />
+        </div>
+      )}
+      
+      <div className={`px-[41px] ${imageLink ? 'py-[15px]' : 'py-[30px]'}`}>
         <div className="text-xl text-[#1E1E1E] mb-[5px]">{productLine}</div>
         <div className="text-xl text-[#1E1E1E] mb-[5px]">{product}</div>
         <div className="text-xl text-[#1E1E1E] mb-[5px]">{source}</div>

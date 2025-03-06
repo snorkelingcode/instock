@@ -12,6 +12,7 @@ export type Database = {
       products: {
         Row: {
           id: number
+          image_link: string | null
           listing_link: string
           price: number
           product: string
@@ -20,6 +21,7 @@ export type Database = {
         }
         Insert: {
           id?: number
+          image_link?: string | null
           listing_link: string
           price: number
           product: string
@@ -28,6 +30,7 @@ export type Database = {
         }
         Update: {
           id?: number
+          image_link?: string | null
           listing_link?: string
           price?: number
           product?: string
@@ -36,15 +39,39 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _user_id: string
+          _role: Database["public"]["Enums"]["app_role"]
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "moderator" | "user"
     }
     CompositeTypes: {
       [_ in never]: never

@@ -1,7 +1,8 @@
+
 import React from "react";
 
 // Featured product component with toned down effect
-const FeaturedProduct = ({ title, description, price, retailer, listingLink, index = 0 }) => {
+const FeaturedProduct = ({ title, description, price, retailer, listingLink, imageLink, index = 0 }) => {
   const [cardColor, setCardColor] = React.useState("");
   const [isButtonHovered, setIsButtonHovered] = React.useState(false);
   
@@ -59,13 +60,28 @@ const FeaturedProduct = ({ title, description, price, retailer, listingLink, ind
 
   return (
     <div
-      className="w-[340px] h-[300px] relative bg-[#F5F5F7] rounded-[10px] max-md:mb-5 max-sm:w-full transition-all duration-1000"
+      className="w-[340px] h-[300px] relative bg-[#F5F5F7] rounded-[10px] max-md:mb-5 max-sm:w-full transition-all duration-1000 overflow-hidden"
       style={{
         boxShadow: cardColor ? `0px 2px 15px 2px ${cardColor}40` : undefined, // Reduced glow with 25% opacity
         border: cardColor ? `1px solid ${cardColor}60` : undefined, // Subtle border
       }}
     >
-      <div className="px-[41px] py-[30px]">
+      {/* Image container */}
+      {imageLink && (
+        <div className="w-full h-[120px] overflow-hidden">
+          <img 
+            src={imageLink} 
+            alt={`${title} image`}
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              // Set a fallback image or hide on error
+              e.currentTarget.style.display = 'none';
+            }}
+          />
+        </div>
+      )}
+
+      <div className={`px-[41px] ${imageLink ? 'py-[15px]' : 'py-[30px]'}`}>
         <div className="text-xl text-[#1E1E1E] mb-[5px]">{title}</div>
         <div className="text-sm text-[#1E1E1E] mb-[5px]">{description}</div>
         <div className="text-lg text-[#1E1E1E] mb-[5px] font-medium">${price.toFixed(2)}</div>
