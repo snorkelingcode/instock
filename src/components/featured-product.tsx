@@ -60,7 +60,7 @@ const FeaturedProduct = ({ title, description, price, retailer, listingLink, ima
 
   return (
     <div
-      className="w-[340px] h-[300px] relative bg-[#F5F5F7] rounded-[10px] max-md:mb-5 max-sm:w-full transition-all duration-1000 overflow-hidden"
+      className="w-[340px] h-[300px] relative bg-white rounded-[10px] max-md:mb-5 max-sm:w-full transition-all duration-1000 overflow-hidden"
       style={{
         boxShadow: cardColor ? `0px 2px 15px 2px ${cardColor}40` : undefined, // Reduced glow with 25% opacity
         border: cardColor ? `1px solid ${cardColor}60` : undefined, // Subtle border
@@ -68,7 +68,7 @@ const FeaturedProduct = ({ title, description, price, retailer, listingLink, ima
     >
       {/* Square image container */}
       {imageLink && (
-        <div className="w-[120px] h-[120px] mx-auto mt-4 overflow-hidden rounded-md">
+        <div className="w-[120px] h-[120px] mx-auto mt-4 overflow-hidden rounded-md bg-white">
           <img 
             src={imageLink} 
             alt={`${title} image`}
@@ -94,7 +94,7 @@ const FeaturedProduct = ({ title, description, price, retailer, listingLink, ima
         onClick={handleListingClick}
         onMouseEnter={() => setIsButtonHovered(true)}
         onMouseLeave={() => setIsButtonHovered(false)}
-        className="text-2xl italic font-light text-[#1E1E1E] absolute -translate-x-2/4 w-[257px] h-[66px] bg-[#F0F0F5] rounded-[22px] left-2/4 bottom-[9px] max-sm:w-4/5 transition-all duration-800 flex items-center justify-center"
+        className="text-2xl italic font-light text-[#1E1E1E] absolute -translate-x-2/4 w-[257px] h-[66px] bg-white rounded-[22px] left-2/4 bottom-[9px] max-sm:w-4/5 transition-all duration-800 flex items-center justify-center"
         style={{
           border: `1px solid ${cardColor}60`, // Subtle border that matches card color
           boxShadow: isButtonHovered 
