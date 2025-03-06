@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 
 export const Hero: React.FC = () => {
@@ -52,10 +53,11 @@ export const Hero: React.FC = () => {
     };
   }, []);
 
-  // Text styling with subtle glow effect
+  // Enhanced text styling with stronger glow effect
   const textStyle = {
-    textShadow: `0 0 2px ${softColors[colorIndex]}80, 
-                 0 0 5px ${softColors[colorIndex]}40`,
+    textShadow: `0 0 5px ${softColors[colorIndex]}80, 
+                 0 0 15px ${softColors[colorIndex]}60,
+                 0 0 25px ${softColors[colorIndex]}40`, // Increased blur radius and added a third layer
     transition: 'all 1.2s ease', // Slower transition
     color: '#1E1E1E', // Keep text dark
   };
