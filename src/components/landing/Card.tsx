@@ -75,7 +75,7 @@ export const Card: React.FC<CardProps> = ({
 
   return (
     <div
-      className="w-[340px] h-[440px] relative bg-white rounded-[10px] max-md:mb-5 transition-all duration-1000 overflow-hidden"
+      className="w-[340px] h-[480px] relative bg-white rounded-[10px] max-md:mb-5 transition-all duration-1000 overflow-hidden"
       role="article"
       style={{
         boxShadow: cardColor ? `0px 2px 15px 2px ${cardColor}40` : undefined,
