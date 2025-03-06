@@ -51,20 +51,20 @@ const ProductsPage = () => {
           }
         }
         
-        // Otherwise, fetch new random products
-        // Get the count of all products
-        const { count, error: countError } = await supabase
+        // Get Pokémon products only
+        const { data: pokemonProducts, error: pokemonError } = await supabase
           .from('products')
-          .select('*', { count: 'exact', head: true });
+          .select('*')
+          .or('product_line.ilike.%pokemon%,product.ilike.%pokemon%');
           
-        if (countError) {
-          throw countError;
+        if (pokemonError) {
+          throw pokemonError;
         }
         
-        // If there are products, get 3 random ones
-        if (count && count > 0) {
+        // If there are Pokémon products, get 3 random ones
+        if (pokemonProducts && pokemonProducts.length > 0) {
           // Generate 3 random unique indices
-          const totalProducts = count;
+          const totalProducts = pokemonProducts.length;
           const randomIndices = new Set<number>();
           
           // Make sure we don't try to get more products than exist
@@ -75,45 +75,31 @@ const ProductsPage = () => {
             randomIndices.add(randomIndex);
           }
           
-          // Convert the set to an array of indices
-          const indicesArray = Array.from(randomIndices);
-          
-          // Fetch the products at those random positions
-          const promises = indicesArray.map(async (index) => {
-            const { data, error } = await supabase
-              .from('products')
-              .select('*')
-              .range(index, index);
-              
-            if (error) throw error;
-            return data?.[0];
-          });
-          
-          const randomProducts = await Promise.all(promises);
-          const filteredProducts = randomProducts.filter(Boolean) as Product[];
+          // Get the randomly selected products
+          const selectedProducts = Array.from(randomIndices).map(index => pokemonProducts[index]);
           
           // Save to state and cache
-          setFeaturedProducts(filteredProducts);
-          localStorage.setItem(FEATURED_PRODUCTS_KEY, JSON.stringify(filteredProducts));
+          setFeaturedProducts(selectedProducts);
+          localStorage.setItem(FEATURED_PRODUCTS_KEY, JSON.stringify(selectedProducts));
           localStorage.setItem(FEATURED_PRODUCTS_TIMESTAMP_KEY, Date.now().toString());
         } else {
-          throw new Error('No products found');
+          throw new Error('No Pokémon products found');
         }
       } catch (error) {
         console.error('Error fetching featured products:', error);
         toast({
           title: "Error",
-          description: "Failed to load featured products",
+          description: "Failed to load featured Pokémon products",
           variant: "destructive",
         });
         
-        // Fallback featured products
+        // Fallback featured products (all Pokémon-related)
         const fallbackProducts = [
           {
             id: 1,
-            product_line: "Scarlet & Violet",
-            product: "Twilight Masquerade Booster Box",
-            source: "Pokemon Center",
+            product_line: "Pokémon TCG",
+            product: "Scarlet & Violet - Twilight Masquerade Booster Box",
+            source: "Pokémon Center",
             price: 149.99,
             listing_link: "",
             image_link: "",
@@ -121,7 +107,7 @@ const ProductsPage = () => {
           },
           {
             id: 2,
-            product_line: "Pokemon TCG",
+            product_line: "Pokémon TCG",
             product: "Charizard ex Premium Collection",
             source: "Target",
             price: 39.99,
@@ -131,8 +117,8 @@ const ProductsPage = () => {
           },
           {
             id: 3,
-            product_line: "Paldean Fates",
-            product: "Elite Trainer Box",
+            product_line: "Pokémon TCG",
+            product: "Paldean Fates Elite Trainer Box",
             source: "Walmart",
             price: 49.99,
             listing_link: "",
