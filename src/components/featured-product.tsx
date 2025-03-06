@@ -66,13 +66,13 @@ const FeaturedProduct = ({ title, description, price, retailer, listingLink, ima
         border: cardColor ? `1px solid ${cardColor}60` : undefined, // Subtle border
       }}
     >
-      {/* Image container */}
+      {/* Square image container */}
       {imageLink && (
-        <div className="w-full h-[120px] overflow-hidden">
+        <div className="w-[120px] h-[120px] mx-auto mt-4 overflow-hidden rounded-md">
           <img 
             src={imageLink} 
             alt={`${title} image`}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-contain"
             onError={(e) => {
               // Set a fallback image or hide on error
               e.currentTarget.style.display = 'none';
@@ -81,7 +81,7 @@ const FeaturedProduct = ({ title, description, price, retailer, listingLink, ima
         </div>
       )}
 
-      <div className={`px-[41px] ${imageLink ? 'py-[15px]' : 'py-[30px]'}`}>
+      <div className={`px-[41px] ${imageLink ? 'py-[10px]' : 'py-[30px]'}`}>
         <div className="text-xl text-[#1E1E1E] mb-[5px]">{title}</div>
         <div className="text-sm text-[#1E1E1E] mb-[5px]">{description}</div>
         <div className="text-lg text-[#1E1E1E] mb-[5px] font-medium">${price.toFixed(2)}</div>

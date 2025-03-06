@@ -88,13 +88,13 @@ export const Card: React.FC<CardProps> = ({
         border: cardColor ? `1px solid ${cardColor}60` : undefined, // Subtle border
       }}
     >
-      {/* Image container */}
+      {/* Square image container */}
       {imageLink && (
-        <div className="w-full h-[140px] overflow-hidden">
+        <div className="w-[140px] h-[140px] mx-auto mt-4 overflow-hidden rounded-md">
           <img 
             src={imageLink} 
             alt={`${product} image`}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-contain"
             onError={(e) => {
               // Set a fallback image or hide on error
               e.currentTarget.style.display = 'none';
@@ -103,7 +103,7 @@ export const Card: React.FC<CardProps> = ({
         </div>
       )}
       
-      <div className={`px-[41px] ${imageLink ? 'py-[15px]' : 'py-[30px]'}`}>
+      <div className={`px-[41px] ${imageLink ? 'py-[10px]' : 'py-[30px]'}`}>
         <div className="text-xl text-[#1E1E1E] mb-[5px]">{productLine}</div>
         <div className="text-xl text-[#1E1E1E] mb-[5px]">{product}</div>
         <div className="text-xl text-[#1E1E1E] mb-[5px]">{source}</div>
