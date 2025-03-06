@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -151,12 +150,6 @@ const ContactPage = () => {
                   We currently track Pokemon Center, Target, Walmart, Best Buy, GameStop, and dozens of other retailers.
                 </p>
               </div>
-            </div>
-            
-            <div className="mt-6">
-              <Link to="/faq" className="text-blue-600 hover:underline">
-                View all FAQs
-              </Link>
             </div>
           </div>
         </div>
