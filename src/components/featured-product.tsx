@@ -1,7 +1,7 @@
 import React from "react";
 
 // Featured product component with toned down effect
-const FeaturedProduct = ({ title, description, price, listingLink, imageLink, index = 0 }) => {
+const FeaturedProduct = ({ title, description, price, retailer, listingLink, imageLink, index = 0 }) => {
   const [cardColor, setCardColor] = React.useState("");
   const [isButtonHovered, setIsButtonHovered] = React.useState(false);
   
