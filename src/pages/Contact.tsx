@@ -87,7 +87,7 @@ const ContactPage = () => {
               <Checkbox id="newsletter" className="mt-1" />
               <div className="grid gap-1.5 leading-none">
                 <Label htmlFor="newsletter" className="font-normal">
-                  Subscribe to our newsletter for product restock alerts and Pokemon TCG news
+                  Subscribe to our newsletter for product restock alerts and TCG news
                 </Label>
               </div>
             </div>
@@ -112,8 +112,8 @@ const ContactPage = () => {
             <div className="space-y-4">
               <div>
                 <p className="font-medium">Email</p>
-                <a href="mailto:info@pokemoninstocktracker.com" className="text-blue-600 hover:underline">
-                  info@pokemoninstocktracker.com
+                <a href="mailto:info@tcginstocktracker.com" className="text-blue-600 hover:underline">
+                  info@tcginstocktracker.com
                 </a>
               </div>
             </div>
