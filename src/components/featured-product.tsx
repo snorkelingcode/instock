@@ -60,10 +60,11 @@ const FeaturedProduct = ({ title, description, price, retailer, listingLink, ima
 
   return (
     <div
-      className="w-[340px] h-[440px] relative bg-white rounded-[10px] max-md:mb-5 max-sm:w-full transition-all duration-1000 overflow-hidden"
+      className="w-[340px] h-[440px] relative bg-white rounded-[10px] max-md:mb-5 max-sm:w-full max-sm:mx-auto transition-all duration-1000 overflow-hidden"
       style={{
         boxShadow: cardColor ? `0px 2px 15px 2px ${cardColor}40` : undefined, // Reduced glow with 25% opacity
         border: cardColor ? `1px solid ${cardColor}60` : undefined, // Subtle border
+        width: 'min(340px, 100%)', // Ensures card never exceeds container width
       }}
     >
       {/* Square image container */}
