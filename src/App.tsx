@@ -3,8 +3,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { BrowserRouter, Routes, Route, HashRouter } from "react-router-dom";
+import { useEffect } from "react";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import About from "./pages/About";
@@ -17,36 +17,14 @@ import CookiePolicy from "./pages/CookiePolicy";
 
 const queryClient = new QueryClient();
 
-// Component to handle redirects from the 404.html page
-const RedirectHandler = () => {
-  const [redirectPath, setRedirectPath] = useState<string | null>(null);
-
-  useEffect(() => {
-    // Check for the redirect path in sessionStorage
-    const storedPath = sessionStorage.getItem('spa_redirect_path');
-    if (storedPath) {
-      // Clear the storage right away to prevent future issues
-      sessionStorage.removeItem('spa_redirect_path');
-      setRedirectPath(storedPath);
-    }
-  }, []);
-
-  // If we have a redirect path, navigate to it once
-  if (redirectPath) {
-    return <Navigate to={redirectPath} replace />;
-  }
-
-  return null;
-};
-
 const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
-          <RedirectHandler />
+        {/* Using HashRouter instead of BrowserRouter for better support with static site hosting */}
+        <HashRouter>
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/about" element={<About />} />
@@ -58,7 +36,7 @@ const App = () => {
             <Route path="/cookies" element={<CookiePolicy />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
-        </BrowserRouter>
+        </HashRouter>
       </TooltipProvider>
     </QueryClientProvider>
   );

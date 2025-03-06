@@ -5,14 +5,22 @@
   <meta charset="utf-8">
   <title>Page Not Found</title>
   <script>
-    // This script handles SPA routing when users refresh or directly access paths
-    // in a statically hosted SPA (single page application)
-    
-    // Only set the redirect if we're not already coming from a redirect
-    if (!sessionStorage.getItem('spa_redirect_path')) {
-      sessionStorage.setItem('spa_redirect_path', window.location.pathname + window.location.search + window.location.hash);
-    }
-    window.location.href = '/';
+    // Single Page Apps for GitHub Pages or Netlify
+    // MIT License
+    // This script checks to see if a redirect is present in the query string,
+    // converts it back into the correct url and adds it to the
+    // browser's history using window.history.replaceState(...),
+    // which won't cause the browser to attempt to load the new url.
+    var segmentCount = 0;
+    var pathName = window.location.pathname;
+
+    // This redirects to the correct path while preserving any query parameters or hash
+    window.location.replace(
+      window.location.origin + '/#' + 
+      pathName.slice(1) + 
+      (window.location.search || '') +
+      (window.location.hash || '')
+    );
   </script>
 </head>
 <body>
