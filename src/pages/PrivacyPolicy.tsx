@@ -181,7 +181,7 @@ const PrivacyPolicy = () => {
             </p>
             <div className="bg-gray-50 p-6 rounded-lg border border-gray-100 mb-4">
               <p>TCG In-Stock Tracker</p>
-              <p>Email: privacy@pokemoninstocktracker.com</p>
+              <p>Email: privacy@tcginstocktracker.com</p>
               <p>Contact Form: <Link to="/contact" className="text-blue-600 hover:underline">www.tcginstocktracker.com/contact</Link></p>
             </div>
           </section>
