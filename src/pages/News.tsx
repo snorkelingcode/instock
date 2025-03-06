@@ -137,9 +137,6 @@ const NewsPage = () => {
                 <RecentRelease key={index} {...release} />
               ))}
             </div>
-            <div className="mt-4 text-center">
-              <Button variant="outline">View All Sets</Button>
-            </div>
           </div>
           
           <Tabs defaultValue="all" className="w-full">
