@@ -84,14 +84,14 @@ export const CardGrid: React.FC = () => {
         itemRows.map((row, rowIndex) => (
           <div 
             key={`row-${rowIndex}`}
-            className="flex justify-center gap-[19px] max-md:flex-col max-md:items-center max-md:w-full mx-auto"
+            className="flex justify-center gap-[19px] max-md:flex-col max-md:items-center w-full mx-auto"
           >
             {row.map((product, idx) => {
               // Calculate a unique index for each card based on its position
               const cardIndex = rowIndex * itemsPerRow + idx;
               
               return (
-                <div key={product.id}>
+                <div key={product.id} className="w-full max-w-[340px]">
                   <Card 
                     productLine={product.product_line}
                     product={product.product}
