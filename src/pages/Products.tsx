@@ -177,9 +177,9 @@ const ProductsPage = () => {
               <div className="animate-pulse text-xl">Loading featured products...</div>
             </div>
           ) : (
-            <div className="flex justify-center gap-[19px] max-md:flex-col max-md:items-center mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
               {featuredProducts.map((product, index) => (
-                <div key={product.id}>
+                <div key={product.id} className="flex justify-center">
                   <FeaturedProduct 
                     title={`${product.product_line} ${product.product}`}
                     description={`${product.product_line} ${product.product} available at ${product.source}`}
@@ -202,6 +202,7 @@ const ProductsPage = () => {
           <CardGrid />
           
           <div className="mt-8 flex justify-center">
+            {/* Pagination or load more button could go here */}
           </div>
         </div>
         
