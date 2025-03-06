@@ -5,7 +5,6 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 
-// Navigation component from other pages
 const Navigation = () => {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
   
@@ -43,7 +42,6 @@ const Navigation = () => {
   );
 };
 
-// Footer component from other pages
 const Footer = () => (
   <footer className="bg-white p-8 rounded-lg shadow-md mt-16">
     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -78,7 +76,6 @@ const Footer = () => (
   </footer>
 );
 
-// Single news article preview
 const NewsPreview = ({ title, date, category, excerpt, featured = false }) => (
   <Card className={`transition-all ${featured ? 'border-blue-300 shadow-md' : ''}`}>
     <CardHeader className="pb-2">
@@ -97,7 +94,6 @@ const NewsPreview = ({ title, date, category, excerpt, featured = false }) => (
   </Card>
 );
 
-// Featured news article
 const FeaturedNews = ({ title, date, category, content }) => (
   <div className="bg-white rounded-lg shadow-md border border-blue-200 mb-8">
     <div className="p-6">
@@ -114,7 +110,6 @@ const FeaturedNews = ({ title, date, category, content }) => (
   </div>
 );
 
-// Recent release component moved from Products page
 const RecentRelease = ({ name, releaseDate, description, popularity }) => (
   <div className="flex border-b border-gray-200 py-4 last:border-0">
     <div className="w-24 h-24 bg-gray-200 rounded-md flex items-center justify-center flex-shrink-0">
@@ -141,7 +136,6 @@ const RecentRelease = ({ name, releaseDate, description, popularity }) => (
 );
 
 const NewsPage = () => {
-  // Sample news data
   const featuredArticle = {
     title: "Twilight Masquerade Set Revealed: New Trainer Gallery and Ancient Pokemon",
     date: "March 1, 2025",
@@ -230,25 +224,21 @@ const NewsPage = () => {
     }
   ];
   
-  // Recent set releases data (moved from Products page)
   const recentReleases = [
     {
-      name: "Twilight Masquerade",
+      name: "Prismatic Evolutions",
       releaseDate: "February 15, 2025",
-      description: "Introducing new Legendary Pokemon and ex mechanics with a focus on Psychic and Ghost types.",
-      popularity: 85
+      popularity: 100
     },
     {
-      name: "Paldean Fates",
+      name: "Surging Sparks",
       releaseDate: "January 10, 2025",
-      description: "Special shiny collection featuring Paradox Pokemon and Terastal phenomenon.",
-      popularity: 92
+      popularity: 100
     },
     {
-      name: "Temporal Forces",
+      name: "Stellar Crown",
       releaseDate: "December 5, 2024",
-      description: "Expanded support for competitive archetypes with new Trainer cards and strategies.",
-      popularity: 78
+      popularity: 82
     }
   ];
   
@@ -265,8 +255,7 @@ const NewsPage = () => {
           
           <FeaturedNews {...featuredArticle} />
           
-          {/* Recent Set Releases section moved from Products page */}
-          <h2 className="text-xl font-semibold mb-4">Recent Set Releases</h2>
+          <h2 className="text-xl font-semibold mb-4">Recent Pokemon Set Releases</h2>
           <div className="bg-gray-50 rounded-lg p-6 mb-8">
             <div className="space-y-2">
               {recentReleases.map((release, index) => (
@@ -385,51 +374,33 @@ const NewsPage = () => {
           
           <div>
             <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-              <h2 className="text-xl font-semibold mb-4">Upcoming Releases</h2>
+              <h2 className="text-xl font-semibold mb-4">Upcoming Pokemon TCG Releases</h2>
               <ul className="space-y-4">
                 <li className="border-b border-gray-200 pb-4">
                   <div className="flex justify-between items-start">
                     <div>
-                      <h3 className="font-medium">Twilight Masquerade</h3>
+                      <h3 className="font-medium">Heat Wave Arena</h3>
                       <p className="text-sm text-gray-700">Main Set</p>
                     </div>
-                    <span className="text-sm text-gray-600">May 10, 2025</span>
+                    <span className="text-sm text-gray-600">March 14, 2025</span>
                   </div>
                 </li>
                 <li className="border-b border-gray-200 pb-4">
                   <div className="flex justify-between items-start">
                     <div>
-                      <h3 className="font-medium">Gardevoir ex Collection</h3>
-                      <p className="text-sm text-gray-700">Special Collection</p>
+                      <h3 className="font-medium">Journey Together</h3>
+                      <p className="text-sm text-gray-700">Main Set</p>
                     </div>
-                    <span className="text-sm text-gray-600">April 19, 2025</span>
-                  </div>
-                </li>
-                <li className="border-b border-gray-200 pb-4">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="font-medium">Pokemon 151</h3>
-                      <p className="text-sm text-gray-700">Special Set</p>
-                    </div>
-                    <span className="text-sm text-gray-600">June 7, 2025</span>
-                  </div>
-                </li>
-                <li className="border-b border-gray-200 pb-4">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="font-medium">Champion's Path 2</h3>
-                      <p className="text-sm text-gray-700">Premium Collection</p>
-                    </div>
-                    <span className="text-sm text-gray-600">July 12, 2025</span>
+                    <span className="text-sm text-gray-600">March 28, 2025</span>
                   </div>
                 </li>
                 <li>
                   <div className="flex justify-between items-start">
                     <div>
-                      <h3 className="font-medium">Temporal Forces</h3>
-                      <p className="text-sm text-gray-700">Main Set</p>
+                      <h3 className="font-medium">Glory of Team Rocket</h3>
+                      <p className="text-sm text-gray-700">Special Set</p>
                     </div>
-                    <span className="text-sm text-gray-600">August 23, 2025</span>
+                    <span className="text-sm text-gray-600">April 18, 2025</span>
                   </div>
                 </li>
               </ul>
