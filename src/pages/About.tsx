@@ -7,7 +7,7 @@ import Footer from "@/components/layout/Footer";
 
 const AboutPage = () => {
   return (
-    <div className="min-h-screen bg-[#F5F5F7] font-['Inter']">
+    <div className="min-h-screen bg-[#F5F5F7] font-['Inter']" role="main">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Navigation />
         
