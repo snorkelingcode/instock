@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -19,9 +20,11 @@ const RedirectHandler = () => {
   useEffect(() => {
     const query = new URLSearchParams(window.location.search);
     const redirectPath = query.get('redirect');
+    
     if (redirectPath) {
-      // Remove the redirect query parameter but keep the path
+      // Remove the redirect query parameter and navigate to the original path
       window.history.replaceState(null, '', redirectPath);
+      console.log("Redirected to:", redirectPath);
     }
   }, []);
 
