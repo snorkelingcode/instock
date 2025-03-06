@@ -1,12 +1,10 @@
-
 import React, { useEffect } from "react";
 import { Hero } from "@/components/landing/Hero";
 import { CardGrid } from "@/components/landing/CardGrid";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
-import Navigation from "@/components/navigation/Navigation";
-import Footer from "@/components/layout/Footer";
+import Layout from "@/components/layout/Layout";
 
 // Site introduction with real content
 const SiteIntro = () => (
@@ -72,38 +70,27 @@ const HowItWorksSection = () => (
 
 const Index = () => {
   useEffect(() => {
-    const link = document.createElement("link");
-    link.href = "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap";
-    link.rel = "stylesheet";
-    document.head.appendChild(link);
-
     const metaDescription = document.createElement("meta");
     metaDescription.name = "description";
     metaDescription.content = "Find TCG products in stock at major retailers. Track inventory for Pokemon Center, Target, Walmart, and more.";
     document.head.appendChild(metaDescription);
 
     return () => {
-      document.head.removeChild(link);
       document.head.removeChild(metaDescription);
     };
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#F5F5F7] font-['Inter']" role="main">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Navigation />
-        <Hero />
+    <Layout>
+      <Hero />
         
-        <SiteIntro />
+      <SiteIntro />
         
-        <HowItWorksSection />
+      <HowItWorksSection />
         
-        <h2 className="text-2xl font-semibold mb-6">Latest In-Stock Products</h2>
-        <CardGrid />
-        
-        <Footer />
-      </div>
-    </div>
+      <h2 className="text-2xl font-semibold mb-6">Latest In-Stock Products</h2>
+      <CardGrid />
+    </Layout>
   );
 };
 
