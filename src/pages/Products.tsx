@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -20,15 +19,39 @@ interface Product {
   in_stock?: boolean;
 }
 
+// Key for localStorage
+const FEATURED_PRODUCTS_KEY = 'featuredProducts';
+const FEATURED_PRODUCTS_TIMESTAMP_KEY = 'featuredProductsTimestamp';
+// Cache duration in milliseconds (e.g., 24 hours)
+const CACHE_DURATION = 24 * 60 * 60 * 1000;
+
 const ProductsPage = () => {
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   
   useEffect(() => {
-    const fetchRandomFeaturedProducts = async () => {
+    const fetchFeaturedProducts = async () => {
       try {
         setLoading(true);
+        
+        // Check if we have cached featured products
+        const cachedProducts = localStorage.getItem(FEATURED_PRODUCTS_KEY);
+        const cachedTimestamp = localStorage.getItem(FEATURED_PRODUCTS_TIMESTAMP_KEY);
+        
+        // If we have cached products and they're not expired, use them
+        if (cachedProducts && cachedTimestamp) {
+          const timestamp = parseInt(cachedTimestamp, 10);
+          const now = Date.now();
+          
+          if (now - timestamp < CACHE_DURATION) {
+            setFeaturedProducts(JSON.parse(cachedProducts));
+            setLoading(false);
+            return;
+          }
+        }
+        
+        // Otherwise, fetch new random products
         // Get the count of all products
         const { count, error: countError } = await supabase
           .from('products')
@@ -67,12 +90,17 @@ const ProductsPage = () => {
           });
           
           const randomProducts = await Promise.all(promises);
-          setFeaturedProducts(randomProducts.filter(Boolean) as Product[]);
+          const filteredProducts = randomProducts.filter(Boolean) as Product[];
+          
+          // Save to state and cache
+          setFeaturedProducts(filteredProducts);
+          localStorage.setItem(FEATURED_PRODUCTS_KEY, JSON.stringify(filteredProducts));
+          localStorage.setItem(FEATURED_PRODUCTS_TIMESTAMP_KEY, Date.now().toString());
         } else {
           throw new Error('No products found');
         }
       } catch (error) {
-        console.error('Error fetching random featured products:', error);
+        console.error('Error fetching featured products:', error);
         toast({
           title: "Error",
           description: "Failed to load featured products",
@@ -80,7 +108,7 @@ const ProductsPage = () => {
         });
         
         // Fallback featured products
-        setFeaturedProducts([
+        const fallbackProducts = [
           {
             id: 1,
             product_line: "Scarlet & Violet",
@@ -111,13 +139,18 @@ const ProductsPage = () => {
             image_link: "",
             in_stock: true
           }
-        ]);
+        ];
+        
+        setFeaturedProducts(fallbackProducts);
+        // Even on error, cache the fallback products to avoid repeated errors
+        localStorage.setItem(FEATURED_PRODUCTS_KEY, JSON.stringify(fallbackProducts));
+        localStorage.setItem(FEATURED_PRODUCTS_TIMESTAMP_KEY, Date.now().toString());
       } finally {
         setLoading(false);
       }
     };
 
-    fetchRandomFeaturedProducts();
+    fetchFeaturedProducts();
   }, [toast]);
   
   return (
