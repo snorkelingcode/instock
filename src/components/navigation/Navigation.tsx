@@ -9,14 +9,14 @@ const Navigation = () => {
   return (
     <nav className="bg-white p-4 rounded-lg shadow-md mb-8 flex flex-col">
       <div className="flex justify-between items-center w-full">
-        <Link to="/" className="text-xl font-bold">TCG In-Stock Tracker</Link>
+        <Link to="/" className="text-xl font-bold text-gray-900">TCG In-Stock Tracker</Link>
         
         <div className="hidden md:flex space-x-6">
-          <Link to="/" className="text-gray-700 hover:text-blue-600">Home</Link>
-          <Link to="/products" className="text-gray-700 hover:text-blue-600">Products</Link>
-          <Link to="/news" className="text-gray-700 hover:text-blue-600">News</Link>
-          <Link to="/about" className="text-gray-700 hover:text-blue-600">About</Link>
-          <Link to="/contact" className="text-gray-700 hover:text-blue-600">Contact</Link>
+          <Link to="/" className="text-base text-gray-900 hover:text-blue-600">Home</Link>
+          <Link to="/products" className="text-base text-gray-900 hover:text-blue-600">Products</Link>
+          <Link to="/news" className="text-base text-gray-900 hover:text-blue-600">News</Link>
+          <Link to="/about" className="text-base text-gray-900 hover:text-blue-600">About</Link>
+          <Link to="/contact" className="text-base text-gray-900 hover:text-blue-600">Contact</Link>
         </div>
         
         <Button 
@@ -29,11 +29,11 @@ const Navigation = () => {
       
       {isMenuOpen && (
         <div className="md:hidden w-full mt-4 flex flex-col space-y-3 pt-3 border-t border-gray-200">
-          <Link to="/" className="text-gray-700 hover:text-blue-600 py-2">Home</Link>
-          <Link to="/products" className="text-gray-700 hover:text-blue-600 py-2">Products</Link>
-          <Link to="/news" className="text-gray-700 hover:text-blue-600 py-2">News</Link>
-          <Link to="/about" className="text-gray-700 hover:text-blue-600 py-2">About</Link>
-          <Link to="/contact" className="text-gray-700 hover:text-blue-600 py-2">Contact</Link>
+          <Link to="/" className="text-base text-gray-900 hover:text-blue-600 py-2">Home</Link>
+          <Link to="/products" className="text-base text-gray-900 hover:text-blue-600 py-2">Products</Link>
+          <Link to="/news" className="text-base text-gray-900 hover:text-blue-600 py-2">News</Link>
+          <Link to="/about" className="text-base text-gray-900 hover:text-blue-600 py-2">About</Link>
+          <Link to="/contact" className="text-base text-gray-900 hover:text-blue-600 py-2">Contact</Link>
         </div>
       )}
     </nav>
