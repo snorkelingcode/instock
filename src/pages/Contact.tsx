@@ -159,14 +159,6 @@ const ContactPage = () => {
                 />
               </div>
               
-              {/* Advertisement placed within the form */}
-              <div className="my-8 p-6 bg-gray-100 rounded-lg text-center">
-                <p className="text-sm text-gray-500 mb-2">Advertisement</p>
-                <div className="h-16 flex items-center justify-center border border-dashed border-gray-400">
-                  <p className="text-gray-500">Google AdSense Banner (728×90)</p>
-                </div>
-              </div>
-              
               <div className="flex items-start space-x-2">
                 <Checkbox id="newsletter" className="mt-1" />
                 <div className="grid gap-1.5 leading-none">
@@ -240,14 +232,6 @@ const ContactPage = () => {
                 <Link to="/faq" className="text-blue-600 hover:underline">
                   View all FAQs
                 </Link>
-              </div>
-            </div>
-            
-            {/* Advertisement in the sidebar */}
-            <div className="bg-gray-100 p-6 rounded-lg text-center">
-              <p className="text-sm text-gray-500 mb-2">Advertisement</p>
-              <div className="h-40 flex items-center justify-center border border-dashed border-gray-400">
-                <p className="text-gray-500">Google AdSense (300×250)</p>
               </div>
             </div>
           </div>

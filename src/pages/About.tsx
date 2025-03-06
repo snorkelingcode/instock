@@ -97,14 +97,6 @@ const AboutPage = () => {
             </p>
           </section>
           
-          {/* Advertisement placed within content */}
-          <div className="my-8 p-6 bg-gray-100 rounded-lg text-center">
-            <p className="text-sm text-gray-500 mb-2">Advertisement</p>
-            <div className="h-16 flex items-center justify-center border border-dashed border-gray-400">
-              <p className="text-gray-500">Google AdSense Banner (728×90)</p>
-            </div>
-          </div>
-          
           <section className="mb-12">
             <h2 className="text-2xl font-semibold mb-4">Our Story</h2>
             <p className="text-gray-700 mb-4">
@@ -143,14 +135,6 @@ const AboutPage = () => {
               </div>
             </div>
           </section>
-          
-          {/* Second advertisement within content */}
-          <div className="my-8 p-6 bg-gray-100 rounded-lg text-center">
-            <p className="text-sm text-gray-500 mb-2">Advertisement</p>
-            <div className="h-16 flex items-center justify-center border border-dashed border-gray-400">
-              <p className="text-gray-500">Google AdSense Banner (728×90)</p>
-            </div>
-          </div>
           
           <section className="mb-12">
             <h2 className="text-2xl font-semibold mb-4">Contact Us</h2>
