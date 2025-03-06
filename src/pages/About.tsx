@@ -1,79 +1,9 @@
+
 import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-
-// Navigation component from other pages
-const Navigation = () => {
-  const [isMenuOpen, setIsMenuOpen] = React.useState(false);
-  
-  return (
-    <nav className="bg-white p-4 rounded-lg shadow-md mb-8 flex flex-col">
-      <div className="flex justify-between items-center w-full">
-        <Link to="/" className="text-xl font-bold">Pokemon In-Stock Tracker</Link>
-        
-        <div className="hidden md:flex space-x-6">
-          <Link to="/" className="text-gray-700 hover:text-blue-600">Home</Link>
-          <Link to="/products" className="text-gray-700 hover:text-blue-600">Products</Link>
-          <Link to="/news" className="text-gray-700 hover:text-blue-600">News</Link>
-          <Link to="/about" className="text-gray-700 hover:text-blue-600 font-medium">About</Link>
-          <Link to="/contact" className="text-gray-700 hover:text-blue-600">Contact</Link>
-        </div>
-        
-        <Button 
-          className="md:hidden" 
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
-        >
-          Menu
-        </Button>
-      </div>
-      
-      {isMenuOpen && (
-        <div className="md:hidden w-full mt-4 flex flex-col space-y-3 pt-3 border-t border-gray-200">
-          <Link to="/" className="text-gray-700 hover:text-blue-600 py-2">Home</Link>
-          <Link to="/products" className="text-gray-700 hover:text-blue-600 py-2">Products</Link>
-          <Link to="/news" className="text-gray-700 hover:text-blue-600 py-2">News</Link>
-          <Link to="/about" className="text-gray-700 hover:text-blue-600 font-medium py-2">About</Link>
-          <Link to="/contact" className="text-gray-700 hover:text-blue-600 py-2">Contact</Link>
-        </div>
-      )}
-    </nav>
-  );
-};
-
-// Footer component from other pages
-const Footer = () => (
-  <footer className="bg-white p-8 rounded-lg shadow-md mt-16">
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-      <div>
-        <h3 className="font-semibold mb-4">Pokemon In-Stock Tracker</h3>
-        <p className="text-gray-600 mb-4">
-          Helping degens find products in stock since 2024.
-        </p>
-        <p className="text-gray-600">© 2025 In-Stock Tracker. All rights reserved.</p>
-      </div>
-      
-      <div>
-        <h3 className="font-semibold mb-4">Site Links</h3>
-        <ul className="space-y-2">
-          <li><Link to="/" className="text-gray-600 hover:text-blue-600">Home</Link></li>
-          <li><Link to="/products" className="text-gray-700 hover:text-blue-600">Products</Link></li>
-          <li><Link to="/news" className="text-gray-600 hover:text-blue-600">News</Link></li>
-          <li><Link to="/about" className="text-gray-600 hover:text-blue-600">About</Link></li>
-          <li><Link to="/contact" className="text-gray-600 hover:text-blue-600">Contact</Link></li>
-        </ul>
-      </div>
-      
-      <div>
-        <h3 className="font-semibold mb-4">Legal</h3>
-        <ul className="space-y-2">
-          <li><Link to="/privacy" className="text-gray-600 hover:text-blue-600">Privacy Policy</Link></li>
-          <li><Link to="/terms" className="text-gray-600 hover:text-blue-600">Terms of Service</Link></li>
-          <li><Link to="/cookies" className="text-gray-600 hover:text-blue-600">Cookie Policy</Link></li>
-        </ul>
-      </div>
-    </div>
-  </footer>
-);
+import Navigation from "@/components/navigation/Navigation";
+import Footer from "@/components/layout/Footer";
 
 const AboutPage = () => {
   return (
@@ -82,7 +12,7 @@ const AboutPage = () => {
         <Navigation />
         
         <div className="bg-white p-8 rounded-lg shadow-md mb-12">
-          <h1 className="text-3xl font-bold mb-6">About Pokemon In-Stock Tracker</h1>
+          <h1 className="text-3xl font-bold mb-6">About TCG In-Stock Tracker</h1>
           
           <section className="mb-12">
             <h2 className="text-2xl font-semibold mb-4">Our Mission</h2>
