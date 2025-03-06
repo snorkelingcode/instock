@@ -53,12 +53,14 @@ export const Hero: React.FC = () => {
     };
   }, []);
 
-  // Enhanced text styling with stronger glow effect
+  // Significantly enhanced text styling with much stronger glow effect
   const textStyle = {
-    textShadow: `0 0 5px ${softColors[colorIndex]}80, 
-                 0 0 15px ${softColors[colorIndex]}60,
-                 0 0 25px ${softColors[colorIndex]}40`, // Increased blur radius and added a third layer
-    transition: 'all 1.2s ease', // Slower transition
+    textShadow: `0 0 10px ${softColors[colorIndex]}90, 
+                 0 0 20px ${softColors[colorIndex]}80,
+                 0 0 30px ${softColors[colorIndex]}70, 
+                 0 0 40px ${softColors[colorIndex]}60,
+                 0 0 50px ${softColors[colorIndex]}50`, // Multiple layers with increased intensity
+    transition: 'all 1.5s ease', // Slightly slower transition for smoother effect
     color: '#1E1E1E', // Keep text dark
   };
 
