@@ -171,32 +171,30 @@ const ProductsPage = () => {
             Find all TCG products with real-time stock information from major retailers. We track booster boxes, elite trainer boxes, special collections, and more.
           </p>
           
-          <h2 className="text-xl font-semibold mb-6">Featured Products</h2>
+          <h2 className="text-xl font-semibold mb-4">Featured Products</h2>
           {loading ? (
             <div className="flex justify-center py-4">
               <div className="animate-pulse text-xl">Loading featured products...</div>
             </div>
           ) : (
-            <div className="w-full px-4">
-              <div className="flex flex-wrap -mx-4">
-                {featuredProducts.map((product, index) => (
-                  <div key={product.id} className="w-full md:w-1/3 px-4 mb-8">
-                    <FeaturedProduct 
-                      title={`${product.product_line} ${product.product}`}
-                      description={`${product.product_line} ${product.product} available at ${product.source}`}
-                      price={product.price}
-                      retailer={product.source}
-                      listingLink={product.listing_link}
-                      imageLink={product.image_link}
-                      index={index}
-                    />
-                  </div>
-                ))}
-              </div>
+            <div className="flex justify-between mb-8 max-md:flex-col max-md:items-center">
+              {featuredProducts.map((product, index) => (
+                <div key={product.id} className="md:mx-2">
+                  <FeaturedProduct 
+                    title={`${product.product_line} ${product.product}`}
+                    description={`${product.product_line} ${product.product} available at ${product.source}`}
+                    price={product.price}
+                    retailer={product.source}
+                    listingLink={product.listing_link}
+                    imageLink={product.image_link}
+                    index={index}
+                  />
+                </div>
+              ))}
             </div>
           )}
           
-          <h2 className="text-xl font-semibold mb-4 mt-4">All Products</h2>
+          <h2 className="text-xl font-semibold mb-4 mt-12">All Products</h2>
           <p className="text-gray-700 mb-6">
             Below are all TCG products currently tracked. Products shown as in-stock have been verified within the last 15 minutes.
           </p>
@@ -204,7 +202,6 @@ const ProductsPage = () => {
           <CardGrid />
           
           <div className="mt-8 flex justify-center">
-            {/* Pagination or load more button could go here */}
           </div>
         </div>
         
