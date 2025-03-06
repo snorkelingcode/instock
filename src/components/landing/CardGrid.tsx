@@ -11,7 +11,7 @@ interface Product {
   source: string;
   price: number;
   listing_link: string;
-  image_link?: string; // Add the new image_link field
+  image_link?: string;
 }
 
 export const CardGrid: React.FC = () => {
@@ -60,7 +60,7 @@ export const CardGrid: React.FC = () => {
     source: "Target",
     price: 69.99,
     listing_link: "",
-    image_link: "" // Empty image link for fallback
+    image_link: ""
   }));
 
   // Set 3 items per row for all pages
@@ -98,9 +98,9 @@ export const CardGrid: React.FC = () => {
                     source={product.source}
                     price={product.price}
                     listingLink={product.listing_link}
-                    imageLink={product.image_link} // Pass the image link to the Card
+                    imageLink={product.image_link}
                     onListingClick={() => handleListingClick(product.id)}
-                    index={cardIndex} // Pass the unique index to the Card
+                    index={cardIndex}
                   />
                 </div>
               );
@@ -108,7 +108,7 @@ export const CardGrid: React.FC = () => {
             {/* Fill empty spaces in the last row to maintain layout */}
             {rowIndex === itemRows.length - 1 && row.length < itemsPerRow && 
               Array(itemsPerRow - row.length).fill(0).map((_, i) => (
-                <div key={`empty-${i}`} className="w-[340px] h-[295px] invisible max-md:hidden" />
+                <div key={`empty-${i}`} className="w-[340px] h-[440px] invisible max-md:hidden" />
               ))
             }
           </div>
