@@ -1,3 +1,4 @@
+
 import React from "react";
 
 // Featured product component with toned down effect
@@ -85,7 +86,6 @@ const FeaturedProduct = ({ title, description, price, retailer, listingLink, ima
         <div className="text-xl text-[#1E1E1E] mb-[6px]">{title}</div>
         <div className="text-sm text-[#1E1E1E] mb-[8px]">{description}</div>
         <div className="text-lg text-[#1E1E1E] mb-[6px] font-medium">${price.toFixed(2)}</div>
-        <div className="text-sm text-[#1E1E1E] mb-[6px]">at {retailer}</div>
         <div className="text-sm font-medium text-green-600">
           In Stock
         </div>
