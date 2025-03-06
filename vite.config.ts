@@ -11,6 +11,12 @@ export default defineConfig(({ mode }) => ({
     port: 8080,
     historyApiFallback: true,
   },
+  // Handle SPA routing during preview/production
+  preview: {
+    port: 8080,
+    strictPort: true,
+    host: true,
+  },
   plugins: [
     react(),
     mode === 'development' &&
