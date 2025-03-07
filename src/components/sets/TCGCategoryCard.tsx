@@ -25,7 +25,7 @@ export const TCGCategoryCard: React.FC<TCGCategoryCardProps> = ({
   
   return (
     <Card 
-      className="w-full transition-all duration-300 hover:shadow-lg border-t-4"
+      className="w-full transition-all duration-300 hover:shadow-lg border-t-4 flex flex-col"
       style={{ borderTopColor: color }}
     >
       <CardHeader>
@@ -35,12 +35,12 @@ export const TCGCategoryCard: React.FC<TCGCategoryCardProps> = ({
         </div>
         <CardDescription>{description}</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-grow">
         <p className="text-sm text-muted-foreground">
           View all {name} sets including pricing, release dates, and card details.
         </p>
       </CardContent>
-      <CardFooter>
+      <CardFooter className="flex justify-center">
         <Button 
           onClick={() => navigate(link)} 
           className="w-full"
