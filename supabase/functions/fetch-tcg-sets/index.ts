@@ -1,4 +1,5 @@
 
+// Import necessary Deno modules
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.1.1";
 
 // Define environment variables (these will need to be set in Supabase)
