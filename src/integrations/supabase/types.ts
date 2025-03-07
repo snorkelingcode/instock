@@ -9,6 +9,147 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      api_config: {
+        Row: {
+          api_name: string
+          created_at: string | null
+          id: number
+          last_sync_time: string | null
+          sync_frequency: string | null
+        }
+        Insert: {
+          api_name: string
+          created_at?: string | null
+          id?: number
+          last_sync_time?: string | null
+          sync_frequency?: string | null
+        }
+        Update: {
+          api_name?: string
+          created_at?: string | null
+          id?: number
+          last_sync_time?: string | null
+          sync_frequency?: string | null
+        }
+        Relationships: []
+      }
+      lorcana_sets: {
+        Row: {
+          created_at: string | null
+          id: number
+          name: string
+          release_date: string | null
+          set_code: string | null
+          set_id: string
+          set_image: string | null
+          set_type: string | null
+          total_cards: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: number
+          name: string
+          release_date?: string | null
+          set_code?: string | null
+          set_id: string
+          set_image?: string | null
+          set_type?: string | null
+          total_cards?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: number
+          name?: string
+          release_date?: string | null
+          set_code?: string | null
+          set_id?: string
+          set_image?: string | null
+          set_type?: string | null
+          total_cards?: number | null
+        }
+        Relationships: []
+      }
+      mtg_sets: {
+        Row: {
+          card_count: number | null
+          code: string | null
+          created_at: string | null
+          icon_url: string | null
+          id: number
+          image_url: string | null
+          name: string
+          release_date: string | null
+          set_id: string
+          set_type: string | null
+        }
+        Insert: {
+          card_count?: number | null
+          code?: string | null
+          created_at?: string | null
+          icon_url?: string | null
+          id?: number
+          image_url?: string | null
+          name: string
+          release_date?: string | null
+          set_id: string
+          set_type?: string | null
+        }
+        Update: {
+          card_count?: number | null
+          code?: string | null
+          created_at?: string | null
+          icon_url?: string | null
+          id?: number
+          image_url?: string | null
+          name?: string
+          release_date?: string | null
+          set_id?: string
+          set_type?: string | null
+        }
+        Relationships: []
+      }
+      pokemon_sets: {
+        Row: {
+          created_at: string | null
+          id: number
+          images_url: string | null
+          logo_url: string | null
+          name: string
+          printed_total: number | null
+          release_date: string | null
+          series: string | null
+          set_id: string
+          symbol_url: string | null
+          total: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: number
+          images_url?: string | null
+          logo_url?: string | null
+          name: string
+          printed_total?: number | null
+          release_date?: string | null
+          series?: string | null
+          set_id: string
+          symbol_url?: string | null
+          total?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: number
+          images_url?: string | null
+          logo_url?: string | null
+          name?: string
+          printed_total?: number | null
+          release_date?: string | null
+          series?: string | null
+          set_id?: string
+          symbol_url?: string | null
+          total?: number | null
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           id: number
@@ -54,6 +195,42 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      yugioh_sets: {
+        Row: {
+          created_at: string | null
+          id: number
+          name: string
+          num_of_cards: number | null
+          set_code: string | null
+          set_id: string
+          set_image: string | null
+          set_type: string | null
+          tcg_date: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: number
+          name: string
+          num_of_cards?: number | null
+          set_code?: string | null
+          set_id: string
+          set_image?: string | null
+          set_type?: string | null
+          tcg_date?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: number
+          name?: string
+          num_of_cards?: number | null
+          set_code?: string | null
+          set_id?: string
+          set_image?: string | null
+          set_type?: string | null
+          tcg_date?: string | null
         }
         Relationships: []
       }

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { RefreshCw } from "lucide-react";
+import LoadingSpinner from "@/components/ui/loading-spinner";
 
 interface ApiSyncButtonProps {
   source: "pokemon" | "mtg" | "yugioh" | "lorcana";
@@ -24,15 +25,21 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({
     
     setLoading(true);
     try {
+      console.log(`Starting ${source} data sync...`);
+      
+      // Call the Supabase Edge Function
       const { data, error } = await supabase.functions.invoke('fetch-tcg-sets', {
         body: { source },
       });
 
       if (error) {
-        throw new Error(error.message);
+        console.error(`Edge function error:`, error);
+        throw new Error(error.message || "Error calling Edge Function");
       }
 
-      if (data.success) {
+      console.log(`Edge function response:`, data);
+
+      if (data && data.success) {
         toast({
           title: "Success",
           description: data.message,
@@ -42,7 +49,7 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({
           onSuccess();
         }
       } else {
-        throw new Error(data.error || "Unknown error occurred");
+        throw new Error(data?.error || "Unknown error occurred");
       }
     } catch (err) {
       console.error(`Error syncing ${source} data:`, err);
@@ -63,7 +70,7 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({
       className="flex items-center gap-2"
     >
       {loading ? (
-        <RefreshCw className="h-4 w-4 animate-spin" />
+        <LoadingSpinner size="sm" color={source === "pokemon" ? "red" : source === "mtg" ? "blue" : source === "yugioh" ? "purple" : "green"} />
       ) : (
         <RefreshCw className="h-4 w-4" />
       )}
