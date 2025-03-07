@@ -14,6 +14,12 @@ import News from "./pages/News";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService"; 
 import CookiePolicy from "./pages/CookiePolicy";
+import Sets from "./pages/Sets";
+import PokemonSets from "./pages/TCGSets/PokemonSets";
+import MTGSets from "./pages/TCGSets/MTGSets";
+import YugiohSets from "./pages/TCGSets/YugiohSets";
+import LorcanaSets from "./pages/TCGSets/LorcanaSets";
+import SetSyncPage from "./pages/TCGSets/SetSyncPage";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +40,15 @@ const App = () => {
             <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="/terms" element={<TermsOfService />} />
             <Route path="/cookies" element={<CookiePolicy />} />
+            
+            {/* New TCG Sets routes */}
+            <Route path="/sets" element={<Sets />} />
+            <Route path="/sets/pokemon" element={<PokemonSets />} />
+            <Route path="/sets/mtg" element={<MTGSets />} />
+            <Route path="/sets/yugioh" element={<YugiohSets />} />
+            <Route path="/sets/lorcana" element={<LorcanaSets />} />
+            <Route path="/sets/sync" element={<SetSyncPage />} />
+            
             <Route path="*" element={<NotFound />} />
           </Routes>
         </HashRouter>
