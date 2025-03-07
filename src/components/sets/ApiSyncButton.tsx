@@ -102,6 +102,10 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({
         {loading ? `Syncing ${label}...` : `Sync ${label} Data`}
       </Button>
       
+      <div className="text-xs text-gray-500 mt-1">
+        <p>Images will be downloaded and stored locally in Supabase.</p>
+      </div>
+      
       {edgeFunctionResponse && (
         <div className="text-xs text-gray-500 mt-1">
           <details>

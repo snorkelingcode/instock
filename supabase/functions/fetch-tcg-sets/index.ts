@@ -17,6 +17,54 @@ const corsHeaders = {
 // Create Supabase client
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+// Function to download and upload an image to Supabase storage
+async function storeImageInSupabase(imageUrl, category, filename) {
+  if (!imageUrl) return null;
+  
+  try {
+    console.log(`Downloading image from: ${imageUrl}`);
+    const imageResponse = await fetch(imageUrl);
+    
+    if (!imageResponse.ok) {
+      console.error(`Failed to download image: ${imageUrl}, status: ${imageResponse.status}`);
+      return imageUrl; // Fallback to original URL on error
+    }
+    
+    const imageArrayBuffer = await imageResponse.arrayBuffer();
+    const imageBuffer = new Uint8Array(imageArrayBuffer);
+    
+    // Create a unique path in the storage bucket
+    const storagePath = `${category}/${filename}`;
+    console.log(`Uploading image to path: ${storagePath}`);
+    
+    // Upload to Supabase storage
+    const { data: uploadData, error: uploadError } = await supabase
+      .storage
+      .from('tcg-images')
+      .upload(storagePath, imageBuffer, {
+        contentType: imageResponse.headers.get('content-type') || 'image/jpeg',
+        upsert: true
+      });
+    
+    if (uploadError) {
+      console.error(`Error uploading image to Supabase:`, uploadError);
+      return imageUrl; // Fallback to original URL on error
+    }
+    
+    // Get the public URL for the uploaded image
+    const { data: { publicUrl } } = supabase
+      .storage
+      .from('tcg-images')
+      .getPublicUrl(storagePath);
+    
+    console.log(`Image uploaded successfully to: ${publicUrl}`);
+    return publicUrl;
+  } catch (error) {
+    console.error(`Error storing image:`, error);
+    return imageUrl; // Fallback to original URL on error
+  }
+}
+
 // Handle OPTIONS request for CORS
 Deno.serve(async (req) => {
   console.log("Edge function received request:", req.method, req.url);
@@ -127,18 +175,36 @@ async function fetchPokemonSets(req, responseHeaders) {
     const data = await response.json();
     console.log(`Received ${data.data?.length || 0} Pokémon sets from API`);
     
-    // Process and insert sets into database
-    const sets = data.data.map((set) => ({
-      set_id: set.id,
-      name: set.name,
-      series: set.series,
-      printed_total: set.printedTotal,
-      total: set.total,
-      release_date: set.releaseDate,
-      symbol_url: set.images?.symbol,
-      logo_url: set.images?.logo,
-      images_url: null,
-    }));
+    // Process sets and store images in Supabase Storage
+    const sets = [];
+    for (const set of data.data) {
+      console.log(`Processing set: ${set.id} - ${set.name}`);
+      
+      // Store set images in Supabase Storage
+      const symbolUrl = await storeImageInSupabase(
+        set.images?.symbol, 
+        'pokemon/symbols', 
+        `${set.id}_symbol.png`
+      );
+      
+      const logoUrl = await storeImageInSupabase(
+        set.images?.logo, 
+        'pokemon/logos', 
+        `${set.id}_logo.png`
+      );
+      
+      sets.push({
+        set_id: set.id,
+        name: set.name,
+        series: set.series,
+        printed_total: set.printedTotal,
+        total: set.total,
+        release_date: set.releaseDate,
+        symbol_url: symbolUrl,
+        logo_url: logoUrl,
+        images_url: null,
+      });
+    }
 
     console.log(`Processing ${sets.length} Pokémon sets for database insertion`);
 
@@ -159,7 +225,7 @@ async function fetchPokemonSets(req, responseHeaders) {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: `Successfully imported ${sets.length} Pokémon sets` 
+        message: `Successfully imported ${sets.length} Pokémon sets with locally stored images` 
       }),
       {
         status: 200,
@@ -199,17 +265,35 @@ async function fetchMTGSets(req, responseHeaders) {
     const data = await response.json();
     console.log(`Received ${data.sets?.length || 0} MTG sets from API`);
     
-    // Process and insert sets into database
-    const sets = data.sets.map((set) => ({
-      set_id: set.code,
-      name: set.name,
-      code: set.code,
-      release_date: set.releaseDate,
-      set_type: set.type,
-      card_count: set.cardCount,
-      icon_url: set.symbolUrl,
-      image_url: set.logoUrl || set.symbolUrl,
-    }));
+    // Process sets and store images in Supabase Storage
+    const sets = [];
+    for (const set of data.sets) {
+      console.log(`Processing set: ${set.code} - ${set.name}`);
+      
+      // Store set images in Supabase Storage
+      const symbolUrl = await storeImageInSupabase(
+        set.symbolUrl, 
+        'mtg/symbols', 
+        `${set.code}_symbol.png`
+      );
+      
+      const logoUrl = await storeImageInSupabase(
+        set.logoUrl || set.symbolUrl, 
+        'mtg/logos', 
+        `${set.code}_logo.png`
+      );
+      
+      sets.push({
+        set_id: set.code,
+        name: set.name,
+        code: set.code,
+        release_date: set.releaseDate,
+        set_type: set.type,
+        card_count: set.cardCount,
+        icon_url: symbolUrl,
+        image_url: logoUrl,
+      });
+    }
 
     console.log(`Processing ${sets.length} MTG sets for database insertion`);
 
@@ -230,7 +314,7 @@ async function fetchMTGSets(req, responseHeaders) {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: `Successfully imported ${sets.length} MTG sets` 
+        message: `Successfully imported ${sets.length} MTG sets with locally stored images` 
       }),
       {
         status: 200,
@@ -272,15 +356,43 @@ async function fetchYugiohSets(req, responseHeaders) {
     console.log(`Received ${data?.length || 0} Yu-Gi-Oh! sets from API`);
     
     // Process and insert sets into database
-    const sets = data.map((set) => ({
-      set_id: set.set_code,
-      name: set.set_name,
-      set_code: set.set_code,
-      num_of_cards: set.num_of_cards || 0,
-      tcg_date: set.tcg_date,
-      set_image: null, // YGOPRODeck API doesn't provide set images
-      set_type: set.set_type || "N/A",
-    }));
+    const sets = [];
+    
+    // Since YGOPRODeck API doesn't provide set images directly,
+    // we'll try to find some from a different endpoint for key sets
+    for (const set of data) {
+      console.log(`Processing set: ${set.set_code} - ${set.set_name}`);
+      
+      // Try to get a card from this set to use its image
+      let setImage = null;
+      try {
+        const cardResponse = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?cardset=${encodeURIComponent(set.set_name)}&num=1&offset=0`);
+        if (cardResponse.ok) {
+          const cardData = await cardResponse.json();
+          if (cardData.data && cardData.data.length > 0 && cardData.data[0].card_images && cardData.data[0].card_images.length > 0) {
+            const imageUrl = cardData.data[0].card_images[0].image_url;
+            setImage = await storeImageInSupabase(
+              imageUrl,
+              'yugioh/sets',
+              `${set.set_code}_set.jpg`
+            );
+          }
+        }
+      } catch (e) {
+        console.error(`Error fetching card image for set ${set.set_name}:`, e);
+        // Continue without an image
+      }
+      
+      sets.push({
+        set_id: set.set_code,
+        name: set.set_name,
+        set_code: set.set_code,
+        num_of_cards: set.num_of_cards || 0,
+        tcg_date: set.tcg_date,
+        set_image: setImage,
+        set_type: set.set_type || "N/A",
+      });
+    }
 
     console.log(`Processing ${sets.length} Yu-Gi-Oh! sets for database insertion`);
 
@@ -301,7 +413,7 @@ async function fetchYugiohSets(req, responseHeaders) {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: `Successfully imported ${sets.length} Yu-Gi-Oh! sets` 
+        message: `Successfully imported ${sets.length} Yu-Gi-Oh! sets with locally stored images where available` 
       }),
       {
         status: 200,
@@ -330,7 +442,7 @@ async function fetchLorcanaSets(req, responseHeaders) {
   
   try {
     // We'll manually insert some Lorcana sets since there's no official API
-    const sets = [
+    const setData = [
       {
         set_id: "TFC",
         name: "The First Chapter",
@@ -369,6 +481,24 @@ async function fetchLorcanaSets(req, responseHeaders) {
       },
     ];
 
+    // Download and store images locally
+    const sets = [];
+    for (const set of setData) {
+      console.log(`Processing Lorcana set: ${set.set_id} - ${set.name}`);
+      
+      // Store set image in Supabase Storage
+      const setImage = await storeImageInSupabase(
+        set.set_image,
+        'lorcana/sets',
+        `${set.set_id}_set.png`
+      );
+      
+      sets.push({
+        ...set,
+        set_image: setImage
+      });
+    }
+
     console.log(`Processing ${sets.length} Disney Lorcana sets for database insertion`);
 
     // Insert sets into database (upsert to avoid duplicates)
@@ -388,7 +518,7 @@ async function fetchLorcanaSets(req, responseHeaders) {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: `Successfully added ${sets.length} Disney Lorcana sets` 
+        message: `Successfully added ${sets.length} Disney Lorcana sets with locally stored images` 
       }),
       {
         status: 200,
