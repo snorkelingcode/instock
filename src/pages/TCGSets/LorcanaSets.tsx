@@ -35,7 +35,7 @@ const LorcanaSets = () => {
           throw error;
         }
 
-        setSets(data as LorcanaSet[] || []);
+        setSets((data || []) as LorcanaSet[]);
       } catch (error) {
         console.error('Error fetching Disney Lorcana sets:', error);
         toast({

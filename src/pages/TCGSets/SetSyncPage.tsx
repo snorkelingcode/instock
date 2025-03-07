@@ -30,7 +30,7 @@ const SetSyncPage = () => {
         throw error;
       }
 
-      setApiConfigs(data as ApiConfig[] || []);
+      setApiConfigs((data || []) as ApiConfig[]);
     } catch (error) {
       console.error('Error fetching API configs:', error);
       toast({

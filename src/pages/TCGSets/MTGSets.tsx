@@ -36,7 +36,7 @@ const MTGSets = () => {
           throw error;
         }
 
-        setSets(data as MTGSet[] || []);
+        setSets((data || []) as MTGSet[]);
       } catch (error) {
         console.error('Error fetching MTG sets:', error);
         toast({

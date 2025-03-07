@@ -35,7 +35,7 @@ const YugiohSets = () => {
           throw error;
         }
 
-        setSets(data as YugiohSet[] || []);
+        setSets((data || []) as YugiohSet[]);
       } catch (error) {
         console.error('Error fetching Yu-Gi-Oh! sets:', error);
         toast({
