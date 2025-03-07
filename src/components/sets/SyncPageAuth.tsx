@@ -25,11 +25,18 @@ const SyncPageAuth: React.FC<SyncPageAuthProps> = ({ onAuthenticated }) => {
       
       if (session) {
         // Check if user has admin role
-        const { data, error } = await supabase.rpc('is_admin');
-        
-        if (data && !error) {
-          localStorage.setItem("syncPageAuthenticated", "true");
-          onAuthenticated();
+        try {
+          const { data, error } = await supabase.rpc('has_role', {
+            _user_id: session.user.id,
+            _role: 'admin'
+          });
+          
+          if (data && !error) {
+            localStorage.setItem("syncPageAuthenticated", "true");
+            onAuthenticated();
+          }
+        } catch (error) {
+          console.error("Error checking admin role:", error);
         }
       }
     };
@@ -44,7 +51,7 @@ const SyncPageAuth: React.FC<SyncPageAuthProps> = ({ onAuthenticated }) => {
     
     try {
       // Use Supabase auth with email/password
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -54,7 +61,10 @@ const SyncPageAuth: React.FC<SyncPageAuthProps> = ({ onAuthenticated }) => {
       }
       
       // Check if user has admin role
-      const { data: isAdmin, error: roleError } = await supabase.rpc('is_admin');
+      const { data: isAdmin, error: roleError } = await supabase.rpc('has_role', {
+        _user_id: data.user?.id,
+        _role: 'admin'
+      });
       
       if (roleError) {
         throw roleError;

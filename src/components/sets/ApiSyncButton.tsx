@@ -58,7 +58,21 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({
     if (loading) return;
     
     // Check if user has admin permissions
-    const { data: isAdmin, error: adminError } = await supabase.rpc('is_admin');
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      toast({
+        title: "Error",
+        description: "You need to be logged in to perform this action",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Check admin role using has_role function
+    const { data: isAdmin, error: adminError } = await supabase.rpc('has_role', {
+      _user_id: session.user.id,
+      _role: 'admin'
+    });
     
     if (adminError || !isAdmin) {
       toast({
