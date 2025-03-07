@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { RefreshCw } from "lucide-react";
 import LoadingSpinner from "@/components/ui/loading-spinner";
+import { invalidateTcgCache } from "@/utils/cacheUtils";
 
 interface ApiSyncButtonProps {
   source: "pokemon" | "mtg" | "yugioh" | "lorcana";
@@ -121,6 +122,9 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({
       console.log(`Edge function response:`, data);
 
       if (data && data.success) {
+        // *** New: Invalidate cache after successful sync ***
+        invalidateTcgCache(source);
+        
         toast({
           title: "Success",
           description: data.message,
