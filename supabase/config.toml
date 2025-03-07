@@ -2,6 +2,4 @@
 project_id = "etgkuasmqjidwtaxrfww"
 
 [api]
-# Config for Supabase Edge Functions
 port = 8080
-schemes = ["http"]
