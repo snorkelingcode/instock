@@ -27,7 +27,7 @@ const YugiohSets = () => {
       try {
         setLoading(true);
         const { data, error } = await supabase
-          .from('yugioh_sets')
+          .from('yugioh_sets' as any)
           .select('*')
           .order('tcg_date', { ascending: false });
 

@@ -23,7 +23,7 @@ const SetSyncPage = () => {
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .from('api_config')
+        .from('api_config' as any)
         .select('*');
 
       if (error) {

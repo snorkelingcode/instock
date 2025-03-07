@@ -27,7 +27,7 @@ const LorcanaSets = () => {
       try {
         setLoading(true);
         const { data, error } = await supabase
-          .from('lorcana_sets')
+          .from('lorcana_sets' as any)
           .select('*')
           .order('release_date', { ascending: false });
 

@@ -28,7 +28,7 @@ const MTGSets = () => {
       try {
         setLoading(true);
         const { data, error } = await supabase
-          .from('mtg_sets')
+          .from('mtg_sets' as any)
           .select('*')
           .order('release_date', { ascending: false });
 
