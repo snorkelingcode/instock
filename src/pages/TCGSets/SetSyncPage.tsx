@@ -30,7 +30,9 @@ const SetSyncPage = () => {
         throw error;
       }
 
-      setApiConfigs((data || []) as ApiConfig[]);
+      // Using a safer type casting approach
+      const fetchedData = data || [];
+      setApiConfigs(fetchedData as unknown as ApiConfig[]);
     } catch (error) {
       console.error('Error fetching API configs:', error);
       toast({

@@ -37,7 +37,9 @@ const PokemonSets = () => {
           throw error;
         }
 
-        setSets((data || []) as PokemonSet[]);
+        // Using a safer type casting approach
+        const fetchedData = data || [];
+        setSets(fetchedData as unknown as PokemonSet[]);
       } catch (error) {
         console.error('Error fetching Pokémon sets:', error);
         toast({

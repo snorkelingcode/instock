@@ -36,7 +36,9 @@ const MTGSets = () => {
           throw error;
         }
 
-        setSets((data || []) as MTGSet[]);
+        // Using a safer type casting approach
+        const fetchedData = data || [];
+        setSets(fetchedData as unknown as MTGSet[]);
       } catch (error) {
         console.error('Error fetching MTG sets:', error);
         toast({

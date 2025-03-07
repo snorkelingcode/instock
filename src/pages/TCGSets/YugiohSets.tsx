@@ -35,7 +35,9 @@ const YugiohSets = () => {
           throw error;
         }
 
-        setSets((data || []) as YugiohSet[]);
+        // Using a safer type casting approach
+        const fetchedData = data || [];
+        setSets(fetchedData as unknown as YugiohSet[]);
       } catch (error) {
         console.error('Error fetching Yu-Gi-Oh! sets:', error);
         toast({
