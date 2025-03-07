@@ -4,7 +4,7 @@ import Layout from "@/components/layout/Layout";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import SetCard from "@/components/sets/SetCard";
-import { Cards } from "lucide-react";
+import { ScrollText } from "lucide-react";
 
 interface LorcanaSet {
   id: number;
@@ -35,7 +35,7 @@ const LorcanaSets = () => {
           throw error;
         }
 
-        setSets(data || []);
+        setSets(data as LorcanaSet[] || []);
       } catch (error) {
         console.error('Error fetching Disney Lorcana sets:', error);
         toast({
@@ -55,7 +55,7 @@ const LorcanaSets = () => {
     <Layout>
       <div className="bg-white p-6 rounded-lg shadow-md mb-8">
         <div className="flex items-center gap-3 mb-4">
-          <Cards className="h-8 w-8 text-purple-500" />
+          <ScrollText className="h-8 w-8 text-purple-500" />
           <h1 className="text-2xl font-bold">Disney Lorcana Sets</h1>
         </div>
         <p className="text-gray-700 mb-8">

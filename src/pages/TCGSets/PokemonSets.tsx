@@ -37,7 +37,7 @@ const PokemonSets = () => {
           throw error;
         }
 
-        setSets(data || []);
+        setSets(data as PokemonSet[] || []);
       } catch (error) {
         console.error('Error fetching Pokémon sets:', error);
         toast({

@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { ReloadIcon } from "@radix-ui/react-icons";
+import { RefreshCw } from "lucide-react";
 
 interface ApiSyncButtonProps {
   source: "pokemon" | "mtg" | "yugioh" | "lorcana";
@@ -63,9 +63,9 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({
       className="flex items-center gap-2"
     >
       {loading ? (
-        <ReloadIcon className="h-4 w-4 animate-spin" />
+        <RefreshCw className="h-4 w-4 animate-spin" />
       ) : (
-        <ReloadIcon className="h-4 w-4" />
+        <RefreshCw className="h-4 w-4" />
       )}
       {loading ? `Syncing ${label}...` : `Sync ${label} Data`}
     </Button>

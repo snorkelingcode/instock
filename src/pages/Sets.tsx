@@ -3,7 +3,7 @@ import React from "react";
 import Layout from "@/components/layout/Layout";
 import { TCGCategoryCard } from "@/components/sets/TCGCategoryCard";
 import { Grid } from "@/components/ui/grid";
-import { Layers, Gamepad, Cards, Sparkles } from "lucide-react";
+import { Layers, Gamepad, ScrollText, Sparkles } from "lucide-react";
 
 const SetsPage = () => {
   const tcgCategories = [
@@ -35,7 +35,7 @@ const SetsPage = () => {
       id: "lorcana",
       name: "Disney Lorcana",
       description: "Collect and play with iconic Disney characters in this new TCG.",
-      icon: <Cards className="h-8 w-8 text-purple-500" />,
+      icon: <ScrollText className="h-8 w-8 text-purple-500" />,
       color: "#805AD5", // Purple shade
       link: "/sets/lorcana"
     }
