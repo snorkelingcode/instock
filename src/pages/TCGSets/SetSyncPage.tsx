@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { InfoIcon } from "lucide-react";
+import SyncPageAuth from "@/components/sets/SyncPageAuth";
 
 interface ApiConfig {
   api_name: string;
@@ -17,6 +18,7 @@ interface ApiConfig {
 const SetSyncPage = () => {
   const [apiConfigs, setApiConfigs] = useState<ApiConfig[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const { toast } = useToast();
 
   const fetchApiConfigs = async () => {
@@ -46,8 +48,10 @@ const SetSyncPage = () => {
   };
 
   useEffect(() => {
-    fetchApiConfigs();
-  }, [toast]);
+    if (isAuthenticated) {
+      fetchApiConfigs();
+    }
+  }, [isAuthenticated, toast]);
 
   const formatLastSyncTime = (timestamp: string | null) => {
     if (!timestamp) return 'Never';
@@ -62,6 +66,24 @@ const SetSyncPage = () => {
     return formatLastSyncTime(config?.last_sync_time || null);
   };
 
+  // Handle successful authentication
+  const handleAuthenticated = () => {
+    setIsAuthenticated(true);
+  };
+
+  // If not authenticated, show the auth form
+  if (!isAuthenticated) {
+    return (
+      <Layout>
+        <div className="bg-white p-6 rounded-lg shadow-md mb-8">
+          <h1 className="text-2xl font-bold mb-4">TCG Data Synchronization</h1>
+          <SyncPageAuth onAuthenticated={handleAuthenticated} />
+        </div>
+      </Layout>
+    );
+  }
+
+  // If authenticated, show the sync page content
   return (
     <Layout>
       <div className="bg-white p-6 rounded-lg shadow-md mb-8">
