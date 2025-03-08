@@ -1,12 +1,11 @@
 
 {
+  "imports": {
+    "std/": "https://deno.land/std@0.177.0/"
+  },
   "tasks": {
-    "start": "deno run --allow-net --allow-env --import-map=../../import_map.json index.ts",
-    "deploy": "deployctl deploy --project=fetch-tcg-sets --import-map=../../import_map.json index.ts"
+    "dev": "deno run --allow-net --allow-env --allow-read index.ts",
+    "deploy": "supabase functions deploy fetch-tcg-sets"
   },
-  "compilerOptions": {
-    "allowJs": true,
-    "lib": ["deno.window"]
-  },
-  "importMap": "../../import_map.json"
+  "importMap": "../import_map.json"
 }

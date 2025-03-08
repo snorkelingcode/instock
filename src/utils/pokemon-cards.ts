@@ -105,7 +105,7 @@ export const sortCardsByNumber = (cards: PokemonCard[]): PokemonCard[] => {
   });
 };
 
-// Fetch cards from API with timeout and proper error handling
+// Fetch cards from API with optimized error handling and retries
 export const fetchPokemonCards = async (setId: string): Promise<PokemonCard[]> => {
   console.log(`Fetching cards for set: ${setId}`);
   
@@ -116,90 +116,110 @@ export const fetchPokemonCards = async (setId: string): Promise<PokemonCard[]> =
     return cached.cards;
   }
   
-  try {
-    // First, try to fetch from our database for faster loading
-    const { data: dbCards, error: dbError } = await supabase
-      .from('pokemon_cards')
-      .select('*')
-      .eq('set_id', setId)
-      .order('number', { ascending: true });
-    
-    if (!dbError && dbCards && dbCards.length > 0) {
-      console.log(`Found ${dbCards.length} cards in database for set: ${setId}`);
-      
-      // Format to match PokemonCard interface (if necessary)
-      const formattedCards = dbCards.map((card: any) => ({
-        id: card.card_id,
-        name: card.name,
-        supertype: card.supertype,
-        subtypes: card.subtypes,
-        hp: card.hp,
-        types: card.types,
-        evolves_from: card.evolves_from,
-        evolves_to: card.evolves_to,
-        rules: card.rules,
-        attacks: card.attacks,
-        weaknesses: card.weaknesses,
-        resistances: card.resistances,
-        retreat_cost: card.retreat_cost,
-        converted_retreat_cost: card.converted_retreat_cost,
-        set: card.set_id,
-        number: card.number,
-        artist: card.artist,
-        rarity: card.rarity,
-        national_pokedex_numbers: card.national_pokedex_numbers,
-        legalities: card.legalities,
-        images: card.images,
-        tcgplayer: card.tcgplayer
-      })) as PokemonCard[];
-      
-      // Cache the results
-      cardCache.set(setId, {
-        cards: formattedCards,
-        timestamp: Date.now()
-      });
-      
-      return sortCardsByNumber(formattedCards);
-    }
-    
-    // If not in database or error, fetch from API with timeout
-    console.log(`Fetching from API for set: ${setId}`);
-    
-    // Set up timeout - 8 seconds
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000);
-    
+  // Maximum retries for database or API errors
+  const MAX_RETRIES = 2;
+  let retryCount = 0;
+  
+  while (retryCount <= MAX_RETRIES) {
     try {
-      const response = await fetch(
-        `https://api.pokemontcg.io/v2/cards?q=set.id:${setId}&orderBy=number`, 
-        { signal: controller.signal }
-      );
+      // First, try to fetch from our database for faster loading
+      const { data: dbCards, error: dbError } = await supabase
+        .from('pokemon_cards')
+        .select('*')
+        .eq('set_id', setId)
+        .order('number', { ascending: true });
       
-      clearTimeout(timeoutId);
-      
-      if (!response.ok) {
-        throw new Error(`API responded with status: ${response.status}`);
+      if (!dbError && dbCards && dbCards.length > 0) {
+        console.log(`Found ${dbCards.length} cards in database for set: ${setId}`);
+        
+        // Format to match PokemonCard interface
+        const formattedCards = dbCards.map((card: any) => ({
+          id: card.card_id,
+          name: card.name,
+          supertype: card.supertype,
+          subtypes: card.subtypes,
+          hp: card.hp,
+          types: card.types,
+          evolves_from: card.evolves_from,
+          evolves_to: card.evolves_to,
+          rules: card.rules,
+          attacks: card.attacks,
+          weaknesses: card.weaknesses,
+          resistances: card.resistances,
+          retreat_cost: card.retreat_cost,
+          converted_retreat_cost: card.converted_retreat_cost,
+          set: card.set_id,
+          number: card.number,
+          artist: card.artist,
+          rarity: card.rarity,
+          national_pokedex_numbers: card.national_pokedex_numbers,
+          legalities: card.legalities,
+          images: card.images,
+          tcgplayer: card.tcgplayer
+        })) as PokemonCard[];
+        
+        // Cache the results
+        cardCache.set(setId, {
+          cards: formattedCards,
+          timestamp: Date.now()
+        });
+        
+        return sortCardsByNumber(formattedCards);
       }
       
-      const data = await response.json();
-      const fetchedCards = data.data as PokemonCard[];
+      // If not in database or error, fetch from API with timeout
+      console.log(`Fetching from API for set: ${setId}`);
       
-      // Cache the results
-      cardCache.set(setId, {
-        cards: fetchedCards,
-        timestamp: Date.now()
-      });
+      // Shorter timeout to prevent long waits - 5 seconds
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
       
-      return sortCardsByNumber(fetchedCards);
+      try {
+        const response = await fetch(
+          `https://api.pokemontcg.io/v2/cards?q=set.id:${setId}&orderBy=number`, 
+          { signal: controller.signal }
+        );
+        
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          throw new Error(`API responded with status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        const fetchedCards = data.data as PokemonCard[];
+        
+        // Cache the results
+        cardCache.set(setId, {
+          cards: fetchedCards,
+          timestamp: Date.now()
+        });
+        
+        return sortCardsByNumber(fetchedCards);
+      } catch (error) {
+        if (error.name === 'AbortError') {
+          console.error('API request timed out, retrying...');
+          retryCount++;
+          // If we have more retries to go, continue the loop
+          if (retryCount <= MAX_RETRIES) continue;
+          throw new Error('Request timed out after multiple attempts. The API is taking too long to respond.');
+        }
+        throw error;
+      }
     } catch (error) {
-      if (error.name === 'AbortError') {
-        console.error('API request timed out');
-        throw new Error('Request timed out. The API is taking too long to respond.');
+      retryCount++;
+      if (retryCount <= MAX_RETRIES) {
+        console.error(`Error fetching cards for set ${setId}, retry ${retryCount}:`, error);
+        // Wait a second before retrying
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        continue;
       }
+      
+      console.error(`Failed to fetch cards for set ${setId} after ${MAX_RETRIES} retries:`, error);
       throw error;
     }
-  } catch (error) {
-    console.error(`Error fetching cards for set ${setId}:`, error);
-    throw error;
   }
+  
+  // This should not be reached due to the throw in the catch block, but TypeScript wants a return
+  throw new Error(`Failed to fetch cards for set ${setId} after ${MAX_RETRIES} retries`);
 };

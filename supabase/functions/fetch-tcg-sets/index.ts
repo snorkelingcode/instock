@@ -1,3 +1,4 @@
+
 // @ts-ignore
 import { serve } from "std/http/server.ts";
 // @ts-ignore
@@ -33,16 +34,19 @@ interface JobStatus {
   error: string | null;
 }
 
+// CORS headers
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS, GET"
+};
+
 serve(async (req) => {
   // Handle CORS
   if (req.method === "OPTIONS") {
     return new Response(null, {
       status: 200,
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization",
-      },
+      headers: corsHeaders,
     });
   }
 
@@ -62,7 +66,7 @@ serve(async (req) => {
           status: 401,
           headers: {
             "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": "*",
+            ...corsHeaders,
           },
         }
       );
@@ -87,7 +91,7 @@ serve(async (req) => {
             status: 500,
             headers: {
               "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": "*",
+              ...corsHeaders,
             },
           }
         );
@@ -102,7 +106,7 @@ serve(async (req) => {
           status: 200,
           headers: {
             "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": "*",
+            ...corsHeaders,
           },
         }
       );
@@ -130,7 +134,7 @@ serve(async (req) => {
           status: 429,
           headers: {
             "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": "*",
+            ...corsHeaders,
           },
         }
       );
@@ -162,7 +166,7 @@ serve(async (req) => {
             status: 429,
             headers: {
               "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": "*",
+              ...corsHeaders,
               "Retry-After": retryAfter.toString()
             },
           }
@@ -199,16 +203,17 @@ serve(async (req) => {
           status: 500,
           headers: {
             "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": "*",
+            ...corsHeaders,
           },
         }
       );
     }
     
     // Start background processing
-    processTCGData(requestData.source, jobId);
+    // Instead of waiting for the process to complete, we mark it as a background task
+    EdgeRuntime.waitUntil(processTCGData(requestData.source, jobId));
     
-    // Return success with the job ID
+    // Return success with the job ID immediately
     return new Response(
       JSON.stringify({ 
         success: true, 
@@ -219,7 +224,7 @@ serve(async (req) => {
         status: 200,
         headers: {
           "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
+          ...corsHeaders,
         },
       }
     );
@@ -235,7 +240,7 @@ serve(async (req) => {
         status: 500,
         headers: {
           "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
+          ...corsHeaders,
         },
       }
     );
@@ -254,7 +259,7 @@ async function processTCGData(source: string, jobId: string) {
     
     // Fetch data from appropriate source with timeout
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 25000); // 25 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // Reduced timeout to 15 seconds
     
     try {
       switch (source) {
@@ -278,7 +283,7 @@ async function processTCGData(source: string, jobId: string) {
     } catch (fetchError) {
       clearTimeout(timeoutId);
       if (fetchError.name === 'AbortError') {
-        throw new Error(`API request for ${source} timed out after 25 seconds`);
+        throw new Error(`API request for ${source} timed out after 15 seconds`);
       }
       throw fetchError;
     }
@@ -524,8 +529,8 @@ async function saveSets(source: string, sets: any[], jobId: string) {
       throw new Error(`Unknown source: ${source}`);
   }
   
-  // Process sets in batches to avoid overloading the database
-  const batchSize = 20;
+  // Process sets in smaller batches to avoid overloading the database
+  const batchSize = 10; // Reduced batch size 
   let processedCount = 0;
   
   for (let i = 0; i < sets.length; i += batchSize) {
@@ -547,9 +552,9 @@ async function saveSets(source: string, sets: any[], jobId: string) {
       // Update job progress
       await updateJobStatus(jobId, 'saving_to_database', progress, sets.length, processedCount);
       
-      // Add a small delay between batches to avoid overwhelming the database
+      // Add a slightly longer delay between batches to avoid database overloading
       if (i + batchSize < sets.length) {
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, 1000));
       }
     } catch (error) {
       console.error(`Error with batch ${i / batchSize + 1}:`, error);
