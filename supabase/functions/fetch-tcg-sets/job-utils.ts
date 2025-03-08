@@ -65,6 +65,8 @@ export async function updateJobStatus(jobId, status, progress = null, totalItems
       updateData.completed_at = new Date().toISOString();
     }
     
+    console.log(`Updating job status for ${jobId}:`, JSON.stringify(updateData));
+    
     const { error: updateError } = await supabase
       .from(JOB_STATUS_TABLE)
       .update(updateData)

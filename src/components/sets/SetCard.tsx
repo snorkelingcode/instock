@@ -37,6 +37,11 @@ const SetCard: React.FC<SetCardProps> = ({
       })
     : 'N/A';
   
+  const handleViewDetails = () => {
+    console.log(`Navigating to set details: category=${category}, id=${id}`);
+    navigate(`/sets/${category}/${id}`);
+  };
+  
   return (
     <Card className="w-full transition-all duration-300 hover:shadow-lg border-t-4 overflow-hidden"
       style={{ borderTopColor: color }}>
@@ -78,7 +83,7 @@ const SetCard: React.FC<SetCardProps> = ({
       
       <CardFooter>
         <Button 
-          onClick={() => navigate(`/sets/${category}/${id}`)} 
+          onClick={handleViewDetails} 
           className="w-full"
           style={{ backgroundColor: color }}
         >

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -37,10 +38,12 @@ const PokemonSetDetails = () => {
 
       try {
         setLoading(true);
+        console.log(`Fetching details for Pokemon set with ID: ${id}`);
         
         // Try to get from cache first
         const cachedSet = getCache<PokemonSet>(CACHE_KEY, CACHE_PARTITION);
         if (cachedSet) {
+          console.log("Retrieved set from cache:", cachedSet);
           setSet(cachedSet);
           setLoading(false);
           return;
@@ -50,20 +53,23 @@ const PokemonSetDetails = () => {
         const { data, error } = await supabase
           .from("pokemon_sets")
           .select("*")
-          .eq('set_id', id as any)
+          .eq('set_id', id)
           .single();
 
         if (error) {
+          console.error("Database error:", error);
           throw error;
         }
 
         if (data) {
+          console.log("Retrieved set from database:", data);
           const setData = data as PokemonSet;
           setSet(setData);
           
           // Cache the result
           setCache(CACHE_KEY, setData, CACHE_DURATION_MINUTES, CACHE_PARTITION);
         } else {
+          console.error("Set not found for ID:", id);
           setError("Set not found");
         }
       } catch (err: any) {

@@ -13,16 +13,12 @@ interface SyncPageAuthProps {
   onAuthenticated: () => void;
 }
 
-// Access key for non-admin users
-const ACCESS_KEY = "TCG-SYNC-ACCESS-2024";
-
 const SyncPageAuth: React.FC<SyncPageAuthProps> = ({ onAuthenticated }) => {
   const [password, setPassword] = useState("");
   const [email, setEmail] = useState("");
   const [accessKey, setAccessKey] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [showAccessKey, setShowAccessKey] = useState(false);
   const { toast } = useToast();
   
   useEffect(() => {
@@ -101,13 +97,22 @@ const SyncPageAuth: React.FC<SyncPageAuthProps> = ({ onAuthenticated }) => {
     }
   };
 
-  const handleAccessKeySubmit = (e: React.FormEvent) => {
+  const handleAccessKeySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setIsLoading(true);
     
     try {
-      if (accessKey === ACCESS_KEY) {
+      // Use edge function to verify the access key securely
+      const { data, error } = await supabase.functions.invoke('verify-sync-access', {
+        body: { accessKey },
+      });
+      
+      if (error) {
+        throw new Error(error.message || "Authentication failed");
+      }
+      
+      if (data && data.valid) {
         localStorage.setItem("syncPageAuthenticated", "true");
         toast({
           title: "Success",
@@ -130,10 +135,6 @@ const SyncPageAuth: React.FC<SyncPageAuthProps> = ({ onAuthenticated }) => {
     }
   };
 
-  const toggleShowAccessKey = () => {
-    setShowAccessKey(!showAccessKey);
-  };
-
   return (
     <div className="flex items-center justify-center min-h-[50vh] p-4">
       <Card className="w-full max-w-md">
@@ -150,22 +151,8 @@ const SyncPageAuth: React.FC<SyncPageAuthProps> = ({ onAuthenticated }) => {
           <Alert className="mb-4 bg-blue-50 border-blue-200">
             <InfoIcon className="h-4 w-4 text-blue-600" />
             <AlertDescription className="text-blue-700">
-              <div className="flex items-center justify-between">
-                <span>Default access key for this demo: </span>
-                <div className="flex items-center space-x-2">
-                  <code className="bg-blue-100 px-2 py-1 rounded text-blue-800 font-mono">
-                    {showAccessKey ? ACCESS_KEY : "••••••••••••••••"}
-                  </code>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={toggleShowAccessKey}
-                    className="h-8 px-2 text-xs"
-                  >
-                    {showAccessKey ? "Hide" : "Show"}
-                  </Button>
-                </div>
-              </div>
+              You need either admin credentials or an access key to use this feature.
+              Contact your administrator if you don't have access.
             </AlertDescription>
           </Alert>
           
