@@ -111,7 +111,7 @@ export async function handleRequest(req, supabase) {
   switch (source) {
     case "pokemon":
       const { processChunkedPokemonSets } = await import("./pokemon.ts");
-      processingFunction = (jobId) => processWithChunking(processChunkedPokemonSets, jobId, source, supabase, 10);
+      processingFunction = (jobId) => processWithChunking(processChunkedPokemonSets, jobId, source, supabase, 30);
       break;
     case "mtg":
       processingFunction = (jobId) => processMTGSets(jobId, supabase);
@@ -199,7 +199,7 @@ async function resumeExistingJob(job, source, supabase) {
     switch (source) {
       case "pokemon":
         const { processChunkedPokemonSets } = await import("./pokemon.ts");
-        resumeFunction = () => processChunkedPokemonSets(job.job_id, job.completed_items || 0, job.total_items || 0);
+        resumeFunction = () => processChunkedPokemonSets(job.job_id, job.completed_items || 0, job.total_items || 0, supabase);
         break;
       default:
         console.error(`Resuming not implemented for ${source}`);

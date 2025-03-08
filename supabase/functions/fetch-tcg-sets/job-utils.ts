@@ -1,4 +1,3 @@
-
 import { JOB_STATUS_TABLE } from "./utils.ts";
 
 // Function to process in the background
@@ -16,7 +15,7 @@ export async function processInBackground(fn, jobId, source, supabase) {
 }
 
 // Add new function to handle chunked processing
-export async function processWithChunking(chunkedFn, jobId, source, supabase, chunkSize = 10) {
+export async function processWithChunking(chunkedFn, jobId, source, supabase, chunkSize = 30) {
   try {
     console.log(`Starting chunked processing for ${source} job ${jobId} with chunk size ${chunkSize}`);
     
@@ -49,7 +48,7 @@ export async function processWithChunking(chunkedFn, jobId, source, supabase, ch
     }
     
     // Process in chunks
-    await chunkedFn(jobId, completedItems, totalItems);
+    await chunkedFn(jobId, completedItems, totalItems, supabase);
     
     // Mark as completed if we got here without errors
     await updateJobStatus(jobId, 'completed', 100, null, null, null, supabase);

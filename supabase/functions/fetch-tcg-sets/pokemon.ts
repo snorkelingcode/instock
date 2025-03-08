@@ -4,8 +4,8 @@ import * as StorageUtils from "./storage-utils.ts";
 import { updateJobStatus, updateJobProgress } from "./job-utils.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.1.1";
 
-// Added chunk size constant - increasing to process more sets at once
-const CHUNK_SIZE = 20;
+// Increased chunk size to process more sets at once while still allowing resume
+const CHUNK_SIZE = 30;
 
 export async function processPokemonSets(jobId, supabase) {
   try {
@@ -59,6 +59,9 @@ export async function processChunkedPokemonSets(jobId, startIndex = 0, knownTota
         
         // Update total items
         await updateJobProgress(jobId, startIndex, totalSets, supabase);
+        
+        // Log the complete list of set IDs to help with debugging
+        console.log(`Set IDs fetched: ${sets.map(s => s.id).join(', ')}`);
       } catch (fetchError) {
         console.error("Error fetching Pokemon sets:", fetchError);
         throw new Error(`Failed to fetch Pokemon sets: ${fetchError.message}`);
@@ -110,6 +113,20 @@ export async function processChunkedPokemonSets(jobId, startIndex = 0, knownTota
         console.log(`Job ${jobId} is no longer running, stopping chunked processing`);
         return;
       }
+      
+      // If this isn't the last chunk, save a checkpoint in the job status
+      if (i + CHUNK_SIZE < totalSets) {
+        console.log(`Saving checkpoint at index ${i + processedCount}`);
+        await updateJobStatus(
+          jobId, 
+          'processing_data', 
+          Math.floor(((i + processedCount) / totalSets) * 100),
+          totalSets, 
+          i + processedCount, 
+          null, 
+          supabase
+        );
+      }
     }
     
     // Step 3: Update sync time
@@ -136,7 +153,20 @@ async function processSetChunk(sets, startIdx, totalSets, jobId, apiKey, supabas
       console.log(`Processing set: ${set.id} - ${set.name}`);
       
       // Force a small delay to prevent overwhelming the API
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+      // Check if the set is already in the database
+      const { data: existingSet } = await supabase
+        .from('tcg_sets')
+        .select('id')
+        .eq('id', set.id)
+        .single();
+        
+      if (existingSet) {
+        console.log(`Set ${set.id} already exists in database, updating...`);
+      } else {
+        console.log(`Set ${set.id} not found in database, inserting new record`);
+      }
       
       // Save set to database
       await saveSetToDatabase(set, supabase);
@@ -195,7 +225,7 @@ async function fetchPokemonSets(apiKey) {
   };
   
   try {
-    const response = await fetch('https://api.pokemontcg.io/v2/sets', { headers });
+    const response = await fetch('https://api.pokemontcg.io/v2/sets?pageSize=500', { headers });
     
     if (!response.ok) {
       const text = await response.text();
