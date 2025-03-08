@@ -1,8 +1,8 @@
 
-// CORS Headers for Edge Function
+// CORS Headers for Edge Functions
+
 export const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, apikey, content-type",
-  "Access-Control-Max-Age": "86400",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization, apikey, x-client-info",
 };
