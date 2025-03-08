@@ -1,91 +1,130 @@
 
-// Function to check if a storage bucket exists and create it if not
-export async function ensureStorageBucket(bucketName, supabase) {
+// Check if Supabase buckets exist and create if needed
+async function ensureBucketExists(bucketName, supabase) {
   try {
-    // Check if bucket exists
-    const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+    console.log(`Checking if bucket ${bucketName} exists`);
     
-    if (bucketsError) {
-      console.error(`Error checking storage buckets:`, bucketsError);
+    // Check if bucket exists
+    const { data: buckets, error: listError } = await supabase.storage.listBuckets();
+    
+    if (listError) {
+      console.error(`Error listing buckets:`, listError);
       return false;
     }
     
     const bucketExists = buckets.some(bucket => bucket.name === bucketName);
     
     if (!bucketExists) {
-      console.log(`Creating storage bucket: ${bucketName}`);
-      const { error } = await supabase.storage.createBucket(bucketName, {
-        public: true,
+      console.log(`Creating bucket ${bucketName}`);
+      
+      const { error: createError } = await supabase.storage.createBucket(bucketName, {
+        public: true, // Set bucket to public
+        fileSizeLimit: 5242880 // 5MB limit
       });
       
-      if (error) {
-        console.error(`Error creating storage bucket ${bucketName}:`, error);
+      if (createError) {
+        console.error(`Error creating bucket ${bucketName}:`, createError);
         return false;
       }
       
-      console.log(`Successfully created bucket: ${bucketName}`);
+      console.log(`Bucket ${bucketName} created successfully`);
     } else {
       console.log(`Bucket ${bucketName} already exists`);
     }
     
     return true;
   } catch (error) {
-    console.error(`Error ensuring storage bucket ${bucketName}:`, error);
+    console.error(`Error ensuring bucket ${bucketName} exists:`, error);
     return false;
   }
 }
 
-// Function to download and upload an image to Supabase storage
-export async function storeImageInSupabase(imageUrl, category, filename, supabase) {
-  if (!imageUrl) return null;
-  
+// Extract bucket and path from full path
+function extractBucketAndPath(fullPath) {
+  const parts = fullPath.split('/');
+  const bucket = parts[0];
+  const path = parts.slice(1).join('/');
+  return { bucket, path };
+}
+
+// Store an image from URL in Supabase Storage
+export async function storeImageInSupabase(imageUrl, bucketPath, fileName, supabase) {
   try {
-    console.log(`Downloading image from: ${imageUrl}`);
-    const imageResponse = await fetch(imageUrl);
-    
-    if (!imageResponse.ok) {
-      console.error(`Failed to download image: ${imageUrl}, status: ${imageResponse.status}`);
-      return imageUrl; // Fallback to original URL on error
+    if (!imageUrl) {
+      console.log(`Skipping empty image URL for ${fileName}`);
+      return null;
     }
     
-    const imageArrayBuffer = await imageResponse.arrayBuffer();
-    const imageBuffer = new Uint8Array(imageArrayBuffer);
+    console.log(`Storing image from ${imageUrl} to ${bucketPath}/${fileName}`);
     
-    // Ensure the tcg-images bucket exists
-    const bucketExists = await ensureStorageBucket('tcg-images', supabase);
+    // Extract bucket name from the path
+    const parts = bucketPath.split('/');
+    const bucketName = parts[0];
+    const folderPath = parts.slice(1).join('/');
+    
+    // Ensure bucket exists
+    const bucketExists = await ensureBucketExists(bucketName, supabase);
     if (!bucketExists) {
-      console.error('Failed to ensure the tcg-images bucket exists');
-      return imageUrl; // Fallback to original URL
+      throw new Error(`Bucket ${bucketName} doesn't exist and couldn't be created`);
     }
     
-    // Create a unique path in the storage bucket
-    const storagePath = `${category}/${filename}`;
-    console.log(`Uploading image to path: ${storagePath}`);
+    // Check if file already exists
+    const filePath = folderPath ? `${folderPath}/${fileName}` : fileName;
+    const { data: existingFile, error: checkError } = await supabase.storage
+      .from(bucketName)
+      .list(folderPath || '', {
+        limit: 100,
+        search: fileName
+      });
+      
+    if (!checkError && existingFile && existingFile.some(file => file.name === fileName)) {
+      console.log(`File ${filePath} already exists in bucket ${bucketName}`);
+      
+      // Return the public URL of the existing file
+      const { data: publicUrl } = supabase.storage
+        .from(bucketName)
+        .getPublicUrl(filePath);
+        
+      return publicUrl.publicUrl;
+    }
     
-    // Upload to Supabase storage
-    const { data: uploadData, error: uploadError } = await supabase
-      .storage
-      .from('tcg-images')
-      .upload(storagePath, imageBuffer, {
-        contentType: imageResponse.headers.get('content-type') || 'image/jpeg',
+    // Fetch the image
+    const response = await fetch(imageUrl);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch image from ${imageUrl}: ${response.status} ${response.statusText}`);
+    }
+    
+    // Get image as array buffer
+    const arrayBuffer = await response.arrayBuffer();
+    
+    // Upload the image to Supabase Storage
+    const { data, error } = await supabase.storage
+      .from(bucketName)
+      .upload(filePath, arrayBuffer, {
+        contentType: response.headers.get('content-type') || 'image/jpeg',
         upsert: true
       });
-    
-    if (uploadError) {
-      console.error(`Error uploading image to Supabase:`, uploadError);
-      return imageUrl; // Fallback to original URL on error
+      
+    if (error) {
+      console.error(`Error uploading image to ${bucketPath}/${fileName}:`, error);
+      throw error;
     }
     
-    // Get the public URL for the uploaded image
-    const { data: { publicUrl } } = supabase
-      .storage
-      .from('tcg-images')
-      .getPublicUrl(storagePath);
+    console.log(`Successfully uploaded image to ${bucketPath}/${fileName}`);
     
-    console.log(`Image uploaded successfully to: ${publicUrl}`);
-    return publicUrl;
+    // Get the public URL of the uploaded file
+    const { data: publicUrl } = supabase.storage
+      .from(bucketName)
+      .getPublicUrl(filePath);
+      
+    return publicUrl.publicUrl;
+    
   } catch (error) {
-    console.error(`Error storing image:`, error);
-    return imageUrl; // Fallback to original URL on error
+    console.error(`Error storing image in Supabase:`, error);
+    
+    // Return the original URL as fallback
+    console.log(`Falling back to original image URL: ${imageUrl}`);
+    return imageUrl;
   }
 }

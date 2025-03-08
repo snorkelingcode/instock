@@ -4,7 +4,7 @@ import { storeImageInSupabase } from "./storage-utils.ts";
 import { updateApiSyncTime } from "./utils.ts";
 import { supabase } from "./index.ts";
 
-// Fetch total number of sets 
+// Fetch total number of sets - IMPROVED VERSION
 export async function fetchPokemonSetCount(supabase) {
   try {
     console.log("Fetching total number of Pokemon sets");
@@ -15,7 +15,8 @@ export async function fetchPokemonSetCount(supabase) {
       "X-Api-Key": apiKey
     };
     
-    const response = await fetch("https://api.pokemontcg.io/v2/sets", {
+    // Use the count endpoint directly for accuracy
+    const response = await fetch("https://api.pokemontcg.io/v2/sets?page=1&pageSize=1", {
       headers
     });
     
@@ -24,10 +25,10 @@ export async function fetchPokemonSetCount(supabase) {
     }
     
     const data = await response.json();
-    const count = data.data?.length || 0;
+    const totalCount = data.totalCount || 0;
     
-    console.log(`Found ${count} Pokemon sets`);
-    return count;
+    console.log(`Found ${totalCount} Pokemon sets via totalCount property`);
+    return totalCount;
   } catch (error) {
     console.error("Error fetching Pokemon set count:", error);
     throw error;
@@ -53,20 +54,41 @@ export async function processChunkedPokemonSets(jobId, startIndex = 0, totalItem
       "X-Api-Key": apiKey
     };
     
-    // Fetch all sets
-    console.log("Fetching all Pokemon sets from API");
-    const setsResponse = await fetch("https://api.pokemontcg.io/v2/sets", {
-      headers
-    });
+    // Fetch sets in batches to handle large datasets
+    const pageSize = 250; // Maximum allowed by the API
+    let allSets = [];
+    let currentPage = 1;
+    let morePages = true;
     
-    if (!setsResponse.ok) {
-      throw new Error(`API Error: ${setsResponse.status} ${setsResponse.statusText}`);
+    console.log(`Fetching all Pokemon sets in pages of ${pageSize}`);
+    
+    while (morePages) {
+      console.log(`Fetching page ${currentPage} of sets`);
+      const setsResponse = await fetch(`https://api.pokemontcg.io/v2/sets?page=${currentPage}&pageSize=${pageSize}`, {
+        headers
+      });
+      
+      if (!setsResponse.ok) {
+        throw new Error(`API Error on page ${currentPage}: ${setsResponse.status} ${setsResponse.statusText}`);
+      }
+      
+      const setsData = await setsResponse.json();
+      const pageSets = setsData.data || [];
+      
+      if (pageSets.length === 0) {
+        morePages = false;
+      } else {
+        allSets = [...allSets, ...pageSets];
+        currentPage++;
+      }
+      
+      console.log(`Fetched ${pageSets.length} sets from page ${currentPage-1}, total so far: ${allSets.length}`);
+      
+      // Small delay to avoid rate limiting
+      await new Promise(resolve => setTimeout(resolve, 100));
     }
     
-    const setsData = await setsResponse.json();
-    const allSets = setsData.data || [];
-    
-    console.log(`Found ${allSets.length} sets, processing from index ${startIndex}`);
+    console.log(`Found total of ${allSets.length} sets, processing from index ${startIndex}`);
     
     // Process sets in chunks
     const endIndex = Math.min(startIndex + chunkSize, allSets.length);
@@ -82,6 +104,9 @@ export async function processChunkedPokemonSets(jobId, startIndex = 0, totalItem
       console.log(`Processing set ${currentIndex+1}/${totalItems}: ${set.name} (${set.id})`);
       
       try {
+        // First, ensure that the pokemon_sets table exists
+        await createPokemonSetsTableIfNeeded(supabase);
+        
         // Store set images in Supabase Storage
         console.log(`Storing images for set: ${set.id}`);
         
@@ -116,6 +141,8 @@ export async function processChunkedPokemonSets(jobId, startIndex = 0, totalItem
         
         if (setError) {
           console.error(`Error inserting set ${set.id}:`, setError);
+        } else {
+          console.log(`Successfully inserted/updated set ${set.id}: ${set.name}`);
         }
         
         // Now fetch and process all cards for this set
@@ -158,24 +185,46 @@ async function processCardsForSet(setId, jobId, currentSetIndex, totalSets, supa
       "X-Api-Key": apiKey
     };
     
-    const response = await fetch(`https://api.pokemontcg.io/v2/cards?q=set.id:${setId}`, {
-      headers
-    });
+    // Fetch cards for this set with pagination
+    let allCards = [];
+    let page = 1;
+    let hasMoreCards = true;
+    const pageSize = 250;
     
-    if (!response.ok) {
-      throw new Error(`API Error: ${response.status} ${response.statusText}`);
+    while (hasMoreCards) {
+      console.log(`Fetching page ${page} of cards for set ${setId}`);
+      
+      const response = await fetch(`https://api.pokemontcg.io/v2/cards?q=set.id:${setId}&page=${page}&pageSize=${pageSize}`, {
+        headers
+      });
+      
+      if (!response.ok) {
+        throw new Error(`API Error on page ${page}: ${response.status} ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      const pageCards = data.data || [];
+      
+      if (pageCards.length === 0) {
+        hasMoreCards = false;
+      } else {
+        allCards = [...allCards, ...pageCards];
+        page++;
+      }
+      
+      console.log(`Fetched ${pageCards.length} cards from page ${page-1} for set ${setId}, total so far: ${allCards.length}`);
+      
+      // Small delay to avoid rate limiting
+      await new Promise(resolve => setTimeout(resolve, 100));
     }
     
-    const data = await response.json();
-    const cards = data.data || [];
-    
-    console.log(`Found ${cards.length} cards in set ${setId}`);
+    console.log(`Found ${allCards.length} cards in set ${setId}`);
     
     // Process cards in batches to avoid overwhelming the database
     const batchSize = 20;
-    for (let i = 0; i < cards.length; i += batchSize) {
-      const batch = cards.slice(i, i + batchSize);
-      console.log(`Processing batch of ${batch.length} cards (${i}-${i+batch.length}) for set ${setId}`);
+    for (let i = 0; i < allCards.length; i += batchSize) {
+      const batch = allCards.slice(i, i + batchSize);
+      console.log(`Processing batch of ${batch.length} cards (${i}-${i+batch.length-1}) for set ${setId}`);
       
       const cardInserts = [];
       
@@ -250,14 +299,48 @@ async function processCardsForSet(setId, jobId, currentSetIndex, totalSets, supa
           
         if (insertError) {
           console.error(`Error inserting cards batch for set ${setId}:`, insertError);
+        } else {
+          console.log(`Successfully inserted/updated ${cardInserts.length} cards for set ${setId}`);
         }
       }
     }
     
-    console.log(`Completed processing all cards for set ${setId}`);
+    console.log(`Completed processing all ${allCards.length} cards for set ${setId}`);
     
   } catch (error) {
     console.error(`Error processing cards for set ${setId}:`, error);
     throw error;
+  }
+}
+
+// Ensure the pokemon_sets table exists
+async function createPokemonSetsTableIfNeeded(supabase) {
+  try {
+    const { error } = await supabase.rpc("create_pokemon_sets_table_if_not_exists").catch(e => {
+      console.log("Pokemon sets table creation RPC error (may attempt SQL):", e);
+      
+      // Try direct SQL if RPC fails
+      return supabase.from('_manual_sql').select('*').eq('statement', `
+        CREATE TABLE IF NOT EXISTS public.pokemon_sets (
+          id SERIAL PRIMARY KEY,
+          set_id TEXT UNIQUE NOT NULL,
+          name TEXT NOT NULL,
+          series TEXT,
+          printed_total INTEGER,
+          total INTEGER,
+          release_date DATE,
+          symbol_url TEXT,
+          logo_url TEXT,
+          images_url TEXT,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+        );
+      `);
+    });
+    
+    if (error) {
+      console.error("Error creating pokemon_sets table:", error);
+    }
+  } catch (error) {
+    console.error("Exception in createPokemonSetsTableIfNeeded:", error);
   }
 }

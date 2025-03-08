@@ -121,7 +121,7 @@ async function createPokemonCardsTableIfNeeded() {
           resistances JSONB[],
           retreat_cost TEXT[],
           converted_retreat_cost INTEGER,
-          set_id TEXT NOT NULL REFERENCES pokemon_sets(set_id),
+          set_id TEXT NOT NULL,
           number TEXT,
           artist TEXT,
           rarity TEXT,
@@ -132,7 +132,8 @@ async function createPokemonCardsTableIfNeeded() {
           tcgplayer JSONB,
           cardmarket JSONB,
           created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-          updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+          updated_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+          CONSTRAINT fk_set FOREIGN KEY(set_id) REFERENCES pokemon_sets(set_id)
         );
         
         -- Create index on set_id for faster queries
