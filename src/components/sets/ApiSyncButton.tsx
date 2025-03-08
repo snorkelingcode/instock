@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { RefreshCw, RotateCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import { Progress } from "@/components/ui/progress";
 import { 
@@ -86,7 +86,7 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({
         }
         
         if (result.data && result.data.success && result.data.job) {
-          setJobStatus(result.data.job);
+          setJobStatus(result.data.job as JobStatus);
           
           // If job is completed or failed, clean up
           if (result.data.job.status === 'completed' || result.data.job.status === 'failed') {

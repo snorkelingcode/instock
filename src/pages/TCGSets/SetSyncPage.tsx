@@ -67,7 +67,7 @@ const SetSyncPage = () => {
   const fetchActiveJobs = async () => {
     try {
       const { data, error } = await supabase
-        .from('api_job_status')
+        .from('api_job_status' as any)
         .select('*')
         .not('status', 'in', '("completed","failed")')
         .order('created_at', { ascending: false });
@@ -77,7 +77,8 @@ const SetSyncPage = () => {
         return;
       }
 
-      setActiveJobs(data as JobStatus[]);
+      // Explicitly cast the data to JobStatus[]
+      setActiveJobs(data as unknown as JobStatus[]);
     } catch (error) {
       console.error('Error in fetchActiveJobs:', error);
     }
