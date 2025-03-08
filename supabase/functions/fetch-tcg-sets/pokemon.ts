@@ -30,27 +30,41 @@ export async function processChunkedPokemonSets(jobId, startIndex = 0, knownTota
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || ""
     );
     
-    // Step 1: Fetch all sets
-    console.log("Fetching all Pokemon TCG sets...");
-    await updateJobStatus(jobId, 'fetching_data', null, null, null, null, supabase);
-    
-    const sets = await fetchPokemonSets(apiKey);
-    const totalSets = sets.length;
-    console.log(`Found ${totalSets} Pokemon TCG sets`);
-    
-    // Update total items if it's not already known
-    if (knownTotalItems === 0) {
+    // Step 1: Fetch all sets - only if we're starting from the beginning
+    let sets = [];
+    if (startIndex === 0 || knownTotalItems === 0) {
+      console.log("Fetching all Pokemon TCG sets...");
+      await updateJobStatus(jobId, 'fetching_data', null, null, null, null, supabase);
+      
+      sets = await fetchPokemonSets(apiKey);
+      const totalSets = sets.length;
+      console.log(`Found ${totalSets} Pokemon TCG sets`);
+      
+      // Update total items
       await updateJobProgress(jobId, startIndex, totalSets, supabase);
     } else {
-      await updateJobProgress(jobId, startIndex, knownTotalItems, supabase);
+      // We're resuming, so get the sets again but don't reset progress
+      console.log("Resuming Pokemon sets processing - refetching sets...");
+      sets = await fetchPokemonSets(apiKey);
+      console.log(`Refetched ${sets.length} sets for resuming`);
+      
+      // Verify our known total matches actual total
+      if (sets.length !== knownTotalItems) {
+        console.log(`Warning: Total sets count changed from ${knownTotalItems} to ${sets.length}`);
+      }
+      
+      // Keep using the known total for consistency
+      await updateJobProgress(jobId, startIndex, knownTotalItems > 0 ? knownTotalItems : sets.length, supabase);
     }
+    
+    const totalSets = knownTotalItems > 0 ? knownTotalItems : sets.length;
     
     // Step 2: Process sets in chunks
     await updateJobStatus(jobId, 'processing_data', null, null, null, null, supabase);
     
     // Process sets in chunks from the starting index
-    for (let i = startIndex; i < totalSets; i += CHUNK_SIZE) {
-      const chunkEnd = Math.min(i + CHUNK_SIZE, totalSets);
+    for (let i = startIndex; i < totalSets && i < sets.length; i += CHUNK_SIZE) {
+      const chunkEnd = Math.min(i + CHUNK_SIZE, totalSets, sets.length);
       console.log(`Processing chunk ${i} to ${chunkEnd} of ${totalSets}`);
       
       // Process each set in the current chunk
@@ -87,6 +101,9 @@ async function processSetChunk(sets, startIdx, totalSets, jobId, apiKey, supabas
   for (const set of sets) {
     try {
       console.log(`Processing set: ${set.id} - ${set.name}`);
+      
+      // Force a small delay to prevent overwhelming the API
+      await new Promise(resolve => setTimeout(resolve, 200));
       
       // Save set to database
       await saveSetToDatabase(set, supabase);

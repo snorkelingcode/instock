@@ -2,7 +2,7 @@
 // Import necessary modules
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.1.1";
 import { corsHeaders, handleRequest } from "./utils.ts";
-import { createRpcFunctionsIfNeeded } from "./db-setup.ts";
+import { createRpcFunctionsIfNeeded } from "../db-setup.ts";
 
 // Define environment variables
 const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";

@@ -35,6 +35,34 @@ export async function handleRequest(req, supabase) {
     );
   }
 
+  // Check if there's an existing job in progress
+  const existingJob = await checkForExistingJob(source, supabase);
+  
+  // If there's an existing job in progress, we should resume it instead of creating a new one
+  if (existingJob) {
+    console.log(`Found existing job ${existingJob.job_id} for ${source} in status ${existingJob.status}`);
+    
+    // If the job is in a resumable state, resume it
+    if (existingJob.status === 'processing_data' || existingJob.status === 'fetching_data') {
+      console.log(`Resuming existing job ${existingJob.job_id} from ${existingJob.completed_items}/${existingJob.total_items} items`);
+      
+      // Start the resume process in the background
+      await resumeExistingJob(existingJob, source, supabase);
+      
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: `Resuming job for ${source}`,
+          jobId: existingJob.job_id
+        }),
+        {
+          status: 202,
+          headers: responseHeaders,
+        }
+      );
+    }
+  }
+
   // Check rate limit before proceeding
   const rateLimitCheck = await checkRateLimit(source, supabase);
   if (rateLimitCheck.limited) {
@@ -122,6 +150,68 @@ export async function handleRequest(req, supabase) {
       headers: responseHeaders,
     }
   );
+}
+
+// New function to check for existing jobs in progress
+async function checkForExistingJob(source, supabase) {
+  try {
+    const { data, error } = await supabase
+      .from(JOB_STATUS_TABLE)
+      .select("*")
+      .eq("source", source)
+      .in("status", ["pending", "fetching_data", "processing_data"])
+      .order("created_at", { ascending: false })
+      .limit(1);
+      
+    if (error) {
+      console.error(`Error checking for existing job for ${source}:`, error);
+      return null;
+    }
+    
+    if (data && data.length > 0) {
+      return data[0];
+    }
+    
+    return null;
+  } catch (error) {
+    console.error(`Error in checkForExistingJob for ${source}:`, error);
+    return null;
+  }
+}
+
+// New function to resume an existing job
+async function resumeExistingJob(job, source, supabase) {
+  try {
+    console.log(`Resuming job ${job.job_id} for ${source}`);
+    
+    // Update the job status to show we're resuming
+    await supabase
+      .from(JOB_STATUS_TABLE)
+      .update({
+        status: 'processing_data',
+        updated_at: new Date().toISOString()
+      })
+      .eq("job_id", job.job_id);
+      
+    // Start the appropriate processing function based on the source
+    let resumeFunction;
+    
+    switch (source) {
+      case "pokemon":
+        const { processChunkedPokemonSets } = await import("./pokemon.ts");
+        resumeFunction = () => processChunkedPokemonSets(job.job_id, job.completed_items || 0, job.total_items || 0);
+        break;
+      default:
+        console.error(`Resuming not implemented for ${source}`);
+        return;
+    }
+    
+    // Run the resume function in the background
+    EdgeRuntime.waitUntil(resumeFunction());
+    
+  } catch (error) {
+    console.error(`Error resuming job ${job.job_id} for ${source}:`, error);
+  }
 }
 
 // Function to check job status

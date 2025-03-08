@@ -41,11 +41,11 @@ export async function processWithChunking(chunkedFn, jobId, source, supabase, ch
     const completedItems = jobData.completed_items || 0;
     const totalItems = jobData.total_items || 0;
     
-    console.log(`Resuming job ${jobId} from ${completedItems}/${totalItems} items completed`);
+    console.log(`Job ${jobId} status: ${jobData.status}, progress: ${completedItems}/${totalItems} items (${jobData.progress || 0}%)`);
     
     // Update status to processing if it's not already
-    if (jobData.status !== 'processing') {
-      await updateJobStatus(jobId, 'processing', null, null, null, null, supabase);
+    if (jobData.status !== 'processing_data') {
+      await updateJobStatus(jobId, 'processing_data', null, null, null, null, supabase);
     }
     
     // Process in chunks
@@ -152,7 +152,10 @@ export async function updateJobStatus(jobId, status, progress = null, totalItems
 // Add function to update job progress
 export async function updateJobProgress(jobId, completedItems, totalItems, supabase) {
   try {
-    if (!completedItems || !totalItems) return;
+    if (!completedItems && completedItems !== 0 || !totalItems) {
+      console.log(`Skipping progress update due to invalid values: completed=${completedItems}, total=${totalItems}`);
+      return;
+    }
     
     const progress = Math.floor((completedItems / totalItems) * 100);
     
@@ -192,7 +195,7 @@ export async function isJobStillRunning(jobId, supabase) {
       return false;
     }
     
-    return data && data.status === 'processing';
+    return data && (data.status === 'processing_data' || data.status === 'fetching_data' || data.status === 'pending');
   } catch (error) {
     console.error(`Error in isJobStillRunning for ${jobId}:`, error);
     return false;
