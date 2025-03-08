@@ -11,6 +11,7 @@ interface TCGCategoryCardProps {
   icon: React.ReactNode;
   color: string;
   link: string;
+  comingSoon?: boolean;
 }
 
 export const TCGCategoryCard: React.FC<TCGCategoryCardProps> = ({
@@ -19,9 +20,16 @@ export const TCGCategoryCard: React.FC<TCGCategoryCardProps> = ({
   description,
   icon,
   color,
-  link
+  link,
+  comingSoon = false
 }) => {
   const navigate = useNavigate();
+  
+  const handleButtonClick = () => {
+    if (!comingSoon) {
+      navigate(link);
+    }
+  };
   
   return (
     <Card 
@@ -42,11 +50,12 @@ export const TCGCategoryCard: React.FC<TCGCategoryCardProps> = ({
       </CardContent>
       <CardFooter className="flex justify-center">
         <Button 
-          onClick={() => navigate(link)} 
+          onClick={handleButtonClick} 
           className="w-full"
           style={{ backgroundColor: color }}
+          disabled={comingSoon}
         >
-          View Sets
+          {comingSoon ? "Coming Soon" : "View Sets"}
         </Button>
       </CardFooter>
     </Card>

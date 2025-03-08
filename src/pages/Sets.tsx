@@ -13,7 +13,8 @@ const SetsPage = () => {
       description: "Collect, train and battle with your favorite Pokémon characters.",
       icon: <Gamepad className="h-8 w-8 text-red-500" />,
       color: "#E53E3E", // Red shade
-      link: "/sets/pokemon"
+      link: "/sets/pokemon",
+      comingSoon: false
     },
     {
       id: "mtg",
@@ -21,7 +22,8 @@ const SetsPage = () => {
       description: "The original trading card game with powerful spells and creatures.",
       icon: <Sparkles className="h-8 w-8 text-blue-500" />,
       color: "#3182CE", // Blue shade
-      link: "/sets/mtg"
+      link: "/sets/mtg",
+      comingSoon: true
     },
     {
       id: "yugioh",
@@ -29,7 +31,8 @@ const SetsPage = () => {
       description: "Summon monsters and cast spells in this strategic dueling game.",
       icon: <Layers className="h-8 w-8 text-yellow-500" />,
       color: "#D69E2E", // Yellow shade
-      link: "/sets/yugioh"
+      link: "/sets/yugioh",
+      comingSoon: true
     },
     {
       id: "lorcana",
@@ -37,7 +40,8 @@ const SetsPage = () => {
       description: "Collect and play with iconic Disney characters in this new TCG.",
       icon: <ScrollText className="h-8 w-8 text-purple-500" />,
       color: "#805AD5", // Purple shade
-      link: "/sets/lorcana"
+      link: "/sets/lorcana",
+      comingSoon: true
     }
   ];
 
@@ -59,6 +63,7 @@ const SetsPage = () => {
               icon={category.icon}
               color={category.color}
               link={category.link}
+              comingSoon={category.comingSoon}
             />
           ))}
         </Grid>

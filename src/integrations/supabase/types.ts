@@ -33,6 +33,48 @@ export type Database = {
         }
         Relationships: []
       }
+      api_job_status: {
+        Row: {
+          completed_at: string | null
+          completed_items: number | null
+          created_at: string | null
+          error: string | null
+          id: string
+          job_id: string
+          progress: number | null
+          source: string
+          status: string
+          total_items: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          completed_items?: number | null
+          created_at?: string | null
+          error?: string | null
+          id?: string
+          job_id: string
+          progress?: number | null
+          source: string
+          status: string
+          total_items?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          completed_items?: number | null
+          created_at?: string | null
+          error?: string | null
+          id?: string
+          job_id?: string
+          progress?: number | null
+          source?: string
+          status?: string
+          total_items?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       lorcana_sets: {
         Row: {
           created_at: string | null
