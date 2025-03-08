@@ -1,8 +1,8 @@
 
-// @ts-ignore
-import { createClient } from "@supabase/supabase-js";
+// Use the same URL imports for consistency
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 import { processTCGData } from "../processor.ts";
-import { JobStatus } from "../database/job-status.ts";
+import type { JobStatus } from "../database/job-status.ts";
 
 // CORS headers for all responses
 export const corsHeaders = {

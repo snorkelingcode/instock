@@ -2,7 +2,6 @@
 // Job Status Management Module
 
 export interface JobStatus {
-  id?: string;
   job_id: string;
   source: string;
   status: 'pending' | 'fetching_data' | 'processing_data' | 'saving_to_database' | 'completed' | 'failed';
@@ -12,44 +11,46 @@ export interface JobStatus {
   error: string | null;
 }
 
-// Update job status helper
+// Update job status
 export async function updateJobStatus(
-  supabase: any,
+  supabase: any, 
   jobId: string, 
   status: JobStatus['status'], 
-  progress: number,
-  totalItems: number = 0,
+  progress: number = 0, 
+  totalItems: number = 0, 
   completedItems: number = 0,
   error: string | null = null
 ) {
-  const updateData: any = { 
-    status, 
+  const updateData: any = {
+    status,
     progress,
-    updated_at: new Date().toISOString()
+    total_items: totalItems,
+    completed_items: completedItems,
+    updated_at: new Date().toISOString(),
   };
-  
-  if (totalItems > 0) {
-    updateData.total_items = totalItems;
-  }
-  
-  if (completedItems > 0) {
-    updateData.completed_items = completedItems;
-  }
   
   if (error) {
     updateData.error = error;
   }
   
-  if (status === 'completed') {
+  // Add completed_at timestamp if job is completed or failed
+  if (status === 'completed' || status === 'failed') {
     updateData.completed_at = new Date().toISOString();
   }
   
-  const { error: updateError } = await supabase
-    .from('api_job_status')
-    .update(updateData)
-    .eq('job_id', jobId);
+  try {
+    const { error: updateError } = await supabase
+      .from('api_job_status')
+      .update(updateData)
+      .eq('job_id', jobId);
+      
+    if (updateError) {
+      console.error(`Error updating job status for ${jobId}:`, updateError);
+      throw updateError;
+    }
     
-  if (updateError) {
-    console.error(`Error updating job status for ${jobId}:`, updateError);
+    console.log(`Updated job ${jobId} status to ${status} with progress ${progress}%`);
+  } catch (error) {
+    console.error(`Failed to update job status for ${jobId}:`, error);
   }
 }
