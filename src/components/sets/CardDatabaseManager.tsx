@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -64,7 +63,6 @@ const CardDatabaseManager: React.FC = () => {
   
   const getTableCount = async (tableName: string) => {
     try {
-      // Use 'as any' to bypass type checking for dynamic table names
       const { count, error } = await supabase
         .from(tableName as any)
         .select('*', { count: 'exact', head: true });
@@ -95,7 +93,6 @@ const CardDatabaseManager: React.FC = () => {
         return;
       }
       
-      // Delete from each table
       await supabase.from('tcg_image_downloads' as any).delete().neq('id', 0);
       await supabase.from('pokemon_cards' as any).delete().neq('id', 0);
       await supabase.from('mtg_cards' as any).delete().neq('id', 0);
@@ -107,7 +104,6 @@ const CardDatabaseManager: React.FC = () => {
         description: "Card database cleared successfully",
       });
       
-      // Refresh stats
       fetchDatabaseStats();
     } catch (error) {
       console.error("Error clearing database:", error);
@@ -172,7 +168,7 @@ const CardDatabaseManager: React.FC = () => {
                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                 >
                   {loading ? (
-                    <LoadingSpinner size="sm" color="white" />
+                    <LoadingSpinner size="sm" color="red" />
                   ) : (
                     "Yes, Clear Everything"
                   )}
