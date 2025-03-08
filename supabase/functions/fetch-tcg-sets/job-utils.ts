@@ -1,4 +1,5 @@
 
+
 import { JOB_STATUS_TABLE } from "./utils.ts";
 
 // Function to process in the background
@@ -16,7 +17,7 @@ export async function processInBackground(fn, jobId, source, supabase) {
 }
 
 // Add new function to handle chunked processing
-export async function processWithChunking(chunkedFn, jobId, source, supabase, chunkSize = 30) {
+export async function processWithChunking(chunkedFn, jobId, source, supabase, chunkSize = 50) {
   try {
     console.log(`Starting chunked processing for ${source} job ${jobId} with chunk size ${chunkSize}`);
     
@@ -48,8 +49,21 @@ export async function processWithChunking(chunkedFn, jobId, source, supabase, ch
       await updateJobStatus(jobId, 'processing_data', null, null, null, null, supabase);
     }
     
+    // Calculate the current chunk
+    const currentChunk = Math.floor(completedItems / chunkSize);
+    console.log(`Resuming at chunk ${currentChunk} (items ${completedItems} to ${completedItems + chunkSize})`);
+    
+    // Store chunk info in the job status
+    await supabase
+      .from(JOB_STATUS_TABLE)
+      .update({
+        current_chunk: currentChunk,
+        chunk_size: chunkSize
+      })
+      .eq('job_id', jobId);
+    
     // Process in chunks
-    await chunkedFn(jobId, completedItems, totalItems, supabase);
+    await chunkedFn(jobId, completedItems, totalItems, supabase, chunkSize);
     
     // Mark as completed if we got here without errors
     await updateJobStatus(jobId, 'completed', 100, null, null, null, supabase);
@@ -104,7 +118,7 @@ export async function createJobStatusTableIfNotExists(supabase) {
           completed_at TIMESTAMP WITH TIME ZONE,
           error TEXT,
           current_chunk INT DEFAULT 0,
-          chunk_size INT DEFAULT 10
+          chunk_size INT DEFAULT 50
         );
       `);
     });
@@ -201,3 +215,4 @@ export async function isJobStillRunning(jobId, supabase) {
     return false;
   }
 }
+
