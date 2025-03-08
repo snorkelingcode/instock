@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -129,20 +130,8 @@ const ProductsPage = () => {
           randomIndices.add(randomIndex);
         }
         
-        // Get the randomly selected products and explicitly map to Product type
-        const selectedProducts: Product[] = Array.from(randomIndices).map(index => {
-          const product = pokemonProducts[index];
-          return {
-            id: product.id,
-            product_line: product.product_line,
-            product: product.product,
-            source: product.source,
-            price: product.price,
-            listing_link: product.listing_link,
-            image_link: product.image_link,
-            in_stock: true // Default to true or set based on your logic
-          };
-        });
+        // Get the randomly selected products
+        const selectedProducts = Array.from(randomIndices).map(index => pokemonProducts[index]);
         
         // Save to state and cache with partitioning
         setFeaturedProducts(selectedProducts);

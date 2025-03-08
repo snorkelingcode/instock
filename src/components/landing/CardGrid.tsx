@@ -3,7 +3,6 @@ import React, { useState, useEffect } from "react";
 import { Card } from "./Card";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Tables } from "@/integrations/supabase/types";
 
 interface Product {
   id: number;
@@ -33,20 +32,7 @@ export const CardGrid: React.FC = () => {
           throw error;
         }
 
-        if (data) {
-          // Cast the data to the Product type to ensure type compatibility
-          const typedProducts: Product[] = data.map(item => ({
-            id: item.id,
-            product_line: item.product_line,
-            product: item.product,
-            source: item.source,
-            price: item.price,
-            listing_link: item.listing_link,
-            image_link: item.image_link
-          }));
-          
-          setProducts(typedProducts);
-        }
+        setProducts(data || []);
       } catch (error) {
         console.error('Error fetching products:', error);
         toast({

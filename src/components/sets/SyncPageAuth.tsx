@@ -1,17 +1,17 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
-import { LockIcon, ShieldIcon, KeyIcon, InfoIcon } from "lucide-react";
+import { LockIcon, ShieldIcon, KeyIcon } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface SyncPageAuthProps {
   onAuthenticated: () => void;
 }
+
+const ACCESS_KEY = "TCG-SYNC-ACCESS-2024";
 
 const SyncPageAuth: React.FC<SyncPageAuthProps> = ({ onAuthenticated }) => {
   const [password, setPassword] = useState("");
@@ -97,22 +97,13 @@ const SyncPageAuth: React.FC<SyncPageAuthProps> = ({ onAuthenticated }) => {
     }
   };
 
-  const handleAccessKeySubmit = async (e: React.FormEvent) => {
+  const handleAccessKeySubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setIsLoading(true);
     
     try {
-      // Use edge function to verify the access key securely
-      const { data, error } = await supabase.functions.invoke('verify-sync-access', {
-        body: { accessKey },
-      });
-      
-      if (error) {
-        throw new Error(error.message || "Authentication failed");
-      }
-      
-      if (data && data.valid) {
+      if (accessKey === ACCESS_KEY) {
         localStorage.setItem("syncPageAuthenticated", "true");
         toast({
           title: "Success",
@@ -143,23 +134,15 @@ const SyncPageAuth: React.FC<SyncPageAuthProps> = ({ onAuthenticated }) => {
             <ShieldIcon className="h-8 w-8 text-primary mr-2" />
             <CardTitle className="text-center">Admin Authentication</CardTitle>
           </div>
-          <CardDescription className="text-center">
-            This page requires authentication to sync TCG data
-          </CardDescription>
+          <p className="text-center text-sm text-muted-foreground">
+            This page requires admin privileges
+          </p>
         </CardHeader>
         <CardContent>
-          <Alert className="mb-4 bg-blue-50 border-blue-200">
-            <InfoIcon className="h-4 w-4 text-blue-600" />
-            <AlertDescription className="text-blue-700">
-              You need either admin credentials or an access key to use this feature.
-              Contact your administrator if you don't have access.
-            </AlertDescription>
-          </Alert>
-          
           <Tabs defaultValue="access-key" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="access-key">Access Key</TabsTrigger>
-              <TabsTrigger value="email">Admin Email</TabsTrigger>
+              <TabsTrigger value="email">Email</TabsTrigger>
             </TabsList>
             
             <TabsContent value="access-key">
