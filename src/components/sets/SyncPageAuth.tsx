@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +12,7 @@ interface SyncPageAuthProps {
   onAuthenticated: () => void;
 }
 
-// Access key for non-admin users
+// Access key is now hidden in code
 const ACCESS_KEY = "TCG-SYNC-ACCESS-2024";
 
 const SyncPageAuth: React.FC<SyncPageAuthProps> = ({ onAuthenticated }) => {
@@ -151,7 +150,7 @@ const SyncPageAuth: React.FC<SyncPageAuthProps> = ({ onAuthenticated }) => {
             <InfoIcon className="h-4 w-4 text-blue-600" />
             <AlertDescription className="text-blue-700">
               <div className="flex items-center justify-between">
-                <span>Default access key for this demo: </span>
+                <span>Default access key for this demo: </span> 
                 <div className="flex items-center space-x-2">
                   <code className="bg-blue-100 px-2 py-1 rounded text-blue-800 font-mono">
                     {showAccessKey ? ACCESS_KEY : "••••••••••••••••"}
