@@ -1,12 +1,10 @@
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { ArrowLeft, Search, Filter, Gamepad } from "lucide-react";
+import { ArrowLeft, Search, Filter, Gamepad, RefreshCw } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -17,7 +15,14 @@ import {
 } from "@/components/ui/select";
 import PokemonCardComponent from "@/components/sets/PokemonCardComponent";
 import LoadingSpinner from "@/components/ui/loading-spinner";
-import { fetchPokemonCards, PokemonCard, PokemonSet } from "@/utils/pokemon-cards";
+import { 
+  fetchPokemonCards, 
+  PokemonCard, 
+  fetchPokemonSets, 
+  PokemonSet,
+  clearPokemonCaches 
+} from "@/utils/pokemon-cards";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const PokemonSetDetails = () => {
   const { setId } = useParams<{ setId: string }>();
@@ -27,66 +32,35 @@ const PokemonSetDetails = () => {
   const [set, setSet] = useState<PokemonSet | null>(null);
   const [cards, setCards] = useState<PokemonCard[]>([]);
   const [filteredCards, setFilteredCards] = useState<PokemonCard[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loadingSet, setLoadingSet] = useState(true);
+  const [loadingCards, setLoadingCards] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [rarityFilter, setRarityFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
   const [uniqueRarities, setUniqueRarities] = useState<string[]>([]);
   const [uniqueTypes, setUniqueTypes] = useState<string[]>([]);
   const [isLoadingError, setIsLoadingError] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
+  // Split fetching into two separate useEffects for better performance
+  
+  // 1. First fetch the set details
   useEffect(() => {
     const fetchSetDetails = async () => {
       if (!setId) return;
       
-      setLoading(true);
-      setIsLoadingError(false);
+      setLoadingSet(true);
       
       try {
-        // 1. First fetch the set details
-        const { data: setData, error: setError } = await supabase
-          .from('pokemon_sets')
-          .select('*')
-          .eq('set_id', setId)
-          .single();
+        // Get all sets and find the one matching our ID
+        const allSets = await fetchPokemonSets();
+        const currentSet = allSets.find(s => s.set_id === setId);
         
-        if (setError) throw setError;
-        
-        setSet(setData as PokemonSet);
-        
-        // 2. Fetch cards using our optimized function
-        try {
-          const fetchedCards = await fetchPokemonCards(setId);
-          setCards(fetchedCards);
-          setFilteredCards(fetchedCards);
-          
-          // Extract unique rarities and types for filters
-          const raritiesSet = new Set<string>();
-          fetchedCards.forEach(card => {
-            if (card.rarity) raritiesSet.add(card.rarity);
-          });
-          
-          const rarities = Array.from(raritiesSet);
-          setUniqueRarities(rarities);
-          
-          const typesSet = new Set<string>();
-          fetchedCards.forEach(card => {
-            if (card.types) card.types.forEach(type => typesSet.add(type));
-          });
-          
-          const types = Array.from(typesSet).sort();
-          setUniqueTypes(types);
-          
-        } catch (cardsError) {
-          console.error("Error fetching cards:", cardsError);
-          toast({
-            title: "Error",
-            description: "There was an issue loading the cards. Please try again.",
-            variant: "destructive",
-          });
-          setIsLoadingError(true);
+        if (!currentSet) {
+          throw new Error("Set not found");
         }
         
+        setSet(currentSet);
       } catch (error) {
         console.error("Error fetching set details:", error);
         toast({
@@ -94,13 +68,58 @@ const PokemonSetDetails = () => {
           description: "Could not load set details",
           variant: "destructive",
         });
-        setIsLoadingError(true);
       } finally {
-        setLoading(false);
+        setLoadingSet(false);
       }
     };
     
     fetchSetDetails();
+  }, [setId, toast]);
+  
+  // 2. Then fetch the cards in the set
+  useEffect(() => {
+    const fetchCards = async () => {
+      if (!setId) return;
+      
+      setLoadingCards(true);
+      setIsLoadingError(false);
+      
+      try {
+        const fetchedCards = await fetchPokemonCards(setId);
+        setCards(fetchedCards);
+        setFilteredCards(fetchedCards);
+        
+        // Extract unique rarities and types for filters
+        const raritiesSet = new Set<string>();
+        fetchedCards.forEach(card => {
+          if (card.rarity) raritiesSet.add(card.rarity);
+        });
+        
+        const rarities = Array.from(raritiesSet);
+        setUniqueRarities(rarities);
+        
+        const typesSet = new Set<string>();
+        fetchedCards.forEach(card => {
+          if (card.types) card.types.forEach(type => typesSet.add(type));
+        });
+        
+        const types = Array.from(typesSet).sort();
+        setUniqueTypes(types);
+        
+      } catch (cardsError) {
+        console.error("Error fetching cards:", cardsError);
+        toast({
+          title: "Error",
+          description: "There was an issue loading the cards. Please try again.",
+          variant: "destructive",
+        });
+        setIsLoadingError(true);
+      } finally {
+        setLoadingCards(false);
+      }
+    };
+    
+    fetchCards();
   }, [setId, toast]);
   
   // Handle filtering of cards
@@ -139,6 +158,55 @@ const PokemonSetDetails = () => {
     setTypeFilter("all");
   };
 
+  const handleRefresh = async () => {
+    try {
+      setRefreshing(true);
+      clearPokemonCaches();
+      
+      // Reload both set and cards
+      setLoadingSet(true);
+      setLoadingCards(true);
+      
+      const allSets = await fetchPokemonSets();
+      const currentSet = allSets.find(s => s.set_id === setId);
+      
+      if (currentSet) {
+        setSet(currentSet);
+      }
+      
+      const refreshedCards = await fetchPokemonCards(setId || '');
+      setCards(refreshedCards);
+      setFilteredCards(refreshedCards);
+      
+      toast({
+        title: "Success",
+        description: "Card data refreshed successfully",
+      });
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to refresh card data",
+        variant: "destructive",
+      });
+    } finally {
+      setRefreshing(false);
+      setLoadingSet(false);
+      setLoadingCards(false);
+    }
+  };
+
+  // Render loading skeletons for cards
+  const renderCardSkeletons = () => {
+    return Array(20).fill(0).map((_, index) => (
+      <div key={`card-skeleton-${index}`} className="flex flex-col space-y-2">
+        <Skeleton className="h-64 w-full bg-gray-200" />
+        <Skeleton className="h-6 w-3/4 bg-gray-200" />
+        <Skeleton className="h-4 w-1/2 bg-gray-200" />
+      </div>
+    ));
+  };
+
   return (
     <Layout>
       <div className="bg-white p-6 rounded-lg shadow-md mb-8">
@@ -153,37 +221,53 @@ const PokemonSetDetails = () => {
             Back to All Sets
           </Button>
           
-          {loading ? (
-            <div className="h-20 animate-pulse bg-gray-200 rounded-md"></div>
-          ) : set ? (
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
             <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
-              {set.logo_url && (
-                <img 
-                  src={set.logo_url} 
-                  alt={`${set.name} logo`} 
-                  className="h-24 object-contain"
-                />
-              )}
-              <div>
-                <div className="flex items-center gap-2">
-                  <Gamepad className="h-6 w-6 text-red-500" />
-                  <h1 className="text-2xl font-bold">{set.name}</h1>
+              {loadingSet ? (
+                <div className="h-20 animate-pulse bg-gray-200 rounded-md w-full md:w-48"></div>
+              ) : set ? (
+                <>
+                  {set.logo_url && (
+                    <img 
+                      src={set.logo_url} 
+                      alt={`${set.name} logo`} 
+                      className="h-24 object-contain"
+                      loading="eager"
+                    />
+                  )}
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <Gamepad className="h-6 w-6 text-red-500" />
+                      <h1 className="text-2xl font-bold">{set.name}</h1>
+                    </div>
+                    <p className="text-sm text-gray-600 mt-1">
+                      {set.series} Series • Released {new Date(set.release_date).toLocaleDateString()} • 
+                      {set.total || set.printed_total} cards
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-8">
+                  <p>Set not found</p>
                 </div>
-                <p className="text-sm text-gray-600 mt-1">
-                  {set.series} Series • Released {new Date(set.release_date).toLocaleDateString()} • 
-                  {set.total || set.printed_total} cards
-                </p>
-              </div>
+              )}
             </div>
-          ) : (
-            <div className="text-center py-8">
-              <p>Set not found</p>
-            </div>
-          )}
+            
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="whitespace-nowrap"
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+              Refresh Data
+            </Button>
+          </div>
         </div>
         
         {/* Filters */}
-        {!loading && (
+        {!loadingSet && (
           <div className="mb-6 space-y-4">
             <div className="flex flex-col md:flex-row gap-4">
               <div className="relative flex-1">
@@ -247,9 +331,9 @@ const PokemonSetDetails = () => {
         )}
         
         {/* Cards Display */}
-        {loading ? (
-          <div className="flex justify-center items-center py-16">
-            <LoadingSpinner size="lg" />
+        {loadingCards ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+            {renderCardSkeletons()}
           </div>
         ) : isLoadingError ? (
           <div className="text-center py-16">
@@ -258,7 +342,7 @@ const PokemonSetDetails = () => {
             <Button 
               variant="default" 
               className="mt-4"
-              onClick={() => window.location.reload()}
+              onClick={handleRefresh}
             >
               Try Again
             </Button>

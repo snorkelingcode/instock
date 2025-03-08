@@ -77,6 +77,19 @@ const cardCache = new Map<string, {
   timestamp: number;
 }>();
 
+// Memory cache for sets
+const setsCache: {
+  sets: PokemonSet[];
+  timestamp: number;
+} = { sets: [], timestamp: 0 };
+
+// Local storage cache keys
+const SETS_CACHE_KEY = 'pokemon_sets_cache';
+const CARDS_CACHE_KEY_PREFIX = 'pokemon_cards_cache_';
+
+// Cache expiration time (5 minutes)
+const CACHE_TTL = 5 * 60 * 1000;
+
 // Determine if a string is a valid number
 const isNumeric = (str: string) => {
   // Handle strings like '001', '1a', etc.
@@ -127,12 +140,39 @@ const normalizeCardData = (card: any): PokemonCard => {
 export const fetchPokemonCards = async (setId: string): Promise<PokemonCard[]> => {
   console.log(`Fetching cards for set: ${setId}`);
   
-  // Check if we have cached cards and they're less than 5 minutes old
+  // Check memory cache first
   const cached = cardCache.get(setId);
-  if (cached && (Date.now() - cached.timestamp < 5 * 60 * 1000)) {
-    console.log(`Using cached cards for set: ${setId}`);
+  if (cached && (Date.now() - cached.timestamp < CACHE_TTL)) {
+    console.log(`Using memory cache for set: ${setId}`);
     return cached.cards;
   }
+  
+  // Check localStorage cache
+  try {
+    const localCacheKey = `${CARDS_CACHE_KEY_PREFIX}${setId}`;
+    const localCache = localStorage.getItem(localCacheKey);
+    
+    if (localCache) {
+      const parsedCache = JSON.parse(localCache);
+      if (Date.now() - parsedCache.timestamp < CACHE_TTL) {
+        console.log(`Using localStorage cache for set: ${setId}`);
+        
+        // Store in memory cache too
+        cardCache.set(setId, {
+          cards: parsedCache.cards,
+          timestamp: parsedCache.timestamp
+        });
+        
+        return parsedCache.cards;
+      }
+    }
+  } catch (e) {
+    console.warn("Error accessing localStorage:", e);
+    // Continue to API fetch if localStorage access fails
+  }
+  
+  // Always fetch from API
+  console.log(`Fetching from API for set: ${setId}`);
   
   // Maximum retries for API errors
   const MAX_RETRIES = 3;
@@ -140,12 +180,9 @@ export const fetchPokemonCards = async (setId: string): Promise<PokemonCard[]> =
   
   while (retryCount <= MAX_RETRIES) {
     try {
-      // Always go directly to API for all sets, just like we do for Prismatic
-      console.log(`Fetching from API for set: ${setId}`);
-      
-      // Use consistent timeout for all sets - 12 seconds
+      // Use consistent timeout - 8 seconds (decreased from 12 for faster feedback)
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 12000);
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
       
       try {
         const response = await fetch(
@@ -163,14 +200,27 @@ export const fetchPokemonCards = async (setId: string): Promise<PokemonCard[]> =
         
         // Apply normalization to ensure consistent data structure
         const fetchedCards = data.data.map((card: any) => normalizeCardData(card));
+        const sortedCards = sortCardsByNumber(fetchedCards);
         
-        // Cache the results
+        // Cache the results in memory
         cardCache.set(setId, {
-          cards: fetchedCards,
+          cards: sortedCards,
           timestamp: Date.now()
         });
         
-        return sortCardsByNumber(fetchedCards);
+        // Cache in localStorage
+        try {
+          const localCacheKey = `${CARDS_CACHE_KEY_PREFIX}${setId}`;
+          localStorage.setItem(localCacheKey, JSON.stringify({
+            cards: sortedCards,
+            timestamp: Date.now()
+          }));
+        } catch (e) {
+          console.warn("Error storing in localStorage:", e);
+          // Continue even if localStorage fails
+        }
+        
+        return sortedCards;
       } catch (error) {
         if (error.name === 'AbortError') {
           console.error('API request timed out, retrying...');
@@ -200,4 +250,123 @@ export const fetchPokemonCards = async (setId: string): Promise<PokemonCard[]> =
   
   // This should not be reached due to the throw in the catch block, but TypeScript wants a return
   throw new Error(`Failed to fetch cards for set ${setId} after ${MAX_RETRIES} retries`);
+};
+
+// Fetch all Pokemon sets directly from API
+export const fetchPokemonSets = async (): Promise<PokemonSet[]> => {
+  console.log("Fetching Pokemon sets");
+  
+  // Check memory cache first
+  if (setsCache.sets.length > 0 && (Date.now() - setsCache.timestamp < CACHE_TTL)) {
+    console.log("Using memory cache for Pokemon sets");
+    return setsCache.sets;
+  }
+  
+  // Check localStorage cache
+  try {
+    const localCache = localStorage.getItem(SETS_CACHE_KEY);
+    
+    if (localCache) {
+      const parsedCache = JSON.parse(localCache);
+      if (Date.now() - parsedCache.timestamp < CACHE_TTL) {
+        console.log("Using localStorage cache for Pokemon sets");
+        
+        // Update memory cache
+        setsCache.sets = parsedCache.sets;
+        setsCache.timestamp = parsedCache.timestamp;
+        
+        return parsedCache.sets;
+      }
+    }
+  } catch (e) {
+    console.warn("Error accessing localStorage:", e);
+    // Continue to API fetch if localStorage access fails
+  }
+  
+  // Fetch from API
+  console.log("Fetching Pokemon sets from API");
+  
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout for sets
+    
+    const response = await fetch("https://api.pokemontcg.io/v2/sets", { 
+      signal: controller.signal 
+    });
+    
+    clearTimeout(timeoutId);
+    
+    if (!response.ok) {
+      throw new Error(`API responded with status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    // Transform API response to match our PokemonSet interface
+    const transformedSets = data.data.map((set: any) => ({
+      id: 0, // This field isn't used when loading from API
+      set_id: set.id,
+      name: set.name,
+      series: set.series,
+      printed_total: set.printedTotal,
+      total: set.total,
+      release_date: set.releaseDate,
+      symbol_url: set.images.symbol,
+      logo_url: set.images.logo,
+      images_url: set.images.logo // Prefer logo, fallback to symbol
+    }));
+    
+    // Sort by release date
+    const sortedSets = transformedSets.sort((a: PokemonSet, b: PokemonSet) => {
+      return new Date(b.release_date).getTime() - new Date(a.release_date).getTime();
+    });
+    
+    // Update memory cache
+    setsCache.sets = sortedSets;
+    setsCache.timestamp = Date.now();
+    
+    // Cache in localStorage
+    try {
+      localStorage.setItem(SETS_CACHE_KEY, JSON.stringify({
+        sets: sortedSets,
+        timestamp: Date.now()
+      }));
+    } catch (e) {
+      console.warn("Error storing in localStorage:", e);
+      // Continue even if localStorage fails
+    }
+    
+    return sortedSets;
+  } catch (error) {
+    console.error("Error fetching Pokemon sets:", error);
+    throw error;
+  }
+};
+
+// Clear all caches
+export const clearPokemonCaches = () => {
+  // Clear memory caches
+  cardCache.clear();
+  setsCache.sets = [];
+  setsCache.timestamp = 0;
+  
+  // Clear localStorage caches
+  try {
+    localStorage.removeItem(SETS_CACHE_KEY);
+    
+    // Clear all card caches
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith(CARDS_CACHE_KEY_PREFIX)) {
+        keysToRemove.push(key);
+      }
+    }
+    
+    keysToRemove.forEach(key => localStorage.removeItem(key));
+    
+    console.log("Pokemon caches cleared");
+  } catch (e) {
+    console.warn("Error clearing localStorage caches:", e);
+  }
 };

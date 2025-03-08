@@ -1,10 +1,9 @@
 
 import React, { useEffect, useState } from "react";
 import Layout from "@/components/layout/Layout";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import SetCard from "@/components/sets/SetCard";
-import { Gamepad, Filter, Search } from "lucide-react";
+import { Gamepad, Filter, Search, RefreshCw } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,19 +13,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-interface PokemonSet {
-  id: number;
-  set_id: string;
-  name: string;
-  series: string;
-  printed_total: number;
-  total: number;
-  release_date: string;
-  symbol_url: string;
-  logo_url: string;
-  images_url: string;
-}
+import { PokemonSet, fetchPokemonSets, clearPokemonCaches } from "@/utils/pokemon-cards";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const PokemonSets = () => {
   const [sets, setSets] = useState<PokemonSet[]>([]);
@@ -35,44 +23,35 @@ const PokemonSets = () => {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [seriesFilter, setSeriesFilter] = useState<string>("all");
   const [uniqueSeries, setUniqueSeries] = useState<string[]>([]);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
   const { toast } = useToast();
 
+  const fetchSets = async () => {
+    try {
+      setLoading(true);
+      
+      const fetchedSets = await fetchPokemonSets();
+      setSets(fetchedSets);
+
+      // Extract unique series for filter dropdown
+      const seriesArray = Array.from(new Set(fetchedSets.map(set => set.series))).sort();
+      setUniqueSeries(seriesArray);
+      
+      // Initialize with all sets
+      setFilteredSets(fetchedSets);
+    } catch (error) {
+      console.error('Error fetching Pokémon sets:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load Pokémon sets",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchSets = async () => {
-      try {
-        setLoading(true);
-        const { data, error } = await supabase
-          .from('pokemon_sets' as any)
-          .select('*')
-          .order('release_date', { ascending: false });
-
-        if (error) {
-          throw error;
-        }
-
-        // Using a safer type casting approach
-        const fetchedData = data || [];
-        const typedSets = fetchedData as unknown as PokemonSet[];
-        setSets(typedSets);
-
-        // Extract unique series for filter dropdown
-        const seriesArray = Array.from(new Set(typedSets.map(set => set.series))).sort();
-        setUniqueSeries(seriesArray);
-        
-        // Initialize with all sets
-        setFilteredSets(typedSets);
-      } catch (error) {
-        console.error('Error fetching Pokémon sets:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load Pokémon sets",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchSets();
   }, [toast]);
 
@@ -105,12 +84,57 @@ const PokemonSets = () => {
     setSeriesFilter(value);
   };
 
+  const handleRefresh = async () => {
+    try {
+      setRefreshing(true);
+      clearPokemonCaches();
+      await fetchSets();
+      toast({
+        title: "Success",
+        description: "Pokémon sets refreshed successfully",
+      });
+    } catch (error) {
+      console.error('Error refreshing sets:', error);
+      toast({
+        title: "Error",
+        description: "Failed to refresh Pokémon sets",
+        variant: "destructive",
+      });
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  // Render loading skeletons
+  const renderSkeletons = () => {
+    return Array(12).fill(0).map((_, index) => (
+      <div key={`skeleton-${index}`} className="flex flex-col space-y-3">
+        <Skeleton className="h-48 w-full bg-gray-200" />
+        <Skeleton className="h-6 w-3/4 bg-gray-200" />
+        <Skeleton className="h-4 w-1/2 bg-gray-200" />
+        <Skeleton className="h-4 w-5/6 bg-gray-200" />
+        <Skeleton className="h-10 w-full bg-gray-200" />
+      </div>
+    ));
+  };
+
   return (
     <Layout>
       <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-        <div className="flex items-center gap-3 mb-4">
-          <Gamepad className="h-8 w-8 text-red-500" />
-          <h1 className="text-2xl font-bold">Pokémon TCG Sets</h1>
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <div className="flex items-center gap-3">
+            <Gamepad className="h-8 w-8 text-red-500" />
+            <h1 className="text-2xl font-bold">Pokémon TCG Sets</h1>
+          </div>
+          <Button 
+            size="sm" 
+            variant="outline" 
+            onClick={handleRefresh}
+            disabled={refreshing}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+            Refresh Data
+          </Button>
         </div>
         <p className="text-gray-700 mb-6">
           Browse all Pokémon Trading Card Game sets, sorted by release date. Click on a set to view all cards in that set.
@@ -167,8 +191,8 @@ const PokemonSets = () => {
         </div>
         
         {loading ? (
-          <div className="flex justify-center py-8">
-            <div className="animate-pulse text-xl">Loading Pokémon sets...</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {renderSkeletons()}
           </div>
         ) : filteredSets.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
