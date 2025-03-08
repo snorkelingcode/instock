@@ -384,7 +384,12 @@ const SetSyncPage = () => {
             <CardDownloadManager source="lorcana" label="Disney Lorcana" />
           </div>
           
-          <CardDatabaseManager />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+            <CardDatabaseManager source="pokemon" label="Pokémon TCG" />
+            <CardDatabaseManager source="mtg" label="Magic: The Gathering" />
+            <CardDatabaseManager source="yugioh" label="Yu-Gi-Oh!" />
+            <CardDatabaseManager source="lorcana" label="Disney Lorcana" />
+          </div>
         </div>
       </div>
     </Layout>

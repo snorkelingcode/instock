@@ -32,7 +32,7 @@ const CardDatabaseManager: React.FC<CardDatabaseManagerProps> = ({ source, label
       case "lorcana":
         return "lorcana_cards";
       default:
-        return "";
+        return "pokemon_cards"; // Default to prevent empty string
     }
   };
   
@@ -42,16 +42,16 @@ const CardDatabaseManager: React.FC<CardDatabaseManagerProps> = ({ source, label
     const tableName = getTableName();
     
     try {
-      // Get total count
+      // Get total count - use type assertion to tell TypeScript this is a valid table
       const { count, error } = await supabase
-        .from(tableName)
+        .from(tableName as any)
         .select('*', { count: 'exact', head: true });
         
       if (error) throw error;
       
       // Get count of cards with local images
       const { count: localImagesCount, error: localImagesError } = await supabase
-        .from(tableName)
+        .from(tableName as any)
         .select('*', { count: 'exact', head: true })
         .not('local_image_urls', 'is', null);
         
@@ -59,9 +59,8 @@ const CardDatabaseManager: React.FC<CardDatabaseManagerProps> = ({ source, label
       
       // Get number of sets
       const { data: setsData, error: setsError } = await supabase
-        .from(tableName)
-        .select('set_id')
-        .is('set_id', 'not.null');
+        .from(tableName as any)
+        .select('set_id');
         
       if (setsError) throw setsError;
       
@@ -94,9 +93,9 @@ const CardDatabaseManager: React.FC<CardDatabaseManagerProps> = ({ source, label
     setLoading(true);
     
     try {
-      // Delete all records
+      // Delete all records - use type assertion for tableName
       const { error } = await supabase
-        .from(tableName)
+        .from(tableName as any)
         .delete()
         .neq('card_id', 'no-match'); // This is a workaround to delete all records
         
