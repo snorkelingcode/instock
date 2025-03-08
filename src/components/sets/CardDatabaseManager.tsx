@@ -1,116 +1,86 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Database, RefreshCw } from "lucide-react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { DatabaseIcon } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 
-const CardDatabaseManager: React.FC = () => {
-  const [loading, setLoading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
+interface CardDatabaseManagerProps {
+  source: "pokemon" | "mtg" | "yugioh" | "lorcana";
+  label: string;
+}
+
+const CardDatabaseManager: React.FC<CardDatabaseManagerProps> = ({ source, label }) => {
+  const [loading, setLoading] = useState<boolean>(false);
+  const [openDialog, setOpenDialog] = useState<boolean>(false);
   const [stats, setStats] = useState<any>(null);
   const { toast } = useToast();
   
-  const ACCESS_KEY = "TCG-SYNC-ACCESS-2024";
-  
-  useEffect(() => {
-    fetchDatabaseStats();
-  }, []);
-  
-  const fetchDatabaseStats = async () => {
-    setRefreshing(true);
-    try {
-      const statsData = {
-        pokemon: await getTableCount('pokemon_cards'),
-        mtg: await getTableCount('mtg_cards'),
-        yugioh: await getTableCount('yugioh_cards'),
-        lorcana: await getTableCount('lorcana_cards'),
-        images: await getTableCount('tcg_image_downloads')
-      };
-      
-      setStats(statsData);
-    } catch (error) {
-      console.error("Error fetching database stats:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load database statistics",
-        variant: "destructive",
-      });
-    } finally {
-      setRefreshing(false);
+  // Get database table name based on source
+  const getTableName = () => {
+    switch (source) {
+      case "pokemon":
+        return "pokemon_cards";
+      case "mtg":
+        return "mtg_cards";
+      case "yugioh":
+        return "yugioh_cards";
+      case "lorcana":
+        return "lorcana_cards";
+      default:
+        return "";
     }
   };
   
-  const getTableCount = async (tableName: string) => {
+  // Calculate database stats
+  const calculateStats = async () => {
+    setLoading(true);
+    const tableName = getTableName();
+    
     try {
+      // Get total count
       const { count, error } = await supabase
-        .from(tableName as any)
+        .from(tableName)
         .select('*', { count: 'exact', head: true });
         
-      if (error) {
-        console.error(`Error counting table ${tableName}:`, error);
-        return 0;
-      }
+      if (error) throw error;
       
-      return count || 0;
-    } catch (error) {
-      console.error(`Error counting table ${tableName}:`, error);
-      return 0;
-    }
-  };
-  
-  const clearDatabase = async () => {
-    setLoading(true);
-    try {
-      const isAuthenticated = localStorage.getItem("syncPageAuthenticated") === "true";
+      // Get count of cards with local images
+      const { count: localImagesCount, error: localImagesError } = await supabase
+        .from(tableName)
+        .select('*', { count: 'exact', head: true })
+        .not('local_image_urls', 'is', null);
+        
+      if (localImagesError) throw localImagesError;
       
-      if (!isAuthenticated) {
-        toast({
-          title: "Error",
-          description: "You need to be authenticated to perform this action",
-          variant: "destructive",
-        });
-        return;
-      }
+      // Get number of sets
+      const { data: setsData, error: setsError } = await supabase
+        .from(tableName)
+        .select('set_id')
+        .is('set_id', 'not.null');
+        
+      if (setsError) throw setsError;
       
-      await supabase.from('tcg_image_downloads' as any).delete().neq('id', 0);
-      await supabase.from('pokemon_cards' as any).delete().neq('id', 0);
-      await supabase.from('mtg_cards' as any).delete().neq('id', 0);
-      await supabase.from('yugioh_cards' as any).delete().neq('id', 0);
-      await supabase.from('lorcana_cards' as any).delete().neq('id', 0);
-      
-      toast({
-        title: "Success",
-        description: "Card database cleared successfully",
+      // Count unique sets
+      const uniqueSets = new Set();
+      setsData.forEach((card: any) => {
+        if (card.set_id) uniqueSets.add(card.set_id);
       });
       
-      fetchDatabaseStats();
-    } catch (error) {
-      console.error("Error clearing database:", error);
+      setStats({
+        totalCards: count || 0,
+        cardsWithImages: localImagesCount || 0,
+        sets: uniqueSets.size,
+      });
+    } catch (error: any) {
+      console.error("Error calculating stats:", error);
       toast({
         title: "Error",
-        description: "Failed to clear database",
+        description: `Could not calculate database stats: ${error.message}`,
         variant: "destructive",
       });
     } finally {
@@ -118,113 +88,141 @@ const CardDatabaseManager: React.FC = () => {
     }
   };
   
+  // Clear the database
+  const clearDatabase = async () => {
+    const tableName = getTableName();
+    setLoading(true);
+    
+    try {
+      // Delete all records
+      const { error } = await supabase
+        .from(tableName)
+        .delete()
+        .neq('card_id', 'no-match'); // This is a workaround to delete all records
+        
+      if (error) throw error;
+      
+      toast({
+        title: "Success",
+        description: `All ${label} cards have been deleted from the database`,
+      });
+      
+      // Reset stats
+      setStats({
+        totalCards: 0,
+        cardsWithImages: 0,
+        sets: 0,
+      });
+    } catch (error: any) {
+      console.error("Error clearing database:", error);
+      toast({
+        title: "Error",
+        description: `Could not clear database: ${error.message}`,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Open the dialog and fetch stats
+  const handleOpenDialog = () => {
+    setOpenDialog(true);
+    calculateStats();
+  };
+
   return (
-    <Card>
+    <Card className="mb-4">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Database className="h-5 w-5" /> Card Database Management
-        </CardTitle>
+        <CardTitle>{label} Card Database</CardTitle>
         <CardDescription>
-          View and manage your local TCG card database
+          Manage the {label} card database
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="flex justify-between items-center mb-4">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={fetchDatabaseStats}
-            disabled={refreshing}
-            className="flex items-center gap-2"
-          >
-            {refreshing ? (
-              <LoadingSpinner size="sm" color="gray" />
-            ) : (
-              <RefreshCw className="h-4 w-4" />
-            )}
-            Refresh Stats
-          </Button>
-          
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="destructive" size="sm" className="flex items-center gap-2">
-                <Trash2 className="h-4 w-4" />
-                Clear Database
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This action will permanently delete all TCG card data from your database.
-                  This includes all card data and image records for all TCGs.
-                  This action cannot be undone.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction 
-                  onClick={clearDatabase}
-                  disabled={loading}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                >
-                  {loading ? (
-                    <LoadingSpinner size="sm" color="red" />
-                  ) : (
-                    "Yes, Clear Everything"
-                  )}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </div>
-        
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Game</TableHead>
-              <TableHead className="text-right">Cards</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {stats ? (
-              <>
-                <TableRow>
-                  <TableCell className="font-medium">Pokémon TCG</TableCell>
-                  <TableCell className="text-right">{stats.pokemon.toLocaleString()}</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell className="font-medium">Magic: The Gathering</TableCell>
-                  <TableCell className="text-right">{stats.mtg.toLocaleString()}</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell className="font-medium">Yu-Gi-Oh!</TableCell>
-                  <TableCell className="text-right">{stats.yugioh.toLocaleString()}</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell className="font-medium">Disney Lorcana</TableCell>
-                  <TableCell className="text-right">{stats.lorcana.toLocaleString()}</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell className="font-medium">Stored Images</TableCell>
-                  <TableCell className="text-right">{stats.images.toLocaleString()}</TableCell>
-                </TableRow>
-              </>
-            ) : (
-              <TableRow>
-                <TableCell colSpan={2} className="text-center py-4">
-                  {refreshing ? (
-                    <div className="flex justify-center">
-                      <LoadingSpinner size="md" color="gray" />
+        <Dialog open={openDialog} onOpenChange={setOpenDialog}>
+          <DialogTrigger asChild>
+            <Button 
+              onClick={handleOpenDialog}
+              variant="outline" 
+              className="w-full flex items-center justify-center gap-2"
+            >
+              <DatabaseIcon className="h-4 w-4" />
+              Manage {label} Database
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>{label} Card Database</DialogTitle>
+              <DialogDescription>
+                View statistics and manage the {label} card database
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4 py-4">
+              {loading ? (
+                <div className="flex justify-center items-center py-8">
+                  <LoadingSpinner size="lg" color={source === "pokemon" ? "red" : source === "mtg" ? "blue" : source === "yugioh" ? "purple" : "green"} />
+                </div>
+              ) : (
+                <>
+                  {stats && (
+                    <div className="grid grid-cols-3 gap-4 text-center">
+                      <div className="bg-muted p-3 rounded-lg">
+                        <p className="text-2xl font-bold">{stats.totalCards}</p>
+                        <p className="text-xs text-muted-foreground">Total Cards</p>
+                      </div>
+                      <div className="bg-muted p-3 rounded-lg">
+                        <p className="text-2xl font-bold">{stats.cardsWithImages}</p>
+                        <p className="text-xs text-muted-foreground">With Images</p>
+                      </div>
+                      <div className="bg-muted p-3 rounded-lg">
+                        <p className="text-2xl font-bold">{stats.sets}</p>
+                        <p className="text-xs text-muted-foreground">Sets</p>
+                      </div>
                     </div>
-                  ) : (
-                    "No data available"
                   )}
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+                  
+                  <div className="flex flex-col gap-2">
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" className="w-full">
+                          Clear {label} Database
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This will permanently delete all {label} cards from the database.
+                            This action cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={clearDatabase} disabled={loading}>
+                            {loading ? (
+                              <div className="flex items-center gap-2">
+                                <LoadingSpinner size="sm" color="red" />
+                                <span>Deleting...</span>
+                              </div>
+                            ) : (
+                              "Yes, delete all cards"
+                            )}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                    
+                    <Button variant="secondary" onClick={calculateStats} disabled={loading}>
+                      Refresh Stats
+                    </Button>
+                  </div>
+                </>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );

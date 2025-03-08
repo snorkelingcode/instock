@@ -2,7 +2,8 @@
 // Follow Deno's module system for imports
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
-import { handleTCGCardDownload, corsHeaders } from "./handlers/download-handler.ts";
+import { handleTCGCardDownload } from "./handlers/download-handler.ts";
+import { corsHeaders } from "./handlers/cors-headers.ts";
 
 // Initialize environment variables
 const supabaseUrl = Deno.env.get("SUPABASE_URL") as string;

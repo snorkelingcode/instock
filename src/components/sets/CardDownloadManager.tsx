@@ -40,6 +40,13 @@ const CardDownloadManager: React.FC<CardDownloadManagerProps> = ({
         
         if (result.error) {
           console.error("Error polling job status:", result.error);
+          toast({
+            title: "Error",
+            description: `Failed to check job status: ${result.error.message || "Unknown error"}`,
+            variant: "destructive",
+          });
+          setJobId(null);
+          setLoading(false);
           return;
         }
         
@@ -73,6 +80,13 @@ const CardDownloadManager: React.FC<CardDownloadManagerProps> = ({
         }
       } catch (err: any) {
         console.error("Error polling job status:", err);
+        toast({
+          title: "Error",
+          description: `Failed to check job status: ${err.message || "Unknown error"}`,
+          variant: "destructive",
+        });
+        setJobId(null);
+        setLoading(false);
       }
     };
     
@@ -115,7 +129,22 @@ const CardDownloadManager: React.FC<CardDownloadManagerProps> = ({
       if (result.error) {
         console.error(`Edge function error:`, result.error);
         setLoading(false);
-        throw new Error(`Edge Function Error: ${result.error.message || "Unknown error calling Edge Function"}`);
+        
+        let errorMessage = `Edge function error: ${result.error.message || "Unknown error calling Edge Function"}`;
+        
+        if (result.error.message?.includes("Failed to fetch") || 
+            result.error.message?.includes("NetworkError") ||
+            result.error.message?.includes("network error") ||
+            result.error.message?.includes("Failed to send")) {
+          errorMessage = `Edge function 'download-tcg-cards' could not be reached. Please verify the function is deployed and running.`;
+        }
+        
+        toast({
+          title: "Error",
+          description: errorMessage,
+          variant: "destructive",
+        });
+        return;
       }
 
       if (result.data && result.data.success && result.data.jobId) {
@@ -126,7 +155,11 @@ const CardDownloadManager: React.FC<CardDownloadManagerProps> = ({
         });
       } else {
         setLoading(false);
-        throw new Error(result.data?.error || "Unknown error occurred in the edge function response");
+        toast({
+          title: "Error",
+          description: result.data?.error || "Unknown error occurred in the edge function response",
+          variant: "destructive",
+        });
       }
     } catch (err: any) {
       console.error(`Error downloading ${source} cards:`, err);
