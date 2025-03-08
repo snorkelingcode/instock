@@ -1,3 +1,4 @@
+
 import React from "react";
 
 // Featured product component with toned down effect
@@ -93,16 +94,10 @@ const FeaturedProduct = ({ title, description, price, retailer, listingLink, ima
         onClick={handleListingClick}
         onMouseEnter={() => setIsButtonHovered(true)}
         onMouseLeave={() => setIsButtonHovered(false)}
-        className="text-2xl italic font-light text-[#1E1E1E] absolute -translate-x-2/4 w-[257px] h-[66px] bg-white rounded-[22px] left-2/4 bottom-[16px] max-sm:w-[80%] transition-all duration-800 flex items-center justify-center"
-        style={{
-          border: `1px solid ${cardColor}60`, // Subtle border that matches card color
-          boxShadow: isButtonHovered 
-            ? `0px 2px 8px 1px ${cardColor}50` // Slightly enhanced glow on hover
-            : `0px 1px 4px 0px ${cardColor}30`, // Very subtle shadow normally
-          transition: 'all 0.3s ease'
-        }}
+        className="text-xl font-medium text-white absolute -translate-x-2/4 w-[257px] h-[50px] bg-red-500 hover:bg-red-600 rounded-md left-2/4 bottom-[16px] max-sm:w-[80%] transition-all duration-300 flex items-center justify-center"
+        aria-label={`View listing for ${title}`}
       >
-        Listing
+        View Listing
       </button>
     </div>
   );
