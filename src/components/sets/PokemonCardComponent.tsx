@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, memo } from 'react';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { 
@@ -86,19 +87,23 @@ const formatPrice = (price?: number): string => {
   }).format(price);
 };
 
-const PokemonCardComponent: React.FC<PokemonCardProps> = ({ card }) => {
+// Memoize the component to prevent unnecessary re-renders
+const PokemonCardComponent: React.FC<PokemonCardProps> = memo(({ card }) => {
   const [isImageLoaded, setIsImageLoaded] = useState(false);
   const [isImageError, setIsImageError] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   
+  // Get market price from available variants
   const marketPrice = card.tcgplayer?.prices?.holofoil?.market 
     || card.tcgplayer?.prices?.normal?.market
     || card.tcgplayer?.prices?.reverseHolofoil?.market;
     
+  // Get low price from available variants
   const lowPrice = card.tcgplayer?.prices?.holofoil?.low 
     || card.tcgplayer?.prices?.normal?.low
     || card.tcgplayer?.prices?.reverseHolofoil?.low;
 
+  // Ensure cardImages exists to prevent null reference errors
   const cardImages = card.images || { small: '', large: '' };
 
   return (
@@ -125,6 +130,7 @@ const PokemonCardComponent: React.FC<PokemonCardProps> = ({ card }) => {
               className={`w-full h-full object-contain transition-opacity duration-300 ${isImageLoaded ? 'opacity-100' : 'opacity-0'}`}
               onLoad={() => setIsImageLoaded(true)}
               onError={() => setIsImageError(true)}
+              loading="lazy" // Use native lazy loading
             />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center bg-gray-100 text-gray-500 text-sm">
@@ -134,7 +140,7 @@ const PokemonCardComponent: React.FC<PokemonCardProps> = ({ card }) => {
         </div>
         
         <div className="flex flex-wrap gap-1 mb-2">
-          {card.types?.map((type) => (
+          {card.types && card.types.map((type) => (
             <Badge key={type} className={`${getTypeColor(type)}`}>
               {type}
             </Badge>
@@ -192,8 +198,12 @@ const PokemonCardComponent: React.FC<PokemonCardProps> = ({ card }) => {
                   src={cardImages.large} 
                   alt={card.name} 
                   className="max-h-[300px] md:max-h-[400px] object-contain rounded-md"
+                  loading="lazy"
                   onError={(e) => {
                     e.currentTarget.src = cardImages.small || '';
+                    if (!cardImages.small) {
+                      e.currentTarget.style.display = 'none';
+                    }
                   }}
                 />
               </div>
@@ -307,6 +317,6 @@ const PokemonCardComponent: React.FC<PokemonCardProps> = ({ card }) => {
       </CardFooter>
     </Card>
   );
-};
+});
 
 export default PokemonCardComponent;

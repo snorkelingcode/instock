@@ -28,6 +28,7 @@ const PokemonSetDetails = () => {
   const [cards, setCards] = useState<PokemonCard[]>([]);
   const [filteredCards, setFilteredCards] = useState<PokemonCard[]>([]);
   const [loading, setLoading] = useState(true);
+  const [cardsLoading, setCardsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [rarityFilter, setRarityFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
@@ -35,15 +36,17 @@ const PokemonSetDetails = () => {
   const [uniqueTypes, setUniqueTypes] = useState<string[]>([]);
   const [isLoadingError, setIsLoadingError] = useState(false);
 
+  // Fetch set details first (quick), then fetch cards (can be slower)
   useEffect(() => {
     const fetchSetDetails = async () => {
       if (!setId) return;
       
       setLoading(true);
+      setCardsLoading(true);
       setIsLoadingError(false);
       
       try {
-        // 1. First fetch the set details
+        // 1. First fetch the set details (this should be fast)
         const { data: setData, error: setError } = await supabase
           .from('pokemon_sets')
           .select('*')
@@ -53,8 +56,9 @@ const PokemonSetDetails = () => {
         if (setError) throw setError;
         
         setSet(setData as PokemonSet);
+        setLoading(false);
         
-        // 2. Fetch cards using our optimized function
+        // 2. Then fetch cards in a separate flow so UI is more responsive
         try {
           const fetchedCards = await fetchPokemonCards(setId);
           setCards(fetchedCards);
@@ -85,6 +89,8 @@ const PokemonSetDetails = () => {
             variant: "destructive",
           });
           setIsLoadingError(true);
+        } finally {
+          setCardsLoading(false);
         }
         
       } catch (error) {
@@ -95,8 +101,8 @@ const PokemonSetDetails = () => {
           variant: "destructive",
         });
         setIsLoadingError(true);
-      } finally {
         setLoading(false);
+        setCardsLoading(false);
       }
     };
     
@@ -182,7 +188,7 @@ const PokemonSetDetails = () => {
           )}
         </div>
         
-        {/* Filters */}
+        {/* Filters - show even while cards are loading */}
         {!loading && (
           <div className="mb-6 space-y-4">
             <div className="flex flex-col md:flex-row gap-4">
@@ -230,7 +236,8 @@ const PokemonSetDetails = () => {
             
             <div className="flex items-center justify-between">
               <p className="text-sm text-gray-500">
-                {filteredCards.length} {filteredCards.length === 1 ? 'card' : 'cards'} found
+                {cardsLoading ? 'Loading cards...' : 
+                  `${filteredCards.length} ${filteredCards.length === 1 ? 'card' : 'cards'} found`}
               </p>
               
               <Button
@@ -238,6 +245,7 @@ const PokemonSetDetails = () => {
                 size="sm"
                 onClick={resetFilters}
                 className="text-xs"
+                disabled={cardsLoading}
               >
                 <Filter className="mr-2 h-3 w-3" />
                 Reset Filters
@@ -262,6 +270,39 @@ const PokemonSetDetails = () => {
             >
               Try Again
             </Button>
+          </div>
+        ) : cardsLoading ? (
+          <div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+              {Array.from({ length: 15 }).map((_, index) => (
+                <Card key={index} className="overflow-hidden h-full flex flex-col">
+                  <div className="p-4 flex-grow flex flex-col animate-pulse">
+                    <div className="flex justify-between mb-2">
+                      <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+                      <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+                    </div>
+                    <div className="relative aspect-[2.5/3.5] bg-gray-200 rounded-md mb-3 flex-grow"></div>
+                    <div className="flex gap-1 mb-2">
+                      <div className="h-5 bg-gray-200 rounded w-1/3"></div>
+                      <div className="h-5 bg-gray-200 rounded w-1/3 ml-auto"></div>
+                    </div>
+                    <div className="mt-auto space-y-1">
+                      <div className="flex justify-between">
+                        <div className="h-3 bg-gray-200 rounded w-1/4"></div>
+                        <div className="h-3 bg-gray-200 rounded w-1/4"></div>
+                      </div>
+                      <div className="flex justify-between">
+                        <div className="h-3 bg-gray-200 rounded w-1/4"></div>
+                        <div className="h-3 bg-gray-200 rounded w-1/4"></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-4 pt-0 flex gap-2">
+                    <div className="h-8 bg-gray-200 rounded w-full"></div>
+                  </div>
+                </Card>
+              ))}
+            </div>
           </div>
         ) : filteredCards.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">

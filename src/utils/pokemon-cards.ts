@@ -1,5 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import { getCache, setCache } from "@/utils/cacheUtils";
 
 // Interface for Pokemon Card
 export interface PokemonCard {
@@ -71,7 +72,7 @@ export interface PokemonSet {
   images_url: string;
 }
 
-// Cache for Pokémon cards by set ID
+// Cache for Pokémon cards by set ID - in-memory cache
 const cardCache = new Map<string, {
   cards: PokemonCard[];
   timestamp: number;
@@ -123,33 +124,40 @@ const normalizeCardData = (card: any): PokemonCard => {
   };
 };
 
-// Fetch cards from API with optimized error handling and retries
+// Fetch cards from API with optimized error handling, retries, and fast caching
 export const fetchPokemonCards = async (setId: string): Promise<PokemonCard[]> => {
   console.log(`Fetching cards for set: ${setId}`);
   
-  // Check if we have cached cards and they're less than 5 minutes old
+  // First, check browser's localStorage cache (this is very fast)
+  const localStorageCache = getCache<PokemonCard[]>(`pokemon_cards_${setId}`, "tcg");
+  if (localStorageCache) {
+    console.log(`Using localStorage cache for set: ${setId}`);
+    return localStorageCache;
+  }
+  
+  // Then check memory cache (also very fast)
   const cached = cardCache.get(setId);
-  if (cached && (Date.now() - cached.timestamp < 5 * 60 * 1000)) {
-    console.log(`Using cached cards for set: ${setId}`);
+  if (cached && (Date.now() - cached.timestamp < 15 * 60 * 1000)) { // 15 minutes cache
+    console.log(`Using memory cache for set: ${setId}`);
     return cached.cards;
   }
   
   // Maximum retries for API errors
-  const MAX_RETRIES = 3;
+  const MAX_RETRIES = 2;
   let retryCount = 0;
   
   while (retryCount <= MAX_RETRIES) {
     try {
-      // Always go directly to API for all sets, just like we do for Prismatic
+      // Always go directly to API for all sets
       console.log(`Fetching from API for set: ${setId}`);
       
-      // Use consistent timeout for all sets - 12 seconds
+      // Use shorter timeout for faster response or error
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 12000);
+      const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 seconds timeout
       
       try {
         const response = await fetch(
-          `https://api.pokemontcg.io/v2/cards?q=set.id:${setId}&orderBy=number&pageSize=250`, 
+          `https://api.pokemontcg.io/v2/cards?q=set.id:${setId}&orderBy=number&pageSize=300`, 
           { signal: controller.signal }
         );
         
@@ -163,24 +171,65 @@ export const fetchPokemonCards = async (setId: string): Promise<PokemonCard[]> =
         
         // Apply normalization to ensure consistent data structure
         const fetchedCards = data.data.map((card: any) => normalizeCardData(card));
+        const sortedCards = sortCardsByNumber(fetchedCards);
         
-        // Cache the results
+        // Cache the results in memory
         cardCache.set(setId, {
-          cards: fetchedCards,
+          cards: sortedCards,
           timestamp: Date.now()
         });
         
-        return sortCardsByNumber(fetchedCards);
+        // Also cache in localStorage for persistence between page refreshes
+        setCache(`pokemon_cards_${setId}`, sortedCards, 60, "tcg"); // 60 minutes cache in localStorage
+        
+        console.log(`Successfully cached ${sortedCards.length} cards for set ${setId}`);
+        return sortedCards;
       } catch (error) {
         if (error.name === 'AbortError') {
-          console.error('API request timed out, retrying...');
+          console.error('API request timed out, retrying with longer timeout...');
           retryCount++;
-          // Add exponential backoff - wait longer between retries
-          await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
           
-          // If we have more retries to go, continue the loop
-          if (retryCount <= MAX_RETRIES) continue;
-          throw new Error('Request timed out after multiple attempts. The API is taking too long to respond.');
+          // If first attempt times out, try again with a longer timeout
+          if (retryCount <= MAX_RETRIES) {
+            try {
+              console.log(`Retry ${retryCount} with longer timeout for set: ${setId}`);
+              const retryController = new AbortController();
+              const retryTimeoutId = setTimeout(() => retryController.abort(), 15000); // 15 seconds on retry
+              
+              const response = await fetch(
+                `https://api.pokemontcg.io/v2/cards?q=set.id:${setId}&orderBy=number&pageSize=300`, 
+                { signal: retryController.signal }
+              );
+              
+              clearTimeout(retryTimeoutId);
+              
+              if (!response.ok) {
+                throw new Error(`API responded with status: ${response.status}`);
+              }
+              
+              const data = await response.json();
+              const fetchedCards = data.data.map((card: any) => normalizeCardData(card));
+              const sortedCards = sortCardsByNumber(fetchedCards);
+              
+              // Cache results
+              cardCache.set(setId, {
+                cards: sortedCards,
+                timestamp: Date.now()
+              });
+              
+              setCache(`pokemon_cards_${setId}`, sortedCards, 60, "tcg");
+              
+              console.log(`Successfully retrieved ${sortedCards.length} cards for set ${setId} on retry`);
+              return sortedCards;
+            } catch (retryError) {
+              if (retryError.name === 'AbortError') {
+                throw new Error('Request timed out after longer retry. The API is taking too long to respond.');
+              }
+              throw retryError;
+            }
+          } else {
+            throw new Error('Request timed out after multiple attempts. The API is taking too long to respond.');
+          }
         }
         throw error;
       }
@@ -189,7 +238,7 @@ export const fetchPokemonCards = async (setId: string): Promise<PokemonCard[]> =
       if (retryCount <= MAX_RETRIES) {
         console.error(`Error fetching cards for set ${setId}, retry ${retryCount}:`, error);
         // Wait a second before retrying with exponential backoff
-        await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+        await new Promise(resolve => setTimeout(resolve, 500 * retryCount));
         continue;
       }
       
