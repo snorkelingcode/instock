@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -37,6 +36,15 @@ interface JobStatus {
   updated_at: string;
   completed_at: string | null;
   error: string | null;
+}
+
+// API Config interface
+interface ApiConfig {
+  id: number;
+  api_name: string;
+  last_sync_time: string | null;
+  sync_frequency: string | null;
+  created_at: string | null;
 }
 
 const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({ 
@@ -162,22 +170,21 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({
       const { data, error } = await supabase
         .from('api_config')
         .select('last_sync_time')
-        .eq('api_name', source)
-        .single();
+        .eq('api_name', source as string);
         
       if (error) {
         console.error("Error checking last sync time:", error);
         return true; // Allow sync if we can't check
       }
       
-      if (!data || !data.last_sync_time) {
+      if (!data || data.length === 0 || !data[0]?.last_sync_time) {
         return true; // No previous sync, allow it
       }
       
       // Cache the last sync time for future reference
-      setCache(cachedTimeKey, data.last_sync_time, 5, TCG_PARTITION); // Cache for 5 minutes
+      setCache(cachedTimeKey, data[0].last_sync_time, 5, TCG_PARTITION); // Cache for 5 minutes
       
-      const lastSync = new Date(data.last_sync_time);
+      const lastSync = new Date(data[0].last_sync_time);
       const now = new Date();
       const timeDiff = now.getTime() - lastSync.getTime();
       
