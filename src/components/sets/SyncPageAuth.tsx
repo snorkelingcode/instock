@@ -1,16 +1,19 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
-import { LockIcon, ShieldIcon, KeyIcon } from "lucide-react";
+import { LockIcon, ShieldIcon, KeyIcon, InfoIcon } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface SyncPageAuthProps {
   onAuthenticated: () => void;
 }
 
+// Access key for non-admin users
 const ACCESS_KEY = "TCG-SYNC-ACCESS-2024";
 
 const SyncPageAuth: React.FC<SyncPageAuthProps> = ({ onAuthenticated }) => {
@@ -19,6 +22,7 @@ const SyncPageAuth: React.FC<SyncPageAuthProps> = ({ onAuthenticated }) => {
   const [accessKey, setAccessKey] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showAccessKey, setShowAccessKey] = useState(false);
   const { toast } = useToast();
   
   useEffect(() => {
@@ -126,6 +130,10 @@ const SyncPageAuth: React.FC<SyncPageAuthProps> = ({ onAuthenticated }) => {
     }
   };
 
+  const toggleShowAccessKey = () => {
+    setShowAccessKey(!showAccessKey);
+  };
+
   return (
     <div className="flex items-center justify-center min-h-[50vh] p-4">
       <Card className="w-full max-w-md">
@@ -134,15 +142,37 @@ const SyncPageAuth: React.FC<SyncPageAuthProps> = ({ onAuthenticated }) => {
             <ShieldIcon className="h-8 w-8 text-primary mr-2" />
             <CardTitle className="text-center">Admin Authentication</CardTitle>
           </div>
-          <p className="text-center text-sm text-muted-foreground">
-            This page requires admin privileges
-          </p>
+          <CardDescription className="text-center">
+            This page requires authentication to sync TCG data
+          </CardDescription>
         </CardHeader>
         <CardContent>
+          <Alert className="mb-4 bg-blue-50 border-blue-200">
+            <InfoIcon className="h-4 w-4 text-blue-600" />
+            <AlertDescription className="text-blue-700">
+              <div className="flex items-center justify-between">
+                <span>Default access key for this demo: </span>
+                <div className="flex items-center space-x-2">
+                  <code className="bg-blue-100 px-2 py-1 rounded text-blue-800 font-mono">
+                    {showAccessKey ? ACCESS_KEY : "••••••••••••••••"}
+                  </code>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={toggleShowAccessKey}
+                    className="h-8 px-2 text-xs"
+                  >
+                    {showAccessKey ? "Hide" : "Show"}
+                  </Button>
+                </div>
+              </div>
+            </AlertDescription>
+          </Alert>
+          
           <Tabs defaultValue="access-key" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="access-key">Access Key</TabsTrigger>
-              <TabsTrigger value="email">Email</TabsTrigger>
+              <TabsTrigger value="email">Admin Email</TabsTrigger>
             </TabsList>
             
             <TabsContent value="access-key">
