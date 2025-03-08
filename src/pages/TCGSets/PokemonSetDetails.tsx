@@ -4,7 +4,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Search, Filter, Gamepad, RefreshCw } from "lucide-react";
+import { ArrowLeft, Search, Filter, Gamepad } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -19,8 +19,7 @@ import {
   fetchPokemonCards, 
   PokemonCard, 
   fetchPokemonSets, 
-  PokemonSet,
-  clearPokemonCaches 
+  PokemonSet
 } from "@/utils/pokemon-cards";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -40,7 +39,6 @@ const PokemonSetDetails = () => {
   const [uniqueRarities, setUniqueRarities] = useState<string[]>([]);
   const [uniqueTypes, setUniqueTypes] = useState<string[]>([]);
   const [isLoadingError, setIsLoadingError] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
 
   // Split fetching into two separate useEffects for better performance
   
@@ -158,44 +156,6 @@ const PokemonSetDetails = () => {
     setTypeFilter("all");
   };
 
-  const handleRefresh = async () => {
-    try {
-      setRefreshing(true);
-      clearPokemonCaches();
-      
-      // Reload both set and cards
-      setLoadingSet(true);
-      setLoadingCards(true);
-      
-      const allSets = await fetchPokemonSets();
-      const currentSet = allSets.find(s => s.set_id === setId);
-      
-      if (currentSet) {
-        setSet(currentSet);
-      }
-      
-      const refreshedCards = await fetchPokemonCards(setId || '');
-      setCards(refreshedCards);
-      setFilteredCards(refreshedCards);
-      
-      toast({
-        title: "Success",
-        description: "Card data refreshed successfully",
-      });
-    } catch (error) {
-      console.error('Error refreshing data:', error);
-      toast({
-        title: "Error",
-        description: "Failed to refresh card data",
-        variant: "destructive",
-      });
-    } finally {
-      setRefreshing(false);
-      setLoadingSet(false);
-      setLoadingCards(false);
-    }
-  };
-
   // Render loading skeletons for cards
   const renderCardSkeletons = () => {
     return Array(20).fill(0).map((_, index) => (
@@ -252,17 +212,6 @@ const PokemonSetDetails = () => {
                 </div>
               )}
             </div>
-            
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={handleRefresh}
-              disabled={refreshing}
-              className="whitespace-nowrap"
-            >
-              <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-              Refresh Data
-            </Button>
           </div>
         </div>
         
@@ -342,7 +291,24 @@ const PokemonSetDetails = () => {
             <Button 
               variant="default" 
               className="mt-4"
-              onClick={handleRefresh}
+              onClick={() => {
+                setLoadingCards(true);
+                setIsLoadingError(false);
+                fetchPokemonCards(setId || '').then(cards => {
+                  setCards(cards);
+                  setFilteredCards(cards);
+                  setLoadingCards(false);
+                }).catch(err => {
+                  console.error("Error retrying card fetch:", err);
+                  setIsLoadingError(true);
+                  setLoadingCards(false);
+                  toast({
+                    title: "Error",
+                    description: "Failed to load cards. Please try again later.",
+                    variant: "destructive",
+                  });
+                });
+              }}
             >
               Try Again
             </Button>

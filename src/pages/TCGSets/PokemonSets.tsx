@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import Layout from "@/components/layout/Layout";
 import { useToast } from "@/hooks/use-toast";
 import SetCard from "@/components/sets/SetCard";
-import { Gamepad, Filter, Search, RefreshCw } from "lucide-react";
+import { Gamepad, Filter, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { PokemonSet, fetchPokemonSets, clearPokemonCaches } from "@/utils/pokemon-cards";
+import { PokemonSet, fetchPokemonSets } from "@/utils/pokemon-cards";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const PokemonSets = () => {
@@ -23,7 +23,6 @@ const PokemonSets = () => {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [seriesFilter, setSeriesFilter] = useState<string>("all");
   const [uniqueSeries, setUniqueSeries] = useState<string[]>([]);
-  const [refreshing, setRefreshing] = useState<boolean>(false);
   const { toast } = useToast();
 
   const fetchSets = async () => {
@@ -84,27 +83,6 @@ const PokemonSets = () => {
     setSeriesFilter(value);
   };
 
-  const handleRefresh = async () => {
-    try {
-      setRefreshing(true);
-      clearPokemonCaches();
-      await fetchSets();
-      toast({
-        title: "Success",
-        description: "Pokémon sets refreshed successfully",
-      });
-    } catch (error) {
-      console.error('Error refreshing sets:', error);
-      toast({
-        title: "Error",
-        description: "Failed to refresh Pokémon sets",
-        variant: "destructive",
-      });
-    } finally {
-      setRefreshing(false);
-    }
-  };
-
   // Render loading skeletons
   const renderSkeletons = () => {
     return Array(12).fill(0).map((_, index) => (
@@ -121,20 +99,9 @@ const PokemonSets = () => {
   return (
     <Layout>
       <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-        <div className="flex items-center justify-between gap-3 mb-4">
-          <div className="flex items-center gap-3">
-            <Gamepad className="h-8 w-8 text-red-500" />
-            <h1 className="text-2xl font-bold">Pokémon TCG Sets</h1>
-          </div>
-          <Button 
-            size="sm" 
-            variant="outline" 
-            onClick={handleRefresh}
-            disabled={refreshing}
-          >
-            <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-            Refresh Data
-          </Button>
+        <div className="flex items-center gap-3 mb-4">
+          <Gamepad className="h-8 w-8 text-red-500" />
+          <h1 className="text-2xl font-bold">Pokémon TCG Sets</h1>
         </div>
         <p className="text-gray-700 mb-6">
           Browse all Pokémon Trading Card Game sets, sorted by release date. Click on a set to view all cards in that set.
