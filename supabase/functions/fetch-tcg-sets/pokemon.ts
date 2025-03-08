@@ -2,6 +2,7 @@
 import { updateApiSyncTime } from "./utils.ts";
 import * as StorageUtils from "./storage-utils.ts";
 import { updateJobStatus, updateJobProgress } from "./job-utils.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.1.1";
 
 // Added chunk size constant - increasing to process more sets at once
 const CHUNK_SIZE = 20;
@@ -9,7 +10,7 @@ const CHUNK_SIZE = 20;
 export async function processPokemonSets(jobId, supabase) {
   try {
     console.log(`Processing Pokemon sets for job ${jobId}`);
-    await processChunkedPokemonSets(jobId, 0, 0);
+    await processChunkedPokemonSets(jobId, 0, 0, supabase);
   } catch (error) {
     console.error(`Error in Pokemon sets processing:`, error);
     throw error;
@@ -17,7 +18,7 @@ export async function processPokemonSets(jobId, supabase) {
 }
 
 // Improved chunked processing function
-export async function processChunkedPokemonSets(jobId, startIndex = 0, knownTotalItems = 0) {
+export async function processChunkedPokemonSets(jobId, startIndex = 0, knownTotalItems = 0, supabaseClient = null) {
   console.log(`Starting chunked Pokemon sets processing for job ${jobId} from index ${startIndex}`);
   
   const apiKey = Deno.env.get("POKEMON_TCG_API_KEY") || "";
@@ -26,7 +27,8 @@ export async function processChunkedPokemonSets(jobId, startIndex = 0, knownTota
   }
   
   try {
-    const supabase = new (await import("https://esm.sh/@supabase/supabase-js@2.1.1")).createClient(
+    // Use provided supabase client or create a new one if none provided
+    const supabase = supabaseClient || createClient(
       Deno.env.get("SUPABASE_URL") || "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || ""
     );
