@@ -15,6 +15,73 @@ export async function processInBackground(fn, jobId, source, supabase) {
   }
 }
 
+// Add new function to handle chunked processing
+export async function processWithChunking(chunkedFn, jobId, source, supabase, chunkSize = 10) {
+  try {
+    console.log(`Starting chunked processing for ${source} job ${jobId} with chunk size ${chunkSize}`);
+    
+    // First, get current job status to check if we're resuming
+    const { data: jobData } = await supabase
+      .from(JOB_STATUS_TABLE)
+      .select('*')
+      .eq('job_id', jobId)
+      .single();
+    
+    if (!jobData) {
+      throw new Error(`Job ${jobId} not found`);
+    }
+    
+    // If job is already completed or failed, don't process again
+    if (jobData.status === 'completed' || jobData.status === 'failed') {
+      console.log(`Job ${jobId} is already in status ${jobData.status}, skipping processing`);
+      return;
+    }
+    
+    // Get current progress
+    const completedItems = jobData.completed_items || 0;
+    const totalItems = jobData.total_items || 0;
+    
+    console.log(`Resuming job ${jobId} from ${completedItems}/${totalItems} items completed`);
+    
+    // Update status to processing if it's not already
+    if (jobData.status !== 'processing') {
+      await updateJobStatus(jobId, 'processing', null, null, null, null, supabase);
+    }
+    
+    // Process in chunks
+    await chunkedFn(jobId, completedItems, totalItems);
+    
+    // Mark as completed if we got here without errors
+    await updateJobStatus(jobId, 'completed', 100, null, null, null, supabase);
+    console.log(`Job ${jobId} completed successfully`);
+  } catch (error) {
+    console.error(`Chunked processing error for job ${jobId}:`, error);
+    
+    // Check if this is a timeout error or a regular error
+    if (error.message && (
+      error.message.includes('timeout') || 
+      error.message.includes('execution time limit') ||
+      error.message.includes('function shutdown')
+    )) {
+      console.log(`Job ${jobId} timed out, but can be resumed on next request`);
+      // We don't mark as failed for timeouts, as it can be resumed
+    } else {
+      // For other errors, mark as failed
+      await updateJobStatus(jobId, 'failed', null, null, null, error.message || "Unknown error", supabase);
+    }
+  }
+}
+
+// Register shutdown handler to log when the function is terminated
+try {
+  // This is wrapped in try/catch because it's only available in Deno edge runtime
+  addEventListener('beforeunload', (ev) => {
+    console.log('Function shutdown triggered due to:', ev.detail?.reason || 'unknown reason');
+  });
+} catch (e) {
+  console.log('Could not register shutdown handler, not running in edge runtime');
+}
+
 // Function to create the job status table if it doesn't exist
 export async function createJobStatusTableIfNotExists(supabase) {
   try {
@@ -35,7 +102,9 @@ export async function createJobStatusTableIfNotExists(supabase) {
           created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
           updated_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
           completed_at TIMESTAMP WITH TIME ZONE,
-          error TEXT
+          error TEXT,
+          current_chunk INT DEFAULT 0,
+          chunk_size INT DEFAULT 10
         );
       `);
     });
@@ -77,5 +146,55 @@ export async function updateJobStatus(jobId, status, progress = null, totalItems
     }
   } catch (error) {
     console.error(`Error in update job status for ${jobId}:`, error);
+  }
+}
+
+// Add function to update job progress
+export async function updateJobProgress(jobId, completedItems, totalItems, supabase) {
+  try {
+    if (!completedItems || !totalItems) return;
+    
+    const progress = Math.floor((completedItems / totalItems) * 100);
+    
+    const updateData = {
+      progress,
+      completed_items: completedItems,
+      total_items: totalItems,
+      updated_at: new Date().toISOString()
+    };
+    
+    console.log(`Updating job progress for ${jobId}: ${completedItems}/${totalItems} (${progress}%)`);
+    
+    const { error } = await supabase
+      .from(JOB_STATUS_TABLE)
+      .update(updateData)
+      .eq('job_id', jobId);
+      
+    if (error) {
+      console.error(`Error updating job progress for ${jobId}:`, error);
+    }
+  } catch (error) {
+    console.error(`Error in update job progress for ${jobId}:`, error);
+  }
+}
+
+// Add function to check if a job is still running
+export async function isJobStillRunning(jobId, supabase) {
+  try {
+    const { data, error } = await supabase
+      .from(JOB_STATUS_TABLE)
+      .select('status')
+      .eq('job_id', jobId)
+      .single();
+      
+    if (error) {
+      console.error(`Error checking job status for ${jobId}:`, error);
+      return false;
+    }
+    
+    return data && data.status === 'processing';
+  } catch (error) {
+    console.error(`Error in isJobStillRunning for ${jobId}:`, error);
+    return false;
   }
 }

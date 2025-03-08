@@ -78,10 +78,12 @@ export async function handleRequest(req, supabase) {
   const { processMTGSets } = await import("./mtg.ts");
   const { processYugiohSets } = await import("./yugioh.ts");
   const { processLorcanaSets } = await import("./lorcana.ts");
+  const { processWithChunking } = await import("./job-utils.ts");
   
   switch (source) {
     case "pokemon":
-      processingFunction = (jobId) => processPokemonSets(jobId, supabase);
+      const { processChunkedPokemonSets } = await import("./pokemon.ts");
+      processingFunction = (jobId) => processWithChunking(processChunkedPokemonSets, jobId, source, supabase, 10);
       break;
     case "mtg":
       processingFunction = (jobId) => processMTGSets(jobId, supabase);

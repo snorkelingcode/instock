@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -59,12 +60,16 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({
   const [partitionInfo, setPartitionInfo] = useState<any>(null);
   const [currentJobId, setCurrentJobId] = useState<string | null>(null);
   const [jobStatus, setJobStatus] = useState<JobStatus | null>(null);
+  const [lastPollTime, setLastPollTime] = useState<number>(0);
+  const [hasPendingResume, setHasPendingResume] = useState(false);
   const { toast } = useToast();
 
   const COOLDOWN_TIME = 60; // 1 minute cooldown between syncs (in seconds)
   const RATE_LIMIT_KEY = `sync_${source}`;
   const TCG_PARTITION = "tcg";
   const JOB_POLL_INTERVAL = 2000; // Poll every 2 seconds
+  const RESUME_CHECK_INTERVAL = 5000; // Check for stalled jobs every 5 seconds
+  const STALLED_THRESHOLD = 30000; // Consider job stalled if no updates for 30 seconds
   
   useEffect(() => {
     updateStatus();
@@ -74,11 +79,15 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({
     return () => clearInterval(interval);
   }, [source]);
   
+  // Effect for polling job status
   useEffect(() => {
     if (!currentJobId) return;
     
     const pollJobStatus = async () => {
       try {
+        const currentTime = Date.now();
+        setLastPollTime(currentTime);
+        
         const result = await supabase.functions.invoke('fetch-tcg-sets', {
           body: { jobId: currentJobId },
         });
@@ -91,11 +100,15 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({
         if (result.data && result.data.success && result.data.job) {
           setJobStatus(result.data.job as JobStatus);
           
-          if (result.data.job.status === 'completed' || result.data.job.status === 'failed') {
+          const job = result.data.job as JobStatus;
+          
+          // Check if job is completed or failed
+          if (job.status === 'completed' || job.status === 'failed') {
             setCurrentJobId(null);
             setLoading(false);
+            setHasPendingResume(false);
             
-            if (result.data.job.status === 'completed') {
+            if (job.status === 'completed') {
               toast({
                 title: "Success",
                 description: `Successfully synchronized ${label} data`,
@@ -112,7 +125,7 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({
             } else {
               toast({
                 title: "Error",
-                description: result.data.job.error || `Failed to synchronize ${label} data`,
+                description: job.error || `Failed to synchronize ${label} data`,
                 variant: "destructive",
               });
             }
@@ -128,6 +141,35 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({
     
     return () => clearInterval(interval);
   }, [currentJobId, source, label, onSuccess]);
+  
+  // Effect to check for stalled jobs and offer to resume
+  useEffect(() => {
+    if (!currentJobId || !jobStatus || !lastPollTime) return;
+    
+    // Only for processing status
+    if (jobStatus.status !== 'processing_data') return;
+    
+    const checkForStalledJob = () => {
+      const currentTime = Date.now();
+      const timeSinceLastUpdate = currentTime - lastPollTime;
+      
+      // If no updates for STALLED_THRESHOLD ms and we're not already offering to resume
+      if (timeSinceLastUpdate > STALLED_THRESHOLD && !hasPendingResume) {
+        console.log(`Job ${currentJobId} appears stalled - no updates for ${timeSinceLastUpdate}ms`);
+        setHasPendingResume(true);
+        
+        toast({
+          title: "Sync May Be Stalled",
+          description: `The ${label} synchronization appears to be stalled. Click the button to resume from where it left off.`,
+          duration: 10000,
+        });
+      }
+    };
+    
+    const interval = setInterval(checkForStalledJob, RESUME_CHECK_INTERVAL);
+    
+    return () => clearInterval(interval);
+  }, [currentJobId, jobStatus, lastPollTime, hasPendingResume]);
   
   const updateStatus = () => {
     const remaining = getRateLimitTimeRemaining(RATE_LIMIT_KEY);
@@ -178,9 +220,58 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({
     }
   };
 
-  const syncData = async () => {
-    if (loading || currentJobId) return;
+  const resumeSync = async () => {
+    if (!currentJobId) return;
     
+    try {
+      setHasPendingResume(false);
+      setLastPollTime(Date.now()); // Reset the stall detection timer
+      
+      // Simply call the same edge function with the same source
+      // The backend will handle the resumption logic
+      const result = await supabase.functions.invoke('fetch-tcg-sets', {
+        body: { source },
+      });
+      
+      if (result.error) {
+        console.error("Error resuming sync:", result.error);
+        toast({
+          title: "Error",
+          description: `Failed to resume ${label} synchronization: ${result.error.message}`,
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      toast({
+        title: "Resuming Sync",
+        description: `Attempting to resume ${label} synchronization from where it left off.`,
+      });
+      
+      // If the resume created a new job, update the current job ID
+      if (result.data && result.data.success && result.data.jobId) {
+        setCurrentJobId(result.data.jobId);
+      }
+      
+    } catch (err) {
+      console.error("Error resuming sync:", err);
+      toast({
+        title: "Error",
+        description: `Failed to resume ${label} synchronization`,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const syncData = async () => {
+    if (loading || (currentJobId && !hasPendingResume)) return;
+    
+    // If there's a pending resume request, handle it
+    if (hasPendingResume && currentJobId) {
+      return resumeSync();
+    }
+    
+    // Regular sync logic
     if (isRateLimited(RATE_LIMIT_KEY)) {
       toast({
         title: "Rate Limited",
@@ -286,6 +377,7 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({
 
       if (data && data.success && data.jobId) {
         setCurrentJobId(data.jobId);
+        setLastPollTime(Date.now());
         toast({
           title: "Job Started",
           description: `${label} data synchronization has started. Please wait while we process the data.`,
@@ -336,6 +428,7 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({
     
     let statusText = "";
     let progressValue = jobStatus.progress || 0;
+    let completedInfo = "";
     
     switch (jobStatus.status) {
       case 'pending':
@@ -345,7 +438,8 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({
         statusText = "Fetching data from API...";
         break;
       case 'processing_data':
-        statusText = `Processing ${jobStatus.completed_items}/${jobStatus.total_items} sets`;
+        statusText = `Processing sets`;
+        completedInfo = `${jobStatus.completed_items || 0}/${jobStatus.total_items || '?'}`;
         break;
       case 'saving_to_database':
         statusText = "Saving data to database...";
@@ -354,6 +448,7 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({
       case 'completed':
         statusText = "Completed successfully";
         progressValue = 100;
+        completedInfo = `${jobStatus.total_items || 0} sets`;
         break;
       case 'failed':
         statusText = `Failed: ${jobStatus.error || "Unknown error"}`;
@@ -365,10 +460,16 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({
     return (
       <div className="space-y-2 mt-2">
         <div className="flex items-center justify-between text-xs text-gray-600">
-          <span>{statusText}</span>
+          <span>{statusText} {completedInfo && `(${completedInfo})`}</span>
           <span>{progressValue}%</span>
         </div>
         <Progress value={progressValue} className="h-1" />
+        
+        {hasPendingResume && (
+          <div className="mt-1 text-xs text-yellow-600">
+            Sync appears stalled. Press the button to resume.
+          </div>
+        )}
       </div>
     );
   };
@@ -377,15 +478,16 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({
     <div className="space-y-2">
       <Button 
         onClick={syncData} 
-        disabled={loading || cooldown || !!currentJobId}
+        disabled={loading || (cooldown && !hasPendingResume) || (!!currentJobId && !hasPendingResume)}
         className="flex items-center gap-2"
       >
-        {loading || currentJobId ? (
+        {loading || (currentJobId && !hasPendingResume) ? (
           <LoadingSpinner size="sm" color={source === "pokemon" ? "red" : source === "mtg" ? "blue" : source === "yugioh" ? "purple" : "green"} />
         ) : (
           <RefreshCw className={`h-4 w-4 ${cooldown ? 'animate-pulse text-gray-400' : ''}`} />
         )}
-        {currentJobId ? `Syncing ${label}...` : 
+        {hasPendingResume ? `Resume ${label} Sync` :
+         currentJobId ? `Syncing ${label}...` : 
          loading ? `Starting ${label} sync...` :
          cooldown ? `Cooldown (${formatTimeRemaining(timeRemaining)})` : 
          `Sync ${label} Data`}
