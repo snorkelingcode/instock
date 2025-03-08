@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import Layout from "@/components/layout/Layout";
 import ApiSyncButton from "@/components/sets/ApiSyncButton";
@@ -18,7 +17,6 @@ interface ApiConfig {
   sync_frequency: string;
 }
 
-// Interface for job status data
 interface JobStatus {
   id: string;
   job_id: string;
@@ -51,7 +49,6 @@ const SetSyncPage = () => {
         throw error;
       }
 
-      // Using a safer type casting approach
       const fetchedData = data || [];
       setApiConfigs(fetchedData as unknown as ApiConfig[]);
     } catch (error) {
@@ -79,7 +76,6 @@ const SetSyncPage = () => {
         return;
       }
 
-      // Explicitly cast the data to JobStatus[]
       setActiveJobs(data as unknown as JobStatus[]);
     } catch (error) {
       console.error('Error in fetchActiveJobs:', error);
@@ -91,7 +87,6 @@ const SetSyncPage = () => {
       fetchApiConfigs();
       fetchActiveJobs();
       
-      // Set up a timer to refresh data every 10 seconds
       const refreshInterval = setInterval(() => {
         fetchApiConfigs();
         fetchActiveJobs();
@@ -108,13 +103,11 @@ const SetSyncPage = () => {
     return date.toLocaleString();
   };
 
-  // Get the last sync time for a specific API
   const getLastSyncTime = (apiName: string) => {
     const config = apiConfigs.find(c => c.api_name === apiName);
     return formatLastSyncTime(config?.last_sync_time || null);
   };
 
-  // Get the time since last sync
   const getTimeSinceLastSync = (apiName: string) => {
     const config = apiConfigs.find(c => c.api_name === apiName);
     if (!config?.last_sync_time) return 'N/A';
@@ -123,28 +116,22 @@ const SetSyncPage = () => {
     const now = new Date();
     const timeDiff = now.getTime() - lastSync.getTime();
     
-    // If less than a minute, show seconds
     if (timeDiff < 60000) {
       return `${Math.floor(timeDiff / 1000)} seconds ago`;
     }
     
-    // If less than an hour, show minutes
     if (timeDiff < 3600000) {
       return `${Math.floor(timeDiff / 60000)} minutes ago`;
     }
     
-    // If less than a day, show hours
     if (timeDiff < 86400000) {
       return `${Math.floor(timeDiff / 3600000)} hours ago`;
     }
     
-    // Otherwise show days
     return `${Math.floor(timeDiff / 86400000)} days ago`;
   };
 
-  // Get the rate limit status for a specific API
   const getRateLimitStatus = (apiName: string) => {
-    // Check for active jobs first
     const activeJob = activeJobs.find(job => job.source === apiName);
     if (activeJob) {
       switch (activeJob.status) {
@@ -161,20 +148,17 @@ const SetSyncPage = () => {
       }
     }
     
-    // Then check rate limits
     const timeRemaining = getRateLimitTimeRemaining(`sync_${apiName}`);
     if (timeRemaining > 0) {
       return `Rate limited for ${formatTimeRemaining(timeRemaining)}`;
     }
     
-    // Check when it was last synced to determine if it's "Ready" or "Recently synced"
     const config = apiConfigs.find(c => c.api_name === apiName);
     if (config?.last_sync_time) {
       const lastSync = new Date(config.last_sync_time);
       const now = new Date();
       const timeDiff = now.getTime() - lastSync.getTime();
       
-      // If synced within the last 5 minutes, show "Recently synced"
       if (timeDiff < 300000) {
         return 'Recently synced';
       }
@@ -183,9 +167,7 @@ const SetSyncPage = () => {
     return 'Ready to sync';
   };
 
-  // Get the status color for the rate limit
   const getRateLimitStatusColor = (apiName: string) => {
-    // Check for active jobs first
     const activeJob = activeJobs.find(job => job.source === apiName);
     if (activeJob) {
       return 'text-blue-600 animate-pulse';
@@ -196,14 +178,12 @@ const SetSyncPage = () => {
       return 'text-yellow-600';
     }
     
-    // Check when it was last synced
     const config = apiConfigs.find(c => c.api_name === apiName);
     if (config?.last_sync_time) {
       const lastSync = new Date(config.last_sync_time);
       const now = new Date();
       const timeDiff = now.getTime() - lastSync.getTime();
       
-      // If synced within the last 5 minutes, show blue
       if (timeDiff < 300000) {
         return 'text-blue-600';
       }
@@ -212,12 +192,10 @@ const SetSyncPage = () => {
     return 'text-green-600';
   };
 
-  // Handle successful authentication
   const handleAuthenticated = () => {
     setIsAuthenticated(true);
   };
 
-  // If not authenticated, show the auth form
   if (!isAuthenticated) {
     return (
       <Layout>
@@ -229,7 +207,6 @@ const SetSyncPage = () => {
     );
   }
 
-  // If authenticated, show the sync page content
   return (
     <Layout>
       <div className="bg-white p-6 rounded-lg shadow-md mb-8">
@@ -377,8 +354,7 @@ const SetSyncPage = () => {
             </AlertDescription>
           </Alert>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <CardDownloadManager source="pokemon" label="Pokémon TCG" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <CardDownloadManager source="mtg" label="Magic: The Gathering" />
             <CardDownloadManager source="yugioh" label="Yu-Gi-Oh!" />
             <CardDownloadManager source="lorcana" label="Disney Lorcana" />
