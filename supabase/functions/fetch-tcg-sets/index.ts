@@ -3,6 +3,8 @@
 import { serve } from "std/http/server.ts";
 // @ts-ignore
 import { createClient } from "@supabase/supabase-js";
+import { processTCGData } from "./processor.ts";
+import { JobStatus, updateJobStatus } from "./database/job-status.ts";
 
 // Initialize environment variables
 const supabaseUrl = Deno.env.get("SUPABASE_URL") as string;
@@ -21,17 +23,6 @@ interface FetchTCGRequest {
   source: "pokemon" | "mtg" | "yugioh" | "lorcana";
   jobId?: string;
   accessKey?: string;
-}
-
-interface JobStatus {
-  id?: string;
-  job_id: string;
-  source: string;
-  status: 'pending' | 'fetching_data' | 'processing_data' | 'saving_to_database' | 'completed' | 'failed';
-  progress: number;
-  total_items: number;
-  completed_items: number;
-  error: string | null;
 }
 
 serve(async (req) => {
@@ -79,6 +70,7 @@ serve(async (req) => {
         .single();
 
       if (jobError) {
+        console.error("Error fetching job status:", jobError);
         return new Response(
           JSON.stringify({ 
             success: false, 
@@ -206,8 +198,11 @@ serve(async (req) => {
       );
     }
     
-    // Start background processing
-    processTCGData(requestData.source, jobId);
+    // Start background processing with API keys
+    processTCGData(supabase, requestData.source, jobId, {
+      pokemon: pokemonApiKey,
+      mtg: mtgApiKey
+    });
     
     // Return success with the job ID
     return new Response(
@@ -242,295 +237,3 @@ serve(async (req) => {
     );
   }
 });
-
-// Background processing function
-async function processTCGData(source: string, jobId: string) {
-  console.log(`Starting background processing for ${source} with job ID: ${jobId}`);
-  
-  try {
-    // Update job status to fetching data
-    await updateJobStatus(jobId, 'fetching_data', 0);
-    
-    let data: any[] = [];
-    
-    // Fetch data from appropriate source
-    switch (source) {
-      case "pokemon":
-        data = await fetchPokemonSets();
-        break;
-      case "mtg":
-        data = await fetchMTGSets();
-        break;
-      case "yugioh":
-        data = await fetchYuGiOhSets();
-        break;
-      case "lorcana":
-        data = await fetchLorcanaSets();
-        break;
-      default:
-        throw new Error(`Unknown source: ${source}`);
-    }
-    
-    if (!data || data.length === 0) {
-      throw new Error(`No data received from ${source} API`);
-    }
-    
-    // Update job with total items
-    await updateJobStatus(jobId, 'processing_data', 0, data.length, 0);
-    
-    // Process and save the data
-    await saveSets(source, data, jobId);
-    
-    // Update the last sync time
-    const { error: updateError } = await supabase
-      .from('api_config')
-      .upsert({ 
-        api_name: source, 
-        last_sync_time: new Date().toISOString() 
-      }, { 
-        onConflict: 'api_name' 
-      });
-      
-    if (updateError) {
-      console.error(`Error updating sync time for ${source}:`, updateError);
-    }
-    
-    // Mark job as completed
-    await updateJobStatus(jobId, 'completed', 100, data.length, data.length);
-    
-    console.log(`Completed sync for ${source}`);
-  } catch (error) {
-    console.error(`Error processing ${source} data:`, error);
-    
-    // Update job status with error
-    await updateJobStatus(jobId, 'failed', 0, 0, 0, error.message);
-  }
-}
-
-// Update job status helper
-async function updateJobStatus(
-  jobId: string, 
-  status: JobStatus['status'], 
-  progress: number,
-  totalItems: number = 0,
-  completedItems: number = 0,
-  error: string | null = null
-) {
-  const updateData: any = { 
-    status, 
-    progress,
-    updated_at: new Date().toISOString()
-  };
-  
-  if (totalItems > 0) {
-    updateData.total_items = totalItems;
-  }
-  
-  if (completedItems > 0) {
-    updateData.completed_items = completedItems;
-  }
-  
-  if (error) {
-    updateData.error = error;
-  }
-  
-  if (status === 'completed') {
-    updateData.completed_at = new Date().toISOString();
-  }
-  
-  const { error: updateError } = await supabase
-    .from('api_job_status')
-    .update(updateData)
-    .eq('job_id', jobId);
-    
-  if (updateError) {
-    console.error(`Error updating job status for ${jobId}:`, updateError);
-  }
-}
-
-// Fetch Pokemon TCG sets - optimized to get only what we need
-async function fetchPokemonSets() {
-  console.log("Fetching Pokemon TCG sets...");
-  
-  const headers: HeadersInit = {};
-  if (pokemonApiKey) {
-    headers["X-Api-Key"] = pokemonApiKey;
-  }
-  
-  const response = await fetch("https://api.pokemontcg.io/v2/sets", { headers });
-  
-  if (!response.ok) {
-    throw new Error(`Error fetching Pokemon sets: ${response.status} ${response.statusText}`);
-  }
-  
-  const data = await response.json();
-  console.log(`Retrieved ${data.data.length} Pokemon sets`);
-  
-  // Only extract the fields we need
-  return data.data.map((set: any) => ({
-    set_id: set.id,
-    name: set.name,
-    series: set.series,
-    printed_total: set.printedTotal,
-    total: set.total,
-    release_date: set.releaseDate,
-    symbol_url: set.images.symbol,
-    logo_url: set.images.logo,
-    images_url: set.images.logo // Prefer logo, fallback to symbol
-  }));
-}
-
-// Fetch MTG sets - optimized to get only what we need
-async function fetchMTGSets() {
-  console.log("Fetching MTG sets...");
-  
-  const headers: HeadersInit = {};
-  if (mtgApiKey) {
-    headers["x-api-key"] = mtgApiKey;
-  }
-  
-  const response = await fetch("https://api.scryfall.com/sets");
-  
-  if (!response.ok) {
-    throw new Error(`Error fetching MTG sets: ${response.status} ${response.statusText}`);
-  }
-  
-  const data = await response.json();
-  console.log(`Retrieved ${data.data.length} MTG sets`);
-  
-  // Only extract the fields we need
-  return data.data.map((set: any) => ({
-    set_id: set.id,
-    name: set.name,
-    code: set.code,
-    release_date: set.released_at,
-    set_type: set.set_type,
-    card_count: set.card_count,
-    icon_url: set.icon_svg_uri,
-    image_url: set.image_url || set.icon_svg_uri
-  }));
-}
-
-// Fetch YuGiOh sets - optimized to get only what we need
-async function fetchYuGiOhSets() {
-  console.log("Fetching Yu-Gi-Oh! sets...");
-  
-  const response = await fetch("https://db.ygoprodeck.com/api/v7/cardsets.php");
-  
-  if (!response.ok) {
-    throw new Error(`Error fetching YuGiOh sets: ${response.status} ${response.statusText}`);
-  }
-  
-  const data = await response.json();
-  console.log(`Retrieved ${data.length} Yu-Gi-Oh! sets`);
-  
-  // Only extract the fields we need and ensure we have unique IDs
-  return data.map((set: any, index: number) => ({
-    set_id: set.set_code || `yugioh-set-${index}`,
-    name: set.set_name,
-    set_code: set.set_code,
-    num_of_cards: set.num_of_cards,
-    tcg_date: set.tcg_date,
-    set_image: `https://images.ygoprodeck.com/images/sets/${set.set_code}.jpg`,
-    set_type: set.set_type || "Main Set"
-  }));
-}
-
-// Add custom Lorcana sets - these are hardcoded since there's no official API
-async function fetchLorcanaSets() {
-  console.log("Adding Disney Lorcana sets...");
-  
-  // Hardcoded list of Lorcana sets
-  const lorcanaSets = [
-    {
-      set_id: "tfc",
-      name: "The First Chapter",
-      release_date: "2023-08-18",
-      set_code: "TFC",
-      total_cards: 204,
-      set_image: "https://lorcana.com/wp-content/uploads/2023/09/Core-Set-The-First-Chapter-Cardback-Banner-1.jpg",
-      set_type: "Core Set"
-    },
-    {
-      set_id: "rit",
-      name: "Rise of the Floodborn",
-      release_date: "2023-12-01",
-      set_code: "RIT",
-      total_cards: 204,
-      set_image: "https://lorcana.com/wp-content/uploads/2023/11/Rise-of-the-Floodborn-Cardback-Banner-1.jpg",
-      set_type: "Core Set"
-    },
-    {
-      set_id: "faz",
-      name: "Into the Inklands",
-      release_date: "2024-02-16",
-      set_code: "ITI",
-      total_cards: 204,
-      set_image: "https://lorcana.com/wp-content/uploads/2024/02/ITI-Promo-Featured-Image-Desktop.jpg",
-      set_type: "Core Set"
-    },
-    {
-      set_id: "aur",
-      name: "Ursula's Return",
-      release_date: "2024-05-17",
-      set_code: "AUR",
-      total_cards: 204,
-      set_image: "https://lorcana.com/wp-content/uploads/2024/05/Ursulas-Return-Desktop-Banner-3960x2380.jpg",
-      set_type: "Core Set"
-    }
-  ];
-  
-  return lorcanaSets;
-}
-
-// Save sets to the database
-async function saveSets(source: string, sets: any[], jobId: string) {
-  console.log(`Saving ${sets.length} ${source} sets to the database...`);
-  
-  // Update job status
-  await updateJobStatus(jobId, 'saving_to_database', 50, sets.length, 0);
-  
-  let tableName = "";
-  
-  switch (source) {
-    case "pokemon":
-      tableName = "pokemon_sets";
-      break;
-    case "mtg":
-      tableName = "mtg_sets";
-      break;
-    case "yugioh":
-      tableName = "yugioh_sets";
-      break;
-    case "lorcana":
-      tableName = "lorcana_sets";
-      break;
-    default:
-      throw new Error(`Unknown source: ${source}`);
-  }
-  
-  // Process sets in batches to avoid overloading the database
-  const batchSize = 20;
-  let processedCount = 0;
-  
-  for (let i = 0; i < sets.length; i += batchSize) {
-    const batch = sets.slice(i, i + batchSize);
-    
-    const { error } = await supabase
-      .from(tableName)
-      .upsert(batch, { onConflict: 'set_id' });
-      
-    if (error) {
-      console.error(`Error saving ${source} sets batch:`, error);
-      throw error;
-    }
-    
-    processedCount += batch.length;
-    const progress = Math.floor((processedCount / sets.length) * 100);
-    
-    // Update job progress
-    await updateJobStatus(jobId, 'saving_to_database', progress, sets.length, processedCount);
-  }
-  
-  console.log(`Successfully saved ${sets.length} ${source} sets`);
-}
