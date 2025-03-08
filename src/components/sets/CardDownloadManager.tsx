@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Download, RefreshCw } from "lucide-react";
+import { Download } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
@@ -71,7 +71,7 @@ const CardDownloadManager: React.FC<CardDownloadManagerProps> = ({
             }
           }
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error("Error polling job status:", err);
       }
     };

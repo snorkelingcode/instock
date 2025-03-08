@@ -1,248 +1,228 @@
 
-// Image downloader utility
-
-// Function to download an image from a URL and upload it to Supabase Storage
+// Function to download an image and save it to Supabase Storage
 export async function downloadImage(
-  imageUrl: string,
-  storagePath: string,
+  url: string,
+  game: string,
+  cardId: string,
+  imageType: string,
   supabase: any
-): Promise<void> {
+): Promise<string | null> {
   try {
-    console.log(`Downloading image from ${imageUrl} to ${storagePath}`);
+    console.log(`Downloading image from ${url}`);
     
-    // Fetch the image
-    const response = await fetch(imageUrl);
-    
-    if (!response.ok) {
-      throw new Error(`Failed to download image: ${response.status} ${response.statusText}`);
+    // Get the image extension
+    const extension = getImageExtension(url);
+    if (!extension) {
+      console.error(`Could not determine image extension for ${url}`);
+      return null;
     }
     
-    // Get the image as binary data
-    const imageBlob = await response.arrayBuffer();
+    // Define the storage path
+    const storagePath = `${game}/${cardId}/${imageType}.${extension}`;
     
-    // Upload to Supabase Storage
-    const { error } = await supabase
+    // Download the image
+    const response = await fetch(url);
+    if (!response.ok) {
+      console.error(`Failed to download image: ${response.status} ${response.statusText}`);
+      return null;
+    }
+    
+    // Convert the image to a buffer/blob
+    const imageBuffer = await response.arrayBuffer();
+    
+    // Check if the storage bucket exists
+    const { data: buckets } = await supabase
       .storage
-      .from('tcg-images')
-      .upload(storagePath, imageBlob, {
-        contentType: 'image/jpeg',
-        upsert: true
+      .listBuckets();
+    
+    const bucketName = 'tcg-images';
+    const bucketExists = buckets?.some(bucket => bucket.name === bucketName);
+    
+    // Create the bucket if it doesn't exist
+    if (!bucketExists) {
+      const { error: createBucketError } = await supabase
+        .storage
+        .createBucket(bucketName, {
+          public: true,
+          fileSizeLimit: 5242880, // 5MB
+        });
+      
+      if (createBucketError) {
+        console.error(`Error creating bucket: ${createBucketError.message}`);
+        return null;
+      }
+    }
+    
+    // Upload the image to Supabase Storage
+    const { data, error } = await supabase
+      .storage
+      .from(bucketName)
+      .upload(storagePath, imageBuffer, {
+        contentType: `image/${extension}`,
+        upsert: true,
       });
     
     if (error) {
-      throw error;
+      console.error(`Error uploading image: ${error.message}`);
+      return null;
     }
     
-    console.log(`Successfully downloaded and stored image at ${storagePath}`);
+    console.log(`Successfully uploaded image to ${storagePath}`);
+    
+    // Return the public URL
+    const { data: publicURL } = supabase
+      .storage
+      .from(bucketName)
+      .getPublicUrl(storagePath);
+    
+    // Save the image download record
+    await saveImageDownloadRecord(
+      supabase,
+      cardId,
+      game,
+      imageType,
+      storagePath,
+      url,
+      'completed'
+    );
+    
+    return publicURL?.publicUrl || null;
   } catch (error) {
-    console.error(`Error downloading image ${imageUrl}:`, error);
-    throw error;
+    console.error(`Error downloading image: ${error.message}`);
+    
+    // Save the failed image download record
+    await saveImageDownloadRecord(
+      supabase,
+      cardId,
+      game,
+      imageType,
+      '',
+      url,
+      'failed'
+    );
+    
+    return null;
   }
 }
 
-// Get file extension from URL
-export function getImageExtension(url: string): string {
-  try {
-    // Extract the filename from the URL
-    const filename = url.split('/').pop() || '';
-    // Get the extension
-    const ext = filename.split('.').pop()?.toLowerCase();
-    
-    // Return appropriate extension or default to jpg
-    if (ext && ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
-      return ext;
-    }
-    return 'jpg'; // Default to jpg
-  } catch (error) {
-    console.error('Error getting image extension:', error);
-    return 'jpg'; // Default to jpg if there's an error
-  }
-}
-
-// Process and save card images for a set of cards
-export async function saveCardImages(
+// Function to save the image download record to the database
+async function saveImageDownloadRecord(
   supabase: any,
-  source: string,
-  cards: any[],
-  jobId: string
+  cardId: string,
+  game: string,
+  imageType: string,
+  storagePath: string,
+  originalUrl: string,
+  status: string
 ): Promise<void> {
-  console.log(`Starting to download images for ${cards.length} ${source} cards`);
-  let processedCount = 0;
+  try {
+    const { error } = await supabase
+      .from('tcg_image_downloads')
+      .upsert({
+        card_id: cardId,
+        game,
+        image_type: imageType,
+        storage_path: storagePath,
+        original_url: originalUrl,
+        status,
+        downloaded_at: new Date().toISOString(),
+      }, {
+        onConflict: 'card_id, game, image_type',
+      });
+    
+    if (error) {
+      console.error(`Error saving image download record: ${error.message}`);
+    }
+  } catch (error) {
+    console.error(`Error saving image download record: ${error.message}`);
+  }
+}
+
+// Function to get the image extension from a URL
+function getImageExtension(url: string): string | null {
+  try {
+    // Extract the file extension from the URL
+    const urlObj = new URL(url);
+    const pathname = urlObj.pathname;
+    const extension = pathname.split('.').pop()?.toLowerCase();
+    
+    // Check if it's a valid image extension
+    const validExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'];
+    if (extension && validExtensions.includes(extension)) {
+      return extension === 'jpg' ? 'jpeg' : extension;
+    }
+    
+    // If no valid extension found, try to infer from content-type
+    return 'png'; // Default to png if can't determine
+  } catch (error) {
+    console.error(`Error getting image extension: ${error.message}`);
+    return null;
+  }
+}
+
+// Function to save card images for a batch of cards
+export async function saveCardImages(
+  cards: any[],
+  game: string,
+  supabase: any,
+  jobId: string,
+  updateJobStatus: (supabase: any, jobId: string, status: string, processedItems: number, totalItems: number, error?: string) => Promise<void>
+): Promise<void> {
+  const totalCards = cards.length;
   
   try {
-    for (let i = 0; i < cards.length; i++) {
+    await updateJobStatus(supabase, jobId, 'downloading_images', 0, totalCards);
+    
+    for (let i = 0; i < totalCards; i++) {
       const card = cards[i];
-      processedCount++;
+      const cardId = card.id || card.card_id;
       
-      // Log progress every 10 cards
-      if (processedCount % 10 === 0 || processedCount === cards.length) {
-        console.log(`Processed ${processedCount}/${cards.length} card images`);
-        
-        // Update job status
-        await supabase
-          .from('tcg_download_jobs')
-          .update({
-            processed_items: processedCount,
-            status: 'downloading_images',
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', jobId);
+      if (!cardId) {
+        console.error(`Card missing ID: ${JSON.stringify(card)}`);
+        continue;
       }
       
       try {
-        await processCardImages(supabase, source, card, jobId);
-      } catch (error) {
-        console.error(`Error processing images for card ${card.id || card.card_id}:`, error);
-        // Continue with the next card even if this one fails
-      }
-    }
-    
-    console.log(`Successfully downloaded images for ${processedCount} cards`);
-  } catch (error) {
-    console.error('Error in saveCardImages:', error);
-    throw error;
-  }
-}
-
-// Process images for a single card
-async function processCardImages(
-  supabase: any,
-  source: string,
-  card: any,
-  jobId: string
-): Promise<void> {
-  const cardId = card.id || card.card_id;
-  
-  if (!cardId) {
-    console.error('Card ID not found, skipping image download');
-    return;
-  }
-  
-  try {
-    let imageUrl: string | null = null;
-    let largeImageUrl: string | null = null;
-    
-    // Extract image URLs based on the card source
-    switch (source) {
-      case 'pokemon':
-        if (card.images) {
-          const images = typeof card.images === 'string' 
-            ? JSON.parse(card.images) 
-            : card.images;
-          
-          imageUrl = images.small;
-          largeImageUrl = images.large;
-        }
-        break;
-        
-      case 'mtg':
-        if (card.image_uris) {
-          const imageUris = typeof card.image_uris === 'string'
-            ? JSON.parse(card.image_uris)
-            : card.image_uris;
-          
-          imageUrl = imageUris.normal;
-          largeImageUrl = imageUris.large || imageUris.png;
-        }
-        break;
-        
-      case 'yugioh':
-        if (card.card_images && Array.isArray(card.card_images)) {
-          const images = typeof card.card_images === 'string'
-            ? JSON.parse(card.card_images)
-            : card.card_images;
-          
-          if (images[0]) {
-            imageUrl = images[0].image_url;
-            largeImageUrl = images[0].image_url_cropped;
+        // Handle different image structures based on the TCG
+        if (game === 'pokemon') {
+          if (card.images?.small) {
+            await downloadImage(card.images.small, game, cardId, 'small', supabase);
+          }
+          if (card.images?.large) {
+            await downloadImage(card.images.large, game, cardId, 'large', supabase);
+          }
+        } else if (game === 'mtg') {
+          if (card.image_uris?.small) {
+            await downloadImage(card.image_uris.small, game, cardId, 'small', supabase);
+          }
+          if (card.image_uris?.normal) {
+            await downloadImage(card.image_uris.normal, game, cardId, 'normal', supabase);
+          }
+          if (card.image_uris?.large) {
+            await downloadImage(card.image_uris.large, game, cardId, 'large', supabase);
+          }
+        } else if (game === 'yugioh') {
+          if (card.card_images && card.card_images.length > 0) {
+            await downloadImage(card.card_images[0].image_url, game, cardId, 'image', supabase);
+            await downloadImage(card.card_images[0].image_url_small, game, cardId, 'small', supabase);
+          }
+        } else if (game === 'lorcana') {
+          if (card.image_url) {
+            await downloadImage(card.image_url, game, cardId, 'image', supabase);
           }
         }
-        break;
-        
-      case 'lorcana':
-        imageUrl = card.image_url;
-        largeImageUrl = card.image_url;
-        break;
-        
-      default:
-        console.error(`Unknown source: ${source}`);
-        return;
-    }
-    
-    // Download small image if available
-    if (imageUrl) {
-      const smallImagePath = `${source}/small/${cardId}.${getImageExtension(imageUrl)}`;
-      
-      // Check if the image already exists in database
-      const { data: existingSmallImage } = await supabase
-        .from('tcg_image_downloads')
-        .select('id')
-        .eq('card_id', cardId)
-        .eq('game', source)
-        .eq('image_type', 'small')
-        .maybeSingle();
-      
-      if (!existingSmallImage) {
-        try {
-          // Download and save the image
-          await downloadImage(imageUrl, smallImagePath, supabase);
-          
-          // Record the download in the database
-          await supabase
-            .from('tcg_image_downloads')
-            .insert({
-              card_id: cardId,
-              game: source,
-              image_type: 'small',
-              storage_path: smallImagePath,
-              original_url: imageUrl,
-              status: 'completed'
-            });
-            
-          console.log(`Small image for ${cardId} downloaded successfully`);
-        } catch (error) {
-          console.error(`Error downloading small image for ${cardId}:`, error);
-        }
+      } catch (error) {
+        console.error(`Error processing card ${cardId}: ${error.message}`);
       }
-    }
-    
-    // Download large image if available
-    if (largeImageUrl) {
-      const largeImagePath = `${source}/large/${cardId}.${getImageExtension(largeImageUrl)}`;
       
-      // Check if the image already exists in database
-      const { data: existingLargeImage } = await supabase
-        .from('tcg_image_downloads')
-        .select('id')
-        .eq('card_id', cardId)
-        .eq('game', source)
-        .eq('image_type', 'large')
-        .maybeSingle();
-      
-      if (!existingLargeImage) {
-        try {
-          // Download and save the image
-          await downloadImage(largeImageUrl, largeImagePath, supabase);
-          
-          // Record the download in the database
-          await supabase
-            .from('tcg_image_downloads')
-            .insert({
-              card_id: cardId,
-              game: source,
-              image_type: 'large',
-              storage_path: largeImagePath,
-              original_url: largeImageUrl,
-              status: 'completed'
-            });
-            
-          console.log(`Large image for ${cardId} downloaded successfully`);
-        } catch (error) {
-          console.error(`Error downloading large image for ${cardId}:`, error);
-        }
+      // Update job status every 10 cards or at the end
+      if ((i + 1) % 10 === 0 || i === totalCards - 1) {
+        await updateJobStatus(supabase, jobId, 'downloading_images', i + 1, totalCards);
       }
     }
   } catch (error) {
-    console.error(`Error in processCardImages for ${cardId}:`, error);
+    console.error(`Error saving card images: ${error.message}`);
+    await updateJobStatus(supabase, jobId, 'failed', 0, totalCards, `Error saving card images: ${error.message}`);
+    throw error;
   }
 }
