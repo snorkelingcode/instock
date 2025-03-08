@@ -91,3 +91,62 @@ export const clearCacheByPrefix = (prefix: string): void => {
 export const invalidateTcgCache = (tcgName: string): void => {
   clearCacheByPrefix(tcgName);
 };
+
+/**
+ * Get the time remaining for a rate-limited operation
+ * @param key The operation key
+ * @returns Time remaining in seconds, or 0 if not rate-limited
+ */
+export const getRateLimitTimeRemaining = (key: string): number => {
+  try {
+    const rateLimitKey = `ratelimit_${key}`;
+    const limitData = localStorage.getItem(rateLimitKey);
+    
+    if (!limitData) {
+      return 0;
+    }
+    
+    const expiryTime = parseInt(limitData, 10);
+    const now = new Date().getTime();
+    
+    return expiryTime > now ? Math.ceil((expiryTime - now) / 1000) : 0;
+  } catch (error) {
+    console.error("Error checking rate limit:", error);
+    return 0;
+  }
+};
+
+/**
+ * Set a rate limit for an operation
+ * @param key The operation key
+ * @param durationSeconds Duration of the rate limit in seconds
+ * @returns The expiry timestamp
+ */
+export const setRateLimit = (key: string, durationSeconds: number): number => {
+  const rateLimitKey = `ratelimit_${key}`;
+  const now = new Date().getTime();
+  const expiryTime = now + (durationSeconds * 1000);
+  
+  localStorage.setItem(rateLimitKey, expiryTime.toString());
+  console.log(`Rate limit set for ${key}, expires in ${durationSeconds} seconds`);
+  
+  return expiryTime;
+};
+
+/**
+ * Check if an operation is rate-limited
+ * @param key The operation key
+ * @returns True if rate-limited, false otherwise
+ */
+export const isRateLimited = (key: string): boolean => {
+  return getRateLimitTimeRemaining(key) > 0;
+};
+
+/**
+ * Clear a rate limit
+ * @param key The operation key
+ */
+export const clearRateLimit = (key: string): void => {
+  localStorage.removeItem(`ratelimit_${key}`);
+  console.log(`Cleared rate limit for ${key}`);
+};

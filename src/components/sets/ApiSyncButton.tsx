@@ -1,11 +1,11 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { RefreshCw } from "lucide-react";
 import LoadingSpinner from "@/components/ui/loading-spinner";
-import { invalidateTcgCache } from "@/utils/cacheUtils";
+import { invalidateTcgCache, isRateLimited, setRateLimit, getRateLimitTimeRemaining } from "@/utils/cacheUtils";
 
 interface ApiSyncButtonProps {
   source: "pokemon" | "mtg" | "yugioh" | "lorcana";
@@ -21,10 +21,31 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({
   const [loading, setLoading] = useState(false);
   const [edgeFunctionResponse, setEdgeFunctionResponse] = useState<any>(null);
   const [cooldown, setCooldown] = useState(false);
+  const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const { toast } = useToast();
 
-  // Rate limiting implementation
-  const COOLDOWN_TIME = 60000; // 1 minute cooldown between syncs
+  // Rate limiting configuration
+  const COOLDOWN_TIME = 60; // 1 minute cooldown between syncs (in seconds)
+  const RATE_LIMIT_KEY = `sync_${source}`;
+  
+  // Check rate limit status on component mount and periodically
+  useEffect(() => {
+    // Initial check
+    const initialTimeRemaining = getRateLimitTimeRemaining(RATE_LIMIT_KEY);
+    if (initialTimeRemaining > 0) {
+      setCooldown(true);
+      setTimeRemaining(initialTimeRemaining);
+    }
+    
+    // Setup interval to update the remaining time
+    const interval = setInterval(() => {
+      const remaining = getRateLimitTimeRemaining(RATE_LIMIT_KEY);
+      setTimeRemaining(remaining);
+      setCooldown(remaining > 0);
+    }, 1000);
+    
+    return () => clearInterval(interval);
+  }, [source]);
   
   const checkLastSyncTime = async () => {
     try {
@@ -48,7 +69,8 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({
       const now = new Date();
       const timeDiff = now.getTime() - lastSync.getTime();
       
-      return timeDiff > COOLDOWN_TIME;
+      // Convert COOLDOWN_TIME from seconds to milliseconds for comparison
+      return timeDiff > (COOLDOWN_TIME * 1000);
     } catch (err) {
       console.error("Error in rate limit check:", err);
       return true; // Allow sync if check fails
@@ -57,6 +79,16 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({
 
   const syncData = async () => {
     if (loading) return;
+    
+    // Check if operation is rate limited
+    if (isRateLimited(RATE_LIMIT_KEY)) {
+      toast({
+        title: "Rate Limited",
+        description: `Please wait ${timeRemaining} seconds before syncing ${label} data again`,
+        variant: "destructive",
+      });
+      return;
+    }
     
     // Check if user has admin permissions
     const { data: { session } } = await supabase.auth.getSession();
@@ -84,7 +116,7 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({
       return;
     }
     
-    // Implement rate limiting check
+    // Implement rate limiting check using database last sync time
     const canSync = await checkLastSyncTime();
     
     if (!canSync) {
@@ -93,14 +125,18 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({
         description: `Please wait before syncing ${label} data again`,
         variant: "destructive",
       });
-      setCooldown(true);
-      setTimeout(() => setCooldown(false), COOLDOWN_TIME);
+      // Set the client-side rate limit
+      setRateLimit(RATE_LIMIT_KEY, COOLDOWN_TIME);
       return;
     }
     
     setLoading(true);
     try {
       console.log(`Starting ${source} data sync...`);
+      
+      // Apply rate limit before making the request
+      setRateLimit(RATE_LIMIT_KEY, COOLDOWN_TIME);
+      setCooldown(true);
       
       // Call the Supabase Edge Function
       console.log(`Attempting to invoke edge function 'fetch-tcg-sets' with source: ${source}`);
@@ -122,7 +158,7 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({
       console.log(`Edge function response:`, data);
 
       if (data && data.success) {
-        // *** New: Invalidate cache after successful sync ***
+        // Invalidate cache after successful sync
         invalidateTcgCache(source);
         
         toast({
@@ -164,6 +200,14 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({
     }
   };
 
+  // Format the remaining time as MM:SS
+  const formatTimeRemaining = (seconds: number): string => {
+    if (seconds <= 0) return "00:00";
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
   return (
     <div className="space-y-2">
       <Button 
@@ -176,7 +220,9 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({
         ) : (
           <RefreshCw className={`h-4 w-4 ${cooldown ? 'animate-pulse text-gray-400' : ''}`} />
         )}
-        {loading ? `Syncing ${label}...` : cooldown ? "Cooldown..." : `Sync ${label} Data`}
+        {loading ? `Syncing ${label}...` : 
+         cooldown ? `Cooldown (${formatTimeRemaining(timeRemaining)})` : 
+         `Sync ${label} Data`}
       </Button>
       
       <div className="text-xs text-gray-500 mt-1">

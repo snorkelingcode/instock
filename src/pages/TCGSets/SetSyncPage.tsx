@@ -6,8 +6,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { InfoIcon } from "lucide-react";
+import { InfoIcon, ShieldAlert } from "lucide-react";
 import SyncPageAuth from "@/components/sets/SyncPageAuth";
+import { getRateLimitTimeRemaining } from "@/utils/cacheUtils";
 
 interface ApiConfig {
   api_name: string;
@@ -20,7 +21,7 @@ const SetSyncPage = () => {
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const { toast } = useToast();
-
+  
   const fetchApiConfigs = async () => {
     try {
       setLoading(true);
@@ -66,6 +67,12 @@ const SetSyncPage = () => {
     return formatLastSyncTime(config?.last_sync_time || null);
   };
 
+  // Get the rate limit status for a specific API
+  const getRateLimitStatus = (apiName: string) => {
+    const timeRemaining = getRateLimitTimeRemaining(`sync_${apiName}`);
+    return timeRemaining > 0 ? `Rate limited for ${timeRemaining} seconds` : 'Ready to sync';
+  };
+
   // Handle successful authentication
   const handleAuthenticated = () => {
     setIsAuthenticated(true);
@@ -101,6 +108,15 @@ const SetSyncPage = () => {
           </AlertDescription>
         </Alert>
         
+        <Alert className="mb-6 bg-yellow-50 border-yellow-200">
+          <ShieldAlert className="h-4 w-4 text-yellow-600" />
+          <AlertTitle className="text-yellow-800">Rate Limiting Enabled</AlertTitle>
+          <AlertDescription className="text-yellow-700">
+            To prevent API abuse, synchronization operations are limited to once per minute for each TCG.
+            This helps ensure fair usage of external APIs and prevents unnecessary load on your database.
+          </AlertDescription>
+        </Alert>
+        
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <Card>
             <CardHeader>
@@ -108,8 +124,11 @@ const SetSyncPage = () => {
               <CardDescription>Sync Pokémon TCG sets data from the official Pokémon TCG API</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="text-sm">
-                <strong>Last Sync:</strong> {getLastSyncTime('pokemon')}
+              <div className="text-sm space-y-1">
+                <div><strong>Last Sync:</strong> {getLastSyncTime('pokemon')}</div>
+                <div><strong>Status:</strong> <span className={getRateLimitTimeRemaining('sync_pokemon') > 0 ? 'text-yellow-600' : 'text-green-600'}>
+                  {getRateLimitStatus('pokemon')}
+                </span></div>
               </div>
               <ApiSyncButton 
                 source="pokemon" 
@@ -125,8 +144,11 @@ const SetSyncPage = () => {
               <CardDescription>Sync MTG sets data from the magicthegathering.io API</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="text-sm">
-                <strong>Last Sync:</strong> {getLastSyncTime('mtg')}
+              <div className="text-sm space-y-1">
+                <div><strong>Last Sync:</strong> {getLastSyncTime('mtg')}</div>
+                <div><strong>Status:</strong> <span className={getRateLimitTimeRemaining('sync_mtg') > 0 ? 'text-yellow-600' : 'text-green-600'}>
+                  {getRateLimitStatus('mtg')}
+                </span></div>
               </div>
               <ApiSyncButton 
                 source="mtg" 
@@ -142,8 +164,11 @@ const SetSyncPage = () => {
               <CardDescription>Sync Yu-Gi-Oh! sets data from the YGOPRODeck API</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="text-sm">
-                <strong>Last Sync:</strong> {getLastSyncTime('yugioh')}
+              <div className="text-sm space-y-1">
+                <div><strong>Last Sync:</strong> {getLastSyncTime('yugioh')}</div>
+                <div><strong>Status:</strong> <span className={getRateLimitTimeRemaining('sync_yugioh') > 0 ? 'text-yellow-600' : 'text-green-600'}>
+                  {getRateLimitStatus('yugioh')}
+                </span></div>
               </div>
               <ApiSyncButton 
                 source="yugioh" 
@@ -159,8 +184,11 @@ const SetSyncPage = () => {
               <CardDescription>Add Disney Lorcana sets to the database</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="text-sm">
-                <strong>Last Sync:</strong> {getLastSyncTime('lorcana')}
+              <div className="text-sm space-y-1">
+                <div><strong>Last Sync:</strong> {getLastSyncTime('lorcana')}</div>
+                <div><strong>Status:</strong> <span className={getRateLimitTimeRemaining('sync_lorcana') > 0 ? 'text-yellow-600' : 'text-green-600'}>
+                  {getRateLimitStatus('lorcana')}
+                </span></div>
               </div>
               <ApiSyncButton 
                 source="lorcana" 
