@@ -48,6 +48,13 @@ export async function downloadPokemonCards(
       0
     );
     
+    // Sort cards by number before processing
+    cards.sort((a, b) => {
+      const numA = parseInt(a.number.replace(/\D/g, '')) || 0;
+      const numB = parseInt(b.number.replace(/\D/g, '')) || 0;
+      return numA - numB;
+    });
+    
     // Process and save cards
     for (let i = 0; i < cards.length; i++) {
       const card = cards[i];

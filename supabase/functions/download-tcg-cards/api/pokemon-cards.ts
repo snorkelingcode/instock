@@ -35,7 +35,8 @@ export async function fetchPokemonCardsForSet(setId: string): Promise<PokemonCar
       console.warn("No Pokemon TCG API key found in environment variables. Using limited public access.");
     }
     
-    const response = await fetch(`https://api.pokemontcg.io/v2/cards?q=set.id:${setId}`, {
+    // Add orderBy parameter to get cards in proper number order
+    const response = await fetch(`https://api.pokemontcg.io/v2/cards?q=set.id:${setId}&orderBy=number`, {
       method: "GET",
       headers,
     });
@@ -54,7 +55,15 @@ export async function fetchPokemonCardsForSet(setId: string): Promise<PokemonCar
     }
     
     console.log(`Found ${data.data.length} cards for set: ${setId}`);
-    return data.data as PokemonCard[];
+    
+    // Sort cards by number to ensure correct ordering
+    const sortedCards = data.data.sort((a: PokemonCard, b: PokemonCard) => {
+      const numA = parseInt(a.number.replace(/\D/g, '')) || 0;
+      const numB = parseInt(b.number.replace(/\D/g, '')) || 0;
+      return numA - numB;
+    });
+    
+    return sortedCards as PokemonCard[];
   } catch (error) {
     console.error(`Error fetching Pokémon cards for set ${setId}:`, error);
     throw error;

@@ -56,7 +56,7 @@ const PokemonSetDetails = () => {
           .from('pokemon_cards')
           .select('*')
           .eq('set_id', setId)
-          .order('number');
+          .order('number', { ascending: true }); // Ensure cards are ordered by number
 
         if (!dbError && dbCards && dbCards.length > 0) {
           // We have cards in our database
@@ -72,8 +72,15 @@ const PokemonSetDetails = () => {
             set: { id: card.set_id }
           }));
           
-          setCards(processedCards);
-          setFilteredCards(processedCards);
+          // Sort cards numerically by number field
+          const sortedCards = processedCards.sort((a, b) => {
+            const numA = parseInt(a.number.replace(/\D/g, '')) || 0;
+            const numB = parseInt(b.number.replace(/\D/g, '')) || 0;
+            return numA - numB;
+          });
+          
+          setCards(sortedCards);
+          setFilteredCards(sortedCards);
           
           // Extract unique rarities for filtering
           const raritiesArray = Array.from(new Set(processedCards
@@ -87,32 +94,54 @@ const PokemonSetDetails = () => {
           return;
         }
         
-        // If no cards in database, fall back to API
+        // If no cards in database, fall back to API with a reasonable timeout
         console.log("No cards found in database, using API fallback");
         const apiKey = 'a9394cef-34e4-491c-9bab-65bfea95e064';
         
-        const response = await fetch(`https://api.pokemontcg.io/v2/cards?q=set.id:${setId}`, {
-          headers: {
-            'X-Api-Key': apiKey
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+        
+        try {
+          const response = await fetch(`https://api.pokemontcg.io/v2/cards?q=set.id:${setId}&orderBy=number`, {
+            headers: {
+              'X-Api-Key': apiKey
+            },
+            signal: controller.signal
+          });
+          
+          clearTimeout(timeoutId);
+          
+          if (!response.ok) {
+            throw new Error(`API Error: ${response.status} - ${response.statusText}`);
           }
-        });
-        
-        if (!response.ok) {
-          throw new Error(`API Error: ${response.status} - ${response.statusText}`);
+          
+          const data = await response.json();
+          
+          // Sort cards numerically by number field
+          const sortedCards = data.data.sort((a: any, b: any) => {
+            const numA = parseInt(a.number.replace(/\D/g, '')) || 0;
+            const numB = parseInt(b.number.replace(/\D/g, '')) || 0;
+            return numA - numB;
+          });
+          
+          // Extract unique rarities for filtering - make sure to properly type the result
+          const raritiesArray = Array.from(new Set(sortedCards
+            .map((card: any) => card.rarity)
+            .filter((rarity: unknown) => rarity)
+          )) as string[];
+          
+          setUniqueRarities(raritiesArray.sort());
+          
+          setCards(sortedCards);
+          setFilteredCards(sortedCards);
+        } catch (err) {
+          if (err instanceof DOMException && err.name === "AbortError") {
+            console.error("API request timed out");
+            // Show fallback message or retry logic
+          } else {
+            console.error("API fetch error:", err);
+          }
         }
-        
-        const data = await response.json();
-        
-        // Extract unique rarities for filtering - make sure to properly type the result
-        const raritiesArray = Array.from(new Set(data.data
-          .map((card: any) => card.rarity)
-          .filter((rarity: unknown) => rarity)
-        )) as string[];
-        
-        setUniqueRarities(raritiesArray.sort());
-        
-        setCards(data.data);
-        setFilteredCards(data.data);
       } catch (error) {
         console.error('Error fetching cards:', error);
       } finally {
