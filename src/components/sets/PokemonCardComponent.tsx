@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,10 +6,11 @@ import {
   DialogContent, 
   DialogHeader, 
   DialogTitle,
-  DialogTrigger
+  DialogTrigger,
+  DialogClose
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Expand, Info, X } from 'lucide-react';
+import { Info, X } from 'lucide-react';
 
 interface PokemonCardProps {
   card: {
@@ -60,7 +60,6 @@ interface PokemonCardProps {
   };
 }
 
-// Helper function to get color based on Pokémon type
 const getTypeColor = (type: string): string => {
   const colors: Record<string, string> = {
     Colorless: 'bg-gray-300',
@@ -79,7 +78,6 @@ const getTypeColor = (type: string): string => {
   return colors[type] || 'bg-gray-300';
 };
 
-// Helper function to format price to USD
 const formatPrice = (price?: number): string => {
   if (price === undefined) return 'N/A';
   return new Intl.NumberFormat('en-US', {
@@ -93,7 +91,6 @@ const PokemonCardComponent: React.FC<PokemonCardProps> = ({ card }) => {
   const [isImageError, setIsImageError] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   
-  // Determine prices to show
   const marketPrice = card.tcgplayer?.prices?.holofoil?.market 
     || card.tcgplayer?.prices?.normal?.market
     || card.tcgplayer?.prices?.reverseHolofoil?.market;
@@ -170,22 +167,24 @@ const PokemonCardComponent: React.FC<PokemonCardProps> = ({ card }) => {
               Details
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-full sm:max-w-2xl max-h-[90vh] overflow-y-auto p-4">
-            <DialogHeader className="sticky top-0 bg-background z-10 py-2">
+          <DialogContent className="max-w-full sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-background pt-2 pb-3 z-10 border-b mb-4">
               <div className="flex items-center justify-between">
                 <DialogTitle className="text-lg">{card.name}</DialogTitle>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="h-8 w-8 p-0 rounded-full"
-                  onClick={() => setIsDialogOpen(false)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
+                <DialogClose asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-8 w-8 p-0 rounded-full"
+                  >
+                    <X className="h-4 w-4" />
+                    <span className="sr-only">Close</span>
+                  </Button>
+                </DialogClose>
               </div>
-            </DialogHeader>
+            </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex justify-center items-start">
                 <img 
                   src={card.images.large} 
