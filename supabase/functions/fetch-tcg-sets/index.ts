@@ -1,6 +1,7 @@
 
 // @ts-ignore
 import { serve } from "std/http/server.ts";
+// Import from the URL specified in the import map instead of the package name
 // @ts-ignore
 import { createClient } from "@supabase/supabase-js";
 
