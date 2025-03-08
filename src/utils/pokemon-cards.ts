@@ -140,10 +140,10 @@ export const fetchPokemonCards = async (setId: string): Promise<PokemonCard[]> =
   
   while (retryCount <= MAX_RETRIES) {
     try {
-      // Skip database fetch and always go directly to API
+      // Always go directly to API for all sets, just like we do for Prismatic
       console.log(`Fetching from API for set: ${setId}`);
       
-      // Longer timeout to prevent long waits - 12 seconds (increased from 8)
+      // Use consistent timeout for all sets - 12 seconds
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 12000);
       

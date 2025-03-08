@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -100,7 +99,6 @@ const PokemonCardComponent: React.FC<PokemonCardProps> = ({ card }) => {
     || card.tcgplayer?.prices?.normal?.low
     || card.tcgplayer?.prices?.reverseHolofoil?.low;
 
-  // Ensure card.images exists to prevent null reference errors
   const cardImages = card.images || { small: '', large: '' };
 
   return (
@@ -236,7 +234,7 @@ const PokemonCardComponent: React.FC<PokemonCardProps> = ({ card }) => {
                   </div>
                 </div>
                 
-                {card.attacks && card.attacks.length > 0 && (
+                {card.attacks && Array.isArray(card.attacks) && card.attacks.length > 0 && (
                   <div>
                     <h3 className="text-lg font-semibold mb-1">Attacks</h3>
                     <div className="space-y-2">
