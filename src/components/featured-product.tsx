@@ -1,9 +1,9 @@
-
 import React from "react";
 
-// Featured product component with consistent button styling
+// Featured product component with toned down effect
 const FeaturedProduct = ({ title, description, price, retailer, listingLink, imageLink, index = 0 }) => {
   const [cardColor, setCardColor] = React.useState("");
+  const [isButtonHovered, setIsButtonHovered] = React.useState(false);
   
   // Softer color palette with less contrast - Same as Card component
   const softColors = [
@@ -59,11 +59,10 @@ const FeaturedProduct = ({ title, description, price, retailer, listingLink, ima
 
   return (
     <div
-      className="w-[340px] h-[480px] relative bg-white rounded-[10px] max-md:mb-5 transition-all duration-1000 overflow-hidden shadow-md hover:shadow-lg"
+      className="w-[340px] h-[480px] relative bg-white rounded-[10px] max-md:mb-5 transition-all duration-1000 overflow-hidden"
       style={{
         boxShadow: cardColor ? `0px 2px 15px 2px ${cardColor}40` : undefined, // Reduced glow with 25% opacity
         border: cardColor ? `1px solid ${cardColor}60` : undefined, // Subtle border
-        borderTop: cardColor ? `4px solid ${cardColor}` : undefined,
         width: 'min(340px, 100%)', // Ensures card never exceeds container width
       }}
     >
@@ -92,12 +91,18 @@ const FeaturedProduct = ({ title, description, price, retailer, listingLink, ima
       </div>
       <button
         onClick={handleListingClick}
-        className="w-[257px] h-[50px] flex items-center justify-center absolute -translate-x-2/4 left-2/4 bottom-[16px] max-sm:w-[80%] transition-all duration-300 text-white rounded-md"
+        onMouseEnter={() => setIsButtonHovered(true)}
+        onMouseLeave={() => setIsButtonHovered(false)}
+        className="text-2xl italic font-light text-[#1E1E1E] absolute -translate-x-2/4 w-[257px] h-[66px] bg-white rounded-[22px] left-2/4 bottom-[16px] max-sm:w-[80%] transition-all duration-800 flex items-center justify-center"
         style={{
-          backgroundColor: cardColor,
+          border: `1px solid ${cardColor}60`, // Subtle border that matches card color
+          boxShadow: isButtonHovered 
+            ? `0px 2px 8px 1px ${cardColor}50` // Slightly enhanced glow on hover
+            : `0px 1px 4px 0px ${cardColor}30`, // Very subtle shadow normally
+          transition: 'all 0.3s ease'
         }}
       >
-        View Listing
+        Listing
       </button>
     </div>
   );

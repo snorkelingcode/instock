@@ -1,12 +1,12 @@
+
 import React, { useEffect, useState } from "react";
 import Layout from "@/components/layout/Layout";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import SetCard from "@/components/sets/SetCard";
-import { Gamepad, Filter, Search, RefreshCw } from "lucide-react";
+import { Gamepad, Filter, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
 import {
   Select,
   SelectContent,
@@ -35,30 +35,21 @@ const PokemonSets = () => {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [seriesFilter, setSeriesFilter] = useState<string>("all");
   const [uniqueSeries, setUniqueSeries] = useState<string[]>([]);
-  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
-  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchSets = async () => {
       try {
         setLoading(true);
-        setError(null);
-        console.log("Fetching Pokemon sets data...");
-        
         const { data, error } = await supabase
-          .from('pokemon_sets')
+          .from('pokemon_sets' as any)
           .select('*')
           .order('release_date', { ascending: false });
 
         if (error) {
-          console.error('Error fetching Pokémon sets:', error);
-          setError(`Failed to load Pokémon sets: ${error.message}`);
           throw error;
         }
 
-        console.log("Pokemon sets data received:", data);
-        
         // Using a safer type casting approach
         const fetchedData = data || [];
         const typedSets = fetchedData as unknown as PokemonSet[];
@@ -114,10 +105,6 @@ const PokemonSets = () => {
     setSeriesFilter(value);
   };
 
-  const handleSync = () => {
-    navigate('/sets/sync');
-  };
-
   return (
     <Layout>
       <div className="bg-white p-6 rounded-lg shadow-md mb-8">
@@ -164,48 +151,20 @@ const PokemonSets = () => {
               {filteredSets.length} {filteredSets.length === 1 ? 'set' : 'sets'} found
             </p>
             
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setSearchQuery("");
-                  setSeriesFilter("all");
-                }}
-                className="text-xs"
-              >
-                <Filter className="mr-2 h-3 w-3" />
-                Reset Filters
-              </Button>
-              
-              {sets.length === 0 && !loading && (
-                <Button 
-                  size="sm" 
-                  className="text-xs bg-red-500 hover:bg-red-600"
-                  onClick={handleSync}
-                >
-                  <RefreshCw className="mr-2 h-3 w-3" />
-                  Sync Data
-                </Button>
-              )}
-            </div>
-          </div>
-        </div>
-        
-        {error && (
-          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md text-red-800">
-            <p className="font-semibold">Error:</p>
-            <p>{error}</p>
-            <Button 
-              onClick={handleSync} 
-              variant="destructive" 
-              size="sm" 
-              className="mt-2"
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setSearchQuery("");
+                setSeriesFilter("all");
+              }}
+              className="text-xs"
             >
-              Go to Sync Page
+              <Filter className="mr-2 h-3 w-3" />
+              Reset Filters
             </Button>
           </div>
-        )}
+        </div>
         
         {loading ? (
           <div className="flex justify-center py-8">
@@ -228,16 +187,8 @@ const PokemonSets = () => {
             ))}
           </div>
         ) : (
-          <div className="text-center py-8 space-y-4">
-            <p>No Pokémon sets found. You may need to sync the data first.</p>
-            <Button 
-              onClick={handleSync} 
-              variant="default" 
-              className="bg-red-500 hover:bg-red-600"
-            >
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Go to Sync Page
-            </Button>
+          <div className="text-center py-8">
+            <p>No Pokémon sets found matching your filters.</p>
           </div>
         )}
       </div>
