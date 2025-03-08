@@ -1,6 +1,6 @@
-
 // @ts-ignore
 import { serve } from "std/http/server.ts";
+// Using direct import URL for Supabase client
 // @ts-ignore
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 
@@ -259,7 +259,7 @@ async function processTCGData(source: string, jobId: string) {
     
     // Fetch data from appropriate source with timeout
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000); // Reduced timeout to 15 seconds
+    const timeoutId = setTimeout(() => controller.abort(), 20000); // Increased timeout to 20 seconds
     
     try {
       switch (source) {
@@ -283,7 +283,7 @@ async function processTCGData(source: string, jobId: string) {
     } catch (fetchError) {
       clearTimeout(timeoutId);
       if (fetchError.name === 'AbortError') {
-        throw new Error(`API request for ${source} timed out after 15 seconds`);
+        throw new Error(`API request for ${source} timed out after 20 seconds`);
       }
       throw fetchError;
     }

@@ -134,63 +134,18 @@ export const fetchPokemonCards = async (setId: string): Promise<PokemonCard[]> =
     return cached.cards;
   }
   
-  // Maximum retries for database or API errors
+  // Maximum retries for API errors
   const MAX_RETRIES = 3;
   let retryCount = 0;
   
   while (retryCount <= MAX_RETRIES) {
     try {
-      // First, try to fetch from our database for faster loading
-      const { data: dbCards, error: dbError } = await supabase
-        .from('pokemon_cards')
-        .select('*')
-        .eq('set_id', setId)
-        .order('number', { ascending: true });
-      
-      if (!dbError && dbCards && dbCards.length > 0) {
-        console.log(`Found ${dbCards.length} cards in database for set: ${setId}`);
-        
-        // Format to match PokemonCard interface and normalize the data
-        const formattedCards = dbCards.map((card: any) => normalizeCardData({
-          id: card.card_id,
-          name: card.name,
-          supertype: card.supertype,
-          subtypes: card.subtypes,
-          hp: card.hp,
-          types: card.types,
-          evolves_from: card.evolves_from,
-          evolves_to: card.evolves_to,
-          rules: card.rules,
-          attacks: card.attacks,
-          weaknesses: card.weaknesses,
-          resistances: card.resistances,
-          retreat_cost: card.retreat_cost,
-          converted_retreat_cost: card.converted_retreat_cost,
-          set: card.set_id,
-          number: card.number,
-          artist: card.artist,
-          rarity: card.rarity,
-          national_pokedex_numbers: card.national_pokedex_numbers,
-          legalities: card.legalities,
-          images: card.images,
-          tcgplayer: card.tcgplayer
-        }));
-        
-        // Cache the results
-        cardCache.set(setId, {
-          cards: formattedCards,
-          timestamp: Date.now()
-        });
-        
-        return sortCardsByNumber(formattedCards);
-      }
-      
-      // If not in database or error, fetch from API with timeout
+      // Skip database fetch and always go directly to API
       console.log(`Fetching from API for set: ${setId}`);
       
-      // Shorter timeout to prevent long waits - 8 seconds (increased from 5)
+      // Longer timeout to prevent long waits - 12 seconds (increased from 8)
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 8000);
+      const timeoutId = setTimeout(() => controller.abort(), 12000);
       
       try {
         const response = await fetch(
