@@ -1,11 +1,10 @@
 // TCG Card Download Processing Module
 import { updateDownloadJobStatus } from "../database/job-status.ts";
-import { downloadImage } from "../utils/image-downloader.ts";
+import { downloadImage, getImageExtension, saveCardImages } from "../utils/image-downloader.ts";
 import { fetchPokemonCardsForSet } from "../api/pokemon-cards.ts";
 import { fetchMTGCardsForSet } from "../api/mtg-cards.ts";
 import { fetchYugiohCardsForSet } from "../api/yugioh-cards.ts";
 import { fetchLorcanaCardsForSet } from "../api/lorcana-cards.ts";
-import { saveCardImages } from "../utils/image-downloader.ts";
 
 export interface DownloadOptions {
   setId?: string;
@@ -35,16 +34,16 @@ export async function processCardDownload(
     // Fetch data from appropriate source
     switch (source) {
       case "pokemon":
-        cards = await downloadPokemonCards(apiKeys.pokemon || "", options.setId);
+        cards = await fetchPokemonCardsForSet(options.setId);
         break;
       case "mtg":
-        cards = await downloadMTGCards(apiKeys.mtg || "", options.setId);
+        cards = await fetchMTGCardsForSet(apiKeys.mtg || "", options.setId);
         break;
       case "yugioh":
-        cards = await downloadYuGiOhCards(options.setId);
+        cards = await fetchYugiohCardsForSet(options.setId);
         break;
       case "lorcana":
-        cards = await downloadLorcanaCards(options.setId);
+        cards = await fetchLorcanaCardsForSet(options.setId);
         break;
       default:
         throw new Error(`Unknown source: ${source}`);

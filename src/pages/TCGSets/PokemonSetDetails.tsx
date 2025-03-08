@@ -60,10 +60,10 @@ const PokemonSetDetails = () => {
           // Process the cards to match the expected format
           const processedCards = dbCards.map(card => ({
             ...card,
-            images: card.images ? JSON.parse(card.images) : null,
-            attacks: card.attacks ? JSON.parse(card.attacks) : null,
-            weaknesses: card.weaknesses ? JSON.parse(card.weaknesses) : null,
-            resistances: card.resistances ? JSON.parse(card.resistances) : null,
+            images: card.images ? JSON.parse(typeof card.images === 'string' ? card.images : JSON.stringify(card.images)) : null,
+            attacks: card.attacks ? JSON.parse(typeof card.attacks === 'string' ? card.attacks : JSON.stringify(card.attacks)) : null,
+            weaknesses: card.weaknesses ? JSON.parse(typeof card.weaknesses === 'string' ? card.weaknesses : JSON.stringify(card.weaknesses)) : null,
+            resistances: card.resistances ? JSON.parse(typeof card.resistances === 'string' ? card.resistances : JSON.stringify(card.resistances)) : null,
             set: { id: card.set_id }
           }));
           

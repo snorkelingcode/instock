@@ -197,7 +197,7 @@ const CardDownloadManager: React.FC<CardDownloadManagerProps> = ({
           className="w-full flex items-center justify-center gap-2"
         >
           {loading || jobId ? (
-            <LoadingSpinner size="sm" color="white" />
+            <LoadingSpinner size="sm" color="gray" />
           ) : (
             <Download className="h-4 w-4" />
           )}
@@ -208,7 +208,7 @@ const CardDownloadManager: React.FC<CardDownloadManagerProps> = ({
               : `Download ${label} Cards & Images`}
         </Button>
         
-        <DebugInfo response={response} />
+        <DebugInfo response={response} partitionInfo={null} />
       </CardContent>
     </Card>
   );
