@@ -253,22 +253,35 @@ async function processTCGData(source: string, jobId: string) {
     
     let data: any[] = [];
     
-    // Fetch data from appropriate source
-    switch (source) {
-      case "pokemon":
-        data = await fetchPokemonSets();
-        break;
-      case "mtg":
-        data = await fetchMTGSets();
-        break;
-      case "yugioh":
-        data = await fetchYuGiOhSets();
-        break;
-      case "lorcana":
-        data = await fetchLorcanaSets();
-        break;
-      default:
-        throw new Error(`Unknown source: ${source}`);
+    // Fetch data from appropriate source with timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 25000); // 25 second timeout
+    
+    try {
+      switch (source) {
+        case "pokemon":
+          data = await fetchPokemonSets(controller.signal);
+          break;
+        case "mtg":
+          data = await fetchMTGSets(controller.signal);
+          break;
+        case "yugioh":
+          data = await fetchYuGiOhSets(controller.signal);
+          break;
+        case "lorcana":
+          data = await fetchLorcanaSets();
+          break;
+        default:
+          throw new Error(`Unknown source: ${source}`);
+      }
+      
+      clearTimeout(timeoutId);
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      if (fetchError.name === 'AbortError') {
+        throw new Error(`API request for ${source} timed out after 25 seconds`);
+      }
+      throw fetchError;
     }
     
     if (!data || data.length === 0) {
@@ -349,7 +362,7 @@ async function updateJobStatus(
 }
 
 // Fetch Pokemon TCG sets - optimized to get only what we need
-async function fetchPokemonSets() {
+async function fetchPokemonSets(signal?: AbortSignal) {
   console.log("Fetching Pokemon TCG sets...");
   
   const headers: HeadersInit = {};
@@ -357,7 +370,10 @@ async function fetchPokemonSets() {
     headers["X-Api-Key"] = pokemonApiKey;
   }
   
-  const response = await fetch("https://api.pokemontcg.io/v2/sets", { headers });
+  const response = await fetch("https://api.pokemontcg.io/v2/sets", { 
+    headers,
+    signal 
+  });
   
   if (!response.ok) {
     throw new Error(`Error fetching Pokemon sets: ${response.status} ${response.statusText}`);
@@ -380,8 +396,8 @@ async function fetchPokemonSets() {
   }));
 }
 
-// Fetch MTG sets - optimized to get only what we need
-async function fetchMTGSets() {
+// Fetch MTG sets with timeout
+async function fetchMTGSets(signal?: AbortSignal) {
   console.log("Fetching MTG sets...");
   
   const headers: HeadersInit = {};
@@ -389,7 +405,7 @@ async function fetchMTGSets() {
     headers["x-api-key"] = mtgApiKey;
   }
   
-  const response = await fetch("https://api.scryfall.com/sets");
+  const response = await fetch("https://api.scryfall.com/sets", { signal });
   
   if (!response.ok) {
     throw new Error(`Error fetching MTG sets: ${response.status} ${response.statusText}`);
@@ -411,11 +427,11 @@ async function fetchMTGSets() {
   }));
 }
 
-// Fetch YuGiOh sets - optimized to get only what we need
-async function fetchYuGiOhSets() {
+// Fetch YuGiOh sets with timeout
+async function fetchYuGiOhSets(signal?: AbortSignal) {
   console.log("Fetching Yu-Gi-Oh! sets...");
   
-  const response = await fetch("https://db.ygoprodeck.com/api/v7/cardsets.php");
+  const response = await fetch("https://db.ygoprodeck.com/api/v7/cardsets.php", { signal });
   
   if (!response.ok) {
     throw new Error(`Error fetching YuGiOh sets: ${response.status} ${response.statusText}`);
@@ -483,7 +499,7 @@ async function fetchLorcanaSets() {
   return lorcanaSets;
 }
 
-// Save sets to the database
+// Save sets to the database with better error handling and batching
 async function saveSets(source: string, sets: any[], jobId: string) {
   console.log(`Saving ${sets.length} ${source} sets to the database...`);
   
@@ -516,20 +532,30 @@ async function saveSets(source: string, sets: any[], jobId: string) {
   for (let i = 0; i < sets.length; i += batchSize) {
     const batch = sets.slice(i, i + batchSize);
     
-    const { error } = await supabase
-      .from(tableName)
-      .upsert(batch, { onConflict: 'set_id' });
+    try {
+      const { error } = await supabase
+        .from(tableName)
+        .upsert(batch, { onConflict: 'set_id' });
+        
+      if (error) {
+        console.error(`Error saving ${source} sets batch:`, error);
+        throw error;
+      }
       
-    if (error) {
-      console.error(`Error saving ${source} sets batch:`, error);
-      throw error;
+      processedCount += batch.length;
+      const progress = Math.floor((processedCount / sets.length) * 100);
+      
+      // Update job progress
+      await updateJobStatus(jobId, 'saving_to_database', progress, sets.length, processedCount);
+      
+      // Add a small delay between batches to avoid overwhelming the database
+      if (i + batchSize < sets.length) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+    } catch (error) {
+      console.error(`Error with batch ${i / batchSize + 1}:`, error);
+      throw new Error(`Failed to save batch ${i / batchSize + 1}: ${error.message}`);
     }
-    
-    processedCount += batch.length;
-    const progress = Math.floor((processedCount / sets.length) * 100);
-    
-    // Update job progress
-    await updateJobStatus(jobId, 'saving_to_database', progress, sets.length, processedCount);
   }
   
   console.log(`Successfully saved ${sets.length} ${source} sets`);

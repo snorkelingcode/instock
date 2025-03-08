@@ -17,74 +17,7 @@ import {
 } from "@/components/ui/select";
 import PokemonCardComponent from "@/components/sets/PokemonCardComponent";
 import LoadingSpinner from "@/components/ui/loading-spinner";
-
-interface PokemonSet {
-  id: number;
-  set_id: string;
-  name: string;
-  series: string;
-  printed_total: number;
-  total: number;
-  release_date: string;
-  symbol_url: string;
-  logo_url: string;
-  images_url: string;
-}
-
-interface PokemonCard {
-  id: string;
-  name: string;
-  supertype: string;
-  subtypes: string[];
-  level?: string;
-  hp?: string;
-  types?: string[];
-  evolves_from?: string;
-  evolves_to?: string[];
-  rules?: string[];
-  attacks?: {
-    name: string;
-    cost: string[];
-    convertedEnergyCost: number;
-    damage: string;
-    text: string;
-  }[];
-  weaknesses?: {
-    type: string;
-    value: string;
-  }[];
-  resistances?: {
-    type: string;
-    value: string;
-  }[];
-  retreat_cost?: string[];
-  converted_retreat_cost?: number;
-  set: string;
-  number: string;
-  artist?: string;
-  rarity?: string;
-  national_pokedex_numbers?: number[];
-  legalities?: {
-    unlimited: string;
-    standard: string;
-    expanded: string;
-  };
-  images: {
-    small: string;
-    large: string;
-  };
-  tcgplayer?: {
-    url: string;
-    updated_at: string;
-    prices: Record<string, {
-      low: number;
-      mid: number;
-      high: number;
-      market: number;
-      directLow: number;
-    }>;
-  };
-}
+import { fetchPokemonCards, PokemonCard, PokemonSet } from "@/utils/pokemon-cards";
 
 const PokemonSetDetails = () => {
   const { setId } = useParams<{ setId: string }>();
@@ -100,44 +33,59 @@ const PokemonSetDetails = () => {
   const [typeFilter, setTypeFilter] = useState("all");
   const [uniqueRarities, setUniqueRarities] = useState<string[]>([]);
   const [uniqueTypes, setUniqueTypes] = useState<string[]>([]);
+  const [isLoadingError, setIsLoadingError] = useState(false);
 
   useEffect(() => {
     const fetchSetDetails = async () => {
       if (!setId) return;
       
       setLoading(true);
+      setIsLoadingError(false);
+      
       try {
         // 1. First fetch the set details
         const { data: setData, error: setError } = await supabase
-          .from('pokemon_sets' as any)
+          .from('pokemon_sets')
           .select('*')
           .eq('set_id', setId)
           .single();
         
         if (setError) throw setError;
         
-        setSet(setData as unknown as PokemonSet);
+        setSet(setData as PokemonSet);
         
-        // 2. Now fetch cards from the Pokémon TCG API
-        const response = await fetch(`https://api.pokemontcg.io/v2/cards?q=set.id:${setId}&orderBy=number`);
-        
-        if (!response.ok) {
-          throw new Error(`API responded with status: ${response.status}`);
+        // 2. Fetch cards using our optimized function
+        try {
+          const fetchedCards = await fetchPokemonCards(setId);
+          setCards(fetchedCards);
+          setFilteredCards(fetchedCards);
+          
+          // Extract unique rarities and types for filters
+          const raritiesSet = new Set<string>();
+          fetchedCards.forEach(card => {
+            if (card.rarity) raritiesSet.add(card.rarity);
+          });
+          
+          const rarities = Array.from(raritiesSet);
+          setUniqueRarities(rarities);
+          
+          const typesSet = new Set<string>();
+          fetchedCards.forEach(card => {
+            if (card.types) card.types.forEach(type => typesSet.add(type));
+          });
+          
+          const types = Array.from(typesSet).sort();
+          setUniqueTypes(types);
+          
+        } catch (cardsError) {
+          console.error("Error fetching cards:", cardsError);
+          toast({
+            title: "Error",
+            description: "There was an issue loading the cards. Please try again.",
+            variant: "destructive",
+          });
+          setIsLoadingError(true);
         }
-        
-        const data = await response.json();
-        const fetchedCards = data.data as PokemonCard[];
-        setCards(fetchedCards);
-        setFilteredCards(fetchedCards);
-        
-        // Extract unique rarities and types for filters
-        const rarities = Array.from(new Set(fetchedCards.map(card => card.rarity).filter(Boolean)));
-        setUniqueRarities(rarities as string[]);
-        
-        const types = Array.from(new Set(
-          fetchedCards.flatMap(card => card.types || [])
-        )).sort();
-        setUniqueTypes(types);
         
       } catch (error) {
         console.error("Error fetching set details:", error);
@@ -146,6 +94,7 @@ const PokemonSetDetails = () => {
           description: "Could not load set details",
           variant: "destructive",
         });
+        setIsLoadingError(true);
       } finally {
         setLoading(false);
       }
@@ -301,6 +250,18 @@ const PokemonSetDetails = () => {
         {loading ? (
           <div className="flex justify-center items-center py-16">
             <LoadingSpinner size="lg" />
+          </div>
+        ) : isLoadingError ? (
+          <div className="text-center py-16">
+            <p className="text-lg font-medium text-red-600">Error loading cards</p>
+            <p className="text-gray-500 mt-2">There was a problem fetching the card data</p>
+            <Button 
+              variant="default" 
+              className="mt-4"
+              onClick={() => window.location.reload()}
+            >
+              Try Again
+            </Button>
           </div>
         ) : filteredCards.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
