@@ -1,4 +1,3 @@
-
 // Import necessary Deno modules
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.1.1";
 
@@ -20,6 +19,9 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 // Rate limiting configuration
 const RATE_LIMIT_SECONDS = 60; // 1 minute between syncs
 const RATE_LIMIT_TABLE = "api_rate_limits";
+
+// Job status tracking
+const JOB_STATUS_TABLE = "api_job_status";
 
 // Function to check rate limit in the database
 async function checkRateLimit(source) {
@@ -93,6 +95,98 @@ async function setRateLimit(source) {
   }
 }
 
+// Function to create the job status table if it doesn't exist
+async function createJobStatusTableIfNotExists() {
+  try {
+    // Check if table exists, create it if not
+    const { error } = await supabase.rpc('create_job_status_table_if_not_exists').catch(e => {
+      console.log("Job status table creation RPC error (may attempt SQL):", e);
+      
+      // Try direct SQL if RPC fails
+      return supabase.from('_manual_sql').select('*').eq('statement', `
+        CREATE TABLE IF NOT EXISTS public.${JOB_STATUS_TABLE} (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          job_id TEXT UNIQUE NOT NULL,
+          source TEXT NOT NULL,
+          status TEXT NOT NULL,
+          progress NUMERIC DEFAULT 0,
+          total_items NUMERIC DEFAULT 0,
+          completed_items NUMERIC DEFAULT 0,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+          updated_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+          completed_at TIMESTAMP WITH TIME ZONE,
+          error TEXT
+        );
+      `);
+    });
+    
+    if (error) {
+      console.error("Error creating job status table:", error);
+    }
+  } catch (error) {
+    console.error("Error in create job status table:", error);
+  }
+}
+
+// Function to create a new job and return the job_id
+async function createJob(source) {
+  try {
+    await createJobStatusTableIfNotExists();
+    
+    const jobId = crypto.randomUUID();
+    
+    const { error } = await supabase
+      .from(JOB_STATUS_TABLE)
+      .insert({
+        job_id: jobId,
+        source: source,
+        status: 'pending',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      });
+      
+    if (error) {
+      console.error("Error creating job:", error);
+      return null;
+    }
+    
+    return jobId;
+  } catch (error) {
+    console.error("Error in create job:", error);
+    return null;
+  }
+}
+
+// Function to update job status
+async function updateJobStatus(jobId, status, progress = null, totalItems = null, completedItems = null, error = null) {
+  try {
+    const updateData = {
+      status: status,
+      updated_at: new Date().toISOString()
+    };
+    
+    if (progress !== null) updateData.progress = progress;
+    if (totalItems !== null) updateData.total_items = totalItems;
+    if (completedItems !== null) updateData.completed_items = completedItems;
+    if (error) updateData.error = error;
+    
+    if (status === 'completed' || status === 'failed') {
+      updateData.completed_at = new Date().toISOString();
+    }
+    
+    const { error: updateError } = await supabase
+      .from(JOB_STATUS_TABLE)
+      .update(updateData)
+      .eq('job_id', jobId);
+      
+    if (updateError) {
+      console.error(`Error updating job status for ${jobId}:`, updateError);
+    }
+  } catch (error) {
+    console.error(`Error in update job status for ${jobId}:`, error);
+  }
+}
+
 // Function to download and upload an image to Supabase storage
 async function storeImageInSupabase(imageUrl, category, filename) {
   if (!imageUrl) return null;
@@ -141,6 +235,20 @@ async function storeImageInSupabase(imageUrl, category, filename) {
   }
 }
 
+// Wrapper for processing in the background
+async function processInBackground(fn, jobId, source) {
+  try {
+    console.log(`Processing ${source} job ${jobId} in background`);
+    await updateJobStatus(jobId, 'processing');
+    await fn(jobId);
+    await updateJobStatus(jobId, 'completed', 100);
+    console.log(`Job ${jobId} completed successfully`);
+  } catch (error) {
+    console.error(`Background processing error for job ${jobId}:`, error);
+    await updateJobStatus(jobId, 'failed', null, null, null, error.message || "Unknown error");
+  }
+}
+
 // Handle OPTIONS request for CORS
 Deno.serve(async (req) => {
   console.log("Edge function received request:", req.method, req.url);
@@ -173,7 +281,36 @@ Deno.serve(async (req) => {
     const requestData = await req.json();
     console.log("Request data:", requestData);
     
-    const { source } = requestData;
+    const { source, jobId } = requestData;
+    
+    // If jobId is provided, this is a job status check
+    if (jobId) {
+      console.log(`Checking status for job: ${jobId}`);
+      const { data, error } = await supabase
+        .from(JOB_STATUS_TABLE)
+        .select('*')
+        .eq('job_id', jobId)
+        .single();
+        
+      if (error) {
+        console.error(`Error fetching job status for ${jobId}:`, error);
+        return new Response(
+          JSON.stringify({ error: `Job not found: ${jobId}` }),
+          {
+            status: 404,
+            headers: responseHeaders,
+          }
+        );
+      }
+      
+      return new Response(
+        JSON.stringify({ success: true, job: data }),
+        {
+          status: 200,
+          headers: responseHeaders,
+        }
+      );
+    }
     
     if (!source) {
       console.log("Missing source parameter");
@@ -206,20 +343,38 @@ Deno.serve(async (req) => {
     
     // Set rate limit for this request
     await setRateLimit(source);
-
-    // Call the appropriate function based on the source parameter
-    console.log(`Processing request for source: ${source}`);
+    
+    // Create a new job for this request
+    const newJobId = await createJob(source);
+    if (!newJobId) {
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: "Failed to create job" 
+        }),
+        {
+          status: 500,
+          headers: responseHeaders,
+        }
+      );
+    }
+    
+    // Start background processing based on the source
+    let processingFunction;
     switch (source) {
       case "pokemon":
-        return await fetchPokemonSets(req, responseHeaders);
+        processingFunction = (jobId) => processPokemonSets(jobId);
+        break;
       case "mtg":
-        return await fetchMTGSets(req, responseHeaders);
+        processingFunction = (jobId) => processMTGSets(jobId);
+        break;
       case "yugioh":
-        return await fetchYugiohSets(req, responseHeaders);
+        processingFunction = (jobId) => processYugiohSets(jobId);
+        break;
       case "lorcana":
-        return await fetchLorcanaSets(req, responseHeaders);
+        processingFunction = (jobId) => processLorcanaSets(jobId);
+        break;
       default:
-        console.log(`Invalid source: ${source}`);
         return new Response(
           JSON.stringify({ 
             error: "Invalid source. Use 'pokemon', 'mtg', 'yugioh', or 'lorcana'" 
@@ -230,6 +385,22 @@ Deno.serve(async (req) => {
           }
         );
     }
+    
+    // Use EdgeRuntime's waitUntil for background processing
+    EdgeRuntime.waitUntil(processInBackground(processingFunction, newJobId, source));
+    
+    // Immediately return the job ID to the client
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        message: `Job started for ${source}`,
+        jobId: newJobId
+      }),
+      {
+        status: 202, // Accepted
+        headers: responseHeaders,
+      }
+    );
   } catch (error) {
     console.error("Error processing request:", error);
     return new Response(
@@ -245,9 +416,9 @@ Deno.serve(async (req) => {
   }
 });
 
-// Function to fetch Pokémon sets
-async function fetchPokemonSets(req, responseHeaders) {
-  console.log("Fetching Pokémon TCG sets...");
+// Process Pokémon sets in the background
+async function processPokemonSets(jobId) {
+  console.log(`Processing Pokémon TCG sets for job ${jobId}...`);
   
   try {
     const headers = {};
@@ -258,6 +429,7 @@ async function fetchPokemonSets(req, responseHeaders) {
       console.log("No Pokemon TCG API key provided");
     }
 
+    await updateJobStatus(jobId, 'fetching_data');
     console.log("Sending request to Pokemon TCG API");
     const response = await fetch("https://api.pokemontcg.io/v2/sets", {
       headers: pokemonApiKey ? headers : {},
@@ -270,10 +442,15 @@ async function fetchPokemonSets(req, responseHeaders) {
     }
 
     const data = await response.json();
-    console.log(`Received ${data.data?.length || 0} Pokémon sets from API`);
+    const setCount = data.data?.length || 0;
+    console.log(`Received ${setCount} Pokémon sets from API`);
+    
+    await updateJobStatus(jobId, 'processing_data', 0, setCount, 0);
     
     // Process sets and store images in Supabase Storage
     const sets = [];
+    let completedItems = 0;
+    
     for (const set of data.data) {
       console.log(`Processing set: ${set.id} - ${set.name}`);
       
@@ -301,9 +478,14 @@ async function fetchPokemonSets(req, responseHeaders) {
         logo_url: logoUrl,
         images_url: null,
       });
+      
+      completedItems++;
+      const progress = Math.round((completedItems / setCount) * 100);
+      await updateJobStatus(jobId, 'processing_data', progress, setCount, completedItems);
     }
 
     console.log(`Processing ${sets.length} Pokémon sets for database insertion`);
+    await updateJobStatus(jobId, 'saving_to_database');
 
     // Insert sets into database (upsert to avoid duplicates)
     const { error } = await supabase.from("pokemon_sets").upsert(sets, {
@@ -319,37 +501,19 @@ async function fetchPokemonSets(req, responseHeaders) {
     await updateApiSyncTime("pokemon");
     console.log("Successfully imported and updated Pokémon sets");
 
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: `Successfully imported ${sets.length} Pokémon sets with locally stored images` 
-      }),
-      {
-        status: 200,
-        headers: responseHeaders,
-      }
-    );
+    return sets.length;
   } catch (error) {
     console.error("Error fetching Pokémon sets:", error);
-    return new Response(
-      JSON.stringify({ 
-        success: false, 
-        error: error.message || "Unknown error occurred",
-        details: error.stack
-      }),
-      {
-        status: 500,
-        headers: responseHeaders,
-      }
-    );
+    throw error;
   }
 }
 
-// Function to fetch Magic: The Gathering sets
-async function fetchMTGSets(req, responseHeaders) {
-  console.log("Fetching Magic: The Gathering sets...");
+// Process MTG sets in the background
+async function processMTGSets(jobId) {
+  console.log(`Processing Magic: The Gathering sets for job ${jobId}...`);
   
   try {
+    await updateJobStatus(jobId, 'fetching_data');
     console.log("Sending request to MTG API");
     const response = await fetch("https://api.magicthegathering.io/v1/sets");
 
@@ -360,10 +524,15 @@ async function fetchMTGSets(req, responseHeaders) {
     }
 
     const data = await response.json();
-    console.log(`Received ${data.sets?.length || 0} MTG sets from API`);
+    const setCount = data.sets?.length || 0;
+    console.log(`Received ${setCount} MTG sets from API`);
+    
+    await updateJobStatus(jobId, 'processing_data', 0, setCount, 0);
     
     // Process sets and store images in Supabase Storage
     const sets = [];
+    let completedItems = 0;
+    
     for (const set of data.sets) {
       console.log(`Processing set: ${set.code} - ${set.name}`);
       
@@ -390,9 +559,14 @@ async function fetchMTGSets(req, responseHeaders) {
         icon_url: symbolUrl,
         image_url: logoUrl,
       });
+      
+      completedItems++;
+      const progress = Math.round((completedItems / setCount) * 100);
+      await updateJobStatus(jobId, 'processing_data', progress, setCount, completedItems);
     }
 
     console.log(`Processing ${sets.length} MTG sets for database insertion`);
+    await updateJobStatus(jobId, 'saving_to_database');
 
     // Insert sets into database (upsert to avoid duplicates)
     const { error } = await supabase.from("mtg_sets").upsert(sets, {
@@ -408,38 +582,19 @@ async function fetchMTGSets(req, responseHeaders) {
     await updateApiSyncTime("mtg");
     console.log("Successfully imported and updated MTG sets");
 
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: `Successfully imported ${sets.length} MTG sets with locally stored images` 
-      }),
-      {
-        status: 200,
-        headers: responseHeaders,
-      }
-    );
+    return sets.length;
   } catch (error) {
     console.error("Error fetching MTG sets:", error);
-    return new Response(
-      JSON.stringify({ 
-        success: false, 
-        error: error.message || "Unknown error occurred",
-        details: error.stack
-      }),
-      {
-        status: 500,
-        headers: responseHeaders,
-      }
-    );
+    throw error;
   }
 }
 
-// Function to fetch Yu-Gi-Oh! sets
-async function fetchYugiohSets(req, responseHeaders) {
-  console.log("Fetching Yu-Gi-Oh! sets...");
+// Process Yu-Gi-Oh! sets in the background
+async function processYugiohSets(jobId) {
+  console.log(`Processing Yu-Gi-Oh! sets for job ${jobId}...`);
   
   try {
-    // Yu-Gi-Oh! API doesn't have dedicated sets endpoint, so we can approximate by querying card sets
+    await updateJobStatus(jobId, 'fetching_data');
     console.log("Sending request to Yu-Gi-Oh! API");
     const response = await fetch("https://db.ygoprodeck.com/api/v7/cardsets.php");
 
@@ -450,13 +605,15 @@ async function fetchYugiohSets(req, responseHeaders) {
     }
 
     const data = await response.json();
-    console.log(`Received ${data?.length || 0} Yu-Gi-Oh! sets from API`);
+    const setCount = data?.length || 0;
+    console.log(`Received ${setCount} Yu-Gi-Oh! sets from API`);
     
-    // Process and insert sets into database
+    await updateJobStatus(jobId, 'processing_data', 0, setCount, 0);
+    
+    // Process sets
     const sets = [];
+    let completedItems = 0;
     
-    // Since YGOPRODeck API doesn't provide set images directly,
-    // we'll try to find some from a different endpoint for key sets
     for (const set of data) {
       console.log(`Processing set: ${set.set_code} - ${set.set_name}`);
       
@@ -489,9 +646,14 @@ async function fetchYugiohSets(req, responseHeaders) {
         set_image: setImage,
         set_type: set.set_type || "N/A",
       });
+      
+      completedItems++;
+      const progress = Math.round((completedItems / setCount) * 100);
+      await updateJobStatus(jobId, 'processing_data', progress, setCount, completedItems);
     }
 
     console.log(`Processing ${sets.length} Yu-Gi-Oh! sets for database insertion`);
+    await updateJobStatus(jobId, 'saving_to_database');
 
     // Insert sets into database (upsert to avoid duplicates)
     const { error } = await supabase.from("yugioh_sets").upsert(sets, {
@@ -507,37 +669,20 @@ async function fetchYugiohSets(req, responseHeaders) {
     await updateApiSyncTime("yugioh");
     console.log("Successfully imported and updated Yu-Gi-Oh! sets");
 
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: `Successfully imported ${sets.length} Yu-Gi-Oh! sets with locally stored images where available` 
-      }),
-      {
-        status: 200,
-        headers: responseHeaders,
-      }
-    );
+    return sets.length;
   } catch (error) {
     console.error("Error fetching Yu-Gi-Oh! sets:", error);
-    return new Response(
-      JSON.stringify({ 
-        success: false, 
-        error: error.message || "Unknown error occurred",
-        details: error.stack
-      }),
-      {
-        status: 500,
-        headers: responseHeaders,
-      }
-    );
+    throw error;
   }
 }
 
-// Function to fetch Disney Lorcana sets (this is a placeholder as there's no official Lorcana API)
-async function fetchLorcanaSets(req, responseHeaders) {
-  console.log("Adding Disney Lorcana sets...");
+// Process Disney Lorcana sets in the background
+async function processLorcanaSets(jobId) {
+  console.log(`Processing Disney Lorcana sets for job ${jobId}...`);
   
   try {
+    await updateJobStatus(jobId, 'processing_data');
+    
     // We'll manually insert some Lorcana sets since there's no official API
     const setData = [
       {
@@ -578,8 +723,13 @@ async function fetchLorcanaSets(req, responseHeaders) {
       },
     ];
 
+    const setCount = setData.length;
+    await updateJobStatus(jobId, 'processing_data', 0, setCount, 0);
+
     // Download and store images locally
     const sets = [];
+    let completedItems = 0;
+    
     for (const set of setData) {
       console.log(`Processing Lorcana set: ${set.set_id} - ${set.name}`);
       
@@ -594,9 +744,14 @@ async function fetchLorcanaSets(req, responseHeaders) {
         ...set,
         set_image: setImage
       });
+      
+      completedItems++;
+      const progress = Math.round((completedItems / setCount) * 100);
+      await updateJobStatus(jobId, 'processing_data', progress, setCount, completedItems);
     }
 
     console.log(`Processing ${sets.length} Disney Lorcana sets for database insertion`);
+    await updateJobStatus(jobId, 'saving_to_database');
 
     // Insert sets into database (upsert to avoid duplicates)
     const { error } = await supabase.from("lorcana_sets").upsert(sets, {
@@ -612,29 +767,10 @@ async function fetchLorcanaSets(req, responseHeaders) {
     await updateApiSyncTime("lorcana");
     console.log("Successfully added Disney Lorcana sets");
 
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: `Successfully added ${sets.length} Disney Lorcana sets with locally stored images` 
-      }),
-      {
-        status: 200,
-        headers: responseHeaders,
-      }
-    );
+    return sets.length;
   } catch (error) {
     console.error("Error adding Disney Lorcana sets:", error);
-    return new Response(
-      JSON.stringify({ 
-        success: false, 
-        error: error.message || "Unknown error occurred",
-        details: error.stack
-      }),
-      {
-        status: 500,
-        headers: responseHeaders,
-      }
-    );
+    throw error;
   }
 }
 

@@ -3,8 +3,9 @@ import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, RotateCw } from "lucide-react";
 import LoadingSpinner from "@/components/ui/loading-spinner";
+import { Progress } from "@/components/ui/progress";
 import { 
   invalidateTcgCache, 
   isRateLimited, 
@@ -23,6 +24,21 @@ interface ApiSyncButtonProps {
   onSuccess?: () => void;
 }
 
+// Job status interface
+interface JobStatus {
+  id: string;
+  job_id: string;
+  source: string;
+  status: 'pending' | 'fetching_data' | 'processing_data' | 'saving_to_database' | 'completed' | 'failed';
+  progress: number;
+  total_items: number;
+  completed_items: number;
+  created_at: string;
+  updated_at: string;
+  completed_at: string | null;
+  error: string | null;
+}
+
 const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({ 
   source, 
   label,
@@ -33,12 +49,15 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({
   const [cooldown, setCooldown] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const [partitionInfo, setPartitionInfo] = useState<any>(null);
+  const [currentJobId, setCurrentJobId] = useState<string | null>(null);
+  const [jobStatus, setJobStatus] = useState<JobStatus | null>(null);
   const { toast } = useToast();
 
   // Rate limiting configuration
   const COOLDOWN_TIME = 60; // 1 minute cooldown between syncs (in seconds)
   const RATE_LIMIT_KEY = `sync_${source}`;
   const TCG_PARTITION = "tcg";
+  const JOB_POLL_INTERVAL = 2000; // Poll every 2 seconds
   
   // Check rate limit status and partition info on component mount and periodically
   useEffect(() => {
@@ -50,6 +69,68 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({
     
     return () => clearInterval(interval);
   }, [source]);
+  
+  // Set up job status polling
+  useEffect(() => {
+    if (!currentJobId) return;
+    
+    const pollJobStatus = async () => {
+      try {
+        const result = await supabase.functions.invoke('fetch-tcg-sets', {
+          body: { jobId: currentJobId },
+        });
+        
+        if (result.error) {
+          console.error("Error polling job status:", result.error);
+          return;
+        }
+        
+        if (result.data && result.data.success && result.data.job) {
+          setJobStatus(result.data.job);
+          
+          // If job is completed or failed, clean up
+          if (result.data.job.status === 'completed' || result.data.job.status === 'failed') {
+            setCurrentJobId(null);
+            setLoading(false);
+            
+            if (result.data.job.status === 'completed') {
+              // Show success message
+              toast({
+                title: "Success",
+                description: `Successfully synchronized ${label} data`,
+              });
+              
+              // Update cached last sync time
+              const now = new Date().toISOString();
+              setCache(`last_sync_time_${source}`, now, 5, TCG_PARTITION);
+              
+              // Invalidate cache after successful sync
+              invalidateTcgCache(source);
+              
+              if (onSuccess) {
+                onSuccess();
+              }
+            } else {
+              // Show error message
+              toast({
+                title: "Error",
+                description: result.data.job.error || `Failed to synchronize ${label} data`,
+                variant: "destructive",
+              });
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Error polling job status:", err);
+      }
+    };
+    
+    // Start polling
+    pollJobStatus();
+    const interval = setInterval(pollJobStatus, JOB_POLL_INTERVAL);
+    
+    return () => clearInterval(interval);
+  }, [currentJobId, source, label, onSuccess]);
   
   const updateStatus = () => {
     // Update rate limit status
@@ -109,7 +190,7 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({
   };
 
   const syncData = async () => {
-    if (loading) return;
+    if (loading || currentJobId) return;
     
     // Check if operation is rate limited
     if (isRateLimited(RATE_LIMIT_KEY)) {
@@ -198,6 +279,7 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({
         // Sync the server-side rate limit with client-side
         syncServerRateLimit(RATE_LIMIT_KEY, retryAfter);
         
+        setLoading(false);
         throw new Error(`Rate limited. Please try again in ${formatTimeRemaining(retryAfter)}`);
       }
       
@@ -206,19 +288,22 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({
 
       if (error) {
         console.error(`Edge function error:`, error);
+        setLoading(false);
         throw new Error(`Edge Function Error: ${error.message || "Unknown error calling Edge Function"}`);
       }
 
       console.log(`Edge function response:`, data);
 
-      if (data && data.success) {
-        // Update the cached last sync time
-        const now = new Date().toISOString();
-        setCache(`last_sync_time_${source}`, now, 5, TCG_PARTITION);
-        
-        // Invalidate cache after successful sync
-        invalidateTcgCache(source);
-        
+      // If job was successfully started, store the job ID and start polling
+      if (data && data.success && data.jobId) {
+        setCurrentJobId(data.jobId);
+        toast({
+          title: "Job Started",
+          description: `${label} data synchronization has started. Please wait while we process the data.`,
+        });
+      } else if (data && data.success) {
+        // If no job ID but success, assume it completed immediately
+        setLoading(false);
         toast({
           title: "Success",
           description: data.message,
@@ -228,10 +313,12 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({
           onSuccess();
         }
       } else {
+        setLoading(false);
         throw new Error(data?.error || "Unknown error occurred in the edge function response");
       }
     } catch (err: any) {
       console.error(`Error syncing ${source} data:`, err);
+      setLoading(false);
       
       // More detailed error message
       let errorMessage = `Failed to sync ${label} data`;
@@ -254,28 +341,73 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
-      // Update partition info after sync
+      // Update partition info after sync attempt
       updateStatus();
     }
+  };
+
+  // Function to render job status
+  const renderJobStatus = () => {
+    if (!jobStatus) return null;
+    
+    let statusText = "";
+    let progressValue = jobStatus.progress || 0;
+    
+    switch (jobStatus.status) {
+      case 'pending':
+        statusText = "Preparing job...";
+        break;
+      case 'fetching_data':
+        statusText = "Fetching data from API...";
+        break;
+      case 'processing_data':
+        statusText = `Processing ${jobStatus.completed_items}/${jobStatus.total_items} sets`;
+        break;
+      case 'saving_to_database':
+        statusText = "Saving data to database...";
+        progressValue = 95; // Almost done
+        break;
+      case 'completed':
+        statusText = "Completed successfully";
+        progressValue = 100;
+        break;
+      case 'failed':
+        statusText = `Failed: ${jobStatus.error || "Unknown error"}`;
+        break;
+      default:
+        statusText = `Status: ${jobStatus.status}`;
+    }
+    
+    return (
+      <div className="space-y-2 mt-2">
+        <div className="flex items-center justify-between text-xs text-gray-600">
+          <span>{statusText}</span>
+          <span>{progressValue}%</span>
+        </div>
+        <Progress value={progressValue} className="h-1" />
+      </div>
+    );
   };
 
   return (
     <div className="space-y-2">
       <Button 
         onClick={syncData} 
-        disabled={loading || cooldown}
+        disabled={loading || cooldown || !!currentJobId}
         className="flex items-center gap-2"
       >
-        {loading ? (
+        {loading || currentJobId ? (
           <LoadingSpinner size="sm" color={source === "pokemon" ? "red" : source === "mtg" ? "blue" : source === "yugioh" ? "purple" : "green"} />
         ) : (
           <RefreshCw className={`h-4 w-4 ${cooldown ? 'animate-pulse text-gray-400' : ''}`} />
         )}
-        {loading ? `Syncing ${label}...` : 
+        {currentJobId ? `Syncing ${label}...` : 
+         loading ? `Starting ${label} sync...` :
          cooldown ? `Cooldown (${formatTimeRemaining(timeRemaining)})` : 
          `Sync ${label} Data`}
       </Button>
+      
+      {renderJobStatus()}
       
       <div className="text-xs text-gray-500 mt-1">
         <p>Images will be downloaded and stored locally in Supabase.</p>

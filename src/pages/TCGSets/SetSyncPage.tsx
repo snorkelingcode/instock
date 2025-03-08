@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import Layout from "@/components/layout/Layout";
 import ApiSyncButton from "@/components/sets/ApiSyncButton";
@@ -15,8 +16,24 @@ interface ApiConfig {
   sync_frequency: string;
 }
 
+// Interface for job status data
+interface JobStatus {
+  id: string;
+  job_id: string;
+  source: string;
+  status: 'pending' | 'fetching_data' | 'processing_data' | 'saving_to_database' | 'completed' | 'failed';
+  progress: number;
+  total_items: number;
+  completed_items: number;
+  created_at: string;
+  updated_at: string;
+  completed_at: string | null;
+  error: string | null;
+}
+
 const SetSyncPage = () => {
   const [apiConfigs, setApiConfigs] = useState<ApiConfig[]>([]);
+  const [activeJobs, setActiveJobs] = useState<JobStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const { toast } = useToast();
@@ -47,12 +64,36 @@ const SetSyncPage = () => {
     }
   };
 
+  const fetchActiveJobs = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('api_job_status')
+        .select('*')
+        .not('status', 'in', '("completed","failed")')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching active jobs:', error);
+        return;
+      }
+
+      setActiveJobs(data as JobStatus[]);
+    } catch (error) {
+      console.error('Error in fetchActiveJobs:', error);
+    }
+  };
+
   useEffect(() => {
     if (isAuthenticated) {
       fetchApiConfigs();
+      fetchActiveJobs();
       
-      // Set up a timer to refresh API configs every 30 seconds
-      const refreshInterval = setInterval(fetchApiConfigs, 30000);
+      // Set up a timer to refresh data every 10 seconds
+      const refreshInterval = setInterval(() => {
+        fetchApiConfigs();
+        fetchActiveJobs();
+      }, 10000);
+      
       return () => clearInterval(refreshInterval);
     }
   }, [isAuthenticated]);
@@ -100,6 +141,24 @@ const SetSyncPage = () => {
 
   // Get the rate limit status for a specific API
   const getRateLimitStatus = (apiName: string) => {
+    // Check for active jobs first
+    const activeJob = activeJobs.find(job => job.source === apiName);
+    if (activeJob) {
+      switch (activeJob.status) {
+        case 'pending':
+          return 'Job pending...';
+        case 'fetching_data':
+          return 'Fetching data...';
+        case 'processing_data':
+          return `Processing ${activeJob.completed_items}/${activeJob.total_items} items (${activeJob.progress}%)`;
+        case 'saving_to_database':
+          return 'Saving to database...';
+        default:
+          return `Processing (${activeJob.status})`;
+      }
+    }
+    
+    // Then check rate limits
     const timeRemaining = getRateLimitTimeRemaining(`sync_${apiName}`);
     if (timeRemaining > 0) {
       return `Rate limited for ${formatTimeRemaining(timeRemaining)}`;
@@ -123,6 +182,12 @@ const SetSyncPage = () => {
 
   // Get the status color for the rate limit
   const getRateLimitStatusColor = (apiName: string) => {
+    // Check for active jobs first
+    const activeJob = activeJobs.find(job => job.source === apiName);
+    if (activeJob) {
+      return 'text-blue-600 animate-pulse';
+    }
+    
     const timeRemaining = getRateLimitTimeRemaining(`sync_${apiName}`);
     if (timeRemaining > 0) {
       return 'text-yellow-600';
@@ -188,6 +253,18 @@ const SetSyncPage = () => {
             Rate limits are enforced both client-side and server-side for maximum protection.
           </AlertDescription>
         </Alert>
+        
+        {activeJobs.length > 0 && (
+          <Alert className="mb-6 bg-blue-50 border-blue-200">
+            <InfoIcon className="h-4 w-4 text-blue-600" />
+            <AlertTitle className="text-blue-800">Background Jobs Running</AlertTitle>
+            <AlertDescription className="text-blue-700">
+              There {activeJobs.length === 1 ? 'is' : 'are'} currently {activeJobs.length} active background {activeJobs.length === 1 ? 'job' : 'jobs'} running.
+              You can track the progress of these jobs in their respective TCG cards below. 
+              Background processing allows the server to handle large data sets efficiently without timing out.
+            </AlertDescription>
+          </Alert>
+        )}
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <Card>
