@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -167,9 +168,9 @@ const PokemonCardComponent: React.FC<PokemonCardProps> = ({ card }) => {
               Details
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-full sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-background pt-2 pb-3 z-10 border-b mb-4">
-              <div className="flex items-center justify-between">
+          <DialogContent className="max-w-full sm:max-w-2xl max-h-[90vh] overflow-y-auto p-0">
+            <div className="sticky top-0 bg-background z-10 border-b rounded-t-lg">
+              <div className="flex items-center justify-between p-4">
                 <DialogTitle className="text-lg">{card.name}</DialogTitle>
                 <DialogClose asChild>
                   <Button 
@@ -184,7 +185,7 @@ const PokemonCardComponent: React.FC<PokemonCardProps> = ({ card }) => {
               </div>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
               <div className="flex justify-center items-start">
                 <img 
                   src={card.images.large} 
