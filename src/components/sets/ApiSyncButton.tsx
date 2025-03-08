@@ -5,7 +5,14 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { RefreshCw } from "lucide-react";
 import LoadingSpinner from "@/components/ui/loading-spinner";
-import { invalidateTcgCache, isRateLimited, setRateLimit, getRateLimitTimeRemaining } from "@/utils/cacheUtils";
+import { 
+  invalidateTcgCache, 
+  isRateLimited, 
+  setRateLimit, 
+  getRateLimitTimeRemaining,
+  syncServerRateLimit,
+  formatTimeRemaining
+} from "@/utils/cacheUtils";
 
 interface ApiSyncButtonProps {
   source: "pokemon" | "mtg" | "yugioh" | "lorcana";
@@ -84,7 +91,7 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({
     if (isRateLimited(RATE_LIMIT_KEY)) {
       toast({
         title: "Rate Limited",
-        description: `Please wait ${timeRemaining} seconds before syncing ${label} data again`,
+        description: `Please wait ${formatTimeRemaining(timeRemaining)} before syncing ${label} data again`,
         variant: "destructive",
       });
       return;
@@ -134,7 +141,7 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({
     try {
       console.log(`Starting ${source} data sync...`);
       
-      // Apply rate limit before making the request
+      // Apply client-side rate limit before making the request
       setRateLimit(RATE_LIMIT_KEY, COOLDOWN_TIME);
       setCooldown(true);
       
@@ -146,6 +153,29 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({
       
       // Store the complete response for debugging
       setEdgeFunctionResponse(result);
+      
+      // Check for rate limiting response (HTTP 429)
+      if (result.error && result.error.message && result.error.message.includes("429")) {
+        console.log("Server returned rate limit response");
+        
+        // Extract retry after time from response if available
+        let retryAfter = COOLDOWN_TIME;
+        try {
+          if (result.error.context && result.error.context.responseText) {
+            const responseData = JSON.parse(result.error.context.responseText);
+            if (responseData.retryAfter) {
+              retryAfter = parseInt(responseData.retryAfter, 10);
+            }
+          }
+        } catch (e) {
+          console.error("Error parsing retry-after value:", e);
+        }
+        
+        // Sync the server-side rate limit with client-side
+        syncServerRateLimit(RATE_LIMIT_KEY, retryAfter);
+        
+        throw new Error(`Rate limited. Please try again in ${formatTimeRemaining(retryAfter)}`);
+      }
       
       // Destructure the response
       const { data, error } = result;
@@ -198,14 +228,6 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({
     } finally {
       setLoading(false);
     }
-  };
-
-  // Format the remaining time as MM:SS
-  const formatTimeRemaining = (seconds: number): string => {
-    if (seconds <= 0) return "00:00";
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
   return (

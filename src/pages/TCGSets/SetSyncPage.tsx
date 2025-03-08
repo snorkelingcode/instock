@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import Layout from "@/components/layout/Layout";
 import ApiSyncButton from "@/components/sets/ApiSyncButton";
@@ -8,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { InfoIcon, ShieldAlert } from "lucide-react";
 import SyncPageAuth from "@/components/sets/SyncPageAuth";
-import { getRateLimitTimeRemaining } from "@/utils/cacheUtils";
+import { getRateLimitTimeRemaining, formatTimeRemaining } from "@/utils/cacheUtils";
 
 interface ApiConfig {
   api_name: string;
@@ -51,8 +50,12 @@ const SetSyncPage = () => {
   useEffect(() => {
     if (isAuthenticated) {
       fetchApiConfigs();
+      
+      // Set up a timer to refresh API configs every 30 seconds
+      const refreshInterval = setInterval(fetchApiConfigs, 30000);
+      return () => clearInterval(refreshInterval);
     }
-  }, [isAuthenticated, toast]);
+  }, [isAuthenticated]);
 
   const formatLastSyncTime = (timestamp: string | null) => {
     if (!timestamp) return 'Never';
@@ -67,10 +70,78 @@ const SetSyncPage = () => {
     return formatLastSyncTime(config?.last_sync_time || null);
   };
 
+  // Get the time since last sync
+  const getTimeSinceLastSync = (apiName: string) => {
+    const config = apiConfigs.find(c => c.api_name === apiName);
+    if (!config?.last_sync_time) return 'N/A';
+    
+    const lastSync = new Date(config.last_sync_time);
+    const now = new Date();
+    const timeDiff = now.getTime() - lastSync.getTime();
+    
+    // If less than a minute, show seconds
+    if (timeDiff < 60000) {
+      return `${Math.floor(timeDiff / 1000)} seconds ago`;
+    }
+    
+    // If less than an hour, show minutes
+    if (timeDiff < 3600000) {
+      return `${Math.floor(timeDiff / 60000)} minutes ago`;
+    }
+    
+    // If less than a day, show hours
+    if (timeDiff < 86400000) {
+      return `${Math.floor(timeDiff / 3600000)} hours ago`;
+    }
+    
+    // Otherwise show days
+    return `${Math.floor(timeDiff / 86400000)} days ago`;
+  };
+
   // Get the rate limit status for a specific API
   const getRateLimitStatus = (apiName: string) => {
     const timeRemaining = getRateLimitTimeRemaining(`sync_${apiName}`);
-    return timeRemaining > 0 ? `Rate limited for ${timeRemaining} seconds` : 'Ready to sync';
+    if (timeRemaining > 0) {
+      return `Rate limited for ${formatTimeRemaining(timeRemaining)}`;
+    }
+    
+    // Check when it was last synced to determine if it's "Ready" or "Recently synced"
+    const config = apiConfigs.find(c => c.api_name === apiName);
+    if (config?.last_sync_time) {
+      const lastSync = new Date(config.last_sync_time);
+      const now = new Date();
+      const timeDiff = now.getTime() - lastSync.getTime();
+      
+      // If synced within the last 5 minutes, show "Recently synced"
+      if (timeDiff < 300000) {
+        return 'Recently synced';
+      }
+    }
+    
+    return 'Ready to sync';
+  };
+
+  // Get the status color for the rate limit
+  const getRateLimitStatusColor = (apiName: string) => {
+    const timeRemaining = getRateLimitTimeRemaining(`sync_${apiName}`);
+    if (timeRemaining > 0) {
+      return 'text-yellow-600';
+    }
+    
+    // Check when it was last synced
+    const config = apiConfigs.find(c => c.api_name === apiName);
+    if (config?.last_sync_time) {
+      const lastSync = new Date(config.last_sync_time);
+      const now = new Date();
+      const timeDiff = now.getTime() - lastSync.getTime();
+      
+      // If synced within the last 5 minutes, show blue
+      if (timeDiff < 300000) {
+        return 'text-blue-600';
+      }
+    }
+    
+    return 'text-green-600';
   };
 
   // Handle successful authentication
@@ -114,6 +185,7 @@ const SetSyncPage = () => {
           <AlertDescription className="text-yellow-700">
             To prevent API abuse, synchronization operations are limited to once per minute for each TCG.
             This helps ensure fair usage of external APIs and prevents unnecessary load on your database.
+            Rate limits are enforced both client-side and server-side for maximum protection.
           </AlertDescription>
         </Alert>
         
@@ -126,7 +198,8 @@ const SetSyncPage = () => {
             <CardContent className="space-y-4">
               <div className="text-sm space-y-1">
                 <div><strong>Last Sync:</strong> {getLastSyncTime('pokemon')}</div>
-                <div><strong>Status:</strong> <span className={getRateLimitTimeRemaining('sync_pokemon') > 0 ? 'text-yellow-600' : 'text-green-600'}>
+                <div><strong>Time Since Sync:</strong> {getTimeSinceLastSync('pokemon')}</div>
+                <div><strong>Status:</strong> <span className={getRateLimitStatusColor('pokemon')}>
                   {getRateLimitStatus('pokemon')}
                 </span></div>
               </div>
@@ -146,7 +219,8 @@ const SetSyncPage = () => {
             <CardContent className="space-y-4">
               <div className="text-sm space-y-1">
                 <div><strong>Last Sync:</strong> {getLastSyncTime('mtg')}</div>
-                <div><strong>Status:</strong> <span className={getRateLimitTimeRemaining('sync_mtg') > 0 ? 'text-yellow-600' : 'text-green-600'}>
+                <div><strong>Time Since Sync:</strong> {getTimeSinceLastSync('mtg')}</div>
+                <div><strong>Status:</strong> <span className={getRateLimitStatusColor('mtg')}>
                   {getRateLimitStatus('mtg')}
                 </span></div>
               </div>
@@ -166,7 +240,8 @@ const SetSyncPage = () => {
             <CardContent className="space-y-4">
               <div className="text-sm space-y-1">
                 <div><strong>Last Sync:</strong> {getLastSyncTime('yugioh')}</div>
-                <div><strong>Status:</strong> <span className={getRateLimitTimeRemaining('sync_yugioh') > 0 ? 'text-yellow-600' : 'text-green-600'}>
+                <div><strong>Time Since Sync:</strong> {getTimeSinceLastSync('yugioh')}</div>
+                <div><strong>Status:</strong> <span className={getRateLimitStatusColor('yugioh')}>
                   {getRateLimitStatus('yugioh')}
                 </span></div>
               </div>
@@ -186,7 +261,8 @@ const SetSyncPage = () => {
             <CardContent className="space-y-4">
               <div className="text-sm space-y-1">
                 <div><strong>Last Sync:</strong> {getLastSyncTime('lorcana')}</div>
-                <div><strong>Status:</strong> <span className={getRateLimitTimeRemaining('sync_lorcana') > 0 ? 'text-yellow-600' : 'text-green-600'}>
+                <div><strong>Time Since Sync:</strong> {getTimeSinceLastSync('lorcana')}</div>
+                <div><strong>Status:</strong> <span className={getRateLimitStatusColor('lorcana')}>
                   {getRateLimitStatus('lorcana')}
                 </span></div>
               </div>

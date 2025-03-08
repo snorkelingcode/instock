@@ -150,3 +150,27 @@ export const clearRateLimit = (key: string): void => {
   localStorage.removeItem(`ratelimit_${key}`);
   console.log(`Cleared rate limit for ${key}`);
 };
+
+/**
+ * Convert a server-side rate limit response to a client-side rate limit
+ * @param key The operation key 
+ * @param retryAfterSeconds Retry-After time in seconds from server
+ */
+export const syncServerRateLimit = (key: string, retryAfterSeconds: number): void => {
+  if (retryAfterSeconds > 0) {
+    setRateLimit(key, retryAfterSeconds);
+    console.log(`Synced server rate limit for ${key}: ${retryAfterSeconds}s`);
+  }
+};
+
+/**
+ * Format a duration in seconds to a human-readable string (MM:SS)
+ * @param seconds Duration in seconds
+ * @returns Formatted string in MM:SS format
+ */
+export const formatTimeRemaining = (seconds: number): string => {
+  if (seconds <= 0) return "00:00";
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+};

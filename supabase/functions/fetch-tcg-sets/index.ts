@@ -17,6 +17,82 @@ const corsHeaders = {
 // Create Supabase client
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+// Rate limiting configuration
+const RATE_LIMIT_SECONDS = 60; // 1 minute between syncs
+const RATE_LIMIT_TABLE = "api_rate_limits";
+
+// Function to check rate limit in the database
+async function checkRateLimit(source) {
+  try {
+    console.log(`Checking rate limit for ${source}`);
+    
+    // Try to create the rate limit table if it doesn't exist
+    await supabase.rpc("create_rate_limit_table_if_not_exists").catch(e => {
+      console.log("Rate limit table creation RPC error (may already exist):", e);
+    });
+    
+    // Check if rate limit exists
+    const { data, error } = await supabase
+      .from(RATE_LIMIT_TABLE)
+      .select("expires_at")
+      .eq("api_key", source)
+      .single();
+      
+    if (error && error.code !== "PGRST116") { // PGRST116 is "No rows returned"
+      console.error("Error checking rate limit:", error);
+      return { limited: false, retryAfter: 0 }; // Fail open if error
+    }
+    
+    if (!data) {
+      return { limited: false, retryAfter: 0 };
+    }
+    
+    const now = new Date();
+    const expiresAt = new Date(data.expires_at);
+    
+    if (now < expiresAt) {
+      const retryAfter = Math.ceil((expiresAt.getTime() - now.getTime()) / 1000);
+      console.log(`Rate limit active for ${source}, retry after ${retryAfter}s`);
+      return { limited: true, retryAfter };
+    }
+    
+    return { limited: false, retryAfter: 0 };
+  } catch (error) {
+    console.error("Error in rate limit check:", error);
+    return { limited: false, retryAfter: 0 }; // Fail open if error
+  }
+}
+
+// Function to set rate limit in the database
+async function setRateLimit(source) {
+  try {
+    console.log(`Setting rate limit for ${source}`);
+    
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + RATE_LIMIT_SECONDS * 1000);
+    
+    // Upsert rate limit
+    const { error } = await supabase
+      .from(RATE_LIMIT_TABLE)
+      .upsert({
+        api_key: source,
+        last_accessed: now.toISOString(),
+        expires_at: expiresAt.toISOString()
+      }, {
+        onConflict: "api_key"
+      });
+      
+    if (error) {
+      console.error("Error setting rate limit:", error);
+    }
+    
+    return { expiresAt, retryAfter: RATE_LIMIT_SECONDS };
+  } catch (error) {
+    console.error("Error in set rate limit:", error);
+    return { expiresAt: new Date(Date.now() + RATE_LIMIT_SECONDS * 1000), retryAfter: RATE_LIMIT_SECONDS };
+  }
+}
+
 // Function to download and upload an image to Supabase storage
 async function storeImageInSupabase(imageUrl, category, filename) {
   if (!imageUrl) return null;
@@ -109,6 +185,27 @@ Deno.serve(async (req) => {
         }
       );
     }
+
+    // Check rate limit before proceeding
+    const rateLimitCheck = await checkRateLimit(source);
+    if (rateLimitCheck.limited) {
+      console.log(`Rate limit hit for ${source}`);
+      responseHeaders["Retry-After"] = rateLimitCheck.retryAfter.toString();
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: "Rate limited", 
+          retryAfter: rateLimitCheck.retryAfter 
+        }),
+        {
+          status: 429, // Too Many Requests
+          headers: responseHeaders,
+        }
+      );
+    }
+    
+    // Set rate limit for this request
+    await setRateLimit(source);
 
     // Call the appropriate function based on the source parameter
     console.log(`Processing request for source: ${source}`);
