@@ -11,7 +11,10 @@ import {
   setRateLimit, 
   getRateLimitTimeRemaining,
   syncServerRateLimit,
-  formatTimeRemaining
+  formatTimeRemaining,
+  getPartitionInfo,
+  setCache,
+  getCache
 } from "@/utils/cacheUtils";
 
 interface ApiSyncButtonProps {
@@ -29,34 +32,52 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({
   const [edgeFunctionResponse, setEdgeFunctionResponse] = useState<any>(null);
   const [cooldown, setCooldown] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
+  const [partitionInfo, setPartitionInfo] = useState<any>(null);
   const { toast } = useToast();
 
   // Rate limiting configuration
   const COOLDOWN_TIME = 60; // 1 minute cooldown between syncs (in seconds)
   const RATE_LIMIT_KEY = `sync_${source}`;
+  const TCG_PARTITION = "tcg";
   
-  // Check rate limit status on component mount and periodically
+  // Check rate limit status and partition info on component mount and periodically
   useEffect(() => {
     // Initial check
-    const initialTimeRemaining = getRateLimitTimeRemaining(RATE_LIMIT_KEY);
-    if (initialTimeRemaining > 0) {
-      setCooldown(true);
-      setTimeRemaining(initialTimeRemaining);
-    }
+    updateStatus();
     
-    // Setup interval to update the remaining time
-    const interval = setInterval(() => {
-      const remaining = getRateLimitTimeRemaining(RATE_LIMIT_KEY);
-      setTimeRemaining(remaining);
-      setCooldown(remaining > 0);
-    }, 1000);
+    // Setup interval to update status
+    const interval = setInterval(updateStatus, 1000);
     
     return () => clearInterval(interval);
   }, [source]);
   
+  const updateStatus = () => {
+    // Update rate limit status
+    const remaining = getRateLimitTimeRemaining(RATE_LIMIT_KEY);
+    setTimeRemaining(remaining);
+    setCooldown(remaining > 0);
+    
+    // Update partition info
+    const info = getPartitionInfo(TCG_PARTITION);
+    setPartitionInfo(info);
+  };
+  
   const checkLastSyncTime = async () => {
     try {
-      // Get last sync time for this API
+      // Try to get last sync time from cache first
+      const cachedTimeKey = `last_sync_time_${source}`;
+      const cachedTime = getCache<string>(cachedTimeKey, TCG_PARTITION);
+      
+      if (cachedTime) {
+        const lastSync = new Date(cachedTime);
+        const now = new Date();
+        const timeDiff = now.getTime() - lastSync.getTime();
+        
+        // Convert COOLDOWN_TIME from seconds to milliseconds for comparison
+        return timeDiff > (COOLDOWN_TIME * 1000);
+      }
+      
+      // If not in cache, query the database
       const { data, error } = await supabase
         .from('api_config')
         .select('last_sync_time')
@@ -71,6 +92,9 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({
       if (!data || !data.last_sync_time) {
         return true; // No previous sync, allow it
       }
+      
+      // Cache the last sync time for future reference
+      setCache(cachedTimeKey, data.last_sync_time, 5, TCG_PARTITION); // Cache for 5 minutes
       
       const lastSync = new Date(data.last_sync_time);
       const now = new Date();
@@ -188,6 +212,10 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({
       console.log(`Edge function response:`, data);
 
       if (data && data.success) {
+        // Update the cached last sync time
+        const now = new Date().toISOString();
+        setCache(`last_sync_time_${source}`, now, 5, TCG_PARTITION);
+        
         // Invalidate cache after successful sync
         invalidateTcgCache(source);
         
@@ -227,6 +255,8 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({
       });
     } finally {
       setLoading(false);
+      // Update partition info after sync
+      updateStatus();
     }
   };
 
@@ -249,6 +279,12 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({
       
       <div className="text-xs text-gray-500 mt-1">
         <p>Images will be downloaded and stored locally in Supabase.</p>
+        {partitionInfo && (
+          <p className="mt-1">
+            TCG Partition: {(partitionInfo.size / 1024).toFixed(2)}KB cached, 
+            Last updated: {new Date(partitionInfo.lastUpdated).toLocaleString()}
+          </p>
+        )}
       </div>
       
       {edgeFunctionResponse && (
