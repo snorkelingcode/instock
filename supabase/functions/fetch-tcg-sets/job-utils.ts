@@ -1,5 +1,6 @@
 
 
+
 import { JOB_STATUS_TABLE } from "./utils.ts";
 
 // Function to process in the background
@@ -12,7 +13,11 @@ export async function processInBackground(fn, jobId, source, supabase) {
     console.log(`Job ${jobId} completed successfully`);
   } catch (error) {
     console.error(`Background processing error for job ${jobId}:`, error);
-    await updateJobStatus(jobId, 'failed', null, null, null, error.message || "Unknown error", supabase);
+    // Convert error to string before storing
+    const errorMessage = error && (typeof error === 'object') ? 
+      (error.message || JSON.stringify(error)) : 
+      String(error || "Unknown error");
+    await updateJobStatus(jobId, 'failed', null, null, null, errorMessage, supabase);
   }
 }
 
@@ -72,16 +77,18 @@ export async function processWithChunking(chunkedFn, jobId, source, supabase, ch
     console.error(`Chunked processing error for job ${jobId}:`, error);
     
     // Check if this is a timeout error or a regular error
-    if (error.message && (
-      error.message.includes('timeout') || 
-      error.message.includes('execution time limit') ||
-      error.message.includes('function shutdown')
-    )) {
+    const errorMessage = error && (typeof error === 'object') ? 
+      (error.message || JSON.stringify(error)) : 
+      String(error || "Unknown error");
+    
+    if (errorMessage.includes('timeout') || 
+        errorMessage.includes('execution time limit') ||
+        errorMessage.includes('function shutdown')) {
       console.log(`Job ${jobId} timed out, but can be resumed on next request`);
       // We don't mark as failed for timeouts, as it can be resumed
     } else {
       // For other errors, mark as failed
-      await updateJobStatus(jobId, 'failed', null, null, null, error.message || "Unknown error", supabase);
+      await updateJobStatus(jobId, 'failed', null, null, null, errorMessage, supabase);
     }
   }
 }
@@ -142,7 +149,11 @@ export async function updateJobStatus(jobId, status, progress = null, totalItems
     if (progress !== null) updateData.progress = progress;
     if (totalItems !== null) updateData.total_items = totalItems;
     if (completedItems !== null) updateData.completed_items = completedItems;
-    if (error) updateData.error = error;
+    
+    // Make sure error is converted to a string
+    if (error !== null) {
+      updateData.error = typeof error === 'string' ? error : JSON.stringify(error);
+    }
     
     if (status === 'completed' || status === 'failed') {
       updateData.completed_at = new Date().toISOString();
@@ -215,4 +226,5 @@ export async function isJobStillRunning(jobId, supabase) {
     return false;
   }
 }
+
 
