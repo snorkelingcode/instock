@@ -100,6 +100,9 @@ const PokemonCardComponent: React.FC<PokemonCardProps> = ({ card }) => {
     || card.tcgplayer?.prices?.normal?.low
     || card.tcgplayer?.prices?.reverseHolofoil?.low;
 
+  // Ensure card.images exists to prevent null reference errors
+  const cardImages = card.images || { small: '', large: '' };
+
   return (
     <Card className="overflow-hidden h-full flex flex-col transition-all duration-300 hover:shadow-lg">
       <CardContent className="p-4 pt-5 flex-grow flex flex-col">
@@ -119,7 +122,7 @@ const PokemonCardComponent: React.FC<PokemonCardProps> = ({ card }) => {
           
           {!isImageError ? (
             <img
-              src={card.images.small}
+              src={cardImages.small}
               alt={card.name}
               className={`w-full h-full object-contain transition-opacity duration-300 ${isImageLoaded ? 'opacity-100' : 'opacity-0'}`}
               onLoad={() => setIsImageLoaded(true)}
@@ -188,11 +191,11 @@ const PokemonCardComponent: React.FC<PokemonCardProps> = ({ card }) => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
               <div className="flex justify-center items-start">
                 <img 
-                  src={card.images.large} 
+                  src={cardImages.large} 
                   alt={card.name} 
                   className="max-h-[300px] md:max-h-[400px] object-contain rounded-md"
                   onError={(e) => {
-                    e.currentTarget.src = card.images.small;
+                    e.currentTarget.src = cardImages.small || '';
                   }}
                 />
               </div>
@@ -209,11 +212,13 @@ const PokemonCardComponent: React.FC<PokemonCardProps> = ({ card }) => {
                     
                     <div className="text-gray-500">Type:</div>
                     <div className="flex flex-wrap gap-1">
-                      {card.types?.map(type => (
-                        <Badge key={type} className={getTypeColor(type)}>
-                          {type}
-                        </Badge>
-                      )) || 'N/A'}
+                      {card.types && card.types.length > 0 ? (
+                        card.types.map(type => (
+                          <Badge key={type} className={getTypeColor(type)}>
+                            {type}
+                          </Badge>
+                        ))
+                      ) : 'N/A'}
                     </div>
                     
                     <div className="text-gray-500">HP:</div>
