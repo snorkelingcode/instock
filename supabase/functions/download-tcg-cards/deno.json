@@ -1,0 +1,11 @@
+
+{
+  "tasks": {
+    "start": "deno run --allow-net --allow-env index.ts",
+    "deploy": "deployctl deploy --project=download-tcg-cards index.ts"
+  },
+  "compilerOptions": {
+    "allowJs": true,
+    "lib": ["deno.window"]
+  }
+}
