@@ -76,11 +76,12 @@ const PokemonSetDetails = () => {
           setFilteredCards(processedCards);
           
           // Extract unique rarities for filtering
-          const rarities = Array.from(new Set(processedCards
+          const raritiesArray = Array.from(new Set(processedCards
             .map(card => card.rarity)
             .filter(rarity => rarity)
-          )).sort();
-          setUniqueRarities(rarities);
+          )) as string[];
+          
+          setUniqueRarities(raritiesArray.sort());
           
           setLoadingCards(false);
           return;
@@ -102,12 +103,13 @@ const PokemonSetDetails = () => {
         
         const data = await response.json();
         
-        // Extract unique rarities for filtering
-        const rarities = Array.from(new Set(data.data
+        // Extract unique rarities for filtering - make sure to properly type the result
+        const raritiesArray = Array.from(new Set(data.data
           .map((card: any) => card.rarity)
-          .filter((rarity: string) => rarity)
-        )).sort();
-        setUniqueRarities(rarities);
+          .filter((rarity: unknown) => rarity)
+        )) as string[];
+        
+        setUniqueRarities(raritiesArray.sort());
         
         setCards(data.data);
         setFilteredCards(data.data);

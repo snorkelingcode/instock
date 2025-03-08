@@ -3,8 +3,22 @@
 
 const API_KEY = Deno.env.get("POKEMON_TCG_API_KEY") || "";
 
+// Interface for Pokemon card
+interface PokemonCard {
+  id: string;
+  name: string;
+  number: string;
+  rarity?: string;
+  images: Record<string, string>;
+  set: {
+    id: string;
+    name?: string;
+  };
+  [key: string]: any; // Allow for additional properties
+}
+
 // Fetch cards for a specific Pokémon TCG set
-export async function fetchPokemonCardsForSet(setId: string): Promise<any[]> {
+export async function fetchPokemonCardsForSet(setId: string): Promise<PokemonCard[]> {
   console.log(`Fetching Pokémon cards for set: ${setId}`);
   
   try {
@@ -40,15 +54,30 @@ export async function fetchPokemonCardsForSet(setId: string): Promise<any[]> {
     }
     
     console.log(`Found ${data.data.length} cards for set: ${setId}`);
-    return data.data;
+    return data.data as PokemonCard[];
   } catch (error) {
     console.error(`Error fetching Pokémon cards for set ${setId}:`, error);
     throw error;
   }
 }
 
+// Interface for Pokemon set
+interface PokemonSet {
+  id: string;
+  name: string;
+  series: string;
+  printedTotal?: number;
+  total?: number;
+  releaseDate?: string;
+  images: {
+    symbol: string;
+    logo: string;
+  };
+  [key: string]: any; // Allow for additional properties
+}
+
 // Get information about available sets
-export async function fetchPokemonSets(): Promise<any[]> {
+export async function fetchPokemonSets(): Promise<PokemonSet[]> {
   console.log("Fetching available Pokémon TCG sets");
   
   try {
@@ -77,7 +106,7 @@ export async function fetchPokemonSets(): Promise<any[]> {
     }
     
     console.log(`Found ${data.data.length} Pokémon TCG sets`);
-    return data.data;
+    return data.data as PokemonSet[];
   } catch (error) {
     console.error("Error fetching Pokémon TCG sets:", error);
     throw error;
