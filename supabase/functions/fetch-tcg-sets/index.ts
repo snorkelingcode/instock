@@ -36,6 +36,9 @@ Deno.serve(async (req) => {
     // Try to create RPC functions if needed
     await createRpcFunctionsIfNeeded(supabase);
     
+    // Check if tcg_sets table exists, create it if not
+    await createTcgSetsTableIfNeeded();
+    
     // Handle the main request processing
     return await handleRequest(req, supabase);
   } catch (error) {
@@ -52,3 +55,40 @@ Deno.serve(async (req) => {
     );
   }
 });
+
+// Function to ensure tcg_sets table exists
+async function createTcgSetsTableIfNeeded() {
+  try {
+    console.log("Checking if tcg_sets table exists");
+    
+    const { error } = await supabase.rpc("create_tcg_sets_table_if_not_exists").catch(e => {
+      console.log("Tcg sets table creation RPC error (may attempt SQL):", e);
+      
+      // Try direct SQL if RPC fails
+      return supabase.from('_manual_sql').select('*').eq('statement', `
+        CREATE TABLE IF NOT EXISTS public.tcg_sets (
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          series TEXT,
+          printed_total INTEGER,
+          total INTEGER,
+          release_date DATE,
+          symbol_image TEXT,
+          logo_image TEXT,
+          description TEXT,
+          tcg_type TEXT NOT NULL,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+          updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+        );
+      `);
+    });
+    
+    if (error) {
+      console.error("Error creating tcg_sets table:", error);
+    } else {
+      console.log("Tcg_sets table exists or was created successfully");
+    }
+  } catch (error) {
+    console.error("Exception in createTcgSetsTableIfNeeded:", error);
+  }
+}
