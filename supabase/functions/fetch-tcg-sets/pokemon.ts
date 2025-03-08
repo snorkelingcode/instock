@@ -1,128 +1,187 @@
 
 import { updateApiSyncTime } from "./utils.ts";
-import * as StorageUtils from "./storage-utils.ts";
-import { updateJobStatus, updateJobProgress } from "./job-utils.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.1.1";
+import { storeImageInSupabase } from "./storage-utils.ts";
+import { updateJobStatus, updateJobProgress, isJobStillRunning } from "./job-utils.ts";
 
 // Increased chunk size to process more sets at once while still allowing resume
 const CHUNK_SIZE = 30;
+// Card chunk size for processing cards within a set
+const CARD_CHUNK_SIZE = 50;
 
 export async function processPokemonSets(jobId, supabase) {
   try {
-    console.log(`Processing Pokemon sets for job ${jobId}`);
-    await processChunkedPokemonSets(jobId, 0, 0, supabase);
+    await updateJobStatus(jobId, 'fetching_data', null, null, null, null, supabase);
+    
+    // Ensure card table exists
+    await supabase.rpc('create_pokemon_cards_table_if_not_exists').catch(e => {
+      console.log("Pokemon cards table creation RPC error (falling back to SQL):", e);
+      return supabase.from('_manual_sql').select('*').eq('statement', `
+        CREATE TABLE IF NOT EXISTS public.pokemon_cards (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          card_id TEXT UNIQUE NOT NULL,
+          set_id TEXT NOT NULL,
+          name TEXT NOT NULL,
+          supertype TEXT,
+          subtypes TEXT[],
+          hp TEXT,
+          types TEXT[],
+          number TEXT,
+          artist TEXT,
+          rarity TEXT,
+          small_image_url TEXT,
+          large_image_url TEXT,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+          CONSTRAINT fk_set
+            FOREIGN KEY(set_id)
+            REFERENCES pokemon_sets(set_id)
+            ON DELETE CASCADE
+        );
+      `);
+    });
+    
+    // Step 1: Fetch sets from the API
+    const sets = await fetchPokemonSets(jobId, supabase);
+    const totalSets = sets.length;
+    
+    if (totalSets === 0) {
+      throw new Error("No Pokemon sets found from the API");
+    }
+    
+    console.log(`Found ${totalSets} Pokemon sets`);
+    
+    // The total items will be sets + (estimated cards per set * sets)
+    // Assuming an average of 100 cards per set as estimation
+    const estimatedTotalItems = totalSets + (totalSets * 100);
+    await updateJobStatus(jobId, 'processing_data', 0, estimatedTotalItems, 0, null, supabase);
+    
+    // Step 2: Process sets and store in database
+    await processChunkedPokemonSets(jobId, 0, estimatedTotalItems, supabase, sets);
+
+    // Step 3: Update sync time - will be done in the final step of chunked processing
+    console.log(`Successfully processed ${totalSets} Pokemon sets`);
+    return totalSets;
+    
   } catch (error) {
-    console.error(`Error in Pokemon sets processing:`, error);
+    console.error(`Error processing Pokemon sets for job ${jobId}:`, error);
     throw error;
   }
 }
 
-// Improved chunked processing function
-export async function processChunkedPokemonSets(jobId, startIndex = 0, knownTotalItems = 0, supabaseClient = null) {
-  console.log(`Starting chunked Pokemon sets processing for job ${jobId} from index ${startIndex}`);
-  
-  const apiKey = Deno.env.get("POKEMON_TCG_API_KEY") || "";
-  if (!apiKey) {
-    throw new Error("POKEMON_TCG_API_KEY is not set in environment variables");
-  }
-  
+/**
+ * Process Pokemon sets in chunks to allow for resuming
+ */
+export async function processChunkedPokemonSets(jobId, startIndex, totalItems, supabase, setsToProcess = null) {
   try {
-    // Use provided supabase client or create a new one if none provided
-    const supabase = supabaseClient || createClient(
-      Deno.env.get("SUPABASE_URL") || "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || ""
-    );
+    console.log(`Starting chunked Pokemon set processing from index ${startIndex}`);
     
-    // Step 1: Fetch all sets - but check cache first to avoid repeated API calls
-    let sets = [];
+    // If no sets are provided, fetch them
+    const sets = setsToProcess || await fetchPokemonSets(jobId, supabase);
+    const totalSets = sets.length;
     
-    // If we're restarting, first check if we already have the sets in the database
-    const { data: existingSets, error: existingSetsError } = await supabase
-      .from('tcg_sets')
-      .select('id')
-      .eq('tcg_type', 'pokemon')
-      .limit(1);
+    if (totalSets === 0) {
+      throw new Error("No Pokemon sets found");
+    }
+    
+    // Calculate total progress including card processing
+    let processedSetCount = 0;
+    let processedCardCount = 0;
+    let totalProcessedCount = startIndex; // Include previously processed items
+    
+    // Process sets in chunks
+    for (let i = Math.floor(startIndex / totalSets) * totalSets; i < totalSets; i += CHUNK_SIZE) {
+      const endIndex = Math.min(i + CHUNK_SIZE, totalSets);
+      console.log(`Processing Pokemon sets chunk ${i} to ${endIndex - 1}`);
       
-    console.log(`Checked existing sets: ${existingSets?.length || 0} found, error: ${existingSetsError?.message || 'none'}`);
-    
-    // Force a fresh fetch if we're starting from scratch or no existing sets
-    const forceFetch = startIndex === 0 && (!existingSets || existingSets.length === 0);
-    
-    if (startIndex === 0 || knownTotalItems === 0 || forceFetch) {
-      console.log("Fetching all Pokemon TCG sets from API...");
-      await updateJobStatus(jobId, 'fetching_data', null, null, null, null, supabase);
+      // Process this chunk of sets
+      const chunkSets = sets.slice(i, endIndex);
       
-      try {
-        sets = await fetchPokemonSets(apiKey);
-        const totalSets = sets.length;
-        console.log(`Successfully fetched ${totalSets} Pokemon TCG sets from API`);
-        
-        // Update total items
-        await updateJobProgress(jobId, startIndex, totalSets, supabase);
-        
-        // Log the complete list of set IDs to help with debugging
-        console.log(`Set IDs fetched: ${sets.map(s => s.id).join(', ')}`);
-      } catch (fetchError) {
-        console.error("Error fetching Pokemon sets:", fetchError);
-        throw new Error(`Failed to fetch Pokemon sets: ${fetchError.message}`);
-      }
-    } else {
-      // We're resuming, so get the sets again but don't reset progress
-      console.log("Resuming Pokemon sets processing - refetching sets...");
-      try {
-        sets = await fetchPokemonSets(apiKey);
-        console.log(`Refetched ${sets.length} sets for resuming`);
-        
-        // Verify our known total matches actual total
-        if (sets.length !== knownTotalItems && knownTotalItems > 0) {
-          console.log(`Warning: Total sets count changed from ${knownTotalItems} to ${sets.length}`);
+      // Initialize tracking variables for this chunk
+      const chunkStartIndex = totalProcessedCount;
+      
+      // Process each set in the chunk
+      for (const set of chunkSets) {
+        try {
+          console.log(`Processing set: ${set.id} - ${set.name}`);
+          
+          // Store set images in Supabase Storage
+          let logoUrl = null;
+          let symbolUrl = null;
+          
+          if (set.images?.logo) {
+            logoUrl = await storeImageInSupabase(
+              set.images.logo,
+              'pokemon/logos',
+              `${set.id}_logo.png`,
+              supabase
+            );
+          }
+          
+          if (set.images?.symbol) {
+            symbolUrl = await storeImageInSupabase(
+              set.images.symbol,
+              'pokemon/symbols',
+              `${set.id}_symbol.png`,
+              supabase
+            );
+          }
+          
+          // Save set to database
+          const setData = {
+            set_id: set.id,
+            name: set.name,
+            series: set.series,
+            printed_total: set.printedTotal,
+            total: set.total,
+            release_date: set.releaseDate,
+            symbol_url: symbolUrl,
+            logo_url: logoUrl,
+            images_url: JSON.stringify(set.images)
+          };
+          
+          // Insert or update the set
+          const { error: upsertError } = await supabase
+            .from("pokemon_sets")
+            .upsert(setData, {
+              onConflict: "set_id"
+            });
+            
+          if (upsertError) {
+            console.error(`Error upserting Pokemon set ${set.id}:`, upsertError);
+            continue;
+          }
+          
+          // Now fetch and process cards for this set
+          await processCardsForSet(set.id, jobId, supabase);
+          
+          processedSetCount++;
+          totalProcessedCount++;
+          
+          // Update progress - each set counts as 1 progress unit
+          const progress = Math.floor((totalProcessedCount / totalItems) * 100);
+          await updateJobProgress(jobId, totalProcessedCount, totalItems, supabase);
+          
+        } catch (setError) {
+          console.error(`Error processing Pokemon set ${set?.id}:`, setError);
+          // Continue with next set on error
         }
-      } catch (resumeError) {
-        console.error("Error fetching Pokemon sets during resume:", resumeError);
-        throw new Error(`Failed to fetch Pokemon sets during resume: ${resumeError.message}`);
       }
       
-      // Keep using the known total for consistency
-      await updateJobProgress(jobId, startIndex, knownTotalItems > 0 ? knownTotalItems : sets.length, supabase);
-    }
-    
-    if (!sets || sets.length === 0) {
-      throw new Error("No Pokemon sets were fetched from the API");
-    }
-    
-    const totalSets = knownTotalItems > 0 ? knownTotalItems : sets.length;
-    console.log(`Processing ${totalSets} Pokemon TCG sets in total`);
-    
-    // Step 2: Process sets in chunks
-    await updateJobStatus(jobId, 'processing_data', null, null, null, null, supabase);
-    
-    // Process sets in chunks from the starting index
-    for (let i = startIndex; i < totalSets && i < sets.length; i += CHUNK_SIZE) {
-      const chunkEnd = Math.min(i + CHUNK_SIZE, totalSets, sets.length);
-      console.log(`Processing chunk ${i} to ${chunkEnd} of ${totalSets}`);
-      
-      // Process each set in the current chunk
-      const processedCount = await processSetChunk(sets.slice(i, chunkEnd), i, totalSets, jobId, apiKey, supabase);
-      
-      // Update completed count
-      await updateJobProgress(jobId, i + processedCount, totalSets, supabase);
-      
-      // Check if we should continue or if job was cancelled
+      // Check if job is still running before processing next chunk
       const isRunning = await isJobStillRunning(jobId, supabase);
       if (!isRunning) {
         console.log(`Job ${jobId} is no longer running, stopping chunked processing`);
         return;
       }
       
-      // If this isn't the last chunk, save a checkpoint in the job status
+      // Save checkpoint
       if (i + CHUNK_SIZE < totalSets) {
-        console.log(`Saving checkpoint at index ${i + processedCount}`);
+        console.log(`Saving checkpoint at index ${totalProcessedCount}`);
         await updateJobStatus(
           jobId, 
           'processing_data', 
-          Math.floor(((i + processedCount) / totalSets) * 100),
-          totalSets, 
-          i + processedCount, 
+          Math.floor((totalProcessedCount / totalItems) * 100),
+          totalItems, 
+          totalProcessedCount, 
           null, 
           supabase
         );
@@ -130,98 +189,162 @@ export async function processChunkedPokemonSets(jobId, startIndex = 0, knownTota
     }
     
     // Step 3: Update sync time
-    console.log("Updating Pokemon TCG API sync time");
     await updateApiSyncTime("pokemon", supabase);
+    console.log(`Successfully processed ${processedSetCount} Pokemon sets and their cards`);
     
-    console.log(`Pokemon TCG sets processing completed successfully for job ${jobId}`);
-    await updateJobStatus(jobId, 'completed', 100, totalSets, totalSets, null, supabase);
+    // Final update - mark as completed
+    const finalProgress = Math.floor((totalProcessedCount / totalItems) * 100);
+    await updateJobStatus(jobId, 'completed', 100, totalItems, totalProcessedCount, null, supabase);
+    
   } catch (error) {
-    console.error(`Error in chunked Pokemon sets processing:`, error);
-    await updateJobStatus(jobId, 'failed', null, null, null, error.message || "Unknown error in Pokemon chunked processing", supabase);
+    console.error(`Error in chunked Pokemon processing for job ${jobId}:`, error);
     throw error;
   }
 }
 
-// Improved helper function to process a chunk of sets with better error handling
-async function processSetChunk(sets, startIdx, totalSets, jobId, apiKey, supabase) {
-  console.log(`Processing ${sets.length} sets from index ${startIdx}`);
-  let processedCount = 0;
-  let errors = [];
-  
-  for (const set of sets) {
-    try {
-      console.log(`Processing set: ${set.id} - ${set.name}`);
+/**
+ * Process all cards for a particular set
+ */
+async function processCardsForSet(setId, jobId, supabase) {
+  try {
+    console.log(`Fetching cards for Pokemon set ${setId}`);
+    
+    // Initialize page tracking
+    let page = 1;
+    let hasMoreCards = true;
+    let totalProcessedCards = 0;
+    
+    // Process cards in pages to handle large sets
+    while (hasMoreCards) {
+      const cards = await fetchCardsForSet(setId, page, CARD_CHUNK_SIZE);
       
-      // Force a small delay to prevent overwhelming the API
-      await new Promise(resolve => setTimeout(resolve, 200));
-      
-      // Check if the set is already in the database
-      const { data: existingSet } = await supabase
-        .from('tcg_sets')
-        .select('id')
-        .eq('id', set.id)
-        .single();
-        
-      if (existingSet) {
-        console.log(`Set ${set.id} already exists in database, updating...`);
-      } else {
-        console.log(`Set ${set.id} not found in database, inserting new record`);
+      if (!cards || cards.length === 0) {
+        hasMoreCards = false;
+        break;
       }
       
-      // Save set to database
-      await saveSetToDatabase(set, supabase);
+      console.log(`Processing ${cards.length} cards from set ${setId} (page ${page})`);
       
-      // Process images
-      await processSetImages(set, supabase);
+      // Process each card in this page
+      for (const card of cards) {
+        try {
+          // Store card images in Supabase Storage
+          let smallImageUrl = null;
+          let largeImageUrl = null;
+          
+          if (card.images?.small) {
+            smallImageUrl = await storeImageInSupabase(
+              card.images.small,
+              'pokemon/cards/small',
+              `${card.id}_small.jpg`,
+              supabase
+            );
+          }
+          
+          if (card.images?.large) {
+            largeImageUrl = await storeImageInSupabase(
+              card.images.large,
+              'pokemon/cards/large',
+              `${card.id}_large.jpg`,
+              supabase
+            );
+          }
+          
+          // Prepare card data for upsert
+          const cardData = {
+            card_id: card.id,
+            set_id: card.set.id,
+            name: card.name,
+            supertype: card.supertype,
+            subtypes: card.subtypes,
+            hp: card.hp,
+            types: card.types,
+            number: card.number,
+            artist: card.artist,
+            rarity: card.rarity,
+            small_image_url: smallImageUrl,
+            large_image_url: largeImageUrl
+          };
+          
+          // Insert or update the card
+          const { error: upsertError } = await supabase
+            .from("pokemon_cards")
+            .upsert(cardData, {
+              onConflict: "card_id"
+            });
+            
+          if (upsertError) {
+            console.error(`Error upserting Pokemon card ${card.id}:`, upsertError);
+            continue;
+          }
+          
+          totalProcessedCards++;
+          
+        } catch (cardError) {
+          console.error(`Error processing Pokemon card in set ${setId}:`, cardError);
+          // Continue with next card on error
+        }
+      }
       
-      processedCount++;
-      
-      // Update progress every set
-      const completedItems = startIdx + processedCount;
-      await updateJobProgress(jobId, completedItems, totalSets, supabase);
-      
-      console.log(`Successfully processed set ${set.id} (${completedItems}/${totalSets})`);
-    } catch (error) {
-      console.error(`Error processing set ${set.id}:`, error);
-      errors.push(`${set.id}: ${error.message}`);
-      // Continue with the next set instead of failing the entire job
-    }
-  }
-  
-  // If we had errors but processed some sets, log the errors but continue
-  if (errors.length > 0) {
-    console.warn(`Completed chunk with ${errors.length} errors: ${errors.join(', ')}`);
-  }
-  
-  return processedCount;
-}
-
-async function isJobStillRunning(jobId, supabase) {
-  try {
-    const { data, error } = await supabase
-      .from("api_job_status")
-      .select("status")
-      .eq("job_id", jobId)
-      .single();
-      
-    if (error) {
-      console.error(`Error checking job status for ${jobId}:`, error);
-      return false;
+      // Check if we need to fetch the next page
+      if (cards.length < CARD_CHUNK_SIZE) {
+        hasMoreCards = false;
+      } else {
+        page++;
+        
+        // Add a small delay to avoid overwhelming the API
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
     }
     
-    return data && data.status !== 'failed' && data.status !== 'completed';
+    console.log(`Finished processing ${totalProcessedCards} cards for set ${setId}`);
+    return totalProcessedCards;
+    
   } catch (error) {
-    console.error(`Error in isJobStillRunning for ${jobId}:`, error);
-    return false;
+    console.error(`Error processing cards for set ${setId}:`, error);
+    return 0; // Return 0 to indicate no cards were processed
   }
 }
 
-// Improved function to fetch Pokemon sets with better error handling
-async function fetchPokemonSets(apiKey) {
-  console.log("Fetching Pokemon TCG sets...");
+/**
+ * Fetch cards for a particular set with pagination
+ */
+async function fetchCardsForSet(setId, page, pageSize) {
+  try {
+    const apiKey = Deno.env.get("POKEMON_TCG_API_KEY") || "";
+    
+    const headers = {
+      'X-Api-Key': apiKey,
+    };
+    
+    const url = `https://api.pokemontcg.io/v2/cards?q=set.id:${setId}&page=${page}&pageSize=${pageSize}`;
+    console.log(`Fetching cards from: ${url}`);
+    
+    const response = await fetch(url, { headers });
+    
+    if (!response.ok) {
+      const text = await response.text();
+      console.error(`Error fetching Pokemon cards for set ${setId}:`, text);
+      throw new Error(`Failed to fetch Pokemon cards for set ${setId}: ${response.status} ${text}`);
+    }
+    
+    const data = await response.json();
+    return data.data || [];
+    
+  } catch (error) {
+    console.error(`Error fetching cards for set ${setId}:`, error);
+    throw error;
+  }
+}
+
+/**
+ * Fetch all Pokemon sets from the API
+ */
+async function fetchPokemonSets(jobId, supabase) {
+  const apiKey = Deno.env.get("POKEMON_TCG_API_KEY") || "";
   
   const headers = {
-    'X-Api-Key': apiKey
+    'X-Api-Key': apiKey,
   };
   
   try {
@@ -229,89 +352,25 @@ async function fetchPokemonSets(apiKey) {
     
     if (!response.ok) {
       const text = await response.text();
-      throw new Error(`Failed to fetch Pokemon TCG sets: ${response.status} ${response.statusText} - ${text}`);
+      console.error("Error fetching Pokemon sets:", text);
+      throw new Error(`Failed to fetch Pokemon sets: ${response.status} ${text}`);
     }
     
     const data = await response.json();
+    const sets = data.data || [];
     
-    if (!data || !data.data || !Array.isArray(data.data) || data.data.length === 0) {
-      throw new Error('No sets were returned from the Pokemon TCG API');
-    }
+    // Log what we found
+    console.log(`Successfully fetched ${sets.length} Pokemon sets`);
     
-    console.log(`Fetched ${data.data.length} Pokemon TCG sets successfully`);
-    return data.data;
-  } catch (error) {
-    console.error("Error fetching Pokemon TCG sets:", error);
-    throw error;
-  }
-}
-
-// Fixed function to save to the correct table with better error handling
-async function saveSetToDatabase(set, supabase) {
-  console.log(`Saving set ${set.id} to database`);
-  
-  try {
-    if (!set || !set.id) {
-      throw new Error('Invalid set data provided');
-    }
+    // Update total items
+    await updateJobProgress(jobId, 0, sets.length, supabase);
     
-    const setData = {
-      id: set.id,
-      name: set.name,
-      series: set.series,
-      printed_total: set.printedTotal,
-      total: set.total,
-      release_date: set.releaseDate,
-      symbol_image: set.images?.symbol || null,
-      logo_image: set.images?.logo || null,
-      description: `${set.series} expansion released in ${set.releaseDate}`,
-      tcg_type: "pokemon",
-      updated_at: new Date().toISOString()
-    };
+    // Log the complete list of set IDs to help with debugging
+    console.log(`Set IDs fetched: ${sets.map(s => s.id).join(', ')}`);
     
-    // Making sure we're inserting to the correct table
-    const { error } = await supabase
-      .from('tcg_sets')
-      .upsert(setData, { onConflict: 'id' });
-      
-    if (error) {
-      console.error(`Error saving set ${set.id} to database:`, error);
-      throw error;
-    }
-    
-    console.log(`Successfully saved set ${set.id} to tcg_sets table`);
-  } catch (error) {
-    console.error(`Exception in saveSetToDatabase for ${set?.id}:`, error);
-    throw error;
-  }
-}
-
-// Improved function to process set images with better error handling
-async function processSetImages(set, supabase) {
-  console.log(`Processing images for set ${set.id}`);
-  
-  try {
-    if (set.images?.symbol) {
-      console.log(`Downloading symbol image for set ${set.id}`);
-      await StorageUtils.downloadAndStoreImage(
-        set.images.symbol,
-        `pokemon/symbols/${set.id}.png`,
-        supabase
-      );
-    }
-    
-    if (set.images?.logo) {
-      console.log(`Downloading logo image for set ${set.id}`);
-      await StorageUtils.downloadAndStoreImage(
-        set.images.logo,
-        `pokemon/logos/${set.id}.png`,
-        supabase
-      );
-    }
-    
-    console.log(`Successfully processed images for set ${set.id}`);
-  } catch (error) {
-    console.error(`Error processing images for set ${set.id}:`, error);
-    throw error;
+    return sets;
+  } catch (fetchError) {
+    console.error("Error fetching Pokemon sets:", fetchError);
+    throw new Error(`Failed to fetch Pokemon sets: ${fetchError.message}`);
   }
 }
