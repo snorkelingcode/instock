@@ -1,9 +1,7 @@
-
 // @ts-ignore
 import { serve } from "std/http/server.ts";
-// Import from the URL specified in the import map instead of the package name
 // @ts-ignore
-import { createClient } from "@supabase/supabase-js";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 
 // Initialize environment variables
 const supabaseUrl = Deno.env.get("SUPABASE_URL") as string;
