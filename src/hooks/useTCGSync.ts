@@ -47,6 +47,7 @@ export const useTCGSync = ({ source, label, onSuccess }: UseTCGSyncOptions) => {
   const RATE_LIMIT_KEY = `sync_${source}`;
   const TCG_PARTITION = "tcg";
   const JOB_POLL_INTERVAL = 2000; // Poll every 2 seconds
+  const ACCESS_KEY = "TCG-SYNC-ACCESS-2024";
   
   useEffect(() => {
     updateStatus();
@@ -204,12 +205,17 @@ export const useTCGSync = ({ source, label, onSuccess }: UseTCGSyncOptions) => {
       setCooldown(true);
       
       console.log(`Attempting to invoke edge function 'fetch-tcg-sets' with source: ${source}`);
+      console.log(`Access key being sent: ${ACCESS_KEY ? "Yes (redacted)" : "No"}`);
+      
       const result = await supabase.functions.invoke('fetch-tcg-sets', {
         body: { 
           source,
-          accessKey: "TCG-SYNC-ACCESS-2024"
+          accessKey: ACCESS_KEY
         },
       });
+      
+      console.log("Edge function response:", result);
+      setEdgeFunctionResponse(result);
       
       if (result.error && result.error.message && result.error.message.includes("429")) {
         console.log("Server returned rate limit response");

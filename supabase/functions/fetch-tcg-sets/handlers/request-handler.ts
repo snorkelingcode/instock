@@ -1,5 +1,5 @@
 
-// Use the same URL imports for consistency
+// Use direct URL imports for consistency
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 import { processTCGData } from "../processor.ts";
 import type { JobStatus } from "../database/job-status.ts";
@@ -8,7 +8,7 @@ import type { JobStatus } from "../database/job-status.ts";
 export const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization, apikey, x-client-info",
 };
 
 export interface FetchTCGRequest {
@@ -27,14 +27,19 @@ export async function handleTCGRequest(req: Request, supabase: any) {
     const authKey = Deno.env.get("TCG_SYNC_ACCESS_KEY") as string;
     const pokemonApiKey = Deno.env.get("POKEMON_TCG_API_KEY") as string;
     const mtgApiKey = Deno.env.get("MTG_API_KEY") as string;
+    
+    console.log("Access key provided:", !!requestData.accessKey);
+    console.log("Job ID provided:", !!requestData.jobId);
 
     // Simple authorization check
     if (requestData.accessKey !== authKey && !requestData.jobId) {
+      console.log("Authorization failed - invalid access key");
       return createErrorResponse("Unauthorized. Authentication required.", 401);
     }
 
     // If jobId is provided, return the status of that job
     if (requestData.jobId) {
+      console.log("Fetching status for job ID:", requestData.jobId);
       return await getJobStatus(requestData.jobId, supabase);
     }
 
@@ -50,6 +55,7 @@ export async function handleTCGRequest(req: Request, supabase: any) {
       return rateLimitResponse;
     }
     
+    console.log("Creating new job for source:", requestData.source);
     // Create a new job and start processing
     return await createAndStartJob(requestData.source, supabase, {
       pokemon: pokemonApiKey,
