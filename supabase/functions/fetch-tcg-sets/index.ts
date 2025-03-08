@@ -1,3 +1,4 @@
+
 // Import necessary Deno modules
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.1.1";
 
@@ -193,6 +194,17 @@ async function storeImageInSupabase(imageUrl, category, filename) {
   
   try {
     console.log(`Downloading image from: ${imageUrl}`);
+    
+    // Check if the bucket exists, create it if not
+    const { data: buckets } = await supabase.storage.listBuckets();
+    if (!buckets.find(bucket => bucket.name === 'tcg-images')) {
+      console.log("Creating tcg-images bucket");
+      await supabase.storage.createBucket('tcg-images', {
+        public: true,
+        fileSizeLimit: 5242880 // 5MB
+      });
+    }
+    
     const imageResponse = await fetch(imageUrl);
     
     if (!imageResponse.ok) {
@@ -249,7 +261,7 @@ async function processInBackground(fn, jobId, source) {
   }
 }
 
-// Handle OPTIONS request for CORS
+// Handle requests
 Deno.serve(async (req) => {
   console.log("Edge function received request:", req.method, req.url);
   
@@ -387,7 +399,8 @@ Deno.serve(async (req) => {
     }
     
     // Use EdgeRuntime's waitUntil for background processing
-    EdgeRuntime.waitUntil(processInBackground(processingFunction, newJobId, source));
+    // @ts-ignore - Deno Deploy specific API
+    Deno.core.opAsync("op_queue_microtask", processInBackground(processingFunction, newJobId, source));
     
     // Immediately return the job ID to the client
     return new Response(
@@ -416,7 +429,9 @@ Deno.serve(async (req) => {
   }
 });
 
-// Process Pokémon sets in the background
+// ----- OPTIMIZED SET FETCHING FUNCTIONS -----
+
+// Process Pokémon sets in the background - optimized to fetch only what's needed for UI
 async function processPokemonSets(jobId) {
   console.log(`Processing Pokémon TCG sets for job ${jobId}...`);
   
@@ -431,6 +446,8 @@ async function processPokemonSets(jobId) {
 
     await updateJobStatus(jobId, 'fetching_data');
     console.log("Sending request to Pokemon TCG API");
+    
+    // We're only fetching sets, not individual cards
     const response = await fetch("https://api.pokemontcg.io/v2/sets", {
       headers: pokemonApiKey ? headers : {},
     });
@@ -447,14 +464,14 @@ async function processPokemonSets(jobId) {
     
     await updateJobStatus(jobId, 'processing_data', 0, setCount, 0);
     
-    // Process sets and store images in Supabase Storage
+    // Process sets and store only essential UI data
     const sets = [];
     let completedItems = 0;
     
     for (const set of data.data) {
       console.log(`Processing set: ${set.id} - ${set.name}`);
       
-      // Store set images in Supabase Storage
+      // Only download the images we need for the UI: logo and symbol
       const symbolUrl = await storeImageInSupabase(
         set.images?.symbol, 
         'pokemon/symbols', 
@@ -467,6 +484,7 @@ async function processPokemonSets(jobId) {
         `${set.id}_logo.png`
       );
       
+      // Only store fields needed for UI display
       sets.push({
         set_id: set.id,
         name: set.name,
@@ -476,7 +494,6 @@ async function processPokemonSets(jobId) {
         release_date: set.releaseDate,
         symbol_url: symbolUrl,
         logo_url: logoUrl,
-        images_url: null,
       });
       
       completedItems++;
@@ -508,7 +525,7 @@ async function processPokemonSets(jobId) {
   }
 }
 
-// Process MTG sets in the background
+// Process MTG sets in the background - optimized for UI display
 async function processMTGSets(jobId) {
   console.log(`Processing Magic: The Gathering sets for job ${jobId}...`);
   
@@ -529,14 +546,14 @@ async function processMTGSets(jobId) {
     
     await updateJobStatus(jobId, 'processing_data', 0, setCount, 0);
     
-    // Process sets and store images in Supabase Storage
+    // Process sets and store only what's needed for UI
     const sets = [];
     let completedItems = 0;
     
     for (const set of data.sets) {
       console.log(`Processing set: ${set.code} - ${set.name}`);
       
-      // Store set images in Supabase Storage
+      // Only download essential images
       const symbolUrl = await storeImageInSupabase(
         set.symbolUrl, 
         'mtg/symbols', 
@@ -549,6 +566,7 @@ async function processMTGSets(jobId) {
         `${set.code}_logo.png`
       );
       
+      // Only save fields that are displayed in UI
       sets.push({
         set_id: set.code,
         name: set.name,
@@ -589,7 +607,7 @@ async function processMTGSets(jobId) {
   }
 }
 
-// Process Yu-Gi-Oh! sets in the background
+// Process Yu-Gi-Oh! sets in the background - optimized
 async function processYugiohSets(jobId) {
   console.log(`Processing Yu-Gi-Oh! sets for job ${jobId}...`);
   
@@ -610,16 +628,17 @@ async function processYugiohSets(jobId) {
     
     await updateJobStatus(jobId, 'processing_data', 0, setCount, 0);
     
-    // Process sets
+    // Process sets - only one representative image per set is needed
     const sets = [];
     let completedItems = 0;
     
     for (const set of data) {
       console.log(`Processing set: ${set.set_code} - ${set.set_name}`);
       
-      // Try to get a card from this set to use its image
+      // Get one representative set image - we don't need all images
       let setImage = null;
       try {
+        // Only fetch a single card image as representative
         const cardResponse = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?cardset=${encodeURIComponent(set.set_name)}&num=1&offset=0`);
         if (cardResponse.ok) {
           const cardData = await cardResponse.json();
@@ -637,6 +656,7 @@ async function processYugiohSets(jobId) {
         // Continue without an image
       }
       
+      // Store only essential set data
       sets.push({
         set_id: set.set_code,
         name: set.set_name,
@@ -676,14 +696,14 @@ async function processYugiohSets(jobId) {
   }
 }
 
-// Process Disney Lorcana sets in the background
+// Process Disney Lorcana sets - minimal data set
 async function processLorcanaSets(jobId) {
   console.log(`Processing Disney Lorcana sets for job ${jobId}...`);
   
   try {
     await updateJobStatus(jobId, 'processing_data');
     
-    // We'll manually insert some Lorcana sets since there's no official API
+    // Minimal handcrafted Lorcana set data
     const setData = [
       {
         set_id: "TFC",

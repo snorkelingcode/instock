@@ -14,6 +14,7 @@ interface SetCardProps {
   description: string;
   category: string;
   color: string;
+  onError?: (e: React.SyntheticEvent<HTMLImageElement, Event>) => void;
 }
 
 const SetCard: React.FC<SetCardProps> = ({
@@ -24,7 +25,8 @@ const SetCard: React.FC<SetCardProps> = ({
   totalCards,
   description,
   category,
-  color
+  color,
+  onError
 }) => {
   const navigate = useNavigate();
   
@@ -47,7 +49,11 @@ const SetCard: React.FC<SetCardProps> = ({
             alt={`${name} logo`} 
             className="h-full w-full object-contain p-4"
             onError={(e) => {
-              e.currentTarget.src = '/placeholder.svg';
+              if (onError) {
+                onError(e);
+              } else {
+                e.currentTarget.src = '/placeholder.svg';
+              }
             }}
           />
         ) : (
