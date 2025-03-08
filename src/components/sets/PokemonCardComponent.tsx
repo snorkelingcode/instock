@@ -10,7 +10,7 @@ import {
   DialogTrigger
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Expand, Info } from 'lucide-react';
+import { Expand, Info, X } from 'lucide-react';
 
 interface PokemonCardProps {
   card: {
@@ -91,6 +91,7 @@ const formatPrice = (price?: number): string => {
 const PokemonCardComponent: React.FC<PokemonCardProps> = ({ card }) => {
   const [isImageLoaded, setIsImageLoaded] = useState(false);
   const [isImageError, setIsImageError] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   
   // Determine prices to show
   const marketPrice = card.tcgplayer?.prices?.holofoil?.market 
@@ -162,24 +163,34 @@ const PokemonCardComponent: React.FC<PokemonCardProps> = ({ card }) => {
       </CardContent>
       
       <CardFooter className="p-4 pt-0 flex gap-2">
-        <Dialog>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button variant="outline" size="sm" className="w-full">
               <Info className="h-3.5 w-3.5 mr-1" />
               Details
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>{card.name}</DialogTitle>
+          <DialogContent className="max-w-full sm:max-w-2xl max-h-[90vh] overflow-y-auto p-4">
+            <DialogHeader className="sticky top-0 bg-background z-10 py-2">
+              <div className="flex items-center justify-between">
+                <DialogTitle className="text-lg">{card.name}</DialogTitle>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-8 w-8 p-0 rounded-full"
+                  onClick={() => setIsDialogOpen(false)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
             </DialogHeader>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
               <div className="flex justify-center items-start">
                 <img 
                   src={card.images.large} 
                   alt={card.name} 
-                  className="max-h-[400px] object-contain rounded-md"
+                  className="max-h-[300px] md:max-h-[400px] object-contain rounded-md"
                   onError={(e) => {
                     e.currentTarget.src = card.images.small;
                   }}
