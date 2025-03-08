@@ -1,6 +1,4 @@
 
-
-
 import { JOB_STATUS_TABLE } from "./utils.ts";
 
 // Function to process in the background
@@ -226,5 +224,3 @@ export async function isJobStillRunning(jobId, supabase) {
     return false;
   }
 }
-
-

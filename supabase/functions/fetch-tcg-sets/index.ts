@@ -39,6 +39,9 @@ Deno.serve(async (req) => {
     // Check if tcg_sets table exists, create it if not
     await createTcgSetsTableIfNeeded();
     
+    // Check if pokemon_cards table exists, create it if not
+    await createPokemonCardsTableIfNeeded();
+    
     // Handle the main request processing
     return await handleRequest(req, supabase);
   } catch (error) {
@@ -90,5 +93,59 @@ async function createTcgSetsTableIfNeeded() {
     }
   } catch (error) {
     console.error("Exception in createTcgSetsTableIfNeeded:", error);
+  }
+}
+
+// Function to ensure pokemon_cards table exists
+async function createPokemonCardsTableIfNeeded() {
+  try {
+    console.log("Checking if pokemon_cards table exists");
+    
+    const { error } = await supabase.rpc("create_pokemon_cards_table_if_not_exists").catch(e => {
+      console.log("Pokemon cards table creation RPC error (may attempt SQL):", e);
+      
+      // Try direct SQL if RPC fails
+      return supabase.from('_manual_sql').select('*').eq('statement', `
+        CREATE TABLE IF NOT EXISTS public.pokemon_cards (
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          supertype TEXT,
+          subtypes TEXT[],
+          hp TEXT,
+          types TEXT[],
+          evolves_from TEXT,
+          evolves_to TEXT[],
+          rules TEXT[],
+          attacks JSONB[],
+          weaknesses JSONB[],
+          resistances JSONB[],
+          retreat_cost TEXT[],
+          converted_retreat_cost INTEGER,
+          set_id TEXT NOT NULL REFERENCES pokemon_sets(set_id),
+          number TEXT,
+          artist TEXT,
+          rarity TEXT,
+          flavor_text TEXT,
+          national_pokedex_numbers INTEGER[],
+          legalities JSONB,
+          images JSONB,
+          tcgplayer JSONB,
+          cardmarket JSONB,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+          updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+        );
+        
+        -- Create index on set_id for faster queries
+        CREATE INDEX IF NOT EXISTS pokemon_cards_set_id_idx ON public.pokemon_cards(set_id);
+      `);
+    });
+    
+    if (error) {
+      console.error("Error creating pokemon_cards table:", error);
+    } else {
+      console.log("Pokemon_cards table exists or was created successfully");
+    }
+  } catch (error) {
+    console.error("Exception in createPokemonCardsTableIfNeeded:", error);
   }
 }

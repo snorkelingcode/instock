@@ -16,7 +16,7 @@ export async function handleRequest(req, supabase) {
   const requestData = await req.json();
   console.log("Request data:", requestData);
   
-  const { source, jobId } = requestData;
+  const { source, jobId, resumeFromJobId, resumeFromProgress, totalItems } = requestData;
   const responseHeaders = { ...corsHeaders, "Content-Type": "application/json" };
   
   // If jobId is provided, this is a job status check
@@ -35,7 +35,93 @@ export async function handleRequest(req, supabase) {
     );
   }
 
-  // Check if there's an existing job in progress
+  // Check if we're resuming a previous job
+  if (resumeFromJobId) {
+    console.log(`Attempting to resume job ${resumeFromJobId} from progress ${resumeFromProgress}/${totalItems}`);
+    
+    // Validate the job exists and isn't completed/failed
+    const { data: existingJob } = await supabase
+      .from(JOB_STATUS_TABLE)
+      .select('*')
+      .eq('job_id', resumeFromJobId)
+      .single();
+      
+    if (!existingJob) {
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: `Job ${resumeFromJobId} not found` 
+        }),
+        {
+          status: 404,
+          headers: responseHeaders,
+        }
+      );
+    }
+    
+    if (existingJob.status === 'completed' || existingJob.status === 'failed') {
+      console.log(`Cannot resume job ${resumeFromJobId} with status ${existingJob.status}`);
+      
+      // Start a new job instead of resuming
+      return await startNewJob(source, supabase, responseHeaders);
+    }
+    
+    // Resume the job
+    console.log(`Resuming job ${resumeFromJobId} with status ${existingJob.status}`);
+    
+    // Update the job status to show we're resuming
+    await supabase
+      .from(JOB_STATUS_TABLE)
+      .update({
+        status: 'processing_data',
+        updated_at: new Date().toISOString()
+      })
+      .eq('job_id', resumeFromJobId);
+      
+    // Start the appropriate processing function based on the source
+    let resumeFunction;
+    const { processWithChunking } = await import("./job-utils.ts");
+    
+    switch (source) {
+      case "pokemon":
+        const { processChunkedPokemonSets } = await import("./pokemon.ts");
+        resumeFunction = () => processWithChunking(
+          processChunkedPokemonSets, 
+          resumeFromJobId, 
+          source, 
+          supabase, 
+          existingJob.chunk_size || 30
+        );
+        break;
+      default:
+        return new Response(
+          JSON.stringify({ 
+            error: `Resuming not implemented for ${source}` 
+          }),
+          {
+            status: 400,
+            headers: responseHeaders,
+          }
+        );
+    }
+    
+    // Run the resume function in the background
+    EdgeRuntime.waitUntil(resumeFunction());
+    
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        message: `Resuming job ${resumeFromJobId} for ${source}`,
+        jobId: resumeFromJobId
+      }),
+      {
+        status: 202,
+        headers: responseHeaders,
+      }
+    );
+  }
+
+  // Regular job flow - check for existing jobs first
   const existingJob = await checkForExistingJob(source, supabase);
   
   // If there's an existing job in progress, we should resume it instead of creating a new one
@@ -63,6 +149,11 @@ export async function handleRequest(req, supabase) {
     }
   }
 
+  return await startNewJob(source, supabase, responseHeaders);
+}
+
+// Helper function to start a new job
+async function startNewJob(source, supabase, responseHeaders) {
   // Check rate limit before proceeding
   const rateLimitCheck = await checkRateLimit(source, supabase);
   if (rateLimitCheck.limited) {
@@ -102,24 +193,38 @@ export async function handleRequest(req, supabase) {
   // Start background processing based on the source
   let processingFunction;
   
-  const { processPokemonSets } = await import("./pokemon.ts");
-  const { processMTGSets } = await import("./mtg.ts");
-  const { processYugiohSets } = await import("./yugioh.ts");
-  const { processLorcanaSets } = await import("./lorcana.ts");
-  const { processWithChunking } = await import("./job-utils.ts");
+  const { processInBackground, processWithChunking } = await import("./job-utils.ts");
   
   switch (source) {
     case "pokemon":
-      const { processChunkedPokemonSets } = await import("./pokemon.ts");
+      const { processChunkedPokemonSets, fetchPokemonSetCount } = await import("./pokemon.ts");
+      
+      // First, update the job with the total number of sets
+      try {
+        const totalSets = await fetchPokemonSetCount(supabase);
+        console.log(`Found ${totalSets} total Pokemon sets to process`);
+        await supabase
+          .from(JOB_STATUS_TABLE)
+          .update({
+            total_items: totalSets
+          })
+          .eq('job_id', newJobId);
+      } catch (err) {
+        console.error("Error fetching total Pokemon sets:", err);
+      }
+      
       processingFunction = (jobId) => processWithChunking(processChunkedPokemonSets, jobId, source, supabase, 30);
       break;
     case "mtg":
+      const { processMTGSets } = await import("./mtg.ts");
       processingFunction = (jobId) => processMTGSets(jobId, supabase);
       break;
     case "yugioh":
+      const { processYugiohSets } = await import("./yugioh.ts");
       processingFunction = (jobId) => processYugiohSets(jobId, supabase);
       break;
     case "lorcana":
+      const { processLorcanaSets } = await import("./lorcana.ts");
       processingFunction = (jobId) => processLorcanaSets(jobId, supabase);
       break;
     default:
@@ -135,7 +240,6 @@ export async function handleRequest(req, supabase) {
   }
   
   // Use EdgeRuntime's waitUntil for background processing
-  const { processInBackground } = await import("./job-utils.ts");
   EdgeRuntime.waitUntil(processInBackground(processingFunction, newJobId, source, supabase));
   
   // Immediately return the job ID to the client
@@ -195,11 +299,18 @@ async function resumeExistingJob(job, source, supabase) {
       
     // Start the appropriate processing function based on the source
     let resumeFunction;
+    const { processWithChunking } = await import("./job-utils.ts");
     
     switch (source) {
       case "pokemon":
         const { processChunkedPokemonSets } = await import("./pokemon.ts");
-        resumeFunction = () => processChunkedPokemonSets(job.job_id, job.completed_items || 0, job.total_items || 0, supabase);
+        resumeFunction = () => processWithChunking(
+          processChunkedPokemonSets, 
+          job.job_id, 
+          source, 
+          supabase, 
+          job.chunk_size || 30
+        );
         break;
       default:
         console.error(`Resuming not implemented for ${source}`);
