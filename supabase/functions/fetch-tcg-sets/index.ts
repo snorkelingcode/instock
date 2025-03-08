@@ -1,6 +1,7 @@
 
 // @ts-ignore
 import { serve } from "std/http/server.ts";
+// @ts-ignore
 import { createClient } from "@supabase/supabase-js";
 
 // Initialize environment variables
