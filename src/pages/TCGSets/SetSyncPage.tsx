@@ -6,9 +6,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { InfoIcon, ShieldAlert } from "lucide-react";
+import { InfoIcon, ShieldAlert, Database } from "lucide-react";
 import SyncPageAuth from "@/components/sets/SyncPageAuth";
 import { getRateLimitTimeRemaining, formatTimeRemaining } from "@/utils/cacheUtils";
+import CardDownloadManager from "@/components/sets/CardDownloadManager";
+import CardDatabaseManager from "@/components/sets/CardDatabaseManager";
 
 interface ApiConfig {
   api_name: string;
@@ -267,90 +269,122 @@ const SetSyncPage = () => {
           </Alert>
         )}
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <Card>
-            <CardHeader>
-              <CardTitle>Pokémon TCG</CardTitle>
-              <CardDescription>Sync Pokémon TCG sets data from the official Pokémon TCG API</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="text-sm space-y-1">
-                <div><strong>Last Sync:</strong> {getLastSyncTime('pokemon')}</div>
-                <div><strong>Time Since Sync:</strong> {getTimeSinceLastSync('pokemon')}</div>
-                <div><strong>Status:</strong> <span className={getRateLimitStatusColor('pokemon')}>
-                  {getRateLimitStatus('pokemon')}
-                </span></div>
-              </div>
-              <ApiSyncButton 
-                source="pokemon" 
-                label="Pokémon TCG" 
-                onSuccess={fetchApiConfigs}
-              />
-            </CardContent>
-          </Card>
+        <div className="mb-8">
+          <h2 className="text-xl font-bold mb-4">Set Synchronization</h2>
+          <p className="text-gray-700 mb-4">
+            Download metadata about TCG sets from external APIs. This information is lightweight and includes set names, codes, and release dates.
+          </p>
           
-          <Card>
-            <CardHeader>
-              <CardTitle>Magic: The Gathering</CardTitle>
-              <CardDescription>Sync MTG sets data from the magicthegathering.io API</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="text-sm space-y-1">
-                <div><strong>Last Sync:</strong> {getLastSyncTime('mtg')}</div>
-                <div><strong>Time Since Sync:</strong> {getTimeSinceLastSync('mtg')}</div>
-                <div><strong>Status:</strong> <span className={getRateLimitStatusColor('mtg')}>
-                  {getRateLimitStatus('mtg')}
-                </span></div>
-              </div>
-              <ApiSyncButton 
-                source="mtg" 
-                label="MTG" 
-                onSuccess={fetchApiConfigs}
-              />
-            </CardContent>
-          </Card>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Pokémon TCG</CardTitle>
+                <CardDescription>Sync Pokémon TCG sets data from the official Pokémon TCG API</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="text-sm space-y-1">
+                  <div><strong>Last Sync:</strong> {getLastSyncTime('pokemon')}</div>
+                  <div><strong>Time Since Sync:</strong> {getTimeSinceLastSync('pokemon')}</div>
+                  <div><strong>Status:</strong> <span className={getRateLimitStatusColor('pokemon')}>
+                    {getRateLimitStatus('pokemon')}
+                  </span></div>
+                </div>
+                <ApiSyncButton 
+                  source="pokemon" 
+                  label="Pokémon TCG" 
+                  onSuccess={fetchApiConfigs}
+                />
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>Magic: The Gathering</CardTitle>
+                <CardDescription>Sync MTG sets data from the magicthegathering.io API</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="text-sm space-y-1">
+                  <div><strong>Last Sync:</strong> {getLastSyncTime('mtg')}</div>
+                  <div><strong>Time Since Sync:</strong> {getTimeSinceLastSync('mtg')}</div>
+                  <div><strong>Status:</strong> <span className={getRateLimitStatusColor('mtg')}>
+                    {getRateLimitStatus('mtg')}
+                  </span></div>
+                </div>
+                <ApiSyncButton 
+                  source="mtg" 
+                  label="MTG" 
+                  onSuccess={fetchApiConfigs}
+                />
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>Yu-Gi-Oh!</CardTitle>
+                <CardDescription>Sync Yu-Gi-Oh! sets data from the YGOPRODeck API</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="text-sm space-y-1">
+                  <div><strong>Last Sync:</strong> {getLastSyncTime('yugioh')}</div>
+                  <div><strong>Time Since Sync:</strong> {getTimeSinceLastSync('yugioh')}</div>
+                  <div><strong>Status:</strong> <span className={getRateLimitStatusColor('yugioh')}>
+                    {getRateLimitStatus('yugioh')}
+                  </span></div>
+                </div>
+                <ApiSyncButton 
+                  source="yugioh" 
+                  label="Yu-Gi-Oh!" 
+                  onSuccess={fetchApiConfigs}
+                />
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>Disney Lorcana</CardTitle>
+                <CardDescription>Add Disney Lorcana sets to the database</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="text-sm space-y-1">
+                  <div><strong>Last Sync:</strong> {getLastSyncTime('lorcana')}</div>
+                  <div><strong>Time Since Sync:</strong> {getTimeSinceLastSync('lorcana')}</div>
+                  <div><strong>Status:</strong> <span className={getRateLimitStatusColor('lorcana')}>
+                    {getRateLimitStatus('lorcana')}
+                  </span></div>
+                </div>
+                <ApiSyncButton 
+                  source="lorcana" 
+                  label="Disney Lorcana" 
+                  onSuccess={fetchApiConfigs}
+                />
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+        
+        <div className="mb-8">
+          <h2 className="text-xl font-bold mb-4">Card Database Management</h2>
+          <p className="text-gray-700 mb-4">
+            Download and manage card data including images. This allows you to have a complete local copy of TCG card data.
+          </p>
           
-          <Card>
-            <CardHeader>
-              <CardTitle>Yu-Gi-Oh!</CardTitle>
-              <CardDescription>Sync Yu-Gi-Oh! sets data from the YGOPRODeck API</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="text-sm space-y-1">
-                <div><strong>Last Sync:</strong> {getLastSyncTime('yugioh')}</div>
-                <div><strong>Time Since Sync:</strong> {getTimeSinceLastSync('yugioh')}</div>
-                <div><strong>Status:</strong> <span className={getRateLimitStatusColor('yugioh')}>
-                  {getRateLimitStatus('yugioh')}
-                </span></div>
-              </div>
-              <ApiSyncButton 
-                source="yugioh" 
-                label="Yu-Gi-Oh!" 
-                onSuccess={fetchApiConfigs}
-              />
-            </CardContent>
-          </Card>
+          <Alert className="mb-4 bg-blue-50 border-blue-200">
+            <Database className="h-4 w-4 text-blue-600" />
+            <AlertTitle className="text-blue-800">Card Database Information</AlertTitle>
+            <AlertDescription className="text-blue-700">
+              Card downloads are processed in the background and can take some time depending on the number of cards in each set.
+              Images are downloaded and stored in Supabase Storage for faster access and reduced API dependency.
+            </AlertDescription>
+          </Alert>
           
-          <Card>
-            <CardHeader>
-              <CardTitle>Disney Lorcana</CardTitle>
-              <CardDescription>Add Disney Lorcana sets to the database</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="text-sm space-y-1">
-                <div><strong>Last Sync:</strong> {getLastSyncTime('lorcana')}</div>
-                <div><strong>Time Since Sync:</strong> {getTimeSinceLastSync('lorcana')}</div>
-                <div><strong>Status:</strong> <span className={getRateLimitStatusColor('lorcana')}>
-                  {getRateLimitStatus('lorcana')}
-                </span></div>
-              </div>
-              <ApiSyncButton 
-                source="lorcana" 
-                label="Disney Lorcana" 
-                onSuccess={fetchApiConfigs}
-              />
-            </CardContent>
-          </Card>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <CardDownloadManager source="pokemon" label="Pokémon TCG" />
+            <CardDownloadManager source="mtg" label="Magic: The Gathering" />
+            <CardDownloadManager source="yugioh" label="Yu-Gi-Oh!" />
+            <CardDownloadManager source="lorcana" label="Disney Lorcana" />
+          </div>
+          
+          <CardDatabaseManager />
         </div>
       </div>
     </Layout>

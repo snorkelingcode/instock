@@ -1,72 +1,59 @@
 
-// Use direct URL imports for consistency
+import { corsHeaders } from "../handlers/cors-headers.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
-import { processCardDownload } from "../processors/download-processor.ts";
+import { v4 as uuidv4 } from "https://esm.sh/uuid@9.0.0";
+import { 
+  downloadPokemonCards,
+  downloadMTGCards,
+  downloadYugiohCards,
+  downloadLorcanaCards
+} from "../processors/download-processor.ts";
 import { createDownloadJob, updateDownloadJobStatus, getDownloadJobStatus } from "../database/job-status.ts";
 
-// CORS headers
-export const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization, apikey, x-client-info",
+export { corsHeaders };
+
+// Validate request access
+const validateAccess = (accessKey: string) => {
+  const validKey = Deno.env.get("TCG_SYNC_ACCESS_KEY");
+  
+  if (!validKey) {
+    console.warn("TCG_SYNC_ACCESS_KEY is not set in the environment variables");
+    return false;
+  }
+  
+  return accessKey === validKey;
 };
 
-export interface DownloadTCGRequest {
-  source: "pokemon" | "mtg" | "yugioh" | "lorcana";
-  setId?: string;
-  downloadImages?: boolean;
-  accessKey?: string;
-  jobId?: string;
-}
-
-export interface DownloadTCGResponse {
-  success: boolean;
-  message: string;
-  jobId?: string;
-  job?: any;
-  error?: string;
-}
-
-// Create a standardized error response
-function createErrorResponse(message: string, status: number = 400): Response {
-  return new Response(
-    JSON.stringify({
-      success: false,
-      error: message,
-    }),
-    {
-      status,
-      headers: {
-        "Content-Type": "application/json",
-        ...corsHeaders,
-      },
-    }
-  );
-}
-
-// Main handler for the download-tcg-cards edge function
+// Main handler function for TCG card downloads
 export async function handleTCGCardDownload(req: Request, supabase: any): Promise<Response> {
+  // Parse request body
+  let body;
   try {
-    const requestData: DownloadTCGRequest = await req.json();
-    
-    // Get access key from environment
-    const authKey = Deno.env.get("TCG_SYNC_ACCESS_KEY") as string;
-    const pokemonApiKey = Deno.env.get("POKEMON_TCG_API_KEY") as string;
-    const mtgApiKey = Deno.env.get("MTG_API_KEY") as string;
-    
-    console.log("Access key provided:", !!requestData.accessKey);
-    console.log("Job ID provided:", !!requestData.jobId);
+    body = await req.json();
+  } catch (error) {
+    console.error("Error parsing request body:", error);
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: "Invalid request body",
+      }),
+      {
+        status: 400,
+        headers: {
+          "Content-Type": "application/json",
+          ...corsHeaders,
+        },
+      }
+    );
+  }
 
-    // Simple authorization check
-    if (requestData.accessKey !== authKey && !requestData.jobId) {
-      console.log("Authorization failed - invalid access key");
-      return createErrorResponse("Unauthorized. Authentication required.", 401);
-    }
-
-    // If jobId is provided, return the status of that job
-    if (requestData.jobId) {
-      console.log("Fetching status for job ID:", requestData.jobId);
-      const job = await getDownloadJobStatus(requestData.jobId, supabase);
+  // Handle job status check request
+  if (body.jobId && !body.source) {
+    console.log("Checking status for job:", body.jobId);
+    
+    try {
+      const job = await getDownloadJobStatus(body.jobId, supabase);
+      
       return new Response(
         JSON.stringify({
           success: true,
@@ -80,48 +67,114 @@ export async function handleTCGCardDownload(req: Request, supabase: any): Promis
           },
         }
       );
-    }
-
-    // Validate required parameters
-    if (!requestData.source) {
-      return createErrorResponse("Missing required parameter: source");
-    }
-
-    // Create a new job and start processing
-    console.log(`Creating download job for source: ${requestData.source}, setId: ${requestData.setId || 'all sets'}`);
-    
-    // Create a job record
-    const jobId = crypto.randomUUID();
-    await createDownloadJob(
-      supabase, 
-      jobId, 
-      requestData.source, 
-      requestData.setId ? "set_cards" : "all_cards"
-    );
-
-    // Start background processing
-    console.log("Starting background processing for job:", jobId);
-    EdgeRuntime.waitUntil(
-      processCardDownload(
-        supabase, 
-        requestData.source, 
-        jobId, 
-        { 
-          pokemon: pokemonApiKey,
-          mtg: mtgApiKey
-        },
+    } catch (error) {
+      console.error("Error checking job status:", error);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: `Error checking job status: ${error.message}`,
+        }),
         {
-          setId: requestData.setId,
-          downloadImages: requestData.downloadImages === undefined ? true : requestData.downloadImages
+          status: 500,
+          headers: {
+            "Content-Type": "application/json",
+            ...corsHeaders,
+          },
         }
-      )
-    );
+      );
+    }
+  }
 
-    // Return immediate success response with job ID
+  // Validate access for download requests
+  if (!validateAccess(body.accessKey)) {
+    console.error("Invalid access key");
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: "Access denied: Invalid access key",
+      }),
+      {
+        status: 403,
+        headers: {
+          "Content-Type": "application/json",
+          ...corsHeaders,
+        },
+      }
+    );
+  }
+
+  // Extract parameters
+  const { source, setId, downloadImages = true } = body;
+
+  if (!source) {
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: "Missing required parameter: source",
+      }),
+      {
+        status: 400,
+        headers: {
+          "Content-Type": "application/json",
+          ...corsHeaders,
+        },
+      }
+    );
+  }
+
+  // Create a job ID and start the download process in a separate thread
+  try {
+    const jobId = uuidv4();
+    console.log(`Starting ${source} card download job: ${jobId}`);
+    
+    // Create job record in database
+    await createDownloadJob(supabase, jobId, source, setId ? 'set_cards' : 'all_cards');
+
+    // Start the download process asynchronously
+    (async () => {
+      try {
+        switch (source) {
+          case "pokemon":
+            await downloadPokemonCards(supabase, jobId, setId, downloadImages);
+            break;
+          case "mtg":
+            await downloadMTGCards(supabase, jobId, setId, downloadImages);
+            break;
+          case "yugioh":
+            await downloadYugiohCards(supabase, jobId, setId, downloadImages);
+            break;
+          case "lorcana":
+            await downloadLorcanaCards(supabase, jobId, setId, downloadImages);
+            break;
+          default:
+            await updateDownloadJobStatus(
+              supabase,
+              jobId,
+              "failed",
+              0,
+              0,
+              `Unsupported source: ${source}`
+            );
+            return;
+        }
+      } catch (error) {
+        console.error(`Error in ${source} card download:`, error);
+        await updateDownloadJobStatus(
+          supabase,
+          jobId,
+          "failed",
+          0,
+          0,
+          error.message || "Unknown error during download"
+        );
+      }
+    })();
+
+    // Return success response with job ID
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Download job created for ${requestData.source} ${requestData.setId ? `set ${requestData.setId}` : 'all sets'}`,
+        message: `${source} card download job started`,
         jobId,
       }),
       {
@@ -132,9 +185,20 @@ export async function handleTCGCardDownload(req: Request, supabase: any): Promis
         },
       }
     );
-
   } catch (error) {
-    console.error("Error processing download request:", error);
-    return createErrorResponse(`Error processing request: ${error.message}`);
+    console.error("Error starting download job:", error);
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: `Error starting download job: ${error.message}`,
+      }),
+      {
+        status: 500,
+        headers: {
+          "Content-Type": "application/json",
+          ...corsHeaders,
+        },
+      }
+    );
   }
 }

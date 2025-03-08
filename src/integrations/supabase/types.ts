@@ -75,6 +75,86 @@ export type Database = {
         }
         Relationships: []
       }
+      lorcana_cards: {
+        Row: {
+          card_id: string
+          card_text: string | null
+          card_type: string | null
+          classifications: string[] | null
+          color: string | null
+          created_at: string | null
+          flavor_text: string | null
+          id: number
+          illustrator: string | null
+          image_url: string | null
+          ink_cost: number | null
+          name: string
+          number: string | null
+          price_data: Json | null
+          rarity: string | null
+          set_id: string | null
+          strength: number | null
+          sub_type: string | null
+          title: string | null
+          updated_at: string | null
+          willpower: number | null
+        }
+        Insert: {
+          card_id: string
+          card_text?: string | null
+          card_type?: string | null
+          classifications?: string[] | null
+          color?: string | null
+          created_at?: string | null
+          flavor_text?: string | null
+          id?: number
+          illustrator?: string | null
+          image_url?: string | null
+          ink_cost?: number | null
+          name: string
+          number?: string | null
+          price_data?: Json | null
+          rarity?: string | null
+          set_id?: string | null
+          strength?: number | null
+          sub_type?: string | null
+          title?: string | null
+          updated_at?: string | null
+          willpower?: number | null
+        }
+        Update: {
+          card_id?: string
+          card_text?: string | null
+          card_type?: string | null
+          classifications?: string[] | null
+          color?: string | null
+          created_at?: string | null
+          flavor_text?: string | null
+          id?: number
+          illustrator?: string | null
+          image_url?: string | null
+          ink_cost?: number | null
+          name?: string
+          number?: string | null
+          price_data?: Json | null
+          rarity?: string | null
+          set_id?: string | null
+          strength?: number | null
+          sub_type?: string | null
+          title?: string | null
+          updated_at?: string | null
+          willpower?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lorcana_cards_set_id_fkey"
+            columns: ["set_id"]
+            isOneToOne: false
+            referencedRelation: "lorcana_sets"
+            referencedColumns: ["set_id"]
+          },
+        ]
+      }
       lorcana_sets: {
         Row: {
           created_at: string | null
@@ -110,6 +190,179 @@ export type Database = {
           total_cards?: number | null
         }
         Relationships: []
+      }
+      mtg_cards: {
+        Row: {
+          artist: string | null
+          artist_ids: string[] | null
+          booster: boolean | null
+          border_color: string | null
+          card_back_id: string | null
+          card_id: string
+          cmc: number | null
+          collector_number: string | null
+          color_identity: string[] | null
+          colors: string[] | null
+          created_at: string | null
+          digital: boolean | null
+          finishes: string[] | null
+          flavor_text: string | null
+          foil: boolean | null
+          frame: string | null
+          full_art: boolean | null
+          games: string[] | null
+          id: number
+          illustration_id: string | null
+          image_uris: Json | null
+          keywords: string[] | null
+          lang: string | null
+          layout: string | null
+          legalities: Json | null
+          mana_cost: string | null
+          name: string
+          nonfoil: boolean | null
+          oracle_text: string | null
+          oversized: boolean | null
+          prices: Json | null
+          printed_name: string | null
+          prints_search_uri: string | null
+          promo: boolean | null
+          purchase_uris: Json | null
+          rarity: string | null
+          related_uris: Json | null
+          released_at: string | null
+          reprint: boolean | null
+          reserved: boolean | null
+          rulings_uri: string | null
+          scryfall_uri: string | null
+          set_id: string | null
+          set_name: string | null
+          set_search_uri: string | null
+          set_type: string | null
+          set_uri: string | null
+          story_spotlight: boolean | null
+          textless: boolean | null
+          type_line: string | null
+          updated_at: string | null
+          variation: boolean | null
+        }
+        Insert: {
+          artist?: string | null
+          artist_ids?: string[] | null
+          booster?: boolean | null
+          border_color?: string | null
+          card_back_id?: string | null
+          card_id: string
+          cmc?: number | null
+          collector_number?: string | null
+          color_identity?: string[] | null
+          colors?: string[] | null
+          created_at?: string | null
+          digital?: boolean | null
+          finishes?: string[] | null
+          flavor_text?: string | null
+          foil?: boolean | null
+          frame?: string | null
+          full_art?: boolean | null
+          games?: string[] | null
+          id?: number
+          illustration_id?: string | null
+          image_uris?: Json | null
+          keywords?: string[] | null
+          lang?: string | null
+          layout?: string | null
+          legalities?: Json | null
+          mana_cost?: string | null
+          name: string
+          nonfoil?: boolean | null
+          oracle_text?: string | null
+          oversized?: boolean | null
+          prices?: Json | null
+          printed_name?: string | null
+          prints_search_uri?: string | null
+          promo?: boolean | null
+          purchase_uris?: Json | null
+          rarity?: string | null
+          related_uris?: Json | null
+          released_at?: string | null
+          reprint?: boolean | null
+          reserved?: boolean | null
+          rulings_uri?: string | null
+          scryfall_uri?: string | null
+          set_id?: string | null
+          set_name?: string | null
+          set_search_uri?: string | null
+          set_type?: string | null
+          set_uri?: string | null
+          story_spotlight?: boolean | null
+          textless?: boolean | null
+          type_line?: string | null
+          updated_at?: string | null
+          variation?: boolean | null
+        }
+        Update: {
+          artist?: string | null
+          artist_ids?: string[] | null
+          booster?: boolean | null
+          border_color?: string | null
+          card_back_id?: string | null
+          card_id?: string
+          cmc?: number | null
+          collector_number?: string | null
+          color_identity?: string[] | null
+          colors?: string[] | null
+          created_at?: string | null
+          digital?: boolean | null
+          finishes?: string[] | null
+          flavor_text?: string | null
+          foil?: boolean | null
+          frame?: string | null
+          full_art?: boolean | null
+          games?: string[] | null
+          id?: number
+          illustration_id?: string | null
+          image_uris?: Json | null
+          keywords?: string[] | null
+          lang?: string | null
+          layout?: string | null
+          legalities?: Json | null
+          mana_cost?: string | null
+          name?: string
+          nonfoil?: boolean | null
+          oracle_text?: string | null
+          oversized?: boolean | null
+          prices?: Json | null
+          printed_name?: string | null
+          prints_search_uri?: string | null
+          promo?: boolean | null
+          purchase_uris?: Json | null
+          rarity?: string | null
+          related_uris?: Json | null
+          released_at?: string | null
+          reprint?: boolean | null
+          reserved?: boolean | null
+          rulings_uri?: string | null
+          scryfall_uri?: string | null
+          set_id?: string | null
+          set_name?: string | null
+          set_search_uri?: string | null
+          set_type?: string | null
+          set_uri?: string | null
+          story_spotlight?: boolean | null
+          textless?: boolean | null
+          type_line?: string | null
+          updated_at?: string | null
+          variation?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mtg_cards_set_id_fkey"
+            columns: ["set_id"]
+            isOneToOne: false
+            referencedRelation: "mtg_sets"
+            referencedColumns: ["set_id"]
+          },
+        ]
       }
       mtg_sets: {
         Row: {
@@ -149,6 +402,104 @@ export type Database = {
           set_type?: string | null
         }
         Relationships: []
+      }
+      pokemon_cards: {
+        Row: {
+          artist: string | null
+          attacks: Json | null
+          card_id: string
+          cardmarket: Json | null
+          converted_retreat_cost: number | null
+          created_at: string | null
+          evolves_from: string | null
+          evolves_to: string[] | null
+          flavor_text: string | null
+          hp: string | null
+          id: number
+          images: Json | null
+          legalities: Json | null
+          name: string
+          national_pokedex_numbers: number[] | null
+          number: string | null
+          rarity: string | null
+          resistances: Json | null
+          retreat_cost: string[] | null
+          rules: string[] | null
+          set_id: string | null
+          subtypes: string[] | null
+          supertype: string | null
+          tcgplayer: Json | null
+          types: string[] | null
+          updated_at: string | null
+          weaknesses: Json | null
+        }
+        Insert: {
+          artist?: string | null
+          attacks?: Json | null
+          card_id: string
+          cardmarket?: Json | null
+          converted_retreat_cost?: number | null
+          created_at?: string | null
+          evolves_from?: string | null
+          evolves_to?: string[] | null
+          flavor_text?: string | null
+          hp?: string | null
+          id?: number
+          images?: Json | null
+          legalities?: Json | null
+          name: string
+          national_pokedex_numbers?: number[] | null
+          number?: string | null
+          rarity?: string | null
+          resistances?: Json | null
+          retreat_cost?: string[] | null
+          rules?: string[] | null
+          set_id?: string | null
+          subtypes?: string[] | null
+          supertype?: string | null
+          tcgplayer?: Json | null
+          types?: string[] | null
+          updated_at?: string | null
+          weaknesses?: Json | null
+        }
+        Update: {
+          artist?: string | null
+          attacks?: Json | null
+          card_id?: string
+          cardmarket?: Json | null
+          converted_retreat_cost?: number | null
+          created_at?: string | null
+          evolves_from?: string | null
+          evolves_to?: string[] | null
+          flavor_text?: string | null
+          hp?: string | null
+          id?: number
+          images?: Json | null
+          legalities?: Json | null
+          name?: string
+          national_pokedex_numbers?: number[] | null
+          number?: string | null
+          rarity?: string | null
+          resistances?: Json | null
+          retreat_cost?: string[] | null
+          rules?: string[] | null
+          set_id?: string | null
+          subtypes?: string[] | null
+          supertype?: string | null
+          tcgplayer?: Json | null
+          types?: string[] | null
+          updated_at?: string | null
+          weaknesses?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pokemon_cards_set_id_fkey"
+            columns: ["set_id"]
+            isOneToOne: false
+            referencedRelation: "pokemon_sets"
+            referencedColumns: ["set_id"]
+          },
+        ]
       }
       pokemon_sets: {
         Row: {
@@ -222,6 +573,78 @@ export type Database = {
         }
         Relationships: []
       }
+      tcg_download_jobs: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          error: string | null
+          game: string
+          id: string
+          job_type: string
+          processed_items: number | null
+          status: string | null
+          total_items: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          error?: string | null
+          game: string
+          id: string
+          job_type: string
+          processed_items?: number | null
+          status?: string | null
+          total_items?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          error?: string | null
+          game?: string
+          id?: string
+          job_type?: string
+          processed_items?: number | null
+          status?: string | null
+          total_items?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      tcg_image_downloads: {
+        Row: {
+          card_id: string
+          downloaded_at: string | null
+          game: string
+          id: number
+          image_type: string
+          original_url: string
+          status: string | null
+          storage_path: string
+        }
+        Insert: {
+          card_id: string
+          downloaded_at?: string | null
+          game: string
+          id?: number
+          image_type: string
+          original_url: string
+          status?: string | null
+          storage_path: string
+        }
+        Update: {
+          card_id?: string
+          downloaded_at?: string | null
+          game?: string
+          id?: number
+          image_type?: string
+          original_url?: string
+          status?: string | null
+          storage_path?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -239,6 +662,101 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      yugioh_cards: {
+        Row: {
+          archetype: string | null
+          atk: number | null
+          attribute: string | null
+          banlist_info: Json | null
+          card_id: string
+          card_images: Json | null
+          card_prices: Json | null
+          card_sets: Json | null
+          card_type: string | null
+          created_at: string | null
+          def: number | null
+          description: string | null
+          id: number
+          level: number | null
+          linkmarkers: string[] | null
+          linkval: number | null
+          name: string
+          race: string | null
+          scale: number | null
+          set_code: string | null
+          set_id: string | null
+          set_name: string | null
+          set_price: string | null
+          set_rarity: string | null
+          set_rarity_code: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          archetype?: string | null
+          atk?: number | null
+          attribute?: string | null
+          banlist_info?: Json | null
+          card_id: string
+          card_images?: Json | null
+          card_prices?: Json | null
+          card_sets?: Json | null
+          card_type?: string | null
+          created_at?: string | null
+          def?: number | null
+          description?: string | null
+          id?: number
+          level?: number | null
+          linkmarkers?: string[] | null
+          linkval?: number | null
+          name: string
+          race?: string | null
+          scale?: number | null
+          set_code?: string | null
+          set_id?: string | null
+          set_name?: string | null
+          set_price?: string | null
+          set_rarity?: string | null
+          set_rarity_code?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          archetype?: string | null
+          atk?: number | null
+          attribute?: string | null
+          banlist_info?: Json | null
+          card_id?: string
+          card_images?: Json | null
+          card_prices?: Json | null
+          card_sets?: Json | null
+          card_type?: string | null
+          created_at?: string | null
+          def?: number | null
+          description?: string | null
+          id?: number
+          level?: number | null
+          linkmarkers?: string[] | null
+          linkval?: number | null
+          name?: string
+          race?: string | null
+          scale?: number | null
+          set_code?: string | null
+          set_id?: string | null
+          set_name?: string | null
+          set_price?: string | null
+          set_rarity?: string | null
+          set_rarity_code?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "yugioh_cards_set_id_fkey"
+            columns: ["set_id"]
+            isOneToOne: false
+            referencedRelation: "yugioh_sets"
+            referencedColumns: ["set_id"]
+          },
+        ]
       }
       yugioh_sets: {
         Row: {
