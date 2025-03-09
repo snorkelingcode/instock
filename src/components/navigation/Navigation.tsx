@@ -11,7 +11,7 @@ const Navigation = () => {
       <div className="flex justify-between items-center w-full">
         <Link to="/" className="flex items-center">
           <img 
-            src="/lovable-uploads/2369f6ef-e67c-4791-8a5c-750c4e645338.png" 
+            src="/lovable-uploads/11142b5d-c96c-4fbe-9745-9cd9e7730858.png" 
             alt="FTSI Logo" 
             className="h-10 w-auto"
           />
