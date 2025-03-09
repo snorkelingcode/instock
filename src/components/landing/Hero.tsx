@@ -5,25 +5,25 @@ export const Hero: React.FC = () => {
   const [colorIndex, setColorIndex] = useState(0);
   const intervalRef = useRef<number | null>(null);
 
-  // Red shades palette replacing the soft colors
-  const redShades = [
-    "#FF3333", // Bright red
-    "#CC0000", // Dark red
-    "#FF6666", // Light red
-    "#990000", // Deep red
-    "#FF4444", // Strong red
-    "#CC3333", // Medium red
-    "#FF8888", // Pale red
-    "#AA0000", // Ruby red
-    "#FF5555", // Cherry red
-    "#BB2222"  // Crimson red
+  // Green shades palette replacing the red shades
+  const greenShades = [
+    "#50C878", // Emerald green
+    "#228B22", // Forest green
+    "#7CFC00", // Lawn green
+    "#32CD32", // Lime green
+    "#00FF00", // Bright green
+    "#008000", // Medium green
+    "#ADFF2F", // Green yellow
+    "#006400", // Dark green
+    "#90EE90", // Light green
+    "#2E8B57"  // Sea green
   ];
 
   // Function to get a random color index
   const getRandomColorIndex = () => {
-    const newIndex = Math.floor(Math.random() * redShades.length);
+    const newIndex = Math.floor(Math.random() * greenShades.length);
     // Avoid same color twice in a row
-    return newIndex === colorIndex ? (newIndex + 1) % redShades.length : newIndex;
+    return newIndex === colorIndex ? (newIndex + 1) % greenShades.length : newIndex;
   };
 
   useEffect(() => {
@@ -55,11 +55,11 @@ export const Hero: React.FC = () => {
 
   // Significantly enhanced text styling with much stronger glow effect
   const textStyle = {
-    textShadow: `0 0 10px ${redShades[colorIndex]}90, 
-                 0 0 20px ${redShades[colorIndex]}80,
-                 0 0 30px ${redShades[colorIndex]}70, 
-                 0 0 40px ${redShades[colorIndex]}60,
-                 0 0 50px ${redShades[colorIndex]}50`, // Multiple layers with increased intensity
+    textShadow: `0 0 10px ${greenShades[colorIndex]}90, 
+                 0 0 20px ${greenShades[colorIndex]}80,
+                 0 0 30px ${greenShades[colorIndex]}70, 
+                 0 0 40px ${greenShades[colorIndex]}60,
+                 0 0 50px ${greenShades[colorIndex]}50`, // Multiple layers with increased intensity
     transition: 'all 1.5s ease', // Slightly slower transition for smoother effect
     color: '#1E1E1E', // Keep text dark
   };
