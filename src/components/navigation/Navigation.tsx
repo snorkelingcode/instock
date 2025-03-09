@@ -9,7 +9,13 @@ const Navigation = () => {
   return (
     <nav className="bg-white p-4 rounded-lg shadow-md mb-8 flex flex-col">
       <div className="flex justify-between items-center w-full">
-        <Link to="/" className="text-2xl font-semibold text-gray-900">TCG In-Stock Tracker</Link>
+        <Link to="/" className="flex items-center">
+          <img 
+            src="/lovable-uploads/9955d37d-dda9-41f4-99af-f7307dddce93.png" 
+            alt="TCG In-Stock Tracker Logo" 
+            className="h-10 w-auto"
+          />
+        </Link>
         
         <div className="hidden md:flex space-x-6">
           <Link to="/" className="text-sm font-medium text-gray-600 hover:text-blue-600">Home</Link>
