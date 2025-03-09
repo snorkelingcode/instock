@@ -11,9 +11,9 @@ const Navigation = () => {
       <div className="flex justify-between items-center w-full">
         <Link to="/" className="flex items-center">
           <img 
-            src="/lovable-uploads/9955d37d-dda9-41f4-99af-f7307dddce93.png" 
-            alt="TCG In-Stock Tracker Logo" 
-            className="h-10 w-auto invert"
+            src="/lovable-uploads/2369f6ef-e67c-4791-8a5c-750c4e645338.png" 
+            alt="FTSI Logo" 
+            className="h-10 w-auto"
           />
         </Link>
         
