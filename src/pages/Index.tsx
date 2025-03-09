@@ -1,5 +1,4 @@
 import React, { useEffect } from "react";
-import { Hero } from "@/components/landing/Hero";
 import { CardGrid } from "@/components/landing/CardGrid";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -82,7 +81,6 @@ const Index = () => {
 
   return (
     <Layout>
-      <Hero />
       <SiteIntro />
       <HowItWorksSection />
       <h2 className="text-2xl font-semibold mb-6">Latest In-Stock Products</h2>
