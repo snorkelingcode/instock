@@ -83,11 +83,8 @@ const Index = () => {
   return (
     <Layout>
       <Hero />
-        
       <SiteIntro />
-        
       <HowItWorksSection />
-        
       <h2 className="text-2xl font-semibold mb-6">Latest In-Stock Products</h2>
       <CardGrid />
     </Layout>

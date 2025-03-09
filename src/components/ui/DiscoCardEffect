@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 
 interface DiscoCardEffectProps {
@@ -14,18 +15,18 @@ const DiscoCardEffect: React.FC<DiscoCardEffectProps> = ({
   const [cardColor, setCardColor] = useState("");
   const cardIntervalRef = useRef<number | null>(null);
   
-  // Disco colors array - same as in Card component for consistency
+  // Red shades array for the disco effect
   const discoColors = [
-    "#FF3366", // Pink
-    "#33CCFF", // Blue
-    "#FFCC33", // Yellow
-    "#33FF99", // Green
-    "#CC33FF", // Purple
-    "#FF6633", // Orange
-    "#66FF33", // Lime
-    "#FF33CC", // Magenta
-    "#3366FF", // Royal Blue
-    "#FF9933"  // Orange-Yellow
+    "#FF3333", // Bright red
+    "#CC0000", // Dark red
+    "#FF6666", // Light red
+    "#990000", // Deep red
+    "#FF4444", // Strong red
+    "#CC3333", // Medium red
+    "#FF8888", // Pale red
+    "#AA0000", // Ruby red
+    "#FF5555", // Cherry red
+    "#BB2222"  // Crimson red
   ];
 
   // Function to get a random color that's different from the current one

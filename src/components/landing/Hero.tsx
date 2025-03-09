@@ -5,25 +5,25 @@ export const Hero: React.FC = () => {
   const [colorIndex, setColorIndex] = useState(0);
   const intervalRef = useRef<number | null>(null);
 
-  // Softer color palette matching the card component
-  const softColors = [
-    "#5B8BF0", // Soft blue
-    "#63AABF", // Teal blue
-    "#4E9D63", // Forest green
-    "#7E7ED4", // Lavender
-    "#8E87C0", // Muted purple
-    "#DC8A86", // Dusty rose
-    "#E6A971", // Soft orange
-    "#68B9C0", // Turquoise
-    "#7FB88F", // Sage green
-    "#9F8FC1"  // Periwinkle
+  // Red shades palette replacing the soft colors
+  const redShades = [
+    "#FF3333", // Bright red
+    "#CC0000", // Dark red
+    "#FF6666", // Light red
+    "#990000", // Deep red
+    "#FF4444", // Strong red
+    "#CC3333", // Medium red
+    "#FF8888", // Pale red
+    "#AA0000", // Ruby red
+    "#FF5555", // Cherry red
+    "#BB2222"  // Crimson red
   ];
 
   // Function to get a random color index
   const getRandomColorIndex = () => {
-    const newIndex = Math.floor(Math.random() * softColors.length);
+    const newIndex = Math.floor(Math.random() * redShades.length);
     // Avoid same color twice in a row
-    return newIndex === colorIndex ? (newIndex + 1) % softColors.length : newIndex;
+    return newIndex === colorIndex ? (newIndex + 1) % redShades.length : newIndex;
   };
 
   useEffect(() => {
@@ -55,17 +55,17 @@ export const Hero: React.FC = () => {
 
   // Significantly enhanced text styling with much stronger glow effect
   const textStyle = {
-    textShadow: `0 0 10px ${softColors[colorIndex]}90, 
-                 0 0 20px ${softColors[colorIndex]}80,
-                 0 0 30px ${softColors[colorIndex]}70, 
-                 0 0 40px ${softColors[colorIndex]}60,
-                 0 0 50px ${softColors[colorIndex]}50`, // Multiple layers with increased intensity
+    textShadow: `0 0 10px ${redShades[colorIndex]}90, 
+                 0 0 20px ${redShades[colorIndex]}80,
+                 0 0 30px ${redShades[colorIndex]}70, 
+                 0 0 40px ${redShades[colorIndex]}60,
+                 0 0 50px ${redShades[colorIndex]}50`, // Multiple layers with increased intensity
     transition: 'all 1.5s ease', // Slightly slower transition for smoother effect
     color: '#1E1E1E', // Keep text dark
   };
 
   return (
-    <header className="mb-[164px] max-md:mb-20 max-sm:mb-10" role="banner">
+    <header className="mb-10 max-md:mb-8 max-sm:mb-6" role="banner">
       <h1 
         className="text-[64px] text-[#1E1E1E] font-normal max-md:text-5xl max-sm:text-4xl"
         style={textStyle}
