@@ -13,7 +13,7 @@ const Navigation = () => {
           <img 
             src="/lovable-uploads/9955d37d-dda9-41f4-99af-f7307dddce93.png" 
             alt="TCG In-Stock Tracker Logo" 
-            className="h-10 w-auto"
+            className="h-10 w-auto invert"
           />
         </Link>
         
