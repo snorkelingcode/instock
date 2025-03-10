@@ -1,2 +1,8 @@
+# Redirect all routes to index.html for SPA handling
+/*    /index.html   200
 
-/* /index.html 200
+# Redirect www to non-www
+https://www.fixthesupplyissue.com/*  https://fixthesupplyissue.com/:splat  301!
+
+# Redirect old domain if applicable
+https://old-domain.com/*  https://fixthesupplyissue.com/:splat  301!
