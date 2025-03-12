@@ -8,6 +8,8 @@ import AdContainer from "@/components/ads/AdContainer";
 import { useMetaTags } from "@/hooks/use-meta-tags";
 import EmptyStateHandler from "@/components/ui/empty-state-handler";
 import LoadingSpinner from "@/components/ui/loading-spinner";
+import { supabase } from "@/integrations/supabase/client";
+import FeaturedProducts from "@/components/products/FeaturedProducts";
 
 // Site introduction with real content
 const SiteIntro = () => (
@@ -89,12 +91,40 @@ const Index = () => {
 
   const [loading, setLoading] = React.useState(true);
   const [hasProducts, setHasProducts] = React.useState(false);
+  const [featuredProducts, setFeaturedProducts] = React.useState([]);
+  const [featuredLoading, setFeaturedLoading] = React.useState(true);
 
-  // Simulate loading and product check for demonstration
+  // Fetch featured products
   React.useEffect(() => {
+    const fetchFeaturedProducts = async () => {
+      try {
+        setFeaturedLoading(true);
+        const { data, error } = await supabase
+          .from('products')
+          .select('*')
+          .order('id', { ascending: false })
+          .limit(3);
+
+        if (error) {
+          throw error;
+        }
+
+        setTimeout(() => {
+          setFeaturedProducts(data || []);
+          setFeaturedLoading(false);
+          setHasProducts(data && data.length > 0);
+        }, 300);
+      } catch (error) {
+        console.error('Error fetching featured products:', error);
+        setFeaturedLoading(false);
+      }
+    };
+
+    fetchFeaturedProducts();
+    
+    // Set loading state to false after a reasonable timeout
     const timer = setTimeout(() => {
       setLoading(false);
-      setHasProducts(true);
     }, 1000);
     
     return () => clearTimeout(timer);
@@ -110,6 +140,9 @@ const Index = () => {
         fullWidth={true} 
       />
       <HowItWorksSection />
+      
+      <h2 className="text-2xl font-semibold mb-6">Featured Products</h2>
+      <FeaturedProducts products={featuredProducts} loading={featuredLoading} />
       
       <h2 className="text-2xl font-semibold mb-6">Latest In-Stock Products</h2>
       

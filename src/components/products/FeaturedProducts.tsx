@@ -1,6 +1,7 @@
 
 import React from "react";
 import FeaturedProduct from "@/components/featured-product";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Product {
   id: number;
@@ -18,11 +19,26 @@ interface FeaturedProductsProps {
   loading: boolean;
 }
 
+const FeaturedProductSkeleton = () => (
+  <div className="flex flex-col space-y-3 p-4 w-full bg-white rounded-lg shadow-md">
+    <Skeleton className="h-[140px] w-[140px] rounded-md mx-auto" />
+    <Skeleton className="h-5 w-4/5" />
+    <Skeleton className="h-5 w-3/5" />
+    <Skeleton className="h-5 w-2/5" />
+    <Skeleton className="h-5 w-3/5" />
+    <Skeleton className="h-10 w-2/3 mx-auto mt-4" />
+  </div>
+);
+
 const FeaturedProducts: React.FC<FeaturedProductsProps> = ({ products, loading }) => {
   if (loading) {
     return (
-      <div className="flex justify-center py-4">
-        <div className="animate-pulse text-xl">Loading featured products...</div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        {[...Array(3)].map((_, index) => (
+          <div key={`skeleton-${index}`} className="flex justify-center">
+            <FeaturedProductSkeleton />
+          </div>
+        ))}
       </div>
     );
   }

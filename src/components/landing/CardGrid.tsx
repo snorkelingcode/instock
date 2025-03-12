@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { Card } from "./Card";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Product {
   id: number;
@@ -13,6 +14,19 @@ interface Product {
   listing_link: string;
   image_link?: string;
 }
+
+const CardSkeleton = () => (
+  <div className="w-full max-w-[340px] h-[480px] bg-white rounded-[10px] p-4 shadow-md">
+    <Skeleton className="w-[140px] h-[140px] mx-auto mt-6 rounded-md" />
+    <div className="px-[41px] py-[15px] space-y-4">
+      <Skeleton className="h-5 w-4/5" />
+      <Skeleton className="h-5 w-3/5" />
+      <Skeleton className="h-5 w-2/3" />
+      <Skeleton className="h-5 w-1/2" />
+    </div>
+    <Skeleton className="w-[257px] h-[50px] rounded-md mx-auto mt-6" />
+  </div>
+);
 
 export const CardGrid: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -32,7 +46,11 @@ export const CardGrid: React.FC = () => {
           throw error;
         }
 
-        setProducts(data || []);
+        // Add a slight delay before setting products to ensure smooth transition
+        setTimeout(() => {
+          setProducts(data || []);
+          setLoading(false);
+        }, 300);
       } catch (error) {
         console.error('Error fetching products:', error);
         toast({
@@ -40,7 +58,6 @@ export const CardGrid: React.FC = () => {
           description: "Failed to load products",
           variant: "destructive",
         });
-      } finally {
         setLoading(false);
       }
     };
@@ -70,6 +87,16 @@ export const CardGrid: React.FC = () => {
     itemRows.push(displayProducts.slice(i, i + itemsPerRow));
   }
 
+  // Create skeleton layout
+  const skeletonRows = [];
+  for (let i = 0; i < 2; i++) {
+    const row = [];
+    for (let j = 0; j < itemsPerRow; j++) {
+      row.push(j);
+    }
+    skeletonRows.push(row);
+  }
+
   return (
     <div 
       className="flex flex-col gap-8 mx-auto max-w-[1200px]" 
@@ -77,9 +104,17 @@ export const CardGrid: React.FC = () => {
       aria-label="Product listings"
     >
       {loading ? (
-        <div className="flex justify-center py-4">
-          <div className="animate-pulse text-xl">Loading products...</div>
-        </div>
+        // Show skeleton UI while loading
+        skeletonRows.map((row, rowIndex) => (
+          <div 
+            key={`skeleton-row-${rowIndex}`}
+            className="flex justify-center gap-[19px] max-md:flex-col max-md:items-center w-full mx-auto"
+          >
+            {row.map((_, idx) => (
+              <CardSkeleton key={`skeleton-${rowIndex}-${idx}`} />
+            ))}
+          </div>
+        ))
       ) : (
         itemRows.map((row, rowIndex) => (
           <div 
