@@ -31,33 +31,42 @@ const FeaturedProductSkeleton = () => (
 );
 
 const FeaturedProducts: React.FC<FeaturedProductsProps> = ({ products, loading }) => {
-  if (loading) {
+  // Always render something - either skeletons or products
+  const renderProducts = () => {
+    if (loading || products.length === 0) {
+      return (
+        <>
+          {[...Array(3)].map((_, index) => (
+            <div key={`skeleton-${index}`} className="flex justify-center">
+              <FeaturedProductSkeleton />
+            </div>
+          ))}
+        </>
+      );
+    }
+    
     return (
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        {[...Array(3)].map((_, index) => (
-          <div key={`skeleton-${index}`} className="flex justify-center">
-            <FeaturedProductSkeleton />
+      <>
+        {products.map((product, index) => (
+          <div key={product.id} className="flex justify-center">
+            <FeaturedProduct 
+              title={`${product.product_line} ${product.product}`}
+              description={`${product.product_line} ${product.product} available at ${product.source}`}
+              price={product.price}
+              retailer={product.source}
+              listingLink={product.listing_link}
+              imageLink={product.image_link}
+              index={index}
+            />
           </div>
         ))}
-      </div>
+      </>
     );
-  }
+  };
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-      {products.map((product, index) => (
-        <div key={product.id} className="flex justify-center">
-          <FeaturedProduct 
-            title={`${product.product_line} ${product.product}`}
-            description={`${product.product_line} ${product.product} available at ${product.source}`}
-            price={product.price}
-            retailer={product.source}
-            listingLink={product.listing_link}
-            imageLink={product.image_link}
-            index={index}
-          />
-        </div>
-      ))}
+      {renderProducts()}
     </div>
   );
 };

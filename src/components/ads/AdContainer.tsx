@@ -26,13 +26,26 @@ const AdContainer: React.FC<AdContainerProps> = ({
   const adRef = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [adLoaded, setAdLoaded] = useState(false);
+  const [hasEnoughContent, setHasEnoughContent] = useState(false);
   
   useEffect(() => {
-    // Check if the page has enough content before showing ads
-    const contentElements = document.querySelectorAll('p, h1, h2, h3, article, section');
-    const hasEnoughContent = contentElements.length >= 3;
+    // More strict content check - must have real paragraphs and headings
+    const contentCheck = () => {
+      const contentElements = document.querySelectorAll('p, h1, h2, h3, article, section');
+      const paragraphs = document.querySelectorAll('p');
+      const headings = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
+      
+      // More extensive check: need both paragraphs and headings, and enough total elements
+      const hasContent = contentElements.length >= 3 && 
+                          paragraphs.length >= 1 && 
+                          headings.length >= 1;
+      
+      setHasEnoughContent(hasContent);
+      return hasContent;
+    };
     
-    if (!hasEnoughContent) {
+    // Check content immediately
+    if (!contentCheck()) {
       console.log('Not enough content to display ads safely');
       return;
     }
@@ -40,7 +53,7 @@ const AdContainer: React.FC<AdContainerProps> = ({
     // Use IntersectionObserver to detect when the ad container is visible
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
-        if (entry.isIntersecting && !adLoaded) {
+        if (entry.isIntersecting && !adLoaded && hasEnoughContent) {
           setIsVisible(true);
           observer.disconnect();
         }
@@ -51,14 +64,20 @@ const AdContainer: React.FC<AdContainerProps> = ({
       observer.observe(adRef.current);
     }
     
+    // Set up a periodic check for content (helpful for SPAs that load content dynamically)
+    const contentCheckInterval = setInterval(() => {
+      contentCheck();
+    }, 1000);
+    
     return () => {
       observer.disconnect();
+      clearInterval(contentCheckInterval);
     };
-  }, [adLoaded]);
+  }, [adLoaded, hasEnoughContent]);
   
   // Initialize the ad when the container becomes visible
   useEffect(() => {
-    if (isVisible && !adLoaded) {
+    if (isVisible && !adLoaded && hasEnoughContent) {
       try {
         // @ts-ignore - window.adsbygoogle is added by the AdSense script
         (window.adsbygoogle = window.adsbygoogle || []).push({});
@@ -67,7 +86,12 @@ const AdContainer: React.FC<AdContainerProps> = ({
         console.error('Error loading AdSense ad:', error);
       }
     }
-  }, [isVisible, adLoaded]);
+  }, [isVisible, adLoaded, hasEnoughContent]);
+  
+  // If there's not enough content, don't render the ad space at all
+  if (!hasEnoughContent) {
+    return null;
+  }
   
   return (
     <div 
@@ -82,7 +106,7 @@ const AdContainer: React.FC<AdContainerProps> = ({
         <div className="text-xs text-gray-500 mb-1">Advertisement</div>
       )}
       
-      {isVisible && (
+      {isVisible && hasEnoughContent && (
         <ins
           className="adsbygoogle"
           style={{ display: 'block' }}

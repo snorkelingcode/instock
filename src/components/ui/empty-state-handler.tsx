@@ -1,4 +1,4 @@
-// src/components/ui/empty-state-handler.tsx
+
 import React, { useState, useEffect } from 'react';
 
 interface EmptyStateHandlerProps {
@@ -25,16 +25,28 @@ const EmptyStateHandler: React.FC<EmptyStateHandlerProps> = ({
   const [hasMinimumContent, setHasMinimumContent] = useState(false);
   
   useEffect(() => {
-    // Set a reasonable delay to check for content
-    const timer = setTimeout(() => {
-      if (!isLoading) {
-        const contentElements = document.querySelectorAll('p, h1, h2, h3, article, section');
-        setHasMinimumContent(contentElements.length >= minimumContentLength);
-      }
-    }, 1000);
+    // Check immediately if content is ready to display
+    if (!isLoading && hasItems) {
+      // Verify the DOM has adequate content for AdSense requirements
+      const contentElements = document.querySelectorAll('p, h1, h2, h3, article, section');
+      setHasMinimumContent(contentElements.length >= minimumContentLength);
+    }
     
-    return () => clearTimeout(timer);
-  }, [isLoading, minimumContentLength]);
+    // If we're still loading or don't have items, set a meta tag to prevent ad crawling
+    if (isLoading || !hasItems) {
+      const noAdsMetaTag = document.createElement('meta');
+      noAdsMetaTag.name = 'robots';
+      noAdsMetaTag.content = 'noindex, nofollow, noodp, noydir';
+      document.head.appendChild(noAdsMetaTag);
+      
+      return () => {
+        // Clean up meta tag when we have content
+        if (document.head.contains(noAdsMetaTag)) {
+          document.head.removeChild(noAdsMetaTag);
+        }
+      };
+    }
+  }, [isLoading, hasItems, minimumContentLength]);
   
   if (isLoading) {
     return <>{loadingComponent}</>;
