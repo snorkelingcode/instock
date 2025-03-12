@@ -1,3 +1,4 @@
+
 // src/hooks/use-meta-tags.ts
 import { useEffect } from 'react';
 

@@ -1,9 +1,13 @@
+
 import React, { useEffect } from "react";
 import { CardGrid } from "@/components/landing/CardGrid";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
+import AdContainer from "@/components/ads/AdContainer";
+import { useMetaTags } from "@/hooks/use-meta-tags";
+import EmptyStateHandler from "@/components/ui/empty-state-handler";
+import LoadingSpinner from "@/components/ui/loading-spinner";
 
 // Site introduction with real content
 const SiteIntro = () => (
@@ -67,24 +71,65 @@ const HowItWorksSection = () => (
   </section>
 );
 
-const Index = () => {
-  useEffect(() => {
-    const metaDescription = document.createElement("meta");
-    metaDescription.name = "description";
-    metaDescription.content = "Find TCG products in stock at major retailers. Track inventory for Pokemon Center, Target, Walmart, and more.";
-    document.head.appendChild(metaDescription);
+const NoProductsFound = () => (
+  <div className="text-center py-8">
+    <p className="text-gray-500">No products found. Please check back later for updates.</p>
+  </div>
+);
 
-    return () => {
-      document.head.removeChild(metaDescription);
-    };
+const Index = () => {
+  // Use the meta tags hook for SEO and AdSense compliance
+  useMetaTags({
+    title: "TCG In-Stock Tracker | Find Trading Card Game Products",
+    description: "Find TCG products in stock at major retailers. Track inventory for Pokemon Center, Target, Walmart, GameStop and more in real-time with accurate updates.",
+    keywords: "Pokemon, TCG, trading cards, in stock, tracker, booster box, elite trainer box, target, walmart",
+    ogTitle: "TCG In-Stock Tracker - Find Your Favorite Cards In Stock",
+    ogDescription: "Never miss a restock again. Get real-time inventory updates for Pokemon, Magic, Yu-Gi-Oh, and more from all major retailers."
+  });
+
+  const [loading, setLoading] = React.useState(true);
+  const [hasProducts, setHasProducts] = React.useState(false);
+
+  // Simulate loading and product check for demonstration
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoading(false);
+      setHasProducts(true);
+    }, 1000);
+    
+    return () => clearTimeout(timer);
   }, []);
 
   return (
     <Layout>
       <SiteIntro />
+      <AdContainer 
+        className="my-8" 
+        adSlot="auto" 
+        adFormat="horizontal" 
+        fullWidth={true} 
+      />
       <HowItWorksSection />
+      
       <h2 className="text-2xl font-semibold mb-6">Latest In-Stock Products</h2>
-      <CardGrid />
+      
+      <EmptyStateHandler
+        isLoading={loading}
+        hasItems={hasProducts}
+        loadingComponent={<LoadingSpinner size="lg" />}
+        emptyComponent={<NoProductsFound />}
+      >
+        <CardGrid />
+        
+        <div className="mt-8">
+          <AdContainer 
+            className="my-4" 
+            adSlot="auto" 
+            adFormat="rectangle" 
+            fullWidth={true} 
+          />
+        </div>
+      </EmptyStateHandler>
     </Layout>
   );
 };
