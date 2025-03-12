@@ -77,7 +77,7 @@ const AboutPage = () => {
             <h2 className="text-2xl font-semibold mb-4">How It Works</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <div className="bg-gray-50 p-6 rounded-lg border border-gray-100">
-                <h3 className="text-xl font-medium mb-3">1. Automated Tracking</h3>
+                <h3 className="text-xl font-medium mb-3">1. Daily Tracking</h3>
                 <p className="text-gray-700">
                   We manually monitor inventory across major retailers, due to many sites having privacy policies that makes webscraping unethical. We check for restocks multiple times per day on high-demand items.
                 </p>
