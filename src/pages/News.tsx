@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -29,10 +30,10 @@ const NewsPage = () => {
   }, []);
 
   const featuredArticle = {
-    title: "Twilight Masquerade Set Revealed: New Trainer Gallery and Ancient Pokemon",
-    date: "March 1, 2025",
-    category: "Product News",
-    content: "The Pokemon Company has officially unveiled the next major expansion for the Pokemon Trading Card Game: Twilight Masquerade. Set to release on May 10, 2025, this expansion introduces over 190 new cards, including 15 Pokemon ex, 3 Ace Spec Trainer cards, and a special Trainer Gallery subset featuring alternate-art Pokemon paired with popular characters from the games. The set also introduces Ancient Pokemon as a new mechanic, with special abilities that activate when specific energy combinations are attached. Pre-orders are expected to open at major retailers in early April, with Elite Trainer Boxes, booster boxes, and special collections already announced."
+    title: "GameStop Discontinues TCG Pre-Orders, Adds Purchase Limits and Grading Services",
+    date: "March 5, 2025",
+    category: "Retailer Updates",
+    content: "GameStop has announced significant changes to its Pokemon TCG sales policies, discontinuing pre-orders for all Pokemon TCG products effective immediately. The retailer will also be implementing purchase limits on select SKUs to combat scalping. In a statement, GameStop explained, \"Our goal is to ensure more fans have the opportunity to experience these exciting releases, rather than limiting access to early buyers and resellers.\" \n\nIn addition to these policy changes, GameStop is introducing free card savers and sleeves for PSA grading, specifically available during launch weekends at their new \"Rip and Submit\" events. These events create a unique experience where fans can open cards and send them to be graded immediately on-site. This service aims to streamline the grading process for collectors and create a more engaging in-store experience for the TCG community. The first Rip and Submit event is scheduled to coincide with the release of the Twilight Masquerade expansion in May."
   };
   
   const recentNews = [
