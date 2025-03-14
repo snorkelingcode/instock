@@ -31,7 +31,7 @@ const NewsPage = () => {
 
   const featuredArticle = {
     title: "GameStop Discontinues TCG Pre-Orders, Adds Purchase Limits and Grading Services",
-    date: "March 13, 2025",
+    date: "March 14, 2025",
     category: "Retailer Updates",
     content: "GameStop has announced significant changes to its Pokemon TCG sales policies, discontinuing pre-orders for all Pokemon TCG products effective immediately. The retailer will also be implementing purchase limits on select SKUs to combat scalping. In a statement, GameStop explained, \"Our goal is to ensure more fans have the opportunity to experience these exciting releases, rather than limiting access to early buyers and resellers.\" \n\nIn addition to these policy changes, GameStop is introducing free card savers and sleeves for PSA grading, specifically available during launch weekends at their new \"Rip and Submit\" events. These events create a unique experience where fans can open cards and send them to be graded immediately on-site. This service aims to streamline the grading process for collectors and create a more engaging in-store experience for the TCG community. The first Rip and Submit event is scheduled to coincide with the release of the Twilight Masquerade expansion in May."
   };
