@@ -1,4 +1,3 @@
-
 import React, { useEffect } from "react";
 import { CardGrid } from "@/components/landing/CardGrid";
 import { Button } from "@/components/ui/button";
@@ -12,7 +11,6 @@ import { supabase } from "@/integrations/supabase/client";
 import FeaturedProducts from "@/components/products/FeaturedProducts";
 import { getCache, setCache } from "@/utils/cacheUtils";
 
-// Site introduction with real content
 const SiteIntro = () => (
   <section className="mb-12 bg-white p-6 rounded-lg shadow-md">
     <h2 className="text-2xl font-semibold mb-4">Welcome to TCG In-Stock Tracker</h2>
@@ -36,7 +34,6 @@ const SiteIntro = () => (
   </section>
 );
 
-// How it works section with real content
 const HowItWorksSection = () => (
   <section className="mb-12 bg-white p-6 rounded-lg shadow-md">
     <h2 className="text-2xl font-semibold mb-6">How TCG In-Stock Tracker Works</h2>
@@ -81,7 +78,6 @@ const NoProductsFound = () => (
 );
 
 const Index = () => {
-  // Use the meta tags hook for SEO and AdSense compliance
   useMetaTags({
     title: "TCG In-Stock Tracker | Find Trading Card Game Products",
     description: "Find TCG products in stock at major retailers. Track inventory for Pokemon Center, Target, Walmart, GameStop and more in real-time with accurate updates.",
@@ -92,15 +88,13 @@ const Index = () => {
 
   const [loading, setLoading] = React.useState(true);
   const [hasProducts, setHasProducts] = React.useState(false);
-  const [featuredProducts, setFeaturedProducts] = React.useState([]);
+  const [featuredProducts, setFeaturedProducts] = React.useState<any[]>([]);
   const [featuredLoading, setFeaturedLoading] = React.useState(true);
 
-  // Use cache for faster initial loading
   React.useEffect(() => {
     const loadData = async () => {
-      // Try to load from cache first
-      const cachedProducts = getCache('featured_products');
-      const cachedHasProducts = getCache('has_products');
+      const cachedProducts = getCache<any[]>('featured_products');
+      const cachedHasProducts = getCache<boolean>('has_products');
       
       if (cachedProducts) {
         setFeaturedProducts(cachedProducts);
@@ -109,7 +103,6 @@ const Index = () => {
         setLoading(false);
       }
       
-      // Still fetch from API to update cache
       try {
         const { data, error } = await supabase
           .from('products')
@@ -121,15 +114,13 @@ const Index = () => {
           throw error;
         }
 
-        // Update state and cache
         if (data) {
           setFeaturedProducts(data);
           setFeaturedLoading(false);
           setHasProducts(data.length > 0);
           setLoading(false);
           
-          // Cache the results for faster loading next time
-          setCache('featured_products', data, 5); // Cache for 5 minutes
+          setCache('featured_products', data, 5);
           setCache('has_products', data.length > 0, 5);
         }
       } catch (error) {
@@ -149,7 +140,6 @@ const Index = () => {
     <Layout>
       <SiteIntro />
       
-      {/* Only show ads if we have content */}
       {!loading && hasProducts && (
         <AdContainer 
           className="my-8" 
