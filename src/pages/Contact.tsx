@@ -126,7 +126,7 @@ const ContactPage = () => {
               <div>
                 <h3 className="font-medium">How accurate are your stock alerts?</h3>
                 <p className="text-gray-700 mt-1">
-                  Our alerts are based on real-time inventory data and typically notify users within seconds of a restock.
+                  Our stock is updated daily, manually, meaning our site could sometimes have out of stock product. But we try to keep it as updated as possible. Sometimes updating multiple times per day. 
                 </p>
               </div>
               
