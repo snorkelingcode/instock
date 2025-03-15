@@ -133,14 +133,14 @@ const ContactPage = () => {
               <div>
                 <h3 className="font-medium">Is this service free to use?</h3>
                 <p className="text-gray-700 mt-1">
-                  Yes! Basic stock tracking and website access is completely free. We offer premium plans with additional features.
+                  Yes! Basic stock tracking and website access is completely free.
                 </p>
               </div>
               
               <div>
                 <h3 className="font-medium">How do I set up alerts?</h3>
                 <p className="text-gray-700 mt-1">
-                  Create an account and visit your profile to set up product-specific or category-wide alerts via email, SMS, or push notification.
+                  We will soon be account functionality for tracking and email alerts.
                 </p>
               </div>
               
