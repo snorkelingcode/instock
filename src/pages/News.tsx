@@ -37,16 +37,16 @@ const NewsPage = () => {
   
   const recentNews = [
     {
-      title: "Target Announces New Pokemon TCG Restock Policy",
-      date: "February 27, 2025",
+      title: "GameStop Discontinues TCG Pre-Orders, Adds Purchase Limits and Grading Services",
+      date: "March 14, 2025",
       category: "Retailer Updates",
-      excerpt: "Target has announced changes to their Pokemon TCG restocking process to ensure fair distribution and combat scalping. Starting March 15, purchases of certain high-demand products will be limited to 2 per customer, with select items moving behind customer service counters."
+      excerpt: "GameStop has announced significant changes to its Pokemon TCG sales policies, discontinuing pre-orders for all Pokemon TCG products effective immediately. The retailer will also be implementing purchase limits on select SKUs to combat scalping. In a statement, GameStop explained, "Our goal is to ensure more fans have the opportunity to experience these exciting releases, rather than limiting access to early buyers and resellers." In addition to these policy changes, GameStop is introducing free card savers and sleeves for PSA grading, specifically available during launch weekends at their new "Rip and Submit" events. These events create a unique experience where fans can open cards and send them to be graded immediately on-site. This service aims to streamline the grading process for collectors and create a more engaging in-store experience for the TCG community. The first Rip and Submit event is scheduled to coincide with the release of the Twilight Masquerade expansion in May."
     },
     {
       title: "Paldean Fates Restock Coming to Pokemon Center Next Week",
-      date: "February 25, 2025",
-      category: "Restocks",
-      excerpt: "The Pokemon Company has confirmed that Pokemon Center will be restocking Paldean Fates Elite Trainer Boxes and booster boxes next Tuesday at 10am EST. This marks the third restock since the popular set sold out within minutes of its initial release."
+      date: "March 14, 2025",
+      category: "New Release",
+      excerpt: "Pokemon Azure Legends Tin featuring Kyogre, Dialga, and Xerneas make an appearance for the first time in your local Target! These tins, as of right now, come with two packs of Surging Sparks, one pack of Stellar Crown, one pack of Temporal Forces, and one pack of Obsidian Flames. You also get a Kyogre ex, Dialga ex, or Xerneas ex black star promo card. As well as a code card for TCG Online. Check the card section for the chance to score one of these tins. We will also update the site if any are found online and in stock."
     },
     {
       title: "Pokemon TCG Championship Series 2025 Dates Announced",
