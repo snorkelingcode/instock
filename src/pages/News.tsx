@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -104,10 +103,10 @@ const NewsPage = () => {
       excerpt: "GameStop has confirmed they'll be restocking the popular Charizard ex Premium Collection today at 12pm EST online and in select stores. Learn how to maximize your chances of getting one."
     },
     {
-      title: "Pokemon Center Scarlet & Violet Ultra Premium Collection Back in Stock",
-      date: "February 28, 2025",
+      title: "Target Now Stocking Pokemon Azure Legends Tins",
+      date: "March 14, 2025",
       category: "Restocks",
-      excerpt: "The highly-sought Scarlet & Violet Ultra Premium Collection is back in stock at Pokemon Center with a limit of 1 per customer. These sold out quickly during previous restocks."
+      excerpt: "Pokemon Azure Legends Tin featuring Kyogre, Dialga, and Xerneas make an appearance for the first time in your local Target! These tins, as of right now, come with two packs of Surging Sparks, one pack of Stellar Crown, one pack of Temporal Forces, and one pack of Obsidian Flames. You also get a Kyogre ex, Dialga ex, or Xerneas ex black star promo card. As well as a code card for TCG Online. Check the card section for the chance to score one of these tins. We will also update the site if any are found online and in stock."
     },
     {
       title: "Best Buy Adding Ancient Legends ETBs to Inventory This Week",
