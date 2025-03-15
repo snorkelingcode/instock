@@ -254,7 +254,6 @@ const NewsPage = () => {
           <div className="mt-10 flex flex-col md:flex-row justify-between items-center gap-4 bg-gray-50 p-6 rounded-lg">
             <div>
               <h2 className="text-xl font-semibold mb-2">Never Miss a Restock or Announcement</h2>
-              <p className="text-gray-700">Subscribe to our newsletter for breaking Pokemon TCG news delivered to your inbox.</p>
             </div>
           </div>
         </div>
