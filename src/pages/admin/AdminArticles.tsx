@@ -11,6 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import Layout from "@/components/layout/Layout";
 import { useMetaTags } from "@/hooks/use-meta-tags";
 import { Article } from "@/types/article";
+import { Plus, PenSquare, Trash2, Eye } from "lucide-react";
 
 const AdminArticles = () => {
   const [articles, setArticles] = useState<Article[]>([]);
@@ -175,83 +176,113 @@ const AdminArticles = () => {
     });
   };
 
+  const previewArticle = (id: string) => {
+    navigate(`/article/${id}`);
+  };
+
   return (
     <Layout>
-      <Card className="mb-8">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Manage Articles</CardTitle>
-          <Button onClick={() => navigate("/admin/articles/new")}>
-            Create New Article
-          </Button>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="text-center py-8">Loading articles...</div>
-          ) : articles.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-gray-500">No articles found. Create your first article!</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-100">
-                  <tr>
-                    <th className="p-2 text-left">Title</th>
-                    <th className="p-2 text-left">Category</th>
-                    <th className="p-2 text-left">Created</th>
-                    <th className="p-2 text-center">Published</th>
-                    <th className="p-2 text-center">Featured</th>
-                    <th className="p-2 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {articles.map(article => (
-                    <tr key={article.id} className="border-b border-gray-200">
-                      <td className="p-2">
-                        <span className="font-medium">{article.title}</span>
-                      </td>
-                      <td className="p-2">
-                        <Badge variant="outline">{article.category}</Badge>
-                      </td>
-                      <td className="p-2">{formatDate(article.created_at)}</td>
-                      <td className="p-2 text-center">
-                        <Checkbox 
-                          checked={article.published}
-                          onCheckedChange={() => togglePublish(article.id, article.published)}
-                        />
-                      </td>
-                      <td className="p-2 text-center">
-                        <Checkbox 
-                          checked={article.featured}
-                          onCheckedChange={() => toggleFeature(article.id, article.featured)}
-                        />
-                      </td>
-                      <td className="p-2 text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => navigate(`/admin/articles/edit/${article.id}`)}
-                          >
-                            Edit
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant="destructive"
-                            onClick={() => deleteArticle(article.id)}
-                          >
-                            Delete
-                          </Button>
-                        </div>
-                      </td>
+      <div className="container mx-auto py-8 px-4">
+        <Card className="mb-8">
+          <CardHeader className="flex flex-row items-center justify-between bg-gray-50 border-b">
+            <CardTitle>Manage Articles</CardTitle>
+            <Button onClick={() => navigate("/admin/articles/new")} className="gap-2">
+              <Plus className="h-4 w-4" /> Create New Article
+            </Button>
+          </CardHeader>
+          <CardContent className="p-0">
+            {isLoading ? (
+              <div className="text-center py-8">Loading articles...</div>
+            ) : articles.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-gray-500">No articles found. Create your first article!</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-100">
+                    <tr>
+                      <th className="p-3 text-left">Title</th>
+                      <th className="p-3 text-left">Category</th>
+                      <th className="p-3 text-left">Created</th>
+                      <th className="p-3 text-center">Published</th>
+                      <th className="p-3 text-center">Featured</th>
+                      <th className="p-3 text-right">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                  </thead>
+                  <tbody>
+                    {articles.map(article => (
+                      <tr key={article.id} className="border-b border-gray-200 hover:bg-gray-50">
+                        <td className="p-3">
+                          <div className="flex items-center space-x-3">
+                            {article.featured_image && (
+                              <div className="h-10 w-10 rounded overflow-hidden flex-shrink-0">
+                                <img 
+                                  src={article.featured_image} 
+                                  alt={article.title} 
+                                  className="h-full w-full object-cover"
+                                />
+                              </div>
+                            )}
+                            <span className="font-medium">{article.title}</span>
+                          </div>
+                        </td>
+                        <td className="p-3">
+                          <Badge variant="outline">{article.category}</Badge>
+                        </td>
+                        <td className="p-3">{formatDate(article.created_at)}</td>
+                        <td className="p-3 text-center">
+                          <Checkbox 
+                            checked={article.published}
+                            onCheckedChange={() => togglePublish(article.id, article.published)}
+                          />
+                        </td>
+                        <td className="p-3 text-center">
+                          <Checkbox 
+                            checked={article.featured}
+                            onCheckedChange={() => toggleFeature(article.id, article.featured)}
+                          />
+                        </td>
+                        <td className="p-3 text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              className="gap-1"
+                              onClick={() => previewArticle(article.id)}
+                            >
+                              <Eye className="h-4 w-4" />
+                              <span className="sr-only md:not-sr-only md:inline-block">Preview</span>
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              className="gap-1"
+                              onClick={() => navigate(`/admin/articles/edit/${article.id}`)}
+                            >
+                              <PenSquare className="h-4 w-4" />
+                              <span className="sr-only md:not-sr-only md:inline-block">Edit</span>
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="destructive"
+                              className="gap-1"
+                              onClick={() => deleteArticle(article.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              <span className="sr-only md:not-sr-only md:inline-block">Delete</span>
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </Layout>
   );
 };

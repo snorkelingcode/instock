@@ -1,10 +1,12 @@
 
 import React, { useState, useEffect } from "react";
 import { format } from "date-fns";
+import { useNavigate } from "react-router-dom";
 import { CalendarIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 import Layout from "@/components/layout/Layout";
 import NewsPreview from "@/components/news/NewsPreview";
 import FeaturedNews from "@/components/news/FeaturedNews";
@@ -20,6 +22,7 @@ const News = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const navigate = useNavigate();
   
   useMetaTags({
     title: "TCG News and Updates",
@@ -89,6 +92,10 @@ const News = () => {
     return format(new Date(dateString), "MMMM d, yyyy");
   };
 
+  const handleArticleClick = (articleId: string) => {
+    navigate(`/article/${articleId}`);
+  };
+
   // Get unique categories from articles
   const categories = ["all", ...new Set(articles.map(article => article.category))];
 
@@ -106,12 +113,15 @@ const News = () => {
         ) : (
           <>
             {featuredArticle && (
-              <div className="mb-12">
+              <div className="mb-12 cursor-pointer" onClick={() => handleArticleClick(featuredArticle.id)}>
                 <FeaturedNews
+                  id={featuredArticle.id}
                   title={featuredArticle.title}
                   date={formatDate(featuredArticle.published_at || featuredArticle.created_at)}
                   category={featuredArticle.category}
-                  content={featuredArticle.content}
+                  excerpt={featuredArticle.excerpt}
+                  image={featuredArticle.featured_image}
+                  onClick={() => handleArticleClick(featuredArticle.id)}
                 />
               </div>
             )}
@@ -142,11 +152,14 @@ const News = () => {
                     {filteredArticles.map(article => (
                       <NewsPreview
                         key={article.id}
+                        id={article.id}
                         title={article.title}
                         date={formatDate(article.published_at || article.created_at)}
                         category={article.category}
                         excerpt={article.excerpt}
                         featured={article.featured}
+                        image={article.featured_image}
+                        onClick={() => handleArticleClick(article.id)}
                       />
                     ))}
                   </div>

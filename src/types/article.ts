@@ -11,6 +11,8 @@ export interface Article {
   published_at: string | null;
   featured: boolean;
   published: boolean;
+  featured_image?: string;
+  additional_images?: string[];
 }
 
 export interface ArticleFormData {
@@ -20,6 +22,8 @@ export interface ArticleFormData {
   category: string;
   featured: boolean;
   published: boolean;
+  featured_image?: string;
+  additional_images?: string[];
 }
 
 export type ArticleCreate = Omit<Article, 'id' | 'created_at' | 'updated_at'> & {

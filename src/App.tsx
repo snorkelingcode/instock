@@ -11,6 +11,7 @@ import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Products from "./pages/Products";
 import News from "./pages/News";
+import ArticleDetails from "./pages/ArticleDetails";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService"; 
 import CookiePolicy from "./pages/CookiePolicy";
@@ -45,6 +46,7 @@ const App = () => {
               <Route path="/contact" element={<Contact />} />
               <Route path="/products" element={<Products />} />
               <Route path="/news" element={<News />} />
+              <Route path="/article/:id" element={<ArticleDetails />} />
               <Route path="/privacy" element={<PrivacyPolicy />} />
               <Route path="/terms" element={<TermsOfService />} />
               <Route path="/cookies" element={<CookiePolicy />} />
