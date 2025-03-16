@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -16,16 +15,21 @@ export function useRecentPokemonReleases() {
   const fetchRecentReleases = async () => {
     try {
       setLoading(true);
+      setError(null);
+      
       const { data, error } = await supabase
         .from('pokemon_recent_releases')
         .select('*')
         .order('release_date', { ascending: false });
 
       if (error) throw error;
-      setReleases(data as RecentPokemonRelease[]);
+      
+      // Ensure we always have an array, even if data is null
+      setReleases(data || []);
     } catch (err: any) {
       console.error('Error fetching recent Pokemon releases:', err);
       setError(err);
+      // Don't set releases to empty array if there's an error - keep the previous state
     } finally {
       setLoading(false);
     }
@@ -40,7 +44,10 @@ export function useRecentPokemonReleases() {
         .single();
 
       if (error) throw error;
-      setReleases(prev => [data as RecentPokemonRelease, ...prev]);
+      
+      if (data) {
+        setReleases(prev => [data as RecentPokemonRelease, ...prev]);
+      }
       return data;
     } catch (err: any) {
       console.error('Error adding recent Pokemon release:', err);
@@ -59,11 +66,14 @@ export function useRecentPokemonReleases() {
         .single();
 
       if (error) throw error;
-      setReleases(prev => 
-        prev.map(release => 
-          release.id === id ? (data as RecentPokemonRelease) : release
-        )
-      );
+      
+      if (data) {
+        setReleases(prev => 
+          prev.map(release => 
+            release.id === id ? (data as RecentPokemonRelease) : release
+          )
+        );
+      }
       return data;
     } catch (err: any) {
       console.error('Error updating recent Pokemon release:', err);
@@ -111,16 +121,21 @@ export function useUpcomingPokemonReleases() {
   const fetchUpcomingReleases = async () => {
     try {
       setLoading(true);
+      setError(null);
+      
       const { data, error } = await supabase
         .from('pokemon_upcoming_releases')
         .select('*')
         .order('release_date', { ascending: true });
 
       if (error) throw error;
-      setReleases(data as UpcomingPokemonRelease[]);
+      
+      // Ensure we always have an array, even if data is null
+      setReleases(data || []);
     } catch (err: any) {
       console.error('Error fetching upcoming Pokemon releases:', err);
       setError(err);
+      // Don't set releases to empty array if there's an error - keep the previous state
     } finally {
       setLoading(false);
     }
@@ -135,7 +150,10 @@ export function useUpcomingPokemonReleases() {
         .single();
 
       if (error) throw error;
-      setReleases(prev => [...prev, data as UpcomingPokemonRelease]);
+      
+      if (data) {
+        setReleases(prev => [...prev, data as UpcomingPokemonRelease]);
+      }
       return data;
     } catch (err: any) {
       console.error('Error adding upcoming Pokemon release:', err);
@@ -154,11 +172,14 @@ export function useUpcomingPokemonReleases() {
         .single();
 
       if (error) throw error;
-      setReleases(prev => 
-        prev.map(release => 
-          release.id === id ? (data as UpcomingPokemonRelease) : release
-        )
-      );
+      
+      if (data) {
+        setReleases(prev => 
+          prev.map(release => 
+            release.id === id ? (data as UpcomingPokemonRelease) : release
+          )
+        );
+      }
       return data;
     } catch (err: any) {
       console.error('Error updating upcoming Pokemon release:', err);

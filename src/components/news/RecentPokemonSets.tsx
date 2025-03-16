@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,19 +9,18 @@ import { useRecentPokemonReleases } from '@/hooks/usePokemonReleases';
 import EmptyStateHandler from '@/components/ui/empty-state-handler';
 
 const RecentPokemonSets = () => {
-  const [error, setError] = useState<Error | null>(null);
-  const { releases = [], loading } = useRecentPokemonReleases();
   const navigate = useNavigate();
+  const { releases, loading, error } = useRecentPokemonReleases();
 
-  const formatDate = (dateString: string) => {
-    if (!dateString) return '';
+  const formatDate = (dateString: string | null | undefined) => {
+    if (!dateString) return 'Unknown Date';
     
     try {
       const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
       return new Date(dateString).toLocaleDateString('en-US', options);
     } catch (error) {
       console.error('Error formatting date:', error);
-      return '';
+      return 'Unknown Date';
     }
   };
 
@@ -62,9 +61,9 @@ const RecentPokemonSets = () => {
               <RecentRelease
                 key={release.id}
                 name={release.name || 'Unknown Set'}
-                releaseDate={formatDate(release.release_date) || 'Unknown Date'}
+                releaseDate={formatDate(release.release_date)}
                 popularity={release.popularity || 0}
-                imageUrl={release.image_url || release.logo_url}
+                imageUrl={release.image_url || release.logo_url || ''}
               />
             ))}
             <div className="mt-4">

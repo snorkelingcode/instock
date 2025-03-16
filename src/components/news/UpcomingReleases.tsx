@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CalendarIcon } from "lucide-react";
@@ -7,10 +7,9 @@ import { useUpcomingPokemonReleases } from '@/hooks/usePokemonReleases';
 import EmptyStateHandler from '@/components/ui/empty-state-handler';
 
 const UpcomingReleases = () => {
-  const [error, setError] = useState<Error | null>(null);
-  const { releases = [], loading } = useUpcomingPokemonReleases();
+  const { releases, loading, error } = useUpcomingPokemonReleases();
 
-  function calculateDaysUntil(dateString: string): number {
+  function calculateDaysUntil(dateString: string | null | undefined): number {
     if (!dateString) return 0;
     
     try {
@@ -27,7 +26,7 @@ const UpcomingReleases = () => {
     }
   }
 
-  function formatDate(dateString: string): string {
+  function formatDate(dateString: string | null | undefined): string {
     if (!dateString) return 'Unknown Date';
     
     try {
@@ -90,7 +89,7 @@ const UpcomingReleases = () => {
                         {release.image_url && (
                           <img 
                             src={release.image_url} 
-                            alt={release.name} 
+                            alt={release.name || 'Set image'} 
                             className="w-6 h-6 inline-block ml-2"
                             onError={(e) => {
                               // Hide the image if it fails to load
