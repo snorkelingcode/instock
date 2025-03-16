@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,6 +10,7 @@ import { useMetaTags } from "@/hooks/use-meta-tags";
 import EmptyStateHandler from "@/components/ui/empty-state-handler";
 import { supabase } from "@/integrations/supabase/client";
 import { getCache, setCache } from "@/utils/cacheUtils";
+import { Article } from "@/types/article";
 
 const NewsPage = () => {
   useMetaTags({
@@ -22,13 +22,13 @@ const NewsPage = () => {
   });
 
   const [loading, setLoading] = React.useState(true);
-  const [featuredArticle, setFeaturedArticle] = React.useState<any>(null);
-  const [articles, setArticles] = React.useState<any[]>([]);
+  const [featuredArticle, setFeaturedArticle] = React.useState<Article | null>(null);
+  const [articles, setArticles] = React.useState<Article[]>([]);
   const [filteredArticles, setFilteredArticles] = React.useState<{
-    all: any[];
-    product: any[];
-    restocks: any[];
-    market: any[];
+    all: Article[];
+    product: Article[];
+    restocks: Article[];
+    market: Article[];
   }>({
     all: [],
     product: [],
@@ -59,8 +59,8 @@ const NewsPage = () => {
   
   React.useEffect(() => {
     const fetchArticles = async () => {
-      const cachedArticles = getCache<any[]>('news_articles');
-      const cachedFeaturedArticle = getCache<any>('featured_article');
+      const cachedArticles = getCache<Article[]>('news_articles');
+      const cachedFeaturedArticle = getCache<Article>('featured_article');
       
       if (cachedArticles && cachedFeaturedArticle) {
         setArticles(cachedArticles);
@@ -72,24 +72,15 @@ const NewsPage = () => {
       try {
         // Fetch featured article
         const { data: featuredData, error: featuredError } = await supabase
-          .from('articles')
-          .select('*')
-          .eq('published', true)
-          .eq('featured', true)
-          .order('published_at', { ascending: false })
-          .limit(1)
-          .single();
+          .rpc('get_featured_article');
           
-        if (featuredError && featuredError.code !== 'PGRST116') {
-          throw featuredError;
+        if (featuredError) {
+          console.error("Error fetching featured article:", featuredError);
         }
 
-        // Fetch all articles
+        // Fetch all published articles
         const { data: allData, error: allError } = await supabase
-          .from('articles')
-          .select('*')
-          .eq('published', true)
-          .order('published_at', { ascending: false });
+          .rpc('get_published_articles');
 
         if (allError) {
           throw allError;
@@ -119,7 +110,7 @@ const NewsPage = () => {
     fetchArticles();
   }, []);
   
-  const processArticles = (articles: any[]) => {
+  const processArticles = (articles: Article[]) => {
     const filtered = {
       all: articles,
       product: articles.filter(article => article.category === "Product News"),

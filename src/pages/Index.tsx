@@ -1,4 +1,3 @@
-
 import React, { useEffect } from "react";
 import { CardGrid } from "@/components/landing/CardGrid";
 import { Button } from "@/components/ui/button";
@@ -12,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import FeaturedProducts from "@/components/products/FeaturedProducts";
 import { getCache, setCache } from "@/utils/cacheUtils";
 import NewsPreview from "@/components/news/NewsPreview";
+import { Article } from "@/types/article";
 
 const SiteIntro = () => (
   <section className="mb-12 bg-white p-6 rounded-lg shadow-md">
@@ -73,7 +73,7 @@ const HowItWorksSection = () => (
   </section>
 );
 
-const LatestNews = ({ articles }: { articles: any[] }) => (
+const LatestNews = ({ articles }: { articles: Article[] }) => (
   <section className="mb-12">
     <h2 className="text-2xl font-semibold mb-6">Latest TCG News</h2>
     {articles.length > 0 ? (
@@ -125,7 +125,7 @@ const Index = () => {
   const [hasProducts, setHasProducts] = React.useState(false);
   const [featuredProducts, setFeaturedProducts] = React.useState<any[]>([]);
   const [featuredLoading, setFeaturedLoading] = React.useState(true);
-  const [latestArticles, setLatestArticles] = React.useState<any[]>([]);
+  const [latestArticles, setLatestArticles] = React.useState<Article[]>([]);
   const [articlesLoading, setArticlesLoading] = React.useState(true);
 
   // Fetch products
@@ -177,7 +177,7 @@ const Index = () => {
   // Fetch latest articles
   React.useEffect(() => {
     const loadArticles = async () => {
-      const cachedArticles = getCache<any[]>('latest_articles');
+      const cachedArticles = getCache<Article[]>('latest_articles');
       
       if (cachedArticles) {
         setLatestArticles(cachedArticles);
@@ -186,11 +186,7 @@ const Index = () => {
       
       try {
         const { data, error } = await supabase
-          .from('articles')
-          .select('*')
-          .eq('published', true)
-          .order('published_at', { ascending: false })
-          .limit(3);
+          .rpc('get_latest_articles', { limit_count: 3 });
 
         if (error) {
           throw error;

@@ -10,16 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import Layout from "@/components/layout/Layout";
 import { useMetaTags } from "@/hooks/use-meta-tags";
-
-interface Article {
-  id: string;
-  title: string;
-  category: string;
-  created_at: string;
-  updated_at: string;
-  published: boolean;
-  featured: boolean;
-}
+import { Article } from "@/types/article";
 
 const AdminArticles = () => {
   const [articles, setArticles] = useState<Article[]>([]);
@@ -30,8 +21,7 @@ const AdminArticles = () => {
   
   useMetaTags({
     title: "Manage Articles | Admin Dashboard",
-    description: "Manage and edit TCG news articles",
-    noindex: true,
+    description: "Manage and edit TCG news articles"
   });
 
   useEffect(() => {
@@ -52,14 +42,13 @@ const AdminArticles = () => {
   const fetchArticles = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
-        .from("articles")
-        .select("*")
-        .order("created_at", { ascending: false });
+      // Use PostgreSQL RPC function to get articles
+      const { data, error } = await supabase.rpc('get_all_articles');
 
       if (error) throw error;
       setArticles(data || []);
     } catch (error: any) {
+      console.error("Error fetching articles:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to load articles",
@@ -72,10 +61,12 @@ const AdminArticles = () => {
 
   const toggleFeature = async (id: string, featured: boolean) => {
     try {
+      // Use PostgreSQL RPC function to toggle featured status
       const { error } = await supabase
-        .from("articles")
-        .update({ featured: !featured })
-        .eq("id", id);
+        .rpc('toggle_article_featured', { 
+          article_id: id, 
+          is_featured: !featured 
+        });
 
       if (error) throw error;
       
@@ -93,6 +84,7 @@ const AdminArticles = () => {
         description: `Article ${!featured ? "featured" : "unfeatured"} successfully`,
       });
     } catch (error: any) {
+      console.error("Error updating article featured status:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to update article",
@@ -103,13 +95,12 @@ const AdminArticles = () => {
 
   const togglePublish = async (id: string, published: boolean) => {
     try {
+      // Use PostgreSQL RPC function to toggle publish status
       const { error } = await supabase
-        .from("articles")
-        .update({ 
-          published: !published,
-          published_at: !published ? new Date().toISOString() : null
-        })
-        .eq("id", id);
+        .rpc('toggle_article_published', { 
+          article_id: id, 
+          is_published: !published 
+        });
 
       if (error) throw error;
       
@@ -127,6 +118,7 @@ const AdminArticles = () => {
         description: `Article ${!published ? "published" : "unpublished"} successfully`,
       });
     } catch (error: any) {
+      console.error("Error updating article publish status:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to update article",
@@ -141,10 +133,9 @@ const AdminArticles = () => {
     }
     
     try {
+      // Use PostgreSQL RPC function to delete article
       const { error } = await supabase
-        .from("articles")
-        .delete()
-        .eq("id", id);
+        .rpc('delete_article', { article_id: id });
 
       if (error) throw error;
       
@@ -156,6 +147,7 @@ const AdminArticles = () => {
         description: "Article deleted successfully",
       });
     } catch (error: any) {
+      console.error("Error deleting article:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to delete article",

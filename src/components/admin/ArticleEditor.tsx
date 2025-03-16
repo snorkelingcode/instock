@@ -11,6 +11,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { ArticleFormData } from "@/types/article";
 
 // Article categories
 const CATEGORIES = [
@@ -22,15 +23,6 @@ const CATEGORIES = [
   "Events",
   "New Release"
 ];
-
-interface ArticleFormData {
-  title: string;
-  content: string;
-  excerpt: string;
-  category: string;
-  featured: boolean;
-  published: boolean;
-}
 
 const ArticleEditor = () => {
   const { id } = useParams<{ id: string }>();
@@ -72,11 +64,9 @@ const ArticleEditor = () => {
   const fetchArticle = async (articleId: string) => {
     setIsLoading(true);
     try {
+      // Use PostgreSQL RPC function with explicit casting to bypass type issues
       const { data, error } = await supabase
-        .from("articles")
-        .select("*")
-        .eq("id", articleId)
-        .single();
+        .rpc('get_article_by_id', { article_id: articleId });
 
       if (error) throw error;
       
@@ -91,6 +81,7 @@ const ArticleEditor = () => {
         });
       }
     } catch (error: any) {
+      console.error("Error fetching article:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to load article",
@@ -136,23 +127,22 @@ const ArticleEditor = () => {
         published_at: formData.published ? new Date().toISOString() : null
       };
       
-      let result;
-      
       if (isEditing && id) {
-        // Update existing article
-        result = await supabase
-          .from("articles")
-          .update(articleData)
-          .eq("id", id);
+        // Use PostgreSQL RPC function to update article
+        const { error } = await supabase
+          .rpc('update_article', { 
+            article_id: id,
+            article_data: articleData
+          });
+        
+        if (error) throw error;
       } else {
-        // Create new article
-        result = await supabase
-          .from("articles")
-          .insert([articleData]);
+        // Use PostgreSQL RPC function to create article
+        const { error } = await supabase
+          .rpc('create_article', { article_data: articleData });
+        
+        if (error) throw error;
       }
-      
-      const { error } = result;
-      if (error) throw error;
       
       toast({
         title: isEditing ? "Article Updated" : "Article Created",
@@ -164,6 +154,7 @@ const ArticleEditor = () => {
       // Redirect to article list
       navigate("/admin/articles");
     } catch (error: any) {
+      console.error("Error saving article:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to save article",
