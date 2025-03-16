@@ -880,6 +880,45 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_sync_job: {
+        Args: {
+          job_details: Json
+        }
+        Returns: string
+      }
+      get_active_jobs_for_user: {
+        Args: {
+          user_id_param: string
+        }
+        Returns: {
+          id: string
+          job_type: string
+          status: string
+          created_at: string
+          updated_at: string
+          completed_at: string
+          error_message: string
+          user_id: string
+          result_summary: Json
+        }[]
+      }
+      get_job_by_id: {
+        Args: {
+          job_id: string
+        }
+        Returns: {
+          id: string
+          job_type: string
+          status: string
+          created_at: string
+          updated_at: string
+          completed_at: string
+          error_message: string
+          user_id: string
+          result_summary: Json
+          payload: Json
+        }[]
+      }
       gtrgm_compress: {
         Args: {
           "": unknown
@@ -932,6 +971,15 @@ export type Database = {
           "": string
         }
         Returns: string[]
+      }
+      update_job_status: {
+        Args: {
+          job_id: string
+          new_status: string
+          error_msg?: string
+          result?: Json
+        }
+        Returns: undefined
       }
     }
     Enums: {

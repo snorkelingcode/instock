@@ -77,71 +77,61 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({ game, source, label, onSu
     queryFn: async () => {
       if (!jobId) return null;
       
-      // Use RPC call instead of direct table access 
-      // Since the tables may not be registered in the TypeScript types yet
-      const { data, error } = await supabase
-        .rpc('get_job_by_id', { job_id: jobId });
+      // Use RPC function for type safety
+      const { data, error } = await supabase.rpc('get_job_by_id', { job_id: jobId });
 
       if (error) {
         console.error("Error fetching job status:", error);
         throw error;
       }
+      
       return data as JobStatus;
     },
     enabled: !!jobId,
     refetchInterval: isPolling ? 5000 : false, // Poll every 5 seconds
-    meta: {
-      onError: (error: any) => {
-        toast({
-          title: "Error",
-          description: error.message || "Failed to fetch job status",
-          variant: "destructive",
-        });
+  });
+
+  // Update current status when job status data changes
+  useEffect(() => {
+    if (jobStatusData) {
+      setCurrentStatus(jobStatusData as JobStatus);
+      
+      if (jobStatusData.status === 'completed' || jobStatusData.status === 'failed') {
         setIsPolling(false);
         clearInterval(intervalId || undefined);
         setIntervalId(null);
-      }
-    },
-    onSuccess: (data) => {
-      if (data) {
-        setCurrentStatus(data as JobStatus);
-        if (data.status === 'completed' || data.status === 'failed') {
-          setIsPolling(false);
-          clearInterval(intervalId || undefined);
-          setIntervalId(null);
-          if (data.status === 'completed') {
-            toast({
-              title: "Sync Completed",
-              description: `Successfully synced ${label || game} sets.`,
-            });
-            if (onSuccess) {
-              onSuccess();
-            }
-          } else if (data.status === 'failed') {
-            toast({
-              title: "Sync Failed",
-              description: `Sync failed for ${label || game} sets: ${data.error_message || 'Unknown error'}`,
-              variant: "destructive",
-            });
+        
+        if (jobStatusData.status === 'completed') {
+          toast({
+            title: "Sync Completed",
+            description: `Successfully synced ${label || game} sets.`,
+          });
+          if (onSuccess) {
+            onSuccess();
           }
+        } else if (jobStatusData.status === 'failed') {
+          toast({
+            title: "Sync Failed",
+            description: `Sync failed for ${label || game} sets: ${jobStatusData.error_message || 'Unknown error'}`,
+            variant: "destructive",
+          });
         }
       }
-    },
-  });
+    }
+  }, [jobStatusData, intervalId, game, label, onSuccess, toast]);
 
   // Mutation to start the sync
   const syncMutation = useMutation({
     mutationFn: async () => {
-      // Use RPC call instead of direct table access
-      const { data, error } = await supabase
-        .rpc('create_sync_job', {
-          job_details: {
-            job_type: `sync_${targetSource.toLowerCase()}_sets`,
-            user_id: user?.id || null,
-            sync_type: syncType,
-            set_code: setCode
-          }
-        });
+      // Use RPC for type safety
+      const { data, error } = await supabase.rpc('create_sync_job', {
+        job_details: {
+          job_type: `sync_${targetSource.toLowerCase()}_sets`,
+          user_id: user?.id || null,
+          sync_type: syncType,
+          set_code: setCode
+        }
+      });
 
       if (error) {
         console.error("Error starting sync:", error);
@@ -149,14 +139,14 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({ game, source, label, onSu
       }
       return data;
     },
-    onSuccess: (data: any) => {
-      setJobId(data.id);
+    onSuccess: (data) => {
+      setJobId(data);
       setCurrentStatus({
-        id: data.id,
-        job_type: data.job_type,
-        status: data.status,
-        created_at: data.created_at,
-        updated_at: data.updated_at,
+        id: data,
+        job_type: `sync_${targetSource.toLowerCase()}_sets`,
+        status: 'pending',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
         completed_at: null,
         error_message: null,
         user_id: user?.id || null,
@@ -166,16 +156,15 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({ game, source, label, onSu
       setOpen(false);
       setIsPolling(true);
 
-      // Start polling
-      const id = setInterval(() => {
-        refetchJobStatus();
-      }, 5000);
-      setIntervalId(id);
-
       toast({
         title: "Sync Started",
         description: `Syncing ${label || game} sets...`,
       });
+      
+      // Start polling after a short delay
+      setTimeout(() => {
+        refetchJobStatus();
+      }, 1000);
     },
     onError: (error: any) => {
       toast({
@@ -184,9 +173,6 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({ game, source, label, onSu
         variant: "destructive",
       });
       setIsSyncing(false);
-      setIsPolling(false);
-      clearInterval(intervalId || undefined);
-      setIntervalId(null);
     },
   });
 
@@ -197,8 +183,7 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({ game, source, label, onSu
 
   const handleJobStatus = useCallback(async (jobId: string) => {
     try {
-      const { data, error } = await supabase
-        .rpc('get_job_by_id', { job_id: jobId });
+      const { data, error } = await supabase.rpc('get_job_by_id', { job_id: jobId });
 
       if (error) {
         console.error("Error fetching job status:", error);
@@ -210,9 +195,10 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({ game, source, label, onSu
         return;
       }
 
-      setCurrentStatus(data as JobStatus);
+      const jobData = data as JobStatus;
+      setCurrentStatus(jobData);
 
-      if (data.status === 'completed' || data.status === 'failed') {
+      if (jobData && (jobData.status === 'completed' || jobData.status === 'failed')) {
         setIsPolling(false);
         clearInterval(intervalId || undefined);
         setIntervalId(null);
