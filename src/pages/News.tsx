@@ -106,7 +106,7 @@ const News = () => {
         ) : (
           <>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
-              <div className="lg:col-span-2 space-y-6">
+              <div className="lg:col-span-2 space-y-4">
                 {featuredArticles.length > 0 ? (
                   featuredArticles.map((article) => (
                     <div key={article.id} className="cursor-pointer" onClick={() => handleArticleClick(article.id)}>
