@@ -21,18 +21,18 @@ const WelcomeCard = () => {
           updated with the latest TCG news and releases.
         </p>
       </CardContent>
-      <CardFooter className="flex flex-col sm:flex-row gap-4 sm:justify-between">
+      <CardFooter className="flex flex-col gap-4">
         <Button 
           onClick={() => navigate('/about')}
           variant="outline"
-          className="border-red-300 hover:bg-red-50 text-red-700 w-full sm:w-auto transition-all duration-300 shadow-sm"
+          className="border-red-300 hover:bg-red-50 text-red-700 w-full transition-all duration-300 shadow-sm"
         >
           <span>Learn More</span> 
           <ArrowRight className="ml-1 h-4 w-4" />
         </Button>
         <Button 
           onClick={() => navigate('/products')}
-          className="bg-red-600 hover:bg-red-700 w-full sm:w-auto transition-all duration-300 shadow-md"
+          className="bg-red-600 hover:bg-red-700 w-full transition-all duration-300 shadow-md"
         >
           <span>Browse All Products</span>
           <ArrowRight className="ml-1 h-4 w-4" />
