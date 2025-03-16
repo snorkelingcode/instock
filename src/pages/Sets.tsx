@@ -30,6 +30,7 @@ const SetsPage = () => {
             icon={<Sparkles className="h-6 w-6 text-blue-500" />}
             color="#3B82F6"
             link="/sets/mtg"
+            comingSoon={true}
           />
           
           <TCGCategoryCard 
@@ -39,6 +40,7 @@ const SetsPage = () => {
             icon={<Layers className="h-6 w-6 text-yellow-500" />}
             color="#F59E0B"
             link="/sets/yugioh"
+            comingSoon={true}
           />
           
           <TCGCategoryCard 
@@ -48,6 +50,7 @@ const SetsPage = () => {
             icon={<ScrollText className="h-6 w-6 text-purple-500" />}
             color="#8B5CF6"
             link="/sets/lorcana"
+            comingSoon={true}
           />
         </div>
       </div>

@@ -22,9 +22,10 @@ import RequireAuth from "./components/auth/RequireAuth";
 import RequireAdmin from "./components/auth/RequireAdmin";
 import PokemonSets from "./pages/TCGSets/PokemonSets";
 import PokemonSetDetails from "./pages/TCGSets/PokemonSetDetails";
-import MTGSets from "./pages/TCGSets/MTGSets";
-import YugiohSets from "./pages/TCGSets/YugiohSets";
-import LorcanaSets from "./pages/TCGSets/LorcanaSets";
+// Commented out since these are coming soon
+// import MTGSets from "./pages/TCGSets/MTGSets";
+// import YugiohSets from "./pages/TCGSets/YugiohSets";
+// import LorcanaSets from "./pages/TCGSets/LorcanaSets";
 import SetSyncPage from "./pages/TCGSets/SetSyncPage";
 
 const queryClient = new QueryClient();
@@ -53,9 +54,12 @@ const App = () => {
               <Route path="/sets" element={<Sets />} />
               <Route path="/sets/pokemon" element={<PokemonSets />} />
               <Route path="/sets/pokemon/:setId" element={<PokemonSetDetails />} />
-              <Route path="/sets/mtg" element={<MTGSets />} />
-              <Route path="/sets/yugioh" element={<YugiohSets />} />
-              <Route path="/sets/lorcana" element={<LorcanaSets />} />
+              
+              {/* Commented out since these are coming soon */}
+              {/* <Route path="/sets/mtg" element={<MTGSets />} /> */}
+              {/* <Route path="/sets/yugioh" element={<YugiohSets />} /> */}
+              {/* <Route path="/sets/lorcana" element={<LorcanaSets />} /> */}
+              
               <Route 
                 path="/sets/sync" 
                 element={
