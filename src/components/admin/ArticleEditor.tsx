@@ -11,7 +11,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { ArticleFormData } from "@/types/article";
+import { ArticleFormData, Article } from "@/types/article";
 
 // Article categories
 const CATEGORIES = [
@@ -64,9 +64,11 @@ const ArticleEditor = () => {
   const fetchArticle = async (articleId: string) => {
     setIsLoading(true);
     try {
-      // Use PostgreSQL RPC function with explicit casting to bypass type issues
       const { data, error } = await supabase
-        .rpc('get_article_by_id', { article_id: articleId });
+        .from('articles')
+        .select('*')
+        .eq('id', articleId)
+        .single();
 
       if (error) throw error;
       
@@ -120,26 +122,28 @@ const ArticleEditor = () => {
     setIsSaving(true);
     
     try {
+      const now = new Date().toISOString();
       const articleData = {
         ...formData,
         author_id: user.id,
-        updated_at: new Date().toISOString(),
-        published_at: formData.published ? new Date().toISOString() : null
+        updated_at: now,
+        published_at: formData.published ? now : null
       };
       
       if (isEditing && id) {
-        // Use PostgreSQL RPC function to update article
         const { error } = await supabase
-          .rpc('update_article', { 
-            article_id: id,
-            article_data: articleData
-          });
+          .from('articles')
+          .update(articleData)
+          .eq('id', id);
         
         if (error) throw error;
       } else {
-        // Use PostgreSQL RPC function to create article
         const { error } = await supabase
-          .rpc('create_article', { article_data: articleData });
+          .from('articles')
+          .insert([{
+            ...articleData,
+            created_at: now
+          }]);
         
         if (error) throw error;
       }

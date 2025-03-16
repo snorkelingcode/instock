@@ -1,4 +1,3 @@
-
 /**
  * Set data in local storage cache
  * @param key Cache key
@@ -55,6 +54,22 @@ export function clearCache(): void {
     });
   } catch (error) {
     console.error('Error clearing cache:', error);
+  }
+}
+
+/**
+ * Invalidate article cache by removing specific cached items
+ */
+export function invalidateArticlesCache(): void {
+  try {
+    const keys = Object.keys(localStorage);
+    keys.forEach(key => {
+      if (key.startsWith('cache_') && key.includes('articles')) {
+        localStorage.removeItem(key);
+      }
+    });
+  } catch (error) {
+    console.error('Error invalidating articles cache:', error);
   }
 }
 

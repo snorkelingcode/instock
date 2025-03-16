@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { CardGrid } from "@/components/landing/CardGrid";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
@@ -12,6 +12,8 @@ import FeaturedProducts from "@/components/products/FeaturedProducts";
 import { getCache, setCache } from "@/utils/cacheUtils";
 import NewsPreview from "@/components/news/NewsPreview";
 import { Article } from "@/types/article";
+import { format } from "date-fns";
+import { ChevronRight } from "lucide-react";
 
 const SiteIntro = () => (
   <section className="mb-12 bg-white p-6 rounded-lg shadow-md">
@@ -121,14 +123,32 @@ const Index = () => {
     ogDescription: "Never miss a restock again. Get real-time inventory updates for Pokemon, Magic, Yu-Gi-Oh, and more from all major retailers."
   });
 
-  const [loading, setLoading] = React.useState(true);
-  const [hasProducts, setHasProducts] = React.useState(false);
-  const [featuredProducts, setFeaturedProducts] = React.useState<any[]>([]);
-  const [featuredLoading, setFeaturedLoading] = React.useState(true);
-  const [latestArticles, setLatestArticles] = React.useState<Article[]>([]);
-  const [articlesLoading, setArticlesLoading] = React.useState(true);
+  const [loading, setLoading] = useState(true);
+  const [hasProducts, setHasProducts] = useState(false);
+  const [featuredProducts, setFeaturedProducts] = useState<any[]>([]);
+  const [featuredLoading, setFeaturedLoading] = useState(true);
+  const [latestArticles, setLatestArticles] = useState<Article[]>([]);
+  const [loadingArticles, setLoadingArticles] = useState(true);
 
-  // Fetch products
+  const fetchLatestArticles = async () => {
+    setLoadingArticles(true);
+    try {
+      const { data, error } = await supabase
+        .from('articles')
+        .select('*')
+        .eq('published', true)
+        .order('published_at', { ascending: false })
+        .limit(3);
+      
+      if (error) throw error;
+      setLatestArticles(data || []);
+    } catch (error: any) {
+      console.error("Error fetching articles:", error);
+    } finally {
+      setLoadingArticles(false);
+    }
+  };
+
   React.useEffect(() => {
     const loadProducts = async () => {
       const cachedProducts = getCache<any[]>('featured_products');
@@ -174,39 +194,8 @@ const Index = () => {
     loadProducts();
   }, []);
 
-  // Fetch latest articles
   React.useEffect(() => {
-    const loadArticles = async () => {
-      const cachedArticles = getCache<Article[]>('latest_articles');
-      
-      if (cachedArticles) {
-        setLatestArticles(cachedArticles);
-        setArticlesLoading(false);
-      }
-      
-      try {
-        const { data, error } = await supabase
-          .rpc('get_latest_articles', { limit_count: 3 });
-
-        if (error) {
-          throw error;
-        }
-
-        if (data) {
-          setLatestArticles(data);
-          setArticlesLoading(false);
-          setCache('latest_articles', data, 5);
-        }
-      } catch (error) {
-        console.error('Error fetching latest articles:', error);
-        
-        if (!cachedArticles) {
-          setArticlesLoading(false);
-        }
-      }
-    };
-
-    loadArticles();
+    fetchLatestArticles();
   }, []);
 
   return (
@@ -225,7 +214,7 @@ const Index = () => {
       <HowItWorksSection />
       
       <EmptyStateHandler
-        isLoading={articlesLoading}
+        isLoading={loadingArticles}
         hasItems={latestArticles.length > 0}
         loadingComponent={<LoadingSpinner size="lg" />}
         emptyComponent={<div className="text-center py-8">No news articles available yet.</div>}

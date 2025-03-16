@@ -42,8 +42,10 @@ const AdminArticles = () => {
   const fetchArticles = async () => {
     setIsLoading(true);
     try {
-      // Use PostgreSQL RPC function to get articles
-      const { data, error } = await supabase.rpc('get_all_articles');
+      const { data, error } = await supabase
+        .from('articles')
+        .select('*')
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
       setArticles(data || []);
@@ -61,12 +63,13 @@ const AdminArticles = () => {
 
   const toggleFeature = async (id: string, featured: boolean) => {
     try {
-      // Use PostgreSQL RPC function to toggle featured status
       const { error } = await supabase
-        .rpc('toggle_article_featured', { 
-          article_id: id, 
-          is_featured: !featured 
-        });
+        .from('articles')
+        .update({ 
+          featured: !featured,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id);
 
       if (error) throw error;
       
@@ -95,12 +98,15 @@ const AdminArticles = () => {
 
   const togglePublish = async (id: string, published: boolean) => {
     try {
-      // Use PostgreSQL RPC function to toggle publish status
+      const now = new Date().toISOString();
       const { error } = await supabase
-        .rpc('toggle_article_published', { 
-          article_id: id, 
-          is_published: !published 
-        });
+        .from('articles')
+        .update({ 
+          published: !published,
+          published_at: !published ? now : null,
+          updated_at: now
+        })
+        .eq('id', id);
 
       if (error) throw error;
       
@@ -108,7 +114,11 @@ const AdminArticles = () => {
       setArticles(prev => 
         prev.map(article => 
           article.id === id 
-            ? { ...article, published: !published } 
+            ? { 
+                ...article, 
+                published: !published,
+                published_at: !published ? now : null 
+              } 
             : article
         )
       );
@@ -133,9 +143,10 @@ const AdminArticles = () => {
     }
     
     try {
-      // Use PostgreSQL RPC function to delete article
       const { error } = await supabase
-        .rpc('delete_article', { article_id: id });
+        .from('articles')
+        .delete()
+        .eq('id', id);
 
       if (error) throw error;
       
