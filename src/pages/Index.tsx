@@ -1,10 +1,11 @@
 
 import React, { useState, useEffect } from "react";
 import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { useNavigate } from "react-router-dom";
 import { Shell } from "@/components/layout/Shell";
+import WelcomeCard from "@/components/home/WelcomeCard";
+import HowItWorksCard from "@/components/home/HowItWorksCard";
+import NewsPreview from "@/components/news/NewsPreview";
 import { useMetaTags } from "@/hooks/use-meta-tags";
 import { supabase } from "@/integrations/supabase/client";
 import { Article } from "@/types/article";
@@ -15,6 +16,7 @@ const Index = () => {
     description: "The latest news and updates from the TCG world."
   });
 
+  const navigate = useNavigate();
   const formatDate = (dateString: string) => {
     return format(new Date(dateString), "MMMM d, yyyy");
   };
@@ -47,40 +49,47 @@ const Index = () => {
     }
   };
 
+  const handleArticleClick = (articleId: string) => {
+    navigate(`/article/${articleId}`);
+  };
+
   return (
     <Shell>
-      <section className="container mx-auto py-12">
-        <h2 className="text-3xl font-bold mb-6">Latest News</h2>
-        {isLoadingArticles ? (
-          <div className="flex justify-center py-6">
-            <p className="text-gray-500">Loading articles...</p>
-          </div>
-        ) : articles.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {articles.map(article => (
-              <Card key={article.id} className="bg-white rounded-lg shadow-md overflow-hidden">
-                <CardHeader className="pb-2">
-                  <div className="flex justify-between items-start mb-1">
-                    <Badge variant="default" className="font-medium">{article.category}</Badge>
-                  </div>
-                  <CardTitle className="text-xl">{article.title}</CardTitle>
-                  <CardDescription className="text-gray-500">
-                    <CalendarIcon className="h-4 w-4 mr-2 inline-block align-middle" />
-                    {formatDate(article.published_at || article.created_at)}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-gray-700">{article.excerpt}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <div className="flex justify-center py-6">
-            <p className="text-gray-500">No articles found.</p>
-          </div>
-        )}
-      </section>
+      <div className="container mx-auto py-12 px-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+          <WelcomeCard />
+          <HowItWorksCard />
+        </div>
+        
+        <section className="mt-12">
+          <h2 className="text-3xl font-bold mb-6">Latest News</h2>
+          {isLoadingArticles ? (
+            <div className="flex justify-center py-6">
+              <p className="text-gray-500">Loading articles...</p>
+            </div>
+          ) : articles.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {articles.map(article => (
+                <NewsPreview
+                  key={article.id}
+                  id={article.id}
+                  title={article.title}
+                  date={formatDate(article.published_at || article.created_at)}
+                  category={article.category}
+                  excerpt={article.excerpt}
+                  featured={article.featured}
+                  image={article.featured_image}
+                  onClick={() => handleArticleClick(article.id)}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="flex justify-center py-6">
+              <p className="text-gray-500">No articles found.</p>
+            </div>
+          )}
+        </section>
+      </div>
     </Shell>
   );
 };

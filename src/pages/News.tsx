@@ -2,14 +2,12 @@
 import React, { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
-import { CalendarIcon } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
 import Layout from "@/components/layout/Layout";
 import NewsPreview from "@/components/news/NewsPreview";
 import FeaturedNews from "@/components/news/FeaturedNews";
+import RecentPokemonSets from "@/components/news/RecentPokemonSets";
+import UpcomingReleases from "@/components/news/UpcomingReleases";
 import { useToast } from "@/hooks/use-toast";
 import { useMetaTags } from "@/hooks/use-meta-tags";
 import { supabase } from "@/integrations/supabase/client";
@@ -112,19 +110,28 @@ const News = () => {
           </div>
         ) : (
           <>
-            {featuredArticle && (
-              <div className="mb-12 cursor-pointer" onClick={() => handleArticleClick(featuredArticle.id)}>
-                <FeaturedNews
-                  id={featuredArticle.id}
-                  title={featuredArticle.title}
-                  date={formatDate(featuredArticle.published_at || featuredArticle.created_at)}
-                  category={featuredArticle.category}
-                  excerpt={featuredArticle.excerpt}
-                  image={featuredArticle.featured_image}
-                  onClick={() => handleArticleClick(featuredArticle.id)}
-                />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
+              <div className="lg:col-span-2">
+                {featuredArticle && (
+                  <div className="mb-8 cursor-pointer" onClick={() => handleArticleClick(featuredArticle.id)}>
+                    <FeaturedNews
+                      id={featuredArticle.id}
+                      title={featuredArticle.title}
+                      date={formatDate(featuredArticle.published_at || featuredArticle.created_at)}
+                      category={featuredArticle.category}
+                      excerpt={featuredArticle.excerpt}
+                      image={featuredArticle.featured_image}
+                      onClick={() => handleArticleClick(featuredArticle.id)}
+                    />
+                  </div>
+                )}
               </div>
-            )}
+              
+              <div className="space-y-8">
+                <RecentPokemonSets />
+                <UpcomingReleases />
+              </div>
+            </div>
 
             <Tabs defaultValue="all" className="mb-8">
               <TabsList className="mb-4 flex flex-wrap">
