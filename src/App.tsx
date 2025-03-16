@@ -43,7 +43,7 @@ const App = () => {
               <Route path="/cookies" element={<CookiePolicy />} />
               <Route path="/auth" element={<Auth />} />
               
-              {/* Sets routes */}
+              {/* Sets route */}
               <Route path="/sets" element={<Sets />} />
               
               {/* Admin routes */}
