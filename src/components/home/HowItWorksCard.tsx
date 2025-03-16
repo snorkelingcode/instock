@@ -5,15 +5,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const HowItWorksCard = () => {
   return (
-    <Card className="bg-white border-blue-200 shadow-md">
+    <Card className="bg-white border-red-200 shadow-md">
       <CardHeader>
-        <CardTitle className="text-xl text-blue-800">How TCG In-Stock Tracker Works</CardTitle>
+        <CardTitle className="text-xl text-red-800">How TCG In-Stock Tracker Works</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-6">
           <div className="flex items-start">
-            <div className="mr-4 bg-blue-100 p-2 rounded-full">
-              <Search className="h-5 w-5 text-blue-700" />
+            <div className="mr-4 bg-red-100 p-2 rounded-full">
+              <Search className="h-5 w-5 text-red-700" />
             </div>
             <div>
               <h3 className="font-medium mb-1">Find Products</h3>
@@ -24,8 +24,8 @@ const HowItWorksCard = () => {
           </div>
           
           <div className="flex items-start">
-            <div className="mr-4 bg-blue-100 p-2 rounded-full">
-              <Bell className="h-5 w-5 text-blue-700" />
+            <div className="mr-4 bg-red-100 p-2 rounded-full">
+              <Bell className="h-5 w-5 text-red-700" />
             </div>
             <div>
               <h3 className="font-medium mb-1">Get Notifications</h3>
@@ -36,8 +36,8 @@ const HowItWorksCard = () => {
           </div>
           
           <div className="flex items-start">
-            <div className="mr-4 bg-blue-100 p-2 rounded-full">
-              <ListChecks className="h-5 w-5 text-blue-700" />
+            <div className="mr-4 bg-red-100 p-2 rounded-full">
+              <ListChecks className="h-5 w-5 text-red-700" />
             </div>
             <div>
               <h3 className="font-medium mb-1">Stay Updated</h3>

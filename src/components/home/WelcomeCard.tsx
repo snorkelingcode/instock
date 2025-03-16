@@ -9,9 +9,9 @@ const WelcomeCard = () => {
   const navigate = useNavigate();
   
   return (
-    <Card className="bg-gradient-to-r from-blue-50 to-white border-blue-200 shadow-md">
+    <Card className="bg-gradient-to-r from-red-50 to-white border-red-200 shadow-md">
       <CardHeader>
-        <CardTitle className="text-2xl text-blue-800">Welcome to TCG In-Stock Tracker</CardTitle>
+        <CardTitle className="text-2xl text-red-800">Welcome to TCG In-Stock Tracker</CardTitle>
         <CardDescription>Your one-stop resource for Trading Card Game availability</CardDescription>
       </CardHeader>
       <CardContent>
@@ -25,11 +25,13 @@ const WelcomeCard = () => {
         <Button 
           onClick={() => navigate('/about')}
           variant="outline"
+          className="border-red-300 hover:bg-red-50"
         >
           Learn More <ArrowRight className="ml-1 h-4 w-4" />
         </Button>
         <Button 
           onClick={() => navigate('/products')}
+          className="bg-red-600 hover:bg-red-700"
         >
           Browse All Products <ArrowRight className="ml-1 h-4 w-4" />
         </Button>
