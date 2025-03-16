@@ -15,12 +15,6 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService"; 
 import CookiePolicy from "./pages/CookiePolicy";
 import Sets from "./pages/Sets";
-import PokemonSets from "./pages/TCGSets/PokemonSets";
-import MTGSets from "./pages/TCGSets/MTGSets";
-import YugiohSets from "./pages/TCGSets/YugiohSets";
-import LorcanaSets from "./pages/TCGSets/LorcanaSets";
-import SetSyncPage from "./pages/TCGSets/SetSyncPage";
-import PokemonSetDetails from "./pages/TCGSets/PokemonSetDetails";
 import Auth from "./pages/Auth";
 import AdminArticles from "./pages/admin/AdminArticles";
 import ArticleEditor from "./components/admin/ArticleEditor";
@@ -49,23 +43,10 @@ const App = () => {
               <Route path="/cookies" element={<CookiePolicy />} />
               <Route path="/auth" element={<Auth />} />
               
-              {/* TCG Sets routes */}
+              {/* Sets routes */}
               <Route path="/sets" element={<Sets />} />
-              <Route path="/sets/pokemon" element={<PokemonSets />} />
-              <Route path="/sets/pokemon/:setId" element={<PokemonSetDetails />} />
-              <Route path="/sets/mtg" element={<MTGSets />} />
-              <Route path="/sets/yugioh" element={<YugiohSets />} />
-              <Route path="/sets/lorcana" element={<LorcanaSets />} />
               
               {/* Admin routes */}
-              <Route 
-                path="/sets/sync" 
-                element={
-                  <RequireAdmin>
-                    <SetSyncPage />
-                  </RequireAdmin>
-                } 
-              />
               <Route 
                 path="/admin/articles" 
                 element={

@@ -77,42 +77,6 @@ const Navigation = () => {
           <Link to="/sets" className="hover:text-red-200 transition-colors">
             Sets
           </Link>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="hover:text-red-200 transition-colors bg-transparent text-white">
-                TCG Sets
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56">
-              <DropdownMenuItem>
-                <Link to="/sets/pokemon" className="w-full">
-                  Pokemon
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Link to="/sets/mtg" className="w-full">
-                  Magic: The Gathering
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Link to="/sets/yugioh" className="w-full">
-                  Yu-Gi-Oh!
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Link to="/sets/lorcana" className="w-full">
-                  Disney Lorcana
-                </Link>
-              </DropdownMenuItem>
-              {isAdmin && (
-                <DropdownMenuItem>
-                  <Link to="/sets/sync" className="w-full">
-                    Sync Sets
-                  </Link>
-                </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
           <Link
             to="/about"
             className="hover:text-red-200 transition-colors"
@@ -195,34 +159,6 @@ const Navigation = () => {
               onClick={toggleMenu}
             >
               Sets
-            </Link>
-            <Link
-              to="/sets/pokemon"
-              className="hover:text-red-200 transition-colors pl-4"
-              onClick={toggleMenu}
-            >
-              - Pokemon
-            </Link>
-            <Link
-              to="/sets/mtg"
-              className="hover:text-red-200 transition-colors pl-4"
-              onClick={toggleMenu}
-            >
-              - Magic: The Gathering
-            </Link>
-            <Link
-              to="/sets/yugioh"
-              className="hover:text-red-200 transition-colors pl-4"
-              onClick={toggleMenu}
-            >
-              - Yu-Gi-Oh!
-            </Link>
-            <Link
-              to="/sets/lorcana"
-              className="hover:text-red-200 transition-colors pl-4"
-              onClick={toggleMenu}
-            >
-              - Disney Lorcana
             </Link>
             <Link
               to="/about"
