@@ -1,3 +1,4 @@
+
 import React, { useEffect } from "react";
 import { CardGrid } from "@/components/landing/CardGrid";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,7 @@ import LoadingSpinner from "@/components/ui/loading-spinner";
 import { supabase } from "@/integrations/supabase/client";
 import FeaturedProducts from "@/components/products/FeaturedProducts";
 import { getCache, setCache } from "@/utils/cacheUtils";
+import NewsPreview from "@/components/news/NewsPreview";
 
 const SiteIntro = () => (
   <section className="mb-12 bg-white p-6 rounded-lg shadow-md">
@@ -71,6 +73,39 @@ const HowItWorksSection = () => (
   </section>
 );
 
+const LatestNews = ({ articles }: { articles: any[] }) => (
+  <section className="mb-12">
+    <h2 className="text-2xl font-semibold mb-6">Latest TCG News</h2>
+    {articles.length > 0 ? (
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {articles.slice(0, 3).map((article, index) => (
+          <NewsPreview
+            key={article.id}
+            title={article.title}
+            date={new Date(article.published_at || article.created_at).toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            })}
+            category={article.category}
+            excerpt={article.excerpt}
+            featured={index === 0}
+          />
+        ))}
+      </div>
+    ) : (
+      <div className="text-center py-8">
+        <p className="text-gray-500">Stay tuned for upcoming news and announcements.</p>
+      </div>
+    )}
+    <div className="text-center mt-6">
+      <Button asChild variant="outline">
+        <Link to="/news">View All News</Link>
+      </Button>
+    </div>
+  </section>
+);
+
 const NoProductsFound = () => (
   <div className="text-center py-8">
     <p className="text-gray-500">No products found. Please check back later for updates.</p>
@@ -90,9 +125,12 @@ const Index = () => {
   const [hasProducts, setHasProducts] = React.useState(false);
   const [featuredProducts, setFeaturedProducts] = React.useState<any[]>([]);
   const [featuredLoading, setFeaturedLoading] = React.useState(true);
+  const [latestArticles, setLatestArticles] = React.useState<any[]>([]);
+  const [articlesLoading, setArticlesLoading] = React.useState(true);
 
+  // Fetch products
   React.useEffect(() => {
-    const loadData = async () => {
+    const loadProducts = async () => {
       const cachedProducts = getCache<any[]>('featured_products');
       const cachedHasProducts = getCache<boolean>('has_products');
       
@@ -133,7 +171,46 @@ const Index = () => {
       }
     };
 
-    loadData();
+    loadProducts();
+  }, []);
+
+  // Fetch latest articles
+  React.useEffect(() => {
+    const loadArticles = async () => {
+      const cachedArticles = getCache<any[]>('latest_articles');
+      
+      if (cachedArticles) {
+        setLatestArticles(cachedArticles);
+        setArticlesLoading(false);
+      }
+      
+      try {
+        const { data, error } = await supabase
+          .from('articles')
+          .select('*')
+          .eq('published', true)
+          .order('published_at', { ascending: false })
+          .limit(3);
+
+        if (error) {
+          throw error;
+        }
+
+        if (data) {
+          setLatestArticles(data);
+          setArticlesLoading(false);
+          setCache('latest_articles', data, 5);
+        }
+      } catch (error) {
+        console.error('Error fetching latest articles:', error);
+        
+        if (!cachedArticles) {
+          setArticlesLoading(false);
+        }
+      }
+    };
+
+    loadArticles();
   }, []);
 
   return (
@@ -150,6 +227,15 @@ const Index = () => {
       )}
       
       <HowItWorksSection />
+      
+      <EmptyStateHandler
+        isLoading={articlesLoading}
+        hasItems={latestArticles.length > 0}
+        loadingComponent={<LoadingSpinner size="lg" />}
+        emptyComponent={<div className="text-center py-8">No news articles available yet.</div>}
+      >
+        <LatestNews articles={latestArticles} />
+      </EmptyStateHandler>
       
       <h2 className="text-2xl font-semibold mb-6">Featured Products</h2>
       <FeaturedProducts products={featuredProducts} loading={featuredLoading} />
