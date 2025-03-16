@@ -87,8 +87,9 @@ const setsCache: {
 const SETS_CACHE_KEY = 'pokemon_sets_cache';
 const CARDS_CACHE_KEY_PREFIX = 'pokemon_cards_cache_';
 
-// Cache expiration time (5 minutes)
-const CACHE_TTL = 5 * 60 * 1000;
+// Cache expiration time (10 minutes for sets, 30 minutes for cards)
+const SETS_CACHE_TTL = 10 * 60 * 1000; 
+const CARDS_CACHE_TTL = 30 * 60 * 1000;
 
 // Determine if a string is a valid number
 const isNumeric = (str: string) => {
@@ -136,13 +137,13 @@ const normalizeCardData = (card: any): PokemonCard => {
   };
 };
 
-// Fetch cards from API with optimized error handling and retries
+// Try to get data from Supabase first, fallback to API
 export const fetchPokemonCards = async (setId: string): Promise<PokemonCard[]> => {
   console.log(`Fetching cards for set: ${setId}`);
   
   // Check memory cache first
   const cached = cardCache.get(setId);
-  if (cached && (Date.now() - cached.timestamp < CACHE_TTL)) {
+  if (cached && (Date.now() - cached.timestamp < CARDS_CACHE_TTL)) {
     console.log(`Using memory cache for set: ${setId}`);
     return cached.cards;
   }
@@ -154,7 +155,7 @@ export const fetchPokemonCards = async (setId: string): Promise<PokemonCard[]> =
     
     if (localCache) {
       const parsedCache = JSON.parse(localCache);
-      if (Date.now() - parsedCache.timestamp < CACHE_TTL) {
+      if (Date.now() - parsedCache.timestamp < CARDS_CACHE_TTL) {
         console.log(`Using localStorage cache for set: ${setId}`);
         
         // Store in memory cache too
@@ -168,10 +169,60 @@ export const fetchPokemonCards = async (setId: string): Promise<PokemonCard[]> =
     }
   } catch (e) {
     console.warn("Error accessing localStorage:", e);
-    // Continue to API fetch if localStorage access fails
   }
   
-  // Always fetch from API
+  // Try to get from Supabase first
+  try {
+    console.log(`Trying to fetch from Supabase for set: ${setId}`);
+    const { data: supabaseCards, error } = await supabase
+      .from('pokemon_cards')
+      .select('*')
+      .eq('set_id', setId);
+      
+    if (!error && supabaseCards && supabaseCards.length > 0) {
+      console.log(`Found ${supabaseCards.length} cards in Supabase for set: ${setId}`);
+      
+      // Process the cards and cache them
+      const processedCards = supabaseCards.map(card => normalizeCardData(card));
+      const sortedCards = sortCardsByNumber(processedCards);
+      
+      // Cache the results
+      cacheCards(setId, sortedCards);
+      
+      return sortedCards;
+    } else {
+      console.log(`No cards found in Supabase for set: ${setId}, falling back to API`);
+    }
+  } catch (supabaseError) {
+    console.error(`Error fetching from Supabase for set: ${setId}:`, supabaseError);
+  }
+  
+  // Fallback to Pokemon TCG API
+  return fetchCardsFromAPI(setId);
+};
+
+// Helper function to cache cards
+const cacheCards = (setId: string, cards: PokemonCard[]) => {
+  // Cache in memory
+  cardCache.set(setId, {
+    cards,
+    timestamp: Date.now()
+  });
+  
+  // Cache in localStorage
+  try {
+    const localCacheKey = `${CARDS_CACHE_KEY_PREFIX}${setId}`;
+    localStorage.setItem(localCacheKey, JSON.stringify({
+      cards,
+      timestamp: Date.now()
+    }));
+  } catch (e) {
+    console.warn("Error storing in localStorage:", e);
+  }
+};
+
+// Fetch cards from API with optimized error handling and retries
+const fetchCardsFromAPI = async (setId: string): Promise<PokemonCard[]> => {
   console.log(`Fetching from API for set: ${setId}`);
   
   // Maximum retries for API errors
@@ -180,7 +231,7 @@ export const fetchPokemonCards = async (setId: string): Promise<PokemonCard[]> =
   
   while (retryCount <= MAX_RETRIES) {
     try {
-      // Use consistent timeout - 8 seconds (decreased from 12 for faster feedback)
+      // Use consistent timeout - 8 seconds
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 8000);
       
@@ -202,23 +253,8 @@ export const fetchPokemonCards = async (setId: string): Promise<PokemonCard[]> =
         const fetchedCards = data.data.map((card: any) => normalizeCardData(card));
         const sortedCards = sortCardsByNumber(fetchedCards);
         
-        // Cache the results in memory
-        cardCache.set(setId, {
-          cards: sortedCards,
-          timestamp: Date.now()
-        });
-        
-        // Cache in localStorage
-        try {
-          const localCacheKey = `${CARDS_CACHE_KEY_PREFIX}${setId}`;
-          localStorage.setItem(localCacheKey, JSON.stringify({
-            cards: sortedCards,
-            timestamp: Date.now()
-          }));
-        } catch (e) {
-          console.warn("Error storing in localStorage:", e);
-          // Continue even if localStorage fails
-        }
+        // Cache the results
+        cacheCards(setId, sortedCards);
         
         return sortedCards;
       } catch (error) {
@@ -252,12 +288,12 @@ export const fetchPokemonCards = async (setId: string): Promise<PokemonCard[]> =
   throw new Error(`Failed to fetch cards for set ${setId} after ${MAX_RETRIES} retries`);
 };
 
-// Fetch all Pokemon sets directly from API
+// Try to get sets from Supabase first, fallback to API
 export const fetchPokemonSets = async (): Promise<PokemonSet[]> => {
   console.log("Fetching Pokemon sets");
   
   // Check memory cache first
-  if (setsCache.sets.length > 0 && (Date.now() - setsCache.timestamp < CACHE_TTL)) {
+  if (setsCache.sets.length > 0 && (Date.now() - setsCache.timestamp < SETS_CACHE_TTL)) {
     console.log("Using memory cache for Pokemon sets");
     return setsCache.sets;
   }
@@ -268,7 +304,7 @@ export const fetchPokemonSets = async (): Promise<PokemonSet[]> => {
     
     if (localCache) {
       const parsedCache = JSON.parse(localCache);
-      if (Date.now() - parsedCache.timestamp < CACHE_TTL) {
+      if (Date.now() - parsedCache.timestamp < SETS_CACHE_TTL) {
         console.log("Using localStorage cache for Pokemon sets");
         
         // Update memory cache
@@ -280,10 +316,53 @@ export const fetchPokemonSets = async (): Promise<PokemonSet[]> => {
     }
   } catch (e) {
     console.warn("Error accessing localStorage:", e);
-    // Continue to API fetch if localStorage access fails
   }
   
-  // Fetch from API
+  // Try to get from Supabase first
+  try {
+    console.log("Trying to fetch from Supabase");
+    const { data: supabaseSets, error } = await supabase
+      .from('pokemon_sets')
+      .select('*')
+      .order('release_date', { ascending: false });
+      
+    if (!error && supabaseSets && supabaseSets.length > 0) {
+      console.log(`Found ${supabaseSets.length} sets in Supabase`);
+      
+      // Cache the results
+      cacheSets(supabaseSets);
+      
+      return supabaseSets;
+    } else {
+      console.log("No sets found in Supabase, falling back to API");
+    }
+  } catch (supabaseError) {
+    console.error("Error fetching from Supabase:", supabaseError);
+  }
+  
+  // Fallback to Pokemon TCG API
+  return fetchSetsFromAPI();
+};
+
+// Helper function to cache sets
+const cacheSets = (sets: PokemonSet[]) => {
+  // Update memory cache
+  setsCache.sets = sets;
+  setsCache.timestamp = Date.now();
+  
+  // Cache in localStorage
+  try {
+    localStorage.setItem(SETS_CACHE_KEY, JSON.stringify({
+      sets,
+      timestamp: Date.now()
+    }));
+  } catch (e) {
+    console.warn("Error storing in localStorage:", e);
+  }
+};
+
+// Fetch Pokemon sets from API
+const fetchSetsFromAPI = async (): Promise<PokemonSet[]> => {
   console.log("Fetching Pokemon sets from API");
   
   try {
@@ -321,20 +400,8 @@ export const fetchPokemonSets = async (): Promise<PokemonSet[]> => {
       return new Date(b.release_date).getTime() - new Date(a.release_date).getTime();
     });
     
-    // Update memory cache
-    setsCache.sets = sortedSets;
-    setsCache.timestamp = Date.now();
-    
-    // Cache in localStorage
-    try {
-      localStorage.setItem(SETS_CACHE_KEY, JSON.stringify({
-        sets: sortedSets,
-        timestamp: Date.now()
-      }));
-    } catch (e) {
-      console.warn("Error storing in localStorage:", e);
-      // Continue even if localStorage fails
-    }
+    // Cache the results
+    cacheSets(sortedSets);
     
     return sortedSets;
   } catch (error) {

@@ -20,6 +20,12 @@ import AdminArticles from "./pages/admin/AdminArticles";
 import ArticleEditor from "./components/admin/ArticleEditor";
 import RequireAuth from "./components/auth/RequireAuth";
 import RequireAdmin from "./components/auth/RequireAdmin";
+import PokemonSets from "./pages/TCGSets/PokemonSets";
+import PokemonSetDetails from "./pages/TCGSets/PokemonSetDetails";
+import MTGSets from "./pages/TCGSets/MTGSets";
+import YugiohSets from "./pages/TCGSets/YugiohSets";
+import LorcanaSets from "./pages/TCGSets/LorcanaSets";
+import SetSyncPage from "./pages/TCGSets/SetSyncPage";
 
 const queryClient = new QueryClient();
 
@@ -43,8 +49,21 @@ const App = () => {
               <Route path="/cookies" element={<CookiePolicy />} />
               <Route path="/auth" element={<Auth />} />
               
-              {/* Sets route */}
+              {/* Sets routes */}
               <Route path="/sets" element={<Sets />} />
+              <Route path="/sets/pokemon" element={<PokemonSets />} />
+              <Route path="/sets/pokemon/:setId" element={<PokemonSetDetails />} />
+              <Route path="/sets/mtg" element={<MTGSets />} />
+              <Route path="/sets/yugioh" element={<YugiohSets />} />
+              <Route path="/sets/lorcana" element={<LorcanaSets />} />
+              <Route 
+                path="/sets/sync" 
+                element={
+                  <RequireAdmin>
+                    <SetSyncPage />
+                  </RequireAdmin>
+                } 
+              />
               
               {/* Admin routes */}
               <Route 
