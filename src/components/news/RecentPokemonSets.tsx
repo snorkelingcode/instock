@@ -1,42 +1,44 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
+import { usePokemonSets } from '@/hooks/useTCGSets';
 import RecentRelease from './RecentRelease';
-import { useRecentPokemonReleases } from '@/hooks/usePokemonReleases';
-import EmptyStateHandler from '@/components/ui/empty-state-handler';
 
 const RecentPokemonSets = () => {
+  const { sets, loading } = usePokemonSets({ cacheTime: 60 });
   const navigate = useNavigate();
-  const { releases, loading, error } = useRecentPokemonReleases();
+  const [recentSets, setRecentSets] = useState<any[]>([]);
 
-  const formatDate = (dateString: string | null | undefined) => {
-    if (!dateString) return 'Unknown Date';
-    
-    try {
-      const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
-      return new Date(dateString).toLocaleDateString('en-US', options);
-    } catch (error) {
-      console.error('Error formatting date:', error);
-      return 'Unknown Date';
+  useEffect(() => {
+    if (sets && sets.length > 0) {
+      // Sort by release date (newest first) and take the first 4
+      const sorted = [...sets]
+        .sort((a, b) => new Date(b.release_date).getTime() - new Date(a.release_date).getTime())
+        .slice(0, 4);
+      
+      setRecentSets(sorted);
     }
+  }, [sets]);
+
+  const formatDate = (dateString: string) => {
+    const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
+    return new Date(dateString).toLocaleDateString('en-US', options);
   };
 
-  // If there's an error, render a fallback UI
-  if (error) {
-    return (
-      <Card className="bg-white shadow-md">
-        <CardHeader>
-          <CardTitle className="text-xl text-blue-700">Recent Pokémon Set Releases</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-red-500 text-center py-4">Error loading releases. Please try again later.</p>
-        </CardContent>
-      </Card>
-    );
-  }
+  // Calculate a popularity score (just for display purposes)
+  const calculatePopularity = (set: any) => {
+    // Mock popularity based on recency
+    const releaseDate = new Date(set.release_date);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - releaseDate.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    // Newer sets are more popular, with a decay over time
+    return Math.max(5, Math.min(95, 100 - (diffDays * 0.5)));
+  };
 
   return (
     <Card className="bg-white shadow-md">
@@ -44,26 +46,19 @@ const RecentPokemonSets = () => {
         <CardTitle className="text-xl text-blue-700">Recent Pokémon Set Releases</CardTitle>
       </CardHeader>
       <CardContent>
-        <EmptyStateHandler
-          isLoading={loading}
-          hasItems={Array.isArray(releases) && releases.length > 0}
-          loadingComponent={
-            <div className="flex justify-center py-6">
-              <p className="text-gray-500">Loading recent releases...</p>
-            </div>
-          }
-          emptyComponent={
-            <p className="text-gray-500 text-center py-4">No recent releases found.</p>
-          }
-        >
+        {loading ? (
+          <div className="flex justify-center py-6">
+            <p className="text-gray-500">Loading recent releases...</p>
+          </div>
+        ) : recentSets.length > 0 ? (
           <div className="space-y-1">
-            {Array.isArray(releases) && releases.map((release) => (
+            {recentSets.map((set) => (
               <RecentRelease
-                key={release.id}
-                name={release.name || 'Unknown Set'}
-                releaseDate={formatDate(release.release_date)}
-                popularity={release.popularity || 0}
-                imageUrl={release.image_url || release.logo_url || ''}
+                key={set.id}
+                name={set.name}
+                releaseDate={formatDate(set.release_date)}
+                popularity={calculatePopularity(set)}
+                imageUrl={set.logo_url || set.images_url || set.symbol_url}
               />
             ))}
             <div className="mt-4">
@@ -76,7 +71,9 @@ const RecentPokemonSets = () => {
               </Button>
             </div>
           </div>
-        </EmptyStateHandler>
+        ) : (
+          <p className="text-gray-500 text-center py-4">No recent releases found.</p>
+        )}
       </CardContent>
     </Card>
   );
