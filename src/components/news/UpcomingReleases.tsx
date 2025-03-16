@@ -1,12 +1,14 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CalendarIcon } from "lucide-react";
 import { useUpcomingPokemonReleases } from '@/hooks/usePokemonReleases';
+import EmptyStateHandler from '@/components/ui/empty-state-handler';
 
 const UpcomingReleases = () => {
-  const { releases, loading } = useUpcomingPokemonReleases();
+  const [error, setError] = useState<Error | null>(null);
+  const { releases = [], loading } = useUpcomingPokemonReleases();
 
   function calculateDaysUntil(dateString: string): number {
     if (!dateString) return 0;
@@ -44,19 +46,40 @@ const UpcomingReleases = () => {
     return "bg-green-500";  // Far away
   }
 
+  // If there's an error, render a fallback UI
+  if (error) {
+    return (
+      <Card className="bg-white shadow-md">
+        <CardHeader>
+          <CardTitle className="text-xl text-blue-700">Upcoming Pokémon TCG Releases</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-red-500 text-center py-4">Error loading upcoming releases. Please try again later.</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="bg-white shadow-md">
       <CardHeader>
         <CardTitle className="text-xl text-blue-700">Upcoming Pokémon TCG Releases</CardTitle>
       </CardHeader>
       <CardContent>
-        {loading ? (
-          <div className="flex justify-center py-6">
-            <p className="text-gray-500">Loading upcoming releases...</p>
-          </div>
-        ) : releases && releases.length > 0 ? (
+        <EmptyStateHandler
+          isLoading={loading}
+          hasItems={Array.isArray(releases) && releases.length > 0}
+          loadingComponent={
+            <div className="flex justify-center py-6">
+              <p className="text-gray-500">Loading upcoming releases...</p>
+            </div>
+          }
+          emptyComponent={
+            <p className="text-gray-500 text-center py-4">No upcoming releases found.</p>
+          }
+        >
           <div className="space-y-4">
-            {releases.map((release) => {
+            {Array.isArray(releases) && releases.map((release) => {
               const daysUntil = calculateDaysUntil(release.release_date);
               return (
                 <div key={release.id} className="border-b border-gray-100 pb-4 last:border-0 last:pb-0">
@@ -69,6 +92,11 @@ const UpcomingReleases = () => {
                             src={release.image_url} 
                             alt={release.name} 
                             className="w-6 h-6 inline-block ml-2"
+                            onError={(e) => {
+                              // Hide the image if it fails to load
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                            }}
                           />
                         )}
                       </h3>
@@ -92,9 +120,7 @@ const UpcomingReleases = () => {
               );
             })}
           </div>
-        ) : (
-          <p className="text-gray-500 text-center py-4">No upcoming releases found.</p>
-        )}
+        </EmptyStateHandler>
       </CardContent>
     </Card>
   );

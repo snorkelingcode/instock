@@ -1,14 +1,16 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import RecentRelease from './RecentRelease';
 import { useRecentPokemonReleases } from '@/hooks/usePokemonReleases';
+import EmptyStateHandler from '@/components/ui/empty-state-handler';
 
 const RecentPokemonSets = () => {
-  const { releases, loading } = useRecentPokemonReleases();
+  const [error, setError] = useState<Error | null>(null);
+  const { releases = [], loading } = useRecentPokemonReleases();
   const navigate = useNavigate();
 
   const formatDate = (dateString: string) => {
@@ -23,19 +25,40 @@ const RecentPokemonSets = () => {
     }
   };
 
+  // If there's an error, render a fallback UI
+  if (error) {
+    return (
+      <Card className="bg-white shadow-md">
+        <CardHeader>
+          <CardTitle className="text-xl text-blue-700">Recent Pokémon Set Releases</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-red-500 text-center py-4">Error loading releases. Please try again later.</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="bg-white shadow-md">
       <CardHeader>
         <CardTitle className="text-xl text-blue-700">Recent Pokémon Set Releases</CardTitle>
       </CardHeader>
       <CardContent>
-        {loading ? (
-          <div className="flex justify-center py-6">
-            <p className="text-gray-500">Loading recent releases...</p>
-          </div>
-        ) : releases && releases.length > 0 ? (
+        <EmptyStateHandler
+          isLoading={loading}
+          hasItems={Array.isArray(releases) && releases.length > 0}
+          loadingComponent={
+            <div className="flex justify-center py-6">
+              <p className="text-gray-500">Loading recent releases...</p>
+            </div>
+          }
+          emptyComponent={
+            <p className="text-gray-500 text-center py-4">No recent releases found.</p>
+          }
+        >
           <div className="space-y-1">
-            {releases.map((release) => (
+            {Array.isArray(releases) && releases.map((release) => (
               <RecentRelease
                 key={release.id}
                 name={release.name || 'Unknown Set'}
@@ -54,9 +77,7 @@ const RecentPokemonSets = () => {
               </Button>
             </div>
           </div>
-        ) : (
-          <p className="text-gray-500 text-center py-4">No recent releases found.</p>
-        )}
+        </EmptyStateHandler>
       </CardContent>
     </Card>
   );
