@@ -106,6 +106,11 @@ const Navigation = () => {
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem>
+                      <Link to="/admin/pokemon-releases" className="w-full">
+                        Manage Pokémon Releases
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
                       <Link to="/sets/sync" className="w-full">
                         Sync TCG Sets
                       </Link>
@@ -185,6 +190,13 @@ const Navigation = () => {
                       onClick={toggleMenu}
                     >
                       Manage Articles
+                    </Link>
+                    <Link
+                      to="/admin/pokemon-releases"
+                      className="hover:text-red-200 transition-colors"
+                      onClick={toggleMenu}
+                    >
+                      Manage Pokémon Releases
                     </Link>
                     <Link
                       to="/sets/sync"
