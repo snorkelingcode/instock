@@ -75,6 +75,15 @@ const ArticleDetails = () => {
     return format(new Date(dateString), "MMMM d, yyyy");
   };
 
+  // Helper function to chunk additional images into groups of 3
+  const chunkImages = (images: string[]) => {
+    const chunks = [];
+    for (let i = 0; i < images.length; i += 3) {
+      chunks.push(images.slice(i, i + 3));
+    }
+    return chunks;
+  };
+
   if (isLoading) {
     return (
       <Layout>
@@ -155,14 +164,18 @@ const ArticleDetails = () => {
                 <h3 className="text-lg font-medium mb-4">Additional Images</h3>
                 <Carousel className="w-full max-w-xl mx-auto">
                   <CarouselContent>
-                    {article.additional_images.map((image, idx) => (
-                      <CarouselItem key={idx}>
-                        <div className="p-1 h-64 flex items-center justify-center">
-                          <img 
-                            src={image} 
-                            alt={`Additional image ${idx + 1}`} 
-                            className="max-h-full max-w-full object-contain rounded-md"
-                          />
+                    {chunkImages(article.additional_images).map((imageGroup, groupIndex) => (
+                      <CarouselItem key={groupIndex}>
+                        <div className="grid grid-cols-3 gap-2 p-1">
+                          {imageGroup.map((image, idx) => (
+                            <div key={idx} className="aspect-square flex items-center justify-center">
+                              <img 
+                                src={image} 
+                                alt={`Additional image ${groupIndex * 3 + idx + 1}`} 
+                                className="max-h-full max-w-full object-contain rounded-md"
+                              />
+                            </div>
+                          ))}
                         </div>
                       </CarouselItem>
                     ))}
