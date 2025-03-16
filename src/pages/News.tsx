@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
@@ -14,7 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Article } from "@/types/article";
 
 const News = () => {
-  const [featuredArticle, setFeaturedArticle] = useState<Article | null>(null);
+  const [featuredArticles, setFeaturedArticles] = useState<Article[]>([]);
   const [articles, setArticles] = useState<Article[]>([]);
   const [filteredArticles, setFilteredArticles] = useState<Article[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
@@ -44,19 +45,16 @@ const News = () => {
   const fetchArticles = async () => {
     setIsLoading(true);
     try {
-      // Fetch featured article
+      // Fetch featured articles (up to 3)
       const { data: featuredData, error: featuredError } = await supabase
         .from('articles')
         .select('*')
         .eq('featured', true)
         .eq('published', true)
         .order('published_at', { ascending: false })
-        .limit(1)
-        .single();
+        .limit(3);
 
-      if (featuredError && featuredError.code !== 'PGRST116') { // Not found error is ok here
-        throw featuredError;
-      }
+      if (featuredError) throw featuredError;
 
       // Fetch all published articles
       const { data: articlesData, error: articlesError } = await supabase
@@ -67,11 +65,8 @@ const News = () => {
 
       if (articlesError) throw articlesError;
       
-      // Set featured article and regular articles
-      if (featuredData) {
-        setFeaturedArticle(featuredData as Article);
-      }
-      
+      // Set featured articles and regular articles
+      setFeaturedArticles(featuredData as Article[] || []);
       setArticles(articlesData as Article[] || []);
       setFilteredArticles(articlesData as Article[] || []);
     } catch (error: any) {
@@ -111,18 +106,24 @@ const News = () => {
         ) : (
           <>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
-              <div className="lg:col-span-2">
-                {featuredArticle && (
-                  <div className="cursor-pointer" onClick={() => handleArticleClick(featuredArticle.id)}>
-                    <FeaturedNews
-                      id={featuredArticle.id}
-                      title={featuredArticle.title}
-                      date={formatDate(featuredArticle.published_at || featuredArticle.created_at)}
-                      category={featuredArticle.category}
-                      excerpt={featuredArticle.excerpt}
-                      image={featuredArticle.featured_image}
-                      onClick={() => handleArticleClick(featuredArticle.id)}
-                    />
+              <div className="lg:col-span-2 space-y-6">
+                {featuredArticles.length > 0 ? (
+                  featuredArticles.map((article) => (
+                    <div key={article.id} className="cursor-pointer" onClick={() => handleArticleClick(article.id)}>
+                      <FeaturedNews
+                        id={article.id}
+                        title={article.title}
+                        date={formatDate(article.published_at || article.created_at)}
+                        category={article.category}
+                        excerpt={article.excerpt}
+                        image={article.featured_image}
+                        onClick={() => handleArticleClick(article.id)}
+                      />
+                    </div>
+                  ))
+                ) : (
+                  <div className="bg-white rounded-lg shadow-md border border-blue-200 p-8 text-center">
+                    <p className="text-gray-500">No featured stories available</p>
                   </div>
                 )}
               </div>

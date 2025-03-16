@@ -14,7 +14,7 @@ interface FeaturedNewsProps {
 }
 
 const FeaturedNews = ({ id, title, date, category, excerpt, image, onClick }: FeaturedNewsProps) => (
-  <div className="bg-white rounded-lg shadow-md border border-blue-200 mb-8 overflow-hidden">
+  <div className="bg-white rounded-lg shadow-md border border-blue-200 overflow-hidden">
     <div className="md:flex">
       {image && (
         <div className="md:w-2/5 h-64 md:h-auto relative">
