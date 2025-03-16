@@ -1,8 +1,8 @@
-
 import React, { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent } from "@/components/ui/card";
 import Layout from "@/components/layout/Layout";
 import NewsPreview from "@/components/news/NewsPreview";
 import FeaturedNews from "@/components/news/FeaturedNews";
