@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -23,11 +22,8 @@ import RequireAuth from "./components/auth/RequireAuth";
 import RequireAdmin from "./components/auth/RequireAdmin";
 import PokemonSets from "./pages/TCGSets/PokemonSets";
 import PokemonSetDetails from "./pages/TCGSets/PokemonSetDetails";
-// Commented out since these are coming soon
-// import MTGSets from "./pages/TCGSets/MTGSets";
-// import YugiohSets from "./pages/TCGSets/YugiohSets";
-// import LorcanaSets from "./pages/TCGSets/LorcanaSets";
 import SetSyncPage from "./pages/TCGSets/SetSyncPage";
+import ManagePokemonReleases from "./components/admin/ManagePokemonReleases";
 
 const queryClient = new QueryClient();
 
@@ -38,7 +34,6 @@ const App = () => {
         <TooltipProvider>
           <Toaster />
           <Sonner />
-          {/* Using BrowserRouter instead of HashRouter for better SEO and AdSense compliance */}
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<Index />} />
@@ -52,15 +47,9 @@ const App = () => {
               <Route path="/cookies" element={<CookiePolicy />} />
               <Route path="/auth" element={<Auth />} />
               
-              {/* Sets routes */}
               <Route path="/sets" element={<Sets />} />
               <Route path="/sets/pokemon" element={<PokemonSets />} />
               <Route path="/sets/pokemon/:setId" element={<PokemonSetDetails />} />
-              
-              {/* Commented out since these are coming soon */}
-              {/* <Route path="/sets/mtg" element={<MTGSets />} /> */}
-              {/* <Route path="/sets/yugioh" element={<YugiohSets />} /> */}
-              {/* <Route path="/sets/lorcana" element={<LorcanaSets />} /> */}
               
               <Route 
                 path="/sets/sync" 
@@ -71,7 +60,6 @@ const App = () => {
                 } 
               />
               
-              {/* Admin routes */}
               <Route 
                 path="/admin/articles" 
                 element={
@@ -93,6 +81,15 @@ const App = () => {
                 element={
                   <RequireAdmin>
                     <ArticleEditor />
+                  </RequireAdmin>
+                } 
+              />
+              
+              <Route 
+                path="/admin/pokemon-releases" 
+                element={
+                  <RequireAdmin>
+                    <ManagePokemonReleases />
                   </RequireAdmin>
                 } 
               />

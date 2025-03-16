@@ -1,49 +1,43 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CalendarIcon } from "lucide-react";
+import { supabase } from '@/integrations/supabase/client';
 
 interface UpcomingRelease {
   id: string;
   name: string;
-  date: string;
-  days: number;
+  release_date: string;
   type: string;
+  image_url?: string;
 }
 
 const UpcomingReleases = () => {
-  // This could be fetched from an API, but for now we'll use mock data
-  const upcomingReleases: UpcomingRelease[] = [
-    {
-      id: "1",
-      name: "Temporal Forces",
-      date: "2024-06-28",
-      days: calculateDaysUntil("2024-06-28"),
-      type: "Expansion"
-    },
-    {
-      id: "2",
-      name: "Pocket Monsters TCG: 151",
-      date: "2024-07-12",
-      days: calculateDaysUntil("2024-07-12"),
-      type: "Special Set"
-    },
-    {
-      id: "3",
-      name: "Shrouded Fable",
-      date: "2024-08-09",
-      days: calculateDaysUntil("2024-08-09"),
-      type: "Expansion"
-    },
-    {
-      id: "4",
-      name: "Paldean Fates",
-      date: "2024-09-27",
-      days: calculateDaysUntil("2024-09-27"),
-      type: "Special Set"
+  const [upcomingReleases, setUpcomingReleases] = useState<UpcomingRelease[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchUpcomingReleases();
+  }, []);
+
+  const fetchUpcomingReleases = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('pokemon_upcoming_releases')
+        .select('*')
+        .order('release_date', { ascending: true })
+        .limit(4);
+      
+      if (error) throw error;
+      setUpcomingReleases(data || []);
+    } catch (error) {
+      console.error('Error fetching upcoming releases:', error);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
   function calculateDaysUntil(dateString: string): number {
     const releaseDate = new Date(dateString);
@@ -73,31 +67,56 @@ const UpcomingReleases = () => {
         <CardTitle className="text-xl text-blue-700">Upcoming Pokémon TCG Releases</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          {upcomingReleases.map((release) => (
-            <div key={release.id} className="border-b border-gray-100 pb-4 last:border-0 last:pb-0">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="font-medium">{release.name}</h3>
-                  <div className="flex items-center text-sm text-gray-600 mt-1">
-                    <CalendarIcon className="h-4 w-4 mr-1" />
-                    <span>{formatDate(release.date)}</span>
+        {loading ? (
+          <div className="flex justify-center py-6">
+            <p className="text-gray-500">Loading upcoming releases...</p>
+          </div>
+        ) : upcomingReleases.length > 0 ? (
+          <div className="space-y-4">
+            {upcomingReleases.map((release) => {
+              const days = calculateDaysUntil(release.release_date);
+              return (
+                <div key={release.id} className="border-b border-gray-100 pb-4 last:border-0 last:pb-0">
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-start space-x-3">
+                      {release.image_url && (
+                        <div className="h-12 w-12 rounded overflow-hidden flex-shrink-0">
+                          <img 
+                            src={release.image_url} 
+                            alt={release.name} 
+                            className="h-full w-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.src = "https://placehold.co/100x100/e2e8f0/475569?text=TCG";
+                            }}
+                          />
+                        </div>
+                      )}
+                      <div>
+                        <h3 className="font-medium">{release.name}</h3>
+                        <div className="flex items-center text-sm text-gray-600 mt-1">
+                          <CalendarIcon className="h-4 w-4 mr-1" />
+                          <span>{formatDate(release.release_date)}</span>
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1">{release.type || "Expansion"}</div>
+                      </div>
+                    </div>
+                    <Badge 
+                      className={getBadgeColor(days)}
+                    >
+                      {days < 0 
+                        ? 'Released' 
+                        : days === 0 
+                          ? 'Today!' 
+                          : `${days} day${days === 1 ? '' : 's'}`}
+                    </Badge>
                   </div>
-                  <div className="text-xs text-gray-500 mt-1">{release.type}</div>
                 </div>
-                <Badge 
-                  className={getBadgeColor(release.days)}
-                >
-                  {release.days < 0 
-                    ? 'Released' 
-                    : release.days === 0 
-                      ? 'Today!' 
-                      : `${release.days} day${release.days === 1 ? '' : 's'}`}
-                </Badge>
-              </div>
-            </div>
-          ))}
-        </div>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="text-gray-500 text-center py-4">No upcoming releases found.</p>
+        )}
       </CardContent>
     </Card>
   );

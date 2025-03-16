@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -11,7 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import Layout from "@/components/layout/Layout";
 import { useMetaTags } from "@/hooks/use-meta-tags";
 import { Article } from "@/types/article";
-import { Plus, PenSquare, Trash2, Eye } from "lucide-react";
+import { Plus, PenSquare, Trash2, Eye, CalendarRange } from "lucide-react";
 
 const AdminArticles = () => {
   const [articles, setArticles] = useState<Article[]>([]);
@@ -26,7 +25,6 @@ const AdminArticles = () => {
   });
 
   useEffect(() => {
-    // Redirect if not admin
     if (!isAdmin) {
       toast({
         title: "Access Denied",
@@ -74,7 +72,6 @@ const AdminArticles = () => {
 
       if (error) throw error;
       
-      // Update local state
       setArticles(prev => 
         prev.map(article => 
           article.id === id 
@@ -111,7 +108,6 @@ const AdminArticles = () => {
 
       if (error) throw error;
       
-      // Update local state
       setArticles(prev => 
         prev.map(article => 
           article.id === id 
@@ -151,7 +147,6 @@ const AdminArticles = () => {
 
       if (error) throw error;
       
-      // Update local state
       setArticles(prev => prev.filter(article => article.id !== id));
       
       toast({
@@ -183,12 +178,34 @@ const AdminArticles = () => {
   return (
     <Layout>
       <div className="container mx-auto py-8 px-4">
+        <Card className="mb-4">
+          <CardHeader className="flex flex-row items-center justify-between bg-gray-50 border-b">
+            <CardTitle>Admin Tools</CardTitle>
+          </CardHeader>
+          <CardContent className="p-4">
+            <div className="flex flex-wrap gap-4">
+              <Button 
+                onClick={() => navigate("/admin/articles/new")}
+                className="gap-2"
+                variant="outline"
+              >
+                <Plus className="h-4 w-4" /> Create New Article
+              </Button>
+              
+              <Button 
+                onClick={() => navigate("/admin/pokemon-releases")}
+                className="gap-2"
+                variant="outline"
+              >
+                <CalendarRange className="h-4 w-4" /> Manage Pokémon Releases
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+        
         <Card className="mb-8">
           <CardHeader className="flex flex-row items-center justify-between bg-gray-50 border-b">
             <CardTitle>Manage Articles</CardTitle>
-            <Button onClick={() => navigate("/admin/articles/new")} className="gap-2">
-              <Plus className="h-4 w-4" /> Create New Article
-            </Button>
           </CardHeader>
           <CardContent className="p-0">
             {isLoading ? (
