@@ -12,8 +12,15 @@ const RecentPokemonSets = () => {
   const navigate = useNavigate();
 
   const formatDate = (dateString: string) => {
-    const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
-    return new Date(dateString).toLocaleDateString('en-US', options);
+    if (!dateString) return '';
+    
+    try {
+      const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
+      return new Date(dateString).toLocaleDateString('en-US', options);
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return '';
+    }
   };
 
   return (
@@ -26,14 +33,14 @@ const RecentPokemonSets = () => {
           <div className="flex justify-center py-6">
             <p className="text-gray-500">Loading recent releases...</p>
           </div>
-        ) : releases.length > 0 ? (
+        ) : releases && releases.length > 0 ? (
           <div className="space-y-1">
             {releases.map((release) => (
               <RecentRelease
                 key={release.id}
-                name={release.name}
-                releaseDate={formatDate(release.release_date)}
-                popularity={release.popularity}
+                name={release.name || 'Unknown Set'}
+                releaseDate={formatDate(release.release_date) || 'Unknown Date'}
+                popularity={release.popularity || 0}
                 imageUrl={release.image_url || release.logo_url}
               />
             ))}

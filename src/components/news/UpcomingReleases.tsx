@@ -9,18 +9,32 @@ const UpcomingReleases = () => {
   const { releases, loading } = useUpcomingPokemonReleases();
 
   function calculateDaysUntil(dateString: string): number {
-    const releaseDate = new Date(dateString);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    if (!dateString) return 0;
     
-    const diffTime = releaseDate.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
+    try {
+      const releaseDate = new Date(dateString);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const diffTime = releaseDate.getTime() - today.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      return diffDays;
+    } catch (error) {
+      console.error('Error calculating days until release:', error);
+      return 0;
+    }
   }
 
   function formatDate(dateString: string): string {
-    const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
-    return new Date(dateString).toLocaleDateString('en-US', options);
+    if (!dateString) return 'Unknown Date';
+    
+    try {
+      const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
+      return new Date(dateString).toLocaleDateString('en-US', options);
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return 'Unknown Date';
+    }
   }
 
   function getBadgeColor(days: number): string {
@@ -40,7 +54,7 @@ const UpcomingReleases = () => {
           <div className="flex justify-center py-6">
             <p className="text-gray-500">Loading upcoming releases...</p>
           </div>
-        ) : releases.length > 0 ? (
+        ) : releases && releases.length > 0 ? (
           <div className="space-y-4">
             {releases.map((release) => {
               const daysUntil = calculateDaysUntil(release.release_date);
@@ -49,7 +63,7 @@ const UpcomingReleases = () => {
                   <div className="flex justify-between items-start">
                     <div>
                       <h3 className="font-medium">
-                        {release.name}
+                        {release.name || 'Unknown Set'}
                         {release.image_url && (
                           <img 
                             src={release.image_url} 
@@ -62,7 +76,7 @@ const UpcomingReleases = () => {
                         <CalendarIcon className="h-4 w-4 mr-1" />
                         <span>{formatDate(release.release_date)}</span>
                       </div>
-                      <div className="text-xs text-gray-500 mt-1">{release.type}</div>
+                      <div className="text-xs text-gray-500 mt-1">{release.type || 'Standard Release'}</div>
                     </div>
                     <Badge 
                       className={getBadgeColor(daysUntil)}
