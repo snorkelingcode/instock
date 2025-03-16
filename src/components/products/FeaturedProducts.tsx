@@ -17,6 +17,7 @@ interface Product {
 interface FeaturedProductsProps {
   products: Product[];
   loading: boolean;
+  emptyMessage?: string;
 }
 
 const FeaturedProductSkeleton = () => (
@@ -30,17 +31,27 @@ const FeaturedProductSkeleton = () => (
   </div>
 );
 
-const FeaturedProducts: React.FC<FeaturedProductsProps> = ({ products, loading }) => {
+const FeaturedProducts: React.FC<FeaturedProductsProps> = ({ 
+  products, 
+  loading,
+  emptyMessage = "No products found. Please check back later for updates."
+}) => {
   // Always render something - either skeletons or products
   const renderProducts = () => {
     if (loading || products.length === 0) {
       return (
         <>
-          {[...Array(3)].map((_, index) => (
-            <div key={`skeleton-${index}`} className="flex justify-center">
-              <FeaturedProductSkeleton />
+          {loading ? (
+            [...Array(3)].map((_, index) => (
+              <div key={`skeleton-${index}`} className="flex justify-center">
+                <FeaturedProductSkeleton />
+              </div>
+            ))
+          ) : (
+            <div className="col-span-1 md:col-span-3 text-center py-8">
+              <p className="text-gray-500">{emptyMessage}</p>
             </div>
-          ))}
+          )}
         </>
       );
     }

@@ -1,16 +1,24 @@
+
 /**
  * Set data in local storage cache
  * @param key Cache key
  * @param data Data to cache
  * @param expirationMinutes Expiration time in minutes (defaults to 5)
+ * @param partition Optional partition name to organize cache
  */
-export function setCache<T>(key: string, data: T, expirationMinutes: number = 5): void {
+export function setCache<T>(
+  key: string, 
+  data: T, 
+  expirationMinutes: number = 5, 
+  partition?: string
+): void {
   try {
+    const cacheKey = partition ? `cache_${partition}_${key}` : `cache_${key}`;
     const cacheItem = {
       data,
       expiry: new Date().getTime() + expirationMinutes * 60 * 1000,
     };
-    localStorage.setItem(`cache_${key}`, JSON.stringify(cacheItem));
+    localStorage.setItem(cacheKey, JSON.stringify(cacheItem));
   } catch (error) {
     console.error('Error setting cache:', error);
   }
@@ -19,11 +27,13 @@ export function setCache<T>(key: string, data: T, expirationMinutes: number = 5)
 /**
  * Get data from local storage cache
  * @param key Cache key
+ * @param partition Optional partition name
  * @returns Cached data or null if expired/not found
  */
-export function getCache<T>(key: string): T | null {
+export function getCache<T>(key: string, partition?: string): T | null {
   try {
-    const cacheJson = localStorage.getItem(`cache_${key}`);
+    const cacheKey = partition ? `cache_${partition}_${key}` : `cache_${key}`;
+    const cacheJson = localStorage.getItem(cacheKey);
     if (!cacheJson) return null;
 
     const cache = JSON.parse(cacheJson);
@@ -31,7 +41,7 @@ export function getCache<T>(key: string): T | null {
 
     if (now > cache.expiry) {
       // Cache expired
-      localStorage.removeItem(`cache_${key}`);
+      localStorage.removeItem(cacheKey);
       return null;
     }
 
@@ -171,25 +181,37 @@ export function formatTimeRemaining(milliseconds: number): string {
 /**
  * Get cache partition information including total size
  */
-export function getPartitionInfo(prefix: string = ''): { count: number, size: number } {
+export function getPartitionInfo(prefix: string = ''): { count: number, size: number, lastUpdated: number } {
   try {
     let totalSize = 0;
     let count = 0;
+    let lastUpdated = 0;
     
     Object.keys(localStorage).forEach(key => {
-      if ((prefix && key.startsWith(prefix)) || (!prefix && key.startsWith('cache_'))) {
+      if ((prefix && key.startsWith(`cache_${prefix}`)) || (!prefix && key.startsWith('cache_'))) {
         const item = localStorage.getItem(key);
         if (item) {
           totalSize += item.length * 2; // Approximate size in bytes (2 bytes per character)
           count++;
+          
+          // Try to get the timestamp from the cache object
+          try {
+            const cacheData = JSON.parse(item);
+            const timestamp = cacheData.expiry - (5 * 60 * 1000); // Estimate of when it was added
+            if (timestamp > lastUpdated) {
+              lastUpdated = timestamp;
+            }
+          } catch (e) {
+            // Ignore parsing errors
+          }
         }
       }
     });
     
-    return { count, size: totalSize };
+    return { count, size: totalSize, lastUpdated: lastUpdated || Date.now() };
   } catch (error) {
     console.error('Error calculating cache size:', error);
-    return { count: 0, size: 0 };
+    return { count: 0, size: 0, lastUpdated: Date.now() };
   }
 }
 

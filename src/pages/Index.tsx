@@ -1,5 +1,5 @@
+
 import React, { useEffect, useState } from "react";
-import { CardGrid } from "@/components/landing/CardGrid";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -8,11 +8,9 @@ import { useMetaTags } from "@/hooks/use-meta-tags";
 import EmptyStateHandler from "@/components/ui/empty-state-handler";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import { supabase } from "@/integrations/supabase/client";
-import FeaturedProducts from "@/components/products/FeaturedProducts";
 import { getCache, setCache } from "@/utils/cacheUtils";
 import NewsPreview from "@/components/news/NewsPreview";
 import { Article } from "@/types/article";
-import { format } from "date-fns";
 import { ChevronRight } from "lucide-react";
 
 const SiteIntro = () => (
@@ -108,12 +106,6 @@ const LatestNews = ({ articles }: { articles: Article[] }) => (
   </section>
 );
 
-const NoProductsFound = () => (
-  <div className="text-center py-8">
-    <p className="text-gray-500">No products found. Please check back later for updates.</p>
-  </div>
-);
-
 const Index = () => {
   useMetaTags({
     title: "TCG In-Stock Tracker | Find Trading Card Game Products",
@@ -123,16 +115,21 @@ const Index = () => {
     ogDescription: "Never miss a restock again. Get real-time inventory updates for Pokemon, Magic, Yu-Gi-Oh, and more from all major retailers."
   });
 
-  const [loading, setLoading] = useState(true);
-  const [hasProducts, setHasProducts] = useState(false);
-  const [featuredProducts, setFeaturedProducts] = useState<any[]>([]);
-  const [featuredLoading, setFeaturedLoading] = useState(true);
   const [latestArticles, setLatestArticles] = useState<Article[]>([]);
   const [loadingArticles, setLoadingArticles] = useState(true);
 
   const fetchLatestArticles = async () => {
     setLoadingArticles(true);
     try {
+      // First check cache
+      const cachedArticles = getCache<Article[]>('latest_articles');
+      if (cachedArticles) {
+        setLatestArticles(cachedArticles);
+        setLoadingArticles(false);
+        return;
+      }
+      
+      // Fetch from database if not cached
       const { data, error } = await supabase
         .from('articles')
         .select('*')
@@ -141,58 +138,30 @@ const Index = () => {
         .limit(3);
       
       if (error) throw error;
-      setLatestArticles(data || []);
+      
+      // Type safety check and conversion
+      const articles = data?.map(item => ({
+        id: item.id,
+        title: item.title || '',
+        content: item.content || '',
+        excerpt: item.excerpt || '',
+        author_id: item.author_id || '',
+        category: item.category || '',
+        created_at: item.created_at || '',
+        updated_at: item.updated_at || '',
+        published_at: item.published_at || '',
+        featured: !!item.featured,
+        published: !!item.published
+      })) || [];
+      
+      setLatestArticles(articles);
+      setCache('latest_articles', articles, 60); // Cache for 60 minutes
     } catch (error: any) {
       console.error("Error fetching articles:", error);
     } finally {
       setLoadingArticles(false);
     }
   };
-
-  React.useEffect(() => {
-    const loadProducts = async () => {
-      const cachedProducts = getCache<any[]>('featured_products');
-      const cachedHasProducts = getCache<boolean>('has_products');
-      
-      if (cachedProducts) {
-        setFeaturedProducts(cachedProducts);
-        setFeaturedLoading(false);
-        setHasProducts(!!cachedHasProducts);
-        setLoading(false);
-      }
-      
-      try {
-        const { data, error } = await supabase
-          .from('products')
-          .select('*')
-          .order('id', { ascending: false })
-          .limit(3);
-
-        if (error) {
-          throw error;
-        }
-
-        if (data) {
-          setFeaturedProducts(data);
-          setFeaturedLoading(false);
-          setHasProducts(data.length > 0);
-          setLoading(false);
-          
-          setCache('featured_products', data, 5);
-          setCache('has_products', data.length > 0, 5);
-        }
-      } catch (error) {
-        console.error('Error fetching featured products:', error);
-        
-        if (!cachedProducts) {
-          setFeaturedLoading(false);
-          setLoading(false);
-        }
-      }
-    };
-
-    loadProducts();
-  }, []);
 
   React.useEffect(() => {
     fetchLatestArticles();
@@ -202,14 +171,12 @@ const Index = () => {
     <Layout>
       <SiteIntro />
       
-      {!loading && hasProducts && (
-        <AdContainer 
-          className="my-8" 
-          adSlot="auto" 
-          adFormat="horizontal" 
-          fullWidth={true} 
-        />
-      )}
+      <AdContainer 
+        className="my-8" 
+        adSlot="auto" 
+        adFormat="horizontal" 
+        fullWidth={true} 
+      />
       
       <HowItWorksSection />
       
@@ -220,31 +187,6 @@ const Index = () => {
         emptyComponent={<div className="text-center py-8">No news articles available yet.</div>}
       >
         <LatestNews articles={latestArticles} />
-      </EmptyStateHandler>
-      
-      <h2 className="text-2xl font-semibold mb-6">Featured Products</h2>
-      <FeaturedProducts products={featuredProducts} loading={featuredLoading} />
-      
-      <h2 className="text-2xl font-semibold mb-6">Latest In-Stock Products</h2>
-      
-      <EmptyStateHandler
-        isLoading={loading}
-        hasItems={hasProducts}
-        loadingComponent={<LoadingSpinner size="lg" />}
-        emptyComponent={<NoProductsFound />}
-      >
-        <CardGrid />
-        
-        {hasProducts && (
-          <div className="mt-8">
-            <AdContainer 
-              className="my-4" 
-              adSlot="auto" 
-              adFormat="rectangle" 
-              fullWidth={true} 
-            />
-          </div>
-        )}
       </EmptyStateHandler>
     </Layout>
   );

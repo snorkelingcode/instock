@@ -19,11 +19,16 @@ const Navigation = () => {
   };
 
   return (
-    <nav className="bg-gray-900 text-white py-4">
+    <nav className="bg-red-600 text-white py-4">
       <div className="container mx-auto px-4 flex justify-between items-center">
         {/* Logo and Title */}
-        <Link to="/" className="text-xl font-bold">
-          TCG In-Stock Tracker
+        <Link to="/" className="flex items-center">
+          <img 
+            src="/lovable-uploads/9955d37d-dda9-41f4-99af-f7307dddce93.png" 
+            alt="TCG In-Stock Tracker" 
+            className="h-10 mr-3"
+          />
+          <span className="text-xl font-bold">TCG In-Stock Tracker</span>
         </Link>
 
         {/* Mobile Menu Button */}
@@ -57,21 +62,21 @@ const Navigation = () => {
 
         {/* Desktop Menu */}
         <div className="hidden md:flex items-center space-x-6">
-          <Link to="/" className="hover:text-blue-400 transition-colors">
+          <Link to="/" className="hover:text-red-200 transition-colors">
             Home
           </Link>
           <Link
             to="/products"
-            className="hover:text-blue-400 transition-colors"
+            className="hover:text-red-200 transition-colors"
           >
             Products
           </Link>
-          <Link to="/news" className="hover:text-blue-400 transition-colors">
+          <Link to="/news" className="hover:text-red-200 transition-colors">
             News
           </Link>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="hover:text-blue-400 transition-colors">
+              <button className="hover:text-red-200 transition-colors bg-transparent text-white">
                 Sets
               </button>
             </DropdownMenuTrigger>
@@ -107,13 +112,13 @@ const Navigation = () => {
           </DropdownMenu>
           <Link
             to="/about"
-            className="hover:text-blue-400 transition-colors"
+            className="hover:text-red-200 transition-colors"
           >
             About
           </Link>
           <Link
             to="/contact"
-            className="hover:text-blue-400 transition-colors"
+            className="hover:text-red-200 transition-colors"
           >
             Contact
           </Link>
@@ -121,9 +126,9 @@ const Navigation = () => {
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="ml-4">
+                <button className="hover:text-red-200 transition-colors bg-transparent text-white">
                   My Account
-                </Button>
+                </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56">
                 {isAdmin && (
@@ -148,53 +153,56 @@ const Navigation = () => {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <Button asChild variant="outline" size="sm" className="ml-4">
-              <Link to="/auth">Sign In</Link>
-            </Button>
+            <Link 
+              to="/auth" 
+              className="hover:text-red-200 transition-colors"
+            >
+              Sign In
+            </Link>
           )}
         </div>
 
         {/* Mobile Menu */}
         {isOpen && (
-          <div className="md:hidden absolute top-16 left-0 right-0 bg-gray-900 p-4 flex flex-col space-y-4 z-50">
+          <div className="md:hidden absolute top-16 left-0 right-0 bg-red-600 p-4 flex flex-col space-y-4 z-50">
             <Link
               to="/"
-              className="hover:text-blue-400 transition-colors"
+              className="hover:text-red-200 transition-colors"
               onClick={toggleMenu}
             >
               Home
             </Link>
             <Link
               to="/products"
-              className="hover:text-blue-400 transition-colors"
+              className="hover:text-red-200 transition-colors"
               onClick={toggleMenu}
             >
               Products
             </Link>
             <Link
               to="/news"
-              className="hover:text-blue-400 transition-colors"
+              className="hover:text-red-200 transition-colors"
               onClick={toggleMenu}
             >
               News
             </Link>
             <Link
               to="/sets"
-              className="hover:text-blue-400 transition-colors"
+              className="hover:text-red-200 transition-colors"
               onClick={toggleMenu}
             >
               Sets
             </Link>
             <Link
               to="/about"
-              className="hover:text-blue-400 transition-colors"
+              className="hover:text-red-200 transition-colors"
               onClick={toggleMenu}
             >
               About
             </Link>
             <Link
               to="/contact"
-              className="hover:text-blue-400 transition-colors"
+              className="hover:text-red-200 transition-colors"
               onClick={toggleMenu}
             >
               Contact
@@ -206,14 +214,14 @@ const Navigation = () => {
                   <>
                     <Link
                       to="/admin/articles"
-                      className="hover:text-blue-400 transition-colors"
+                      className="hover:text-red-200 transition-colors"
                       onClick={toggleMenu}
                     >
                       Manage Articles
                     </Link>
                     <Link
                       to="/sets/sync"
-                      className="hover:text-blue-400 transition-colors"
+                      className="hover:text-red-200 transition-colors"
                       onClick={toggleMenu}
                     >
                       Sync TCG Sets
@@ -225,7 +233,7 @@ const Navigation = () => {
                     signOut();
                     toggleMenu();
                   }}
-                  className="text-left hover:text-blue-400 transition-colors"
+                  className="text-left hover:text-red-200 transition-colors"
                 >
                   Sign Out
                 </button>
@@ -233,7 +241,7 @@ const Navigation = () => {
             ) : (
               <Link
                 to="/auth"
-                className="hover:text-blue-400 transition-colors"
+                className="hover:text-red-200 transition-colors"
                 onClick={toggleMenu}
               >
                 Sign In
