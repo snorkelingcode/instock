@@ -282,7 +282,8 @@ const SetSyncPage = () => {
                 </span></div>
               </div>
               <ApiSyncButton 
-                source="pokemon" 
+                game="pokemon" 
+                source="pokemon"
                 label="Pokémon TCG" 
                 onSuccess={fetchApiConfigs}
               />
@@ -303,7 +304,8 @@ const SetSyncPage = () => {
                 </span></div>
               </div>
               <ApiSyncButton 
-                source="mtg" 
+                game="mtg" 
+                source="mtg"
                 label="MTG" 
                 onSuccess={fetchApiConfigs}
               />
@@ -324,7 +326,8 @@ const SetSyncPage = () => {
                 </span></div>
               </div>
               <ApiSyncButton 
-                source="yugioh" 
+                game="yugioh" 
+                source="yugioh"
                 label="Yu-Gi-Oh!" 
                 onSuccess={fetchApiConfigs}
               />
@@ -345,7 +348,8 @@ const SetSyncPage = () => {
                 </span></div>
               </div>
               <ApiSyncButton 
-                source="lorcana" 
+                game="lorcana" 
+                source="lorcana"
                 label="Disney Lorcana" 
                 onSuccess={fetchApiConfigs}
               />
