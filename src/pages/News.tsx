@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
@@ -100,7 +101,7 @@ const News = () => {
   return (
     <Layout>
       <div className="container mx-auto py-8 px-4">
-        <h1 className="text-3xl font-bold mb-8">News & Announcements</h1>
+        <h1 className="text-3xl font-bold mb-6">News & Announcements</h1>
 
         {isLoading ? (
           <div className="flex justify-center py-12">
@@ -110,10 +111,14 @@ const News = () => {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
-              <div className="lg:col-span-2">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
+              {/* Featured article takes up 8 columns on large screens */}
+              <div className="lg:col-span-8">
                 {featuredArticle && (
-                  <div className="mb-8 cursor-pointer" onClick={() => handleArticleClick(featuredArticle.id)}>
+                  <div 
+                    className="cursor-pointer h-full" 
+                    onClick={() => handleArticleClick(featuredArticle.id)}
+                  >
                     <FeaturedNews
                       id={featuredArticle.id}
                       title={featuredArticle.title}
@@ -127,13 +132,14 @@ const News = () => {
                 )}
               </div>
               
-              <div className="space-y-8">
+              {/* Side panels take up 4 columns on large screens */}
+              <div className="lg:col-span-4 space-y-6">
                 <RecentPokemonSets />
                 <UpcomingReleases />
               </div>
             </div>
 
-            <Tabs defaultValue="all" className="mb-8">
+            <Tabs defaultValue="all" className="mb-6">
               <TabsList className="mb-4 flex flex-wrap">
                 {categories.map(category => (
                   <TabsTrigger 
