@@ -10,6 +10,13 @@ import { useToast } from "@/hooks/use-toast";
 import { useMetaTags } from "@/hooks/use-meta-tags";
 import { supabase } from "@/integrations/supabase/client";
 import { Article } from "@/types/article";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 
 const ArticleDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -126,7 +133,7 @@ const ArticleDetails = () => {
             <div className="flex justify-between items-start mb-4">
               <Badge variant="default" className="font-medium">{article.category}</Badge>
               {article.featured && (
-                <Badge className="bg-blue-500 hover:bg-blue-600">Featured</Badge>
+                <Badge className="bg-red-500 hover:bg-red-600">Featured</Badge>
               )}
             </div>
             
@@ -144,16 +151,25 @@ const ArticleDetails = () => {
             </div>
             
             {article.additional_images && article.additional_images.length > 0 && (
-              <div className="mt-8 space-y-4">
-                {article.additional_images.map((image, idx) => (
-                  <div key={idx} className="w-full max-h-[500px] overflow-hidden rounded-lg">
-                    <img 
-                      src={image} 
-                      alt={`Additional image ${idx + 1}`} 
-                      className="w-full h-full object-contain"
-                    />
-                  </div>
-                ))}
+              <div className="mt-8">
+                <h3 className="text-lg font-medium mb-4">Additional Images</h3>
+                <Carousel className="w-full max-w-xl mx-auto">
+                  <CarouselContent>
+                    {article.additional_images.map((image, idx) => (
+                      <CarouselItem key={idx}>
+                        <div className="p-1 h-64 flex items-center justify-center">
+                          <img 
+                            src={image} 
+                            alt={`Additional image ${idx + 1}`} 
+                            className="max-h-full max-w-full object-contain rounded-md"
+                          />
+                        </div>
+                      </CarouselItem>
+                    ))}
+                  </CarouselContent>
+                  <CarouselPrevious className="left-0" />
+                  <CarouselNext className="right-0" />
+                </Carousel>
               </div>
             )}
           </div>
