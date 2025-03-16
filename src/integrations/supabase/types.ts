@@ -77,12 +77,14 @@ export type Database = {
       }
       articles: {
         Row: {
+          additional_images: string[] | null
           author_id: string
           category: string
           content: string
           created_at: string
           excerpt: string
           featured: boolean
+          featured_image: string | null
           id: string
           published: boolean
           published_at: string | null
@@ -90,12 +92,14 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          additional_images?: string[] | null
           author_id: string
           category: string
           content: string
           created_at?: string
           excerpt: string
           featured?: boolean
+          featured_image?: string | null
           id?: string
           published?: boolean
           published_at?: string | null
@@ -103,12 +107,14 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          additional_images?: string[] | null
           author_id?: string
           category?: string
           content?: string
           created_at?: string
           excerpt?: string
           featured?: boolean
+          featured_image?: string | null
           id?: string
           published?: boolean
           published_at?: string | null
@@ -880,6 +886,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_article: {
+        Args: {
+          article_data: Json
+        }
+        Returns: string
+      }
       create_sync_job: {
         Args: {
           job_details: Json
@@ -902,6 +914,62 @@ export type Database = {
           result_summary: Json
         }[]
       }
+      get_all_articles: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          title: string
+          content: string
+          excerpt: string
+          author_id: string
+          category: string
+          featured: boolean
+          published: boolean
+          created_at: string
+          updated_at: string
+          published_at: string
+          featured_image: string
+          additional_images: string[]
+        }[]
+      }
+      get_article_by_id: {
+        Args: {
+          article_id: string
+        }
+        Returns: {
+          id: string
+          title: string
+          content: string
+          excerpt: string
+          author_id: string
+          category: string
+          featured: boolean
+          published: boolean
+          created_at: string
+          updated_at: string
+          published_at: string
+          featured_image: string
+          additional_images: string[]
+        }[]
+      }
+      get_featured_article: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          title: string
+          content: string
+          excerpt: string
+          author_id: string
+          category: string
+          featured: boolean
+          published: boolean
+          created_at: string
+          updated_at: string
+          published_at: string
+          featured_image: string
+          additional_images: string[]
+        }[]
+      }
       get_job_by_id: {
         Args: {
           job_id: string
@@ -917,6 +985,44 @@ export type Database = {
           user_id: string
           result_summary: Json
           payload: Json
+        }[]
+      }
+      get_latest_articles: {
+        Args: {
+          limit_count?: number
+        }
+        Returns: {
+          id: string
+          title: string
+          content: string
+          excerpt: string
+          author_id: string
+          category: string
+          featured: boolean
+          published: boolean
+          created_at: string
+          updated_at: string
+          published_at: string
+          featured_image: string
+          additional_images: string[]
+        }[]
+      }
+      get_published_articles: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          title: string
+          content: string
+          excerpt: string
+          author_id: string
+          category: string
+          featured: boolean
+          published: boolean
+          created_at: string
+          updated_at: string
+          published_at: string
+          featured_image: string
+          additional_images: string[]
         }[]
       }
       gtrgm_compress: {
@@ -971,6 +1077,13 @@ export type Database = {
           "": string
         }
         Returns: string[]
+      }
+      update_article: {
+        Args: {
+          article_id: string
+          article_data: Json
+        }
+        Returns: undefined
       }
       update_job_status: {
         Args: {
