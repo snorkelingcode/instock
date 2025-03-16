@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -36,6 +35,8 @@ import {
 } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 
+type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
+
 interface JobStatus {
   id: string;
   job_type: string;
@@ -68,16 +69,13 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({ game, source, label, onSu
   const [setCode, setSetCode] = useState('');
   const { user } = useAuth();
 
-  // Use the passed source or fallback to game
   const targetSource = source || game;
 
-  // Fetch job status
   const { data: jobStatusData, refetch: refetchJobStatus } = useQuery({
     queryKey: ['jobStatus', jobId],
     queryFn: async () => {
       if (!jobId) return null;
       
-      // Use RPC function for type safety
       const { data, error } = await supabase.rpc('get_job_by_id', { job_id: jobId });
 
       if (error) {
@@ -85,16 +83,15 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({ game, source, label, onSu
         throw error;
       }
       
-      return data as JobStatus;
+      return data.length > 0 ? data[0] as JobStatus : null;
     },
     enabled: !!jobId,
-    refetchInterval: isPolling ? 5000 : false, // Poll every 5 seconds
+    refetchInterval: isPolling ? 5000 : false,
   });
 
-  // Update current status when job status data changes
   useEffect(() => {
     if (jobStatusData) {
-      setCurrentStatus(jobStatusData as JobStatus);
+      setCurrentStatus(jobStatusData);
       
       if (jobStatusData.status === 'completed' || jobStatusData.status === 'failed') {
         setIsPolling(false);
@@ -120,10 +117,8 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({ game, source, label, onSu
     }
   }, [jobStatusData, intervalId, game, label, onSuccess, toast]);
 
-  // Mutation to start the sync
   const syncMutation = useMutation({
     mutationFn: async () => {
-      // Use RPC for type safety
       const { data, error } = await supabase.rpc('create_sync_job', {
         job_details: {
           job_type: `sync_${targetSource.toLowerCase()}_sets`,
@@ -161,7 +156,6 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({ game, source, label, onSu
         description: `Syncing ${label || game} sets...`,
       });
       
-      // Start polling after a short delay
       setTimeout(() => {
         refetchJobStatus();
       }, 1000);
@@ -195,13 +189,15 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({ game, source, label, onSu
         return;
       }
 
-      const jobData = data as JobStatus;
-      setCurrentStatus(jobData);
+      if (data && data.length > 0) {
+        const jobData = data[0] as JobStatus;
+        setCurrentStatus(jobData);
 
-      if (jobData && (jobData.status === 'completed' || jobData.status === 'failed')) {
-        setIsPolling(false);
-        clearInterval(intervalId || undefined);
-        setIntervalId(null);
+        if (jobData.status === 'completed' || jobData.status === 'failed') {
+          setIsPolling(false);
+          clearInterval(intervalId || undefined);
+          setIntervalId(null);
+        }
       }
     } catch (error: any) {
       console.error("Error fetching job status:", error);
