@@ -588,6 +588,39 @@ export type Database = {
           },
         ]
       }
+      pokemon_recent_releases: {
+        Row: {
+          created_at: string
+          id: string
+          image_url: string | null
+          logo_url: string | null
+          name: string
+          popularity: number | null
+          release_date: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          logo_url?: string | null
+          name: string
+          popularity?: number | null
+          release_date: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          logo_url?: string | null
+          name?: string
+          popularity?: number | null
+          release_date?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       pokemon_sets: {
         Row: {
           created_at: string | null
@@ -627,6 +660,36 @@ export type Database = {
           set_id?: string
           symbol_url?: string | null
           total?: number | null
+        }
+        Relationships: []
+      }
+      pokemon_upcoming_releases: {
+        Row: {
+          created_at: string
+          id: string
+          image_url: string | null
+          name: string
+          release_date: string
+          type: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          name: string
+          release_date: string
+          type?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          name?: string
+          release_date?: string
+          type?: string | null
+          updated_at?: string
         }
         Relationships: []
       }

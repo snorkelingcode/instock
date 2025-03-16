@@ -3,47 +3,10 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CalendarIcon } from "lucide-react";
-
-interface UpcomingRelease {
-  id: string;
-  name: string;
-  date: string;
-  days: number;
-  type: string;
-}
+import { useUpcomingPokemonReleases } from '@/hooks/usePokemonReleases';
 
 const UpcomingReleases = () => {
-  // This could be fetched from an API, but for now we'll use mock data
-  const upcomingReleases: UpcomingRelease[] = [
-    {
-      id: "1",
-      name: "Temporal Forces",
-      date: "2024-06-28",
-      days: calculateDaysUntil("2024-06-28"),
-      type: "Expansion"
-    },
-    {
-      id: "2",
-      name: "Pocket Monsters TCG: 151",
-      date: "2024-07-12",
-      days: calculateDaysUntil("2024-07-12"),
-      type: "Special Set"
-    },
-    {
-      id: "3",
-      name: "Shrouded Fable",
-      date: "2024-08-09",
-      days: calculateDaysUntil("2024-08-09"),
-      type: "Expansion"
-    },
-    {
-      id: "4",
-      name: "Paldean Fates",
-      date: "2024-09-27",
-      days: calculateDaysUntil("2024-09-27"),
-      type: "Special Set"
-    }
-  ];
+  const { releases, loading } = useUpcomingPokemonReleases();
 
   function calculateDaysUntil(dateString: string): number {
     const releaseDate = new Date(dateString);
@@ -73,31 +36,51 @@ const UpcomingReleases = () => {
         <CardTitle className="text-xl text-blue-700">Upcoming Pokémon TCG Releases</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          {upcomingReleases.map((release) => (
-            <div key={release.id} className="border-b border-gray-100 pb-4 last:border-0 last:pb-0">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="font-medium">{release.name}</h3>
-                  <div className="flex items-center text-sm text-gray-600 mt-1">
-                    <CalendarIcon className="h-4 w-4 mr-1" />
-                    <span>{formatDate(release.date)}</span>
+        {loading ? (
+          <div className="flex justify-center py-6">
+            <p className="text-gray-500">Loading upcoming releases...</p>
+          </div>
+        ) : releases.length > 0 ? (
+          <div className="space-y-4">
+            {releases.map((release) => {
+              const daysUntil = calculateDaysUntil(release.release_date);
+              return (
+                <div key={release.id} className="border-b border-gray-100 pb-4 last:border-0 last:pb-0">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="font-medium">
+                        {release.name}
+                        {release.image_url && (
+                          <img 
+                            src={release.image_url} 
+                            alt={release.name} 
+                            className="w-6 h-6 inline-block ml-2"
+                          />
+                        )}
+                      </h3>
+                      <div className="flex items-center text-sm text-gray-600 mt-1">
+                        <CalendarIcon className="h-4 w-4 mr-1" />
+                        <span>{formatDate(release.release_date)}</span>
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">{release.type}</div>
+                    </div>
+                    <Badge 
+                      className={getBadgeColor(daysUntil)}
+                    >
+                      {daysUntil < 0 
+                        ? 'Released' 
+                        : daysUntil === 0 
+                          ? 'Today!' 
+                          : `${daysUntil} day${daysUntil === 1 ? '' : 's'}`}
+                    </Badge>
                   </div>
-                  <div className="text-xs text-gray-500 mt-1">{release.type}</div>
                 </div>
-                <Badge 
-                  className={getBadgeColor(release.days)}
-                >
-                  {release.days < 0 
-                    ? 'Released' 
-                    : release.days === 0 
-                      ? 'Today!' 
-                      : `${release.days} day${release.days === 1 ? '' : 's'}`}
-                </Badge>
-              </div>
-            </div>
-          ))}
-        </div>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="text-gray-500 text-center py-4">No upcoming releases found.</p>
+        )}
       </CardContent>
     </Card>
   );

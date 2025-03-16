@@ -11,7 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import Layout from "@/components/layout/Layout";
 import { useMetaTags } from "@/hooks/use-meta-tags";
 import { Article } from "@/types/article";
-import { Plus, PenSquare, Trash2, Eye } from "lucide-react";
+import { Plus, PenSquare, Trash2, Eye, CalendarDays, BoxIcon } from "lucide-react";
 
 const AdminArticles = () => {
   const [articles, setArticles] = useState<Article[]>([]);
@@ -183,12 +183,38 @@ const AdminArticles = () => {
   return (
     <Layout>
       <div className="container mx-auto py-8 px-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <Card className="bg-white shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                onClick={() => navigate("/admin/articles/new")}>
+            <CardContent className="p-6 flex flex-col items-center justify-center text-center">
+              <Plus className="h-12 w-12 text-blue-600 mb-3" />
+              <h3 className="text-lg font-medium mb-1">Create New Article</h3>
+              <p className="text-gray-500 text-sm">Add a new article to the news section</p>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-white shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                onClick={() => navigate("/admin/recent-releases")}>
+            <CardContent className="p-6 flex flex-col items-center justify-center text-center">
+              <BoxIcon className="h-12 w-12 text-green-600 mb-3" />
+              <h3 className="text-lg font-medium mb-1">Manage Recent Releases</h3>
+              <p className="text-gray-500 text-sm">Update recent Pokémon TCG releases</p>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-white shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                onClick={() => navigate("/admin/upcoming-releases")}>
+            <CardContent className="p-6 flex flex-col items-center justify-center text-center">
+              <CalendarDays className="h-12 w-12 text-purple-600 mb-3" />
+              <h3 className="text-lg font-medium mb-1">Manage Upcoming Releases</h3>
+              <p className="text-gray-500 text-sm">Update upcoming Pokémon TCG releases</p>
+            </CardContent>
+          </Card>
+        </div>
+        
         <Card className="mb-8">
           <CardHeader className="flex flex-row items-center justify-between bg-gray-50 border-b">
             <CardTitle>Manage Articles</CardTitle>
-            <Button onClick={() => navigate("/admin/articles/new")} className="gap-2">
-              <Plus className="h-4 w-4" /> Create New Article
-            </Button>
           </CardHeader>
           <CardContent className="p-0">
             {isLoading ? (
