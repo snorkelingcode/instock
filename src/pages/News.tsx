@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
@@ -110,7 +111,7 @@ const News = () => {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-6">
               <div className="lg:col-span-2">
                 {featuredArticle && (
                   <div className="cursor-pointer" onClick={() => handleArticleClick(featuredArticle.id)}>
@@ -155,7 +156,7 @@ const News = () => {
                     </CardContent>
                   </Card>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {filteredArticles.map(article => (
                       <NewsPreview
                         key={article.id}
