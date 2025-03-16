@@ -1,6 +1,6 @@
 
 export interface Article {
-  id: number;
+  id: string;
   title: string;
   content: string;
   excerpt: string;
@@ -8,7 +8,16 @@ export interface Article {
   category: string;
   created_at: string;
   updated_at: string;
-  published_at: string;
+  published_at: string | null;
+  featured: boolean;
+  published: boolean;
+}
+
+export interface ArticleFormData {
+  title: string;
+  content: string;
+  excerpt: string;
+  category: string;
   featured: boolean;
   published: boolean;
 }
@@ -19,5 +28,5 @@ export type ArticleCreate = Omit<Article, 'id' | 'created_at' | 'updated_at'> & 
 };
 
 export type ArticleUpdate = Partial<Omit<Article, 'id'>> & {
-  id: number;
+  id: string;
 };

@@ -48,7 +48,7 @@ const AdminArticles = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setArticles(data || []);
+      setArticles(data as Article[] || []);
     } catch (error: any) {
       console.error("Error fetching articles:", error);
       toast({

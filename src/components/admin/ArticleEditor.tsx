@@ -11,7 +11,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { ArticleFormData, Article } from "@/types/article";
+import { Article, ArticleFormData } from "@/types/article";
 
 // Article categories
 const CATEGORIES = [

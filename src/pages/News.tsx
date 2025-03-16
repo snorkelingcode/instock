@@ -68,11 +68,11 @@ const News = () => {
       
       // Set featured article and regular articles
       if (featuredData) {
-        setFeaturedArticle(featuredData);
+        setFeaturedArticle(featuredData as Article);
       }
       
-      setArticles(articlesData || []);
-      setFilteredArticles(articlesData || []);
+      setArticles(articlesData as Article[] || []);
+      setFilteredArticles(articlesData as Article[] || []);
     } catch (error: any) {
       console.error("Error fetching articles:", error);
       toast({
