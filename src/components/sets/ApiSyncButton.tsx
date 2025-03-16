@@ -12,8 +12,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-import { Progress } from "@/components/ui/progress"
+} from "@/components/ui/alert-dialog";
+import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
@@ -23,17 +23,17 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 import { MoreVertical, CheckCircle, AlertTriangle, Loader2 } from 'lucide-react';
-import { Label } from "@/components/ui/label"
-import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface JobStatus {
@@ -46,6 +46,7 @@ interface JobStatus {
   error_message: string | null;
   user_id: string | null;
   result_summary: any;
+  payload?: any;
 }
 
 interface ApiSyncButtonProps {
@@ -75,11 +76,11 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({ game, source, label, onSu
     queryKey: ['jobStatus', jobId],
     queryFn: async () => {
       if (!jobId) return null;
+      
+      // Use RPC call instead of direct table access 
+      // Since the tables may not be registered in the TypeScript types yet
       const { data, error } = await supabase
-        .from('jobs')
-        .select('*')
-        .eq('id', jobId)
-        .single();
+        .rpc('get_job_by_id', { job_id: jobId });
 
       if (error) {
         console.error("Error fetching job status:", error);
@@ -89,15 +90,17 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({ game, source, label, onSu
     },
     enabled: !!jobId,
     refetchInterval: isPolling ? 5000 : false, // Poll every 5 seconds
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to fetch job status",
-        variant: "destructive",
-      });
-      setIsPolling(false);
-      clearInterval(intervalId || undefined);
-      setIntervalId(null);
+    meta: {
+      onError: (error: any) => {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to fetch job status",
+          variant: "destructive",
+        });
+        setIsPolling(false);
+        clearInterval(intervalId || undefined);
+        setIntervalId(null);
+      }
     },
     onSuccess: (data) => {
       if (data) {
@@ -117,7 +120,7 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({ game, source, label, onSu
           } else if (data.status === 'failed') {
             toast({
               title: "Sync Failed",
-              description: `Sync failed for ${label || game} sets. Check the logs for more details.`,
+              description: `Sync failed for ${label || game} sets: ${data.error_message || 'Unknown error'}`,
               variant: "destructive",
             });
           }
@@ -129,21 +132,16 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({ game, source, label, onSu
   // Mutation to start the sync
   const syncMutation = useMutation({
     mutationFn: async () => {
+      // Use RPC call instead of direct table access
       const { data, error } = await supabase
-        .from('jobs')
-        .insert([
-          {
+        .rpc('create_sync_job', {
+          job_details: {
             job_type: `sync_${targetSource.toLowerCase()}_sets`,
-            status: 'pending',
             user_id: user?.id || null,
-            payload: {
-              sync_type: syncType,
-              set_code: setCode,
-            }
+            sync_type: syncType,
+            set_code: setCode
           }
-        ])
-        .select('*')
-        .single();
+        });
 
       if (error) {
         console.error("Error starting sync:", error);
@@ -200,10 +198,7 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({ game, source, label, onSu
   const handleJobStatus = useCallback(async (jobId: string) => {
     try {
       const { data, error } = await supabase
-        .from('jobs')
-        .select('*')
-        .eq('id', jobId)
-        .single();
+        .rpc('get_job_by_id', { job_id: jobId });
 
       if (error) {
         console.error("Error fetching job status:", error);

@@ -23,17 +23,6 @@ interface FetchTCGRequest {
   accessKey?: string;
 }
 
-interface JobStatus {
-  id?: string;
-  job_id: string;
-  source: string;
-  status: 'pending' | 'fetching_data' | 'processing_data' | 'saving_to_database' | 'completed' | 'failed';
-  progress: number;
-  total_items: number;
-  completed_items: number;
-  error: string | null;
-}
-
 // CORS headers
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -75,11 +64,10 @@ serve(async (req) => {
     // If jobId is provided, return the status of that job
     if (requestData.jobId) {
       console.log("Fetching status for job:", requestData.jobId);
+      
+      // Use the RPC function to get job by id
       const { data: jobData, error: jobError } = await supabase
-        .from('api_job_status')
-        .select('*')
-        .eq('job_id', requestData.jobId)
-        .single();
+        .rpc('get_job_by_id', { job_id: requestData.jobId });
 
       if (jobError) {
         return new Response(
@@ -113,7 +101,7 @@ serve(async (req) => {
     }
 
     // Check if we already have a running job for this source
-    const { data: existingJobs, error: jobsError } = await supabase
+    const { data: activeJobs, error: jobsError } = await supabase
       .from('api_job_status')
       .select('*')
       .eq('source', requestData.source)
@@ -122,13 +110,13 @@ serve(async (req) => {
 
     if (jobsError) {
       console.error("Error checking existing jobs:", jobsError);
-    } else if (existingJobs && existingJobs.length > 0) {
+    } else if (activeJobs && activeJobs.length > 0) {
       console.log(`Already have a running job for ${requestData.source}`);
       return new Response(
         JSON.stringify({ 
           success: false, 
           error: `A synchronization job for ${requestData.source} is already in progress.`,
-          jobId: existingJobs[0].job_id
+          jobId: activeJobs[0].job_id
         }),
         { 
           status: 429,
@@ -174,30 +162,23 @@ serve(async (req) => {
       }
     }
     
-    // Create a job ID for tracking
-    const jobId = crypto.randomUUID();
-    
-    // Create a new job status record
-    const newJob: JobStatus = {
-      job_id: jobId,
-      source: requestData.source,
-      status: 'pending',
-      progress: 0,
-      total_items: 0,
-      completed_items: 0,
-      error: null
-    };
-    
-    const { error: insertError } = await supabase
-      .from('api_job_status')
-      .insert(newJob);
+    // Create a new job using the RPC function
+    const { data: newJob, error: createJobError } = await supabase
+      .rpc('create_sync_job', {
+        job_details: {
+          job_type: `sync_${requestData.source.toLowerCase()}_sets`,
+          user_id: null,  // Edge function job
+          sync_type: 'full',
+          set_code: ''
+        }
+      });
       
-    if (insertError) {
-      console.error("Error creating job status:", insertError);
+    if (createJobError) {
+      console.error("Error creating job:", createJobError);
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: `Failed to create job status: ${insertError.message}` 
+          error: `Failed to create job: ${createJobError.message}` 
         }),
         { 
           status: 500,
@@ -208,6 +189,8 @@ serve(async (req) => {
         }
       );
     }
+    
+    const jobId = newJob;
     
     // Start background processing
     // Instead of waiting for the process to complete, we mark it as a background task
@@ -252,14 +235,17 @@ async function processTCGData(source: string, jobId: string) {
   console.log(`Starting background processing for ${source} with job ID: ${jobId}`);
   
   try {
-    // Update job status to fetching data
-    await updateJobStatus(jobId, 'fetching_data', 0);
+    // Update job status to running
+    await supabase.rpc('update_job_status', { 
+      job_id: jobId, 
+      new_status: 'running' 
+    });
     
     let data: any[] = [];
     
     // Fetch data from appropriate source with timeout
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 20000); // Increased timeout to 20 seconds
+    const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 seconds timeout
     
     try {
       switch (source) {
@@ -292,9 +278,6 @@ async function processTCGData(source: string, jobId: string) {
       throw new Error(`No data received from ${source} API`);
     }
     
-    // Update job with total items
-    await updateJobStatus(jobId, 'processing_data', 0, data.length, 0);
-    
     // Process and save the data
     await saveSets(source, data, jobId);
     
@@ -312,56 +295,23 @@ async function processTCGData(source: string, jobId: string) {
       console.error(`Error updating sync time for ${source}:`, updateError);
     }
     
-    // Mark job as completed
-    await updateJobStatus(jobId, 'completed', 100, data.length, data.length);
+    // Mark job as completed with result summary
+    await supabase.rpc('update_job_status', { 
+      job_id: jobId, 
+      new_status: 'completed',
+      result: { items_processed: data.length }
+    });
     
     console.log(`Completed sync for ${source}`);
   } catch (error) {
     console.error(`Error processing ${source} data:`, error);
     
     // Update job status with error
-    await updateJobStatus(jobId, 'failed', 0, 0, 0, error.message);
-  }
-}
-
-// Update job status helper
-async function updateJobStatus(
-  jobId: string, 
-  status: JobStatus['status'], 
-  progress: number,
-  totalItems: number = 0,
-  completedItems: number = 0,
-  error: string | null = null
-) {
-  const updateData: any = { 
-    status, 
-    progress,
-    updated_at: new Date().toISOString()
-  };
-  
-  if (totalItems > 0) {
-    updateData.total_items = totalItems;
-  }
-  
-  if (completedItems > 0) {
-    updateData.completed_items = completedItems;
-  }
-  
-  if (error) {
-    updateData.error = error;
-  }
-  
-  if (status === 'completed') {
-    updateData.completed_at = new Date().toISOString();
-  }
-  
-  const { error: updateError } = await supabase
-    .from('api_job_status')
-    .update(updateData)
-    .eq('job_id', jobId);
-    
-  if (updateError) {
-    console.error(`Error updating job status for ${jobId}:`, updateError);
+    await supabase.rpc('update_job_status', { 
+      job_id: jobId, 
+      new_status: 'failed',
+      error_msg: error.message
+    });
   }
 }
 
