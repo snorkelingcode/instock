@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -23,7 +24,7 @@ import RequireAdmin from "./components/auth/RequireAdmin";
 import PokemonSets from "./pages/TCGSets/PokemonSets";
 import PokemonSetDetails from "./pages/TCGSets/PokemonSetDetails";
 import SetSyncPage from "./pages/TCGSets/SetSyncPage";
-import ManagePokemonReleases from "./components/admin/ManagePokemonReleases";
+import ManagePokemonReleases from "./pages/admin/ManagePokemonReleases";
 
 const queryClient = new QueryClient();
 
