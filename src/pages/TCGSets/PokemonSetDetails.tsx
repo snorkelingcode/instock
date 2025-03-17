@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/pagination";
 import { Grid } from "@/components/ui/grid";
 
-const CARDS_PER_PAGE = 40; // Increased from 24 to 40 to reduce button clicks
+const CARDS_PER_PAGE = 60; // Increased from 40 to 60 for fewer "Load More" clicks
 
 const PokemonSetDetails = () => {
   const { setId } = useParams<{ setId: string }>();

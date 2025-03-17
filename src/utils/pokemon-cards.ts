@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 // Interface for Pokemon Card
@@ -159,6 +158,10 @@ const cacheCards = (setId: string, cards: PokemonCard[]) => {
   }
 };
 
+// Constants for cards per page and prefetching
+const CARDS_PER_PAGE = 60; // Increased from 40 to 60
+const PREFETCH_BUFFER = 20; // Extra buffer for secret rares
+
 // Try to get data from Supabase first, fallback to API
 export const fetchPokemonCards = async (
   setId: string, 
@@ -166,7 +169,7 @@ export const fetchPokemonCards = async (
 ): Promise<{ cards: PokemonCard[], totalCount: number, hasMore: boolean }> => {
   console.log(`Fetching cards for set: ${setId}, page: ${options.page || 1}`);
   
-  const pageSize = options.pageSize || 40; // Increased from 24 to 40
+  const pageSize = options.pageSize || CARDS_PER_PAGE;
   const page = options.page || 1;
   const cacheKey = `${setId}_full`;
   
@@ -337,8 +340,10 @@ const fetchCardsFromAPIWithPagination = async (
       const totalCount = totalCountData.totalCount || 0;
       
       // For the actual page request, use a more reasonable pageSize
-      // For the first page, make it slightly larger to include potential secret rares
-      const actualPageSize = page === 1 ? Math.min(pageSize + 10, 60) : pageSize;
+      // For the first page, make it larger to include potential secret rares
+      const actualPageSize = page === 1 
+        ? Math.min(pageSize + PREFETCH_BUFFER, 80) // Increased buffer
+        : pageSize;
       
       // Now get the actual page
       const response = await fetch(
@@ -361,7 +366,7 @@ const fetchCardsFromAPIWithPagination = async (
       console.log(`Retrieved ${sortedCards.length} cards for set ${setId}`);
       
       // Check if we have more cards
-      const hasMore = page * actualPageSize < totalCount;
+      const hasMore = page * actualPageSize < totalCount || totalCount > data.data.length;
       
       // If we have more pages, prefetch the next one in the background
       if (hasMore) {
@@ -372,7 +377,7 @@ const fetchCardsFromAPIWithPagination = async (
       
       return { 
         cards: sortedCards,
-        totalCount,
+        totalCount: Math.max(totalCount, data.data.length), // Account for secret rares
         hasMore
       };
     } catch (error: any) {
@@ -411,7 +416,7 @@ const fetchAllCardsFromAPI = async (setId: string): Promise<void> => {
     
     // Now fetch all cards in one go (or with reasonable page size for larger sets)
     // Use a larger page size to try to get all cards including secret rares
-    const pageSize = Math.max(300, totalCount + 20); // Add extra buffer for secret rares
+    const pageSize = Math.max(350, totalCount + 50); // Significantly increased buffer
     
     console.log(`Fetching all ${totalCount}+ cards for set ${setId} with page size ${pageSize}`);
     
