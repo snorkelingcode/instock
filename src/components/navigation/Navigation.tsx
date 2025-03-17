@@ -9,18 +9,20 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/AuthContext";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { user, signOut, isAdmin } = useAuth();
+  const isMobile = useIsMobile();
 
   const toggleMenu = () => {
     setIsOpen(!isOpen);
   };
 
   return (
-    <nav className="bg-red-600 text-white py-4">
-      <div className="container mx-auto px-4 flex justify-between items-center">
+    <nav className="bg-red-600 text-white py-4 relative">
+      <div className="container mx-auto px-4 flex justify-between items-center relative z-50">
         {/* Logo and Title */}
         <Link to="/" className="flex items-center">
           <img 
@@ -34,7 +36,7 @@ const Navigation = () => {
         {/* Mobile Menu Button */}
         <button
           onClick={toggleMenu}
-          className="md:hidden text-white focus:outline-none z-50"
+          className="md:hidden text-white focus:outline-none"
         >
           <svg
             className="h-6 w-6"
