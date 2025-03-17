@@ -136,98 +136,103 @@ const Navigation = () => {
           )}
         </div>
 
-        {/* Mobile Menu */}
+        {/* Mobile Menu - Improved styling */}
         {isOpen && (
-          <div className="md:hidden fixed top-16 left-0 right-0 bg-red-600 p-4 flex flex-col space-y-4 z-40">
-            <Link
-              to="/"
-              className="hover:text-red-200 transition-colors"
-              onClick={toggleMenu}
-            >
-              Home
-            </Link>
-            <Link
-              to="/products"
-              className="hover:text-red-200 transition-colors"
-              onClick={toggleMenu}
-            >
-              Products
-            </Link>
-            <Link
-              to="/news"
-              className="hover:text-red-200 transition-colors"
-              onClick={toggleMenu}
-            >
-              News
-            </Link>
-            <Link
-              to="/sets"
-              className="hover:text-red-200 transition-colors"
-              onClick={toggleMenu}
-            >
-              Sets
-            </Link>
-            <Link
-              to="/about"
-              className="hover:text-red-200 transition-colors"
-              onClick={toggleMenu}
-            >
-              About
-            </Link>
-            <Link
-              to="/contact"
-              className="hover:text-red-200 transition-colors"
-              onClick={toggleMenu}
-            >
-              Contact
-            </Link>
-            
-            {user ? (
-              <>
-                {isAdmin && (
-                  <>
-                    <Link
-                      to="/admin/articles"
-                      className="hover:text-red-200 transition-colors"
-                      onClick={toggleMenu}
-                    >
-                      Manage Articles
-                    </Link>
-                    <Link
-                      to="/admin/pokemon-releases"
-                      className="hover:text-red-200 transition-colors"
-                      onClick={toggleMenu}
-                    >
-                      Manage Pokémon Releases
-                    </Link>
-                    <Link
-                      to="/sets/sync"
-                      className="hover:text-red-200 transition-colors"
-                      onClick={toggleMenu}
-                    >
-                      Sync TCG Sets
-                    </Link>
-                  </>
-                )}
-                <button
-                  onClick={() => {
-                    signOut();
-                    toggleMenu();
-                  }}
-                  className="text-left hover:text-red-200 transition-colors"
-                >
-                  Sign Out
-                </button>
-              </>
-            ) : (
+          <div className="md:hidden fixed top-[72px] left-0 right-0 bottom-0 bg-white z-40 overflow-y-auto">
+            <div className="flex flex-col py-4">
               <Link
-                to="/auth"
-                className="hover:text-red-200 transition-colors"
+                to="/"
+                className="py-3 px-6 text-red-600 font-medium border-b border-gray-200 hover:bg-red-50 transition-colors"
                 onClick={toggleMenu}
               >
-                Sign In
+                Home
               </Link>
-            )}
+              <Link
+                to="/products"
+                className="py-3 px-6 text-red-600 font-medium border-b border-gray-200 hover:bg-red-50 transition-colors"
+                onClick={toggleMenu}
+              >
+                Products
+              </Link>
+              <Link
+                to="/news"
+                className="py-3 px-6 text-red-600 font-medium border-b border-gray-200 hover:bg-red-50 transition-colors"
+                onClick={toggleMenu}
+              >
+                News
+              </Link>
+              <Link
+                to="/sets"
+                className="py-3 px-6 text-red-600 font-medium border-b border-gray-200 hover:bg-red-50 transition-colors"
+                onClick={toggleMenu}
+              >
+                Sets
+              </Link>
+              <Link
+                to="/about"
+                className="py-3 px-6 text-red-600 font-medium border-b border-gray-200 hover:bg-red-50 transition-colors"
+                onClick={toggleMenu}
+              >
+                About
+              </Link>
+              <Link
+                to="/contact"
+                className="py-3 px-6 text-red-600 font-medium border-b border-gray-200 hover:bg-red-50 transition-colors"
+                onClick={toggleMenu}
+              >
+                Contact
+              </Link>
+              
+              {user ? (
+                <>
+                  {isAdmin && (
+                    <>
+                      <div className="py-2 px-6 text-gray-500 text-sm bg-gray-50 font-medium">
+                        Admin Tools
+                      </div>
+                      <Link
+                        to="/admin/articles"
+                        className="py-3 px-6 text-red-600 font-medium border-b border-gray-200 hover:bg-red-50 transition-colors"
+                        onClick={toggleMenu}
+                      >
+                        Manage Articles
+                      </Link>
+                      <Link
+                        to="/admin/pokemon-releases"
+                        className="py-3 px-6 text-red-600 font-medium border-b border-gray-200 hover:bg-red-50 transition-colors"
+                        onClick={toggleMenu}
+                      >
+                        Manage Pokémon Releases
+                      </Link>
+                      <Link
+                        to="/sets/sync"
+                        className="py-3 px-6 text-red-600 font-medium border-b border-gray-200 hover:bg-red-50 transition-colors"
+                        onClick={toggleMenu}
+                      >
+                        Sync TCG Sets
+                      </Link>
+                    </>
+                  )}
+                  <button
+                    onClick={() => {
+                      signOut();
+                      toggleMenu();
+                    }}
+                    className="py-3 px-6 text-red-600 font-medium text-left hover:bg-red-50 transition-colors"
+                  >
+                    Sign Out
+                  </button>
+                </>
+              ) : (
+                <Link
+                  to="/auth"
+                  className="py-3 px-6 text-red-600 font-medium border-b border-gray-200 hover:bg-red-50 transition-colors"
+                  onClick={toggleMenu}
+                >
+                  Sign In
+                </Link>
+              )}
+            </div>
           </div>
         )}
       </div>
