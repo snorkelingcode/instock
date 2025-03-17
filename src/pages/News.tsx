@@ -135,7 +135,7 @@ const News = () => {
             </div>
 
             <Tabs defaultValue="all" className="mb-8">
-              <TabsList className="mb-4 flex flex-wrap">
+              <TabsList className="mb-16 flex flex-wrap">
                 {categories.map(category => (
                   <TabsTrigger 
                     key={category} 
