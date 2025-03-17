@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 // Interface for Pokemon Card
@@ -279,9 +280,9 @@ const fetchAllCardsFromAPI = async (setId: string): Promise<{ cards: PokemonCard
       return { cards: [], totalCount: 0, hasMore: false };
     }
     
-    // Now fetch all cards in one go
-    // Use a page size larger than the set size to account for secret rares
-    const pageSize = Math.max(500, totalCount + 100);
+    // Now fetch all cards in one go with a MUCH larger page size
+    // Use a page size of 1000 to ensure we get ALL cards including secret rares
+    const pageSize = 1000; // Significantly increased from 500
     
     console.log(`Fetching all ${totalCount}+ cards for set ${setId} with page size ${pageSize}`);
     
