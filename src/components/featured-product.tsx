@@ -6,23 +6,23 @@ const FeaturedProduct = ({ title, description, price, retailer, listingLink, ima
   const [cardColor, setCardColor] = React.useState("");
   const [isButtonHovered, setIsButtonHovered] = React.useState(false);
   
-  // Softer color palette with less contrast - Same as Card component
-  const softColors = [
-    "#5B8BF0", // Soft blue
-    "#63AABF", // Teal blue
-    "#4E9D63", // Forest green
-    "#7E7ED4", // Lavender
-    "#8E87C0", // Muted purple
-    "#DC8A86", // Dusty rose
-    "#E6A971", // Soft orange
-    "#68B9C0", // Turquoise
-    "#7FB88F", // Sage green
-    "#9F8FC1"  // Periwinkle
+  // Red shades array for the disco effect - matching DiscoCardEffect
+  const redColors = [
+    "#FF0000", // Pure red
+    "#DC143C", // Crimson
+    "#CD5C5C", // Indian Red
+    "#B22222", // Firebrick
+    "#A52A2A", // Brown
+    "#FF6347", // Tomato
+    "#FF4500", // OrangeRed
+    "#E34234", // Vermilion
+    "#C41E3A", // Cardinal
+    "#D70040"  // Crimson glory
   ];
 
   // Function to get a random color that's different from the current one
   const getRandomColor = (currentColor) => {
-    const filteredColors = softColors.filter(color => color !== currentColor);
+    const filteredColors = redColors.filter(color => color !== currentColor);
     return filteredColors[Math.floor(Math.random() * filteredColors.length)];
   };
 
@@ -30,7 +30,7 @@ const FeaturedProduct = ({ title, description, price, retailer, listingLink, ima
   React.useEffect(() => {
     // Initialize with a color based on index to make cards different
     if (!cardColor) {
-      setCardColor(softColors[index % softColors.length]);
+      setCardColor(redColors[index % redColors.length]);
       return; // Exit after initial setup to avoid immediate color change
     }
     

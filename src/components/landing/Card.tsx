@@ -25,27 +25,28 @@ export const Card: React.FC<CardProps> = ({
   const [cardColor, setCardColor] = useState("");
   const [isButtonHovered, setIsButtonHovered] = useState(false);
   
-  const softColors = [
-    "#5B8BF0",
-    "#63AABF",
-    "#4E9D63",
-    "#7E7ED4",
-    "#8E87C0",
-    "#DC8A86",
-    "#E6A971",
-    "#68B9C0",
-    "#7FB88F",
-    "#9F8FC1"
+  // Red shades array for the disco effect - matching DiscoCardEffect
+  const redColors = [
+    "#FF0000", // Pure red
+    "#DC143C", // Crimson
+    "#CD5C5C", // Indian Red
+    "#B22222", // Firebrick
+    "#A52A2A", // Brown
+    "#FF6347", // Tomato
+    "#FF4500", // OrangeRed
+    "#E34234", // Vermilion
+    "#C41E3A", // Cardinal
+    "#D70040"  // Crimson glory
   ];
 
   const getRandomColor = (currentColor: string) => {
-    const filteredColors = softColors.filter(color => color !== currentColor);
+    const filteredColors = redColors.filter(color => color !== currentColor);
     return filteredColors[Math.floor(Math.random() * filteredColors.length)];
   };
 
   useEffect(() => {
     if (!cardColor) {
-      setCardColor(softColors[index % softColors.length]);
+      setCardColor(redColors[index % redColors.length]);
       return;
     }
     
