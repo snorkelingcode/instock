@@ -22,8 +22,10 @@ import {
   PaginationLink,
   PaginationNext
 } from "@/components/ui/pagination";
+import LoadingSpinner from "@/components/ui/loading-spinner";
 
 const PokemonSets = () => {
+  // Use smaller initial chunk for faster first render, but load more sets when user scrolls
   const { 
     sets, 
     loading, 
@@ -31,7 +33,11 @@ const PokemonSets = () => {
     error, 
     hasMore, 
     loadMore 
-  } = usePokemonSets({ initialChunkSize: 24, additionalChunkSize: 24 });
+  } = usePokemonSets({ 
+    initialChunkSize: 12,  // Start with fewer sets for faster initial load
+    additionalChunkSize: 12, // Load more in smaller batches 
+    prioritizeRecent: true // Ensure most recent sets are loaded first
+  });
   
   const [filteredSets, setFilteredSets] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -89,6 +95,27 @@ const PokemonSets = () => {
     ));
   };
 
+  // Handle infinite scroll
+  const handleScroll = () => {
+    // Check if we're near the bottom of the page
+    if (
+      !loadingMore && 
+      hasMore && 
+      !searchQuery && 
+      seriesFilter === "all" &&
+      window.innerHeight + document.documentElement.scrollTop >= 
+      document.documentElement.offsetHeight - 1000 // Load more when 1000px from bottom
+    ) {
+      loadMore();
+    }
+  };
+
+  // Set up scroll listener
+  useEffect(() => {
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [loadingMore, hasMore, searchQuery, seriesFilter]);
+
   useEffect(() => {
     if (error) {
       toast({
@@ -106,9 +133,10 @@ const PokemonSets = () => {
       loadingMore, 
       setsCount: sets?.length || 0,
       filteredCount: filteredSets?.length || 0,
+      hasMore,
       hasError: !!error
     });
-  }, [loading, loadingMore, sets, filteredSets, error]);
+  }, [loading, loadingMore, sets, filteredSets, hasMore, error]);
 
   return (
     <Layout>
@@ -193,7 +221,14 @@ const PokemonSets = () => {
               ))}
             </div>
             
-            {hasMore && !searchQuery && seriesFilter === "all" && (
+            {loadingMore && (
+              <div className="flex justify-center items-center mt-8 py-4">
+                <LoadingSpinner size="md" />
+                <span className="ml-2">Loading more sets...</span>
+              </div>
+            )}
+            
+            {hasMore && !searchQuery && seriesFilter === "all" && !loadingMore && (
               <div className="mt-8">
                 <Pagination>
                   <PaginationContent>

@@ -153,6 +153,7 @@ const cacheCards = (setId: string, cards: PokemonCard[]) => {
       cards,
       timestamp: Date.now()
     }));
+    console.log(`Cached ${cards.length} cards for set ${setId}`);
   } catch (e) {
     console.warn("Error storing cards in localStorage:", e);
   }
@@ -361,7 +362,7 @@ const fetchCardsFromAPIWithPagination = async (
         totalCount,
         hasMore
       };
-    } catch (error) {
+    } catch (error: any) {
       if (error.name === 'AbortError') {
         console.error('API request timed out, retrying...');
         throw new Error('Request timed out. The API is taking too long to respond.');

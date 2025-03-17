@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { getCache, setCache } from '@/utils/cacheUtils';
@@ -7,6 +8,7 @@ interface UseTCGSetsOptions {
   cacheTime?: number; // Time in minutes to cache the data
   initialChunkSize?: number; // Initial number of sets to load
   additionalChunkSize?: number; // Number of sets to load when loadMore is called
+  prioritizeRecent?: boolean; // Whether to prioritize recent sets (default: true)
 }
 
 export function usePokemonSets(options: UseTCGSetsOptions = {}) {
@@ -19,7 +21,8 @@ export function usePokemonSets(options: UseTCGSetsOptions = {}) {
   const { 
     cacheTime = 30, 
     initialChunkSize = 24, 
-    additionalChunkSize = 24 
+    additionalChunkSize = 24,
+    prioritizeRecent = true 
   } = options;
 
   // Fetch all sets initially but only display a chunk
@@ -27,16 +30,30 @@ export function usePokemonSets(options: UseTCGSetsOptions = {}) {
     const fetchSets = async () => {
       try {
         setLoading(true);
+        console.log("Fetching Pokemon sets with initialChunkSize:", initialChunkSize);
         
         // First try to get from our pokemon-cards utility which combines caching
         // and API fallback
         try {
           const pokemonSets = await fetchPokemonSets();
           if (pokemonSets && pokemonSets.length > 0) {
-            setAllSets(pokemonSets);
+            console.log(`Received ${pokemonSets.length} Pokemon sets`);
+            
+            // Sort sets by release date if prioritizing recent
+            let sortedSets = [...pokemonSets];
+            if (prioritizeRecent) {
+              sortedSets = sortedSets.sort((a, b) => {
+                // Handle missing release dates
+                if (!a.release_date) return 1;
+                if (!b.release_date) return -1;
+                return new Date(b.release_date).getTime() - new Date(a.release_date).getTime();
+              });
+            }
+            
+            setAllSets(sortedSets);
             // Only show initial chunk
-            setSets(pokemonSets.slice(0, initialChunkSize));
-            setHasMore(pokemonSets.length > initialChunkSize);
+            setSets(sortedSets.slice(0, initialChunkSize));
+            setHasMore(sortedSets.length > initialChunkSize);
             setLoading(false);
             return;
           }
@@ -49,10 +66,23 @@ export function usePokemonSets(options: UseTCGSetsOptions = {}) {
         const cachedSets = getCache<any[]>('pokemon_sets');
         
         if (cachedSets && cachedSets.length > 0) {
-          setAllSets(cachedSets);
+          console.log(`Using ${cachedSets.length} cached Pokemon sets`);
+          
+          // Sort sets by release date if prioritizing recent
+          let sortedSets = [...cachedSets];
+          if (prioritizeRecent) {
+            sortedSets = sortedSets.sort((a, b) => {
+              // Handle missing release dates
+              if (!a.release_date) return 1;
+              if (!b.release_date) return -1;
+              return new Date(b.release_date).getTime() - new Date(a.release_date).getTime();
+            });
+          }
+          
+          setAllSets(sortedSets);
           // Only show initial chunk
-          setSets(cachedSets.slice(0, initialChunkSize));
-          setHasMore(cachedSets.length > initialChunkSize);
+          setSets(sortedSets.slice(0, initialChunkSize));
+          setHasMore(sortedSets.length > initialChunkSize);
           setLoading(false);
           return;
         }
@@ -67,6 +97,7 @@ export function usePokemonSets(options: UseTCGSetsOptions = {}) {
         
         // Store in cache for future use
         if (data && data.length > 0) {
+          console.log(`Fetched ${data.length} Pokemon sets from database`);
           setCache('pokemon_sets', data, cacheTime);
           setAllSets(data);
           // Only show initial chunk
@@ -74,6 +105,7 @@ export function usePokemonSets(options: UseTCGSetsOptions = {}) {
           setHasMore(data.length > initialChunkSize);
         } else {
           // No data found
+          console.log("No Pokemon sets found in database");
           setAllSets([]);
           setSets([]);
           setHasMore(false);
@@ -87,15 +119,19 @@ export function usePokemonSets(options: UseTCGSetsOptions = {}) {
     };
 
     fetchSets();
-  }, [cacheTime, initialChunkSize]);
+  }, [cacheTime, initialChunkSize, prioritizeRecent]);
 
   // Function to load more sets
   const loadMore = useCallback(() => {
     if (loadingMore || !hasMore) return;
     
     setLoadingMore(true);
+    console.log("Loading more sets...");
+    
     const currentLength = sets.length;
     const nextChunk = allSets.slice(currentLength, currentLength + additionalChunkSize);
+    
+    console.log(`Adding ${nextChunk.length} more sets (${currentLength} to ${currentLength + nextChunk.length})`);
     
     setSets(prevSets => [...prevSets, ...nextChunk]);
     setHasMore(currentLength + additionalChunkSize < allSets.length);
