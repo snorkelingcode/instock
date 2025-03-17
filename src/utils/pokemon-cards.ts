@@ -136,6 +136,27 @@ const normalizeCardData = (card: any): PokemonCard => {
   };
 };
 
+// Helper function to cache cards
+const cacheCards = (setId: string, cards: PokemonCard[]) => {
+  const cacheKey = `${setId}_full`;
+  
+  // Update memory cache
+  cardCache.set(cacheKey, {
+    cards,
+    timestamp: Date.now()
+  });
+  
+  // Cache in localStorage
+  try {
+    localStorage.setItem(`${CARDS_CACHE_KEY_PREFIX}${setId}`, JSON.stringify({
+      cards,
+      timestamp: Date.now()
+    }));
+  } catch (e) {
+    console.warn("Error storing cards in localStorage:", e);
+  }
+};
+
 // Try to get data from Supabase first, fallback to API
 export const fetchPokemonCards = async (
   setId: string, 
