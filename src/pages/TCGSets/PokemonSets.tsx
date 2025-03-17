@@ -82,6 +82,13 @@ const PokemonSets = () => {
     setSeriesFilter(value);
   };
 
+  // Function to handle the "Load More" button click
+  const handleLoadMoreClick = () => {
+    if (!loadingMore && hasMore) {
+      loadMore();
+    }
+  };
+
   // Render loading skeletons
   const renderSkeletons = () => {
     return Array(12).fill(0).map((_, index) => (
@@ -232,9 +239,9 @@ const PokemonSets = () => {
               <div className="mt-8">
                 <Pagination>
                   <PaginationContent>
-                    <PaginationItem>
+                    <PaginationItem className="w-full">
                       <Button 
-                        onClick={loadMore}
+                        onClick={handleLoadMoreClick}
                         disabled={loadingMore}
                         className="w-full"
                       >
