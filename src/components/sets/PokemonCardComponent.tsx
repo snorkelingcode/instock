@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PokemonCard } from '@/utils/pokemon-cards';
@@ -7,10 +7,21 @@ import { PokemonCard } from '@/utils/pokemon-cards';
 interface PokemonCardComponentProps {
   card: PokemonCard;
   isSecretRare?: boolean;
+  priority?: boolean; // For prioritizing initial images
 }
 
-const PokemonCardComponent: React.FC<PokemonCardComponentProps> = ({ card, isSecretRare = false }) => {
+const PokemonCardComponent: React.FC<PokemonCardComponentProps> = ({ 
+  card, 
+  isSecretRare = false,
+  priority = false 
+}) => {
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageSrc, setImageSrc] = useState<string | null>(null);
+  
+  // Initialize image source on component mount
+  useEffect(() => {
+    setImageSrc(card.images.small || card.images.large);
+  }, [card.images.small, card.images.large]);
   
   // Determine rarity color
   const getRarityColor = () => {
@@ -49,14 +60,17 @@ const PokemonCardComponent: React.FC<PokemonCardComponentProps> = ({ card, isSec
             <div className="w-12 h-12 border-2 border-t-2 border-gray-300 rounded-full animate-spin"></div>
           </div>
         )}
-        <img
-          src={card.images.small || card.images.large}
-          alt={card.name}
-          className={`absolute inset-0 w-full h-full object-contain hover:scale-105 transition-transform duration-300 ease-in-out ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
-          loading="lazy"
-          onLoad={handleImageLoad}
-          decoding="async"
-        />
+        {imageSrc && (
+          <img
+            src={imageSrc}
+            alt={card.name}
+            className={`absolute inset-0 w-full h-full object-contain hover:scale-105 transition-transform duration-300 ease-in-out ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+            loading={priority ? "eager" : "lazy"}
+            fetchpriority={priority ? "high" : "auto"}
+            onLoad={handleImageLoad}
+            decoding={priority ? "sync" : "async"}
+          />
+        )}
       </div>
       <CardContent className="p-3">
         <div className="flex justify-between items-start">

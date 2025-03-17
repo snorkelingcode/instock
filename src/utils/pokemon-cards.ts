@@ -71,11 +71,15 @@ export interface PokemonSet {
   images_url: string;
 }
 
-// Cache for Pokémon cards by set ID
-const cardCache = new Map<string, {
+// Enhanced memory cache for cards with preloaded flag
+interface CardCache {
   cards: PokemonCard[];
   timestamp: number;
-}>();
+  preloaded?: boolean;
+}
+
+// Memory cache for Pokémon cards by set ID
+const cardCache = new Map<string, CardCache>();
 
 // Memory cache for sets
 const setsCache: {
@@ -87,11 +91,66 @@ const setsCache: {
 const SETS_CACHE_KEY = 'pokemon_sets_cache';
 const CARDS_CACHE_KEY_PREFIX = 'pokemon_cards_cache_';
 const SETS_META_CACHE_KEY = 'pokemon_sets_meta';
-const CACHE_VERSION = '1.1'; // Increment this when making cache format changes
+const CACHE_VERSION = '1.2'; // Incremented for new caching strategy
 
-// Cache expiration time (10 minutes for sets, 30 minutes for cards)
-const SETS_CACHE_TTL = 10 * 60 * 1000; 
-const CARDS_CACHE_TTL = 30 * 60 * 1000;
+// Cache expiration time (30 minutes for sets, 24 hours for cards)
+const SETS_CACHE_TTL = 30 * 60 * 1000; 
+const CARDS_CACHE_TTL = 24 * 60 * 60 * 1000; // Extended cache lifetime
+
+// IndexedDB configuration
+const DB_NAME = 'pokemon_cards_db';
+const DB_VERSION = 1;
+const CARD_STORE = 'cards';
+const SET_STORE = 'sets';
+
+// Initialize IndexedDB if available
+let idbPromise: Promise<IDBDatabase> | null = null;
+
+// Check if IndexedDB is supported and initialize it
+const initializeIndexedDB = (): Promise<IDBDatabase> => {
+  if (!window.indexedDB) {
+    return Promise.reject("IndexedDB not supported");
+  }
+  
+  if (idbPromise) return idbPromise;
+  
+  idbPromise = new Promise((resolve, reject) => {
+    const request = window.indexedDB.open(DB_NAME, DB_VERSION);
+    
+    request.onerror = (event) => {
+      console.error("IndexedDB error:", event);
+      reject("Error opening IndexedDB");
+    };
+    
+    request.onsuccess = () => {
+      resolve(request.result);
+    };
+    
+    request.onupgradeneeded = (event) => {
+      const db = (event.target as IDBOpenDBRequest).result;
+      
+      // Create card store with set_id index
+      if (!db.objectStoreNames.contains(CARD_STORE)) {
+        const cardStore = db.createObjectStore(CARD_STORE, { keyPath: "id" });
+        cardStore.createIndex("set_id", "set", { unique: false });
+      }
+      
+      // Create set store
+      if (!db.objectStoreNames.contains(SET_STORE)) {
+        db.createObjectStore(SET_STORE, { keyPath: "set_id" });
+      }
+    };
+  });
+  
+  return idbPromise;
+};
+
+// Try to initialize IndexedDB immediately at script load
+try {
+  initializeIndexedDB();
+} catch (e) {
+  console.warn("Failed to initialize IndexedDB:", e);
+}
 
 // Determine if a string is a valid number
 const isNumeric = (str: string) => {
@@ -148,40 +207,199 @@ const chunkArray = <T>(array: T[], chunkSize: number): T[][] => {
   return chunks;
 };
 
-// Helper function to cache cards - now with chunking for larger sets
-const cacheCards = (setId: string, cards: PokemonCard[]) => {
-  // Update memory cache first (no need to chunk)
-  cardCache.set(`${setId}_full`, {
-    cards,
-    timestamp: Date.now()
-  });
-  
+// Save cards to IndexedDB
+const saveCardsToIndexedDB = async (setId: string, cards: PokemonCard[]): Promise<boolean> => {
   try {
-    // For localStorage, we need to handle potential storage limits
-    // Create metadata object for this set
-    const metaKey = `${CARDS_CACHE_KEY_PREFIX}${setId}_meta`;
-    const metadata = {
-      setId,
-      totalCards: cards.length,
-      timestamp: Date.now(),
-      version: CACHE_VERSION,
-      chunks: Math.ceil(cards.length / 100) // Store 100 cards per chunk
-    };
+    const db = await initializeIndexedDB();
+    const tx = db.transaction(CARD_STORE, 'readwrite');
+    const store = tx.objectStore(CARD_STORE);
     
-    // Store metadata
-    localStorage.setItem(metaKey, JSON.stringify(metadata));
-    
-    // Break cards into chunks and store separately
-    const cardChunks = chunkArray(cards, 100);
-    
-    cardChunks.forEach((chunk, index) => {
-      const chunkKey = `${CARDS_CACHE_KEY_PREFIX}${setId}_chunk_${index}`;
-      localStorage.setItem(chunkKey, JSON.stringify(chunk));
+    // Store cards individually
+    cards.forEach(card => {
+      store.put({
+        ...card,
+        set: setId, // Ensure set_id is correctly saved for indexing
+        timestamp: Date.now()
+      });
     });
     
-    console.log(`Cached ${cards.length} cards for set ${setId} in ${cardChunks.length} chunks`);
+    return new Promise((resolve, reject) => {
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => {
+        console.error("Error saving cards to IndexedDB:", tx.error);
+        reject(false);
+      };
+    });
   } catch (e) {
-    console.warn("Error storing cards in localStorage:", e);
+    console.warn("Failed to save to IndexedDB, falling back to localStorage:", e);
+    return false;
+  }
+};
+
+// Get cards from IndexedDB by set ID
+const getCardsFromIndexedDB = async (setId: string): Promise<PokemonCard[] | null> => {
+  try {
+    const db = await initializeIndexedDB();
+    const tx = db.transaction(CARD_STORE, 'readonly');
+    const store = tx.objectStore(CARD_STORE);
+    const index = store.index('set_id');
+    const request = index.getAll(setId);
+    
+    return new Promise((resolve, reject) => {
+      request.onsuccess = () => {
+        const cards = request.result;
+        if (cards && cards.length > 0) {
+          // Check if the cache is recent enough
+          const now = Date.now();
+          const oldestAllowed = now - CARDS_CACHE_TTL;
+          
+          // Get the timestamp of the first card (assuming all cards have the same timestamp)
+          const timestamp = cards[0].timestamp || 0;
+          
+          if (timestamp < oldestAllowed) {
+            console.log(`IndexedDB cache expired for set ${setId}`);
+            resolve(null);
+            return;
+          }
+          
+          console.log(`Retrieved ${cards.length} cards for set ${setId} from IndexedDB`);
+          // Remove timestamp property before returning
+          const formattedCards = cards.map(card => {
+            const { timestamp, ...rest } = card;
+            return rest;
+          });
+          resolve(formattedCards);
+        } else {
+          resolve(null);
+        }
+      };
+      request.onerror = () => {
+        console.error("Error getting cards from IndexedDB:", request.error);
+        reject(null);
+      };
+    });
+  } catch (e) {
+    console.warn("Failed to get from IndexedDB, falling back to localStorage:", e);
+    return null;
+  }
+};
+
+// Save sets to IndexedDB
+const saveSetsToIndexedDB = async (sets: PokemonSet[]): Promise<boolean> => {
+  try {
+    const db = await initializeIndexedDB();
+    const tx = db.transaction(SET_STORE, 'readwrite');
+    const store = tx.objectStore(SET_STORE);
+    
+    // Store sets individually
+    sets.forEach(set => {
+      store.put({
+        ...set,
+        timestamp: Date.now()
+      });
+    });
+    
+    return new Promise((resolve, reject) => {
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => {
+        console.error("Error saving sets to IndexedDB:", tx.error);
+        reject(false);
+      };
+    });
+  } catch (e) {
+    console.warn("Failed to save sets to IndexedDB, falling back to localStorage:", e);
+    return false;
+  }
+};
+
+// Get all sets from IndexedDB
+const getSetsFromIndexedDB = async (): Promise<PokemonSet[] | null> => {
+  try {
+    const db = await initializeIndexedDB();
+    const tx = db.transaction(SET_STORE, 'readonly');
+    const store = tx.objectStore(SET_STORE);
+    const request = store.getAll();
+    
+    return new Promise((resolve, reject) => {
+      request.onsuccess = () => {
+        const sets = request.result;
+        if (sets && sets.length > 0) {
+          // Check if the cache is recent enough
+          const now = Date.now();
+          const oldestAllowed = now - SETS_CACHE_TTL;
+          
+          // Get the timestamp of the first set (assuming all sets have the same timestamp)
+          const timestamp = sets[0].timestamp || 0;
+          
+          if (timestamp < oldestAllowed) {
+            console.log(`IndexedDB sets cache expired`);
+            resolve(null);
+            return;
+          }
+          
+          console.log(`Retrieved ${sets.length} sets from IndexedDB`);
+          // Remove timestamp property before returning
+          const formattedSets = sets.map(set => {
+            const { timestamp, ...rest } = set;
+            return rest;
+          });
+          resolve(formattedSets);
+        } else {
+          resolve(null);
+        }
+      };
+      request.onerror = () => {
+        console.error("Error getting sets from IndexedDB:", request.error);
+        reject(null);
+      };
+    });
+  } catch (e) {
+    console.warn("Failed to get sets from IndexedDB, falling back to localStorage:", e);
+    return null;
+  }
+};
+
+// Helper function to cache cards - with IndexedDB support
+const cacheCards = async (setId: string, cards: PokemonCard[]) => {
+  // Update memory cache first
+  cardCache.set(`${setId}_full`, {
+    cards,
+    timestamp: Date.now(),
+    preloaded: true
+  });
+  
+  // Try to save to IndexedDB first
+  const savedToIDB = await saveCardsToIndexedDB(setId, cards);
+  
+  // If IndexedDB fails, fallback to localStorage
+  if (!savedToIDB) {
+    try {
+      // For localStorage, we need to handle potential storage limits
+      // Create metadata object for this set
+      const metaKey = `${CARDS_CACHE_KEY_PREFIX}${setId}_meta`;
+      const metadata = {
+        setId,
+        totalCards: cards.length,
+        timestamp: Date.now(),
+        version: CACHE_VERSION,
+        chunks: Math.ceil(cards.length / 100) // Store 100 cards per chunk
+      };
+      
+      // Store metadata
+      localStorage.setItem(metaKey, JSON.stringify(metadata));
+      
+      // Break cards into chunks and store separately
+      const cardChunks = chunkArray(cards, 100);
+      
+      cardChunks.forEach((chunk, index) => {
+        const chunkKey = `${CARDS_CACHE_KEY_PREFIX}${setId}_chunk_${index}`;
+        localStorage.setItem(chunkKey, JSON.stringify(chunk));
+      });
+      
+      console.log(`Cached ${cards.length} cards for set ${setId} in ${cardChunks.length} chunks`);
+    } catch (e) {
+      console.warn("Error storing cards in localStorage:", e);
+    }
   }
 };
 
@@ -240,6 +458,61 @@ const getCardsFromChunkedCache = (setId: string): { cards: PokemonCard[], timest
   }
 };
 
+// New function to eagerly fetch a specific set
+export const prefetchPokemonSet = async (setId: string): Promise<boolean> => {
+  console.log(`Prefetching set: ${setId}`);
+  
+  // Check if we already have this set in memory cache
+  const cached = cardCache.get(`${setId}_full`);
+  if (cached && cached.preloaded) {
+    console.log(`Set ${setId} already preloaded in memory cache`);
+    return true;
+  }
+
+  try {
+    // Try to get from IndexedDB first
+    const idbCards = await getCardsFromIndexedDB(setId);
+    if (idbCards && idbCards.length > 0) {
+      console.log(`Using ${idbCards.length} cards from IndexedDB for set ${setId}`);
+      cardCache.set(`${setId}_full`, {
+        cards: idbCards,
+        timestamp: Date.now(),
+        preloaded: true
+      });
+      // Preload critical images in background
+      setTimeout(() => preloadCardImages(idbCards, 100), 10);
+      return true;
+    }
+    
+    // Fall back to localStorage if IndexedDB fails
+    const localCache = getCardsFromChunkedCache(setId);
+    if (localCache) {
+      console.log(`Using ${localCache.cards.length} cards from localStorage for set ${setId}`);
+      cardCache.set(`${setId}_full`, {
+        cards: localCache.cards,
+        timestamp: localCache.timestamp,
+        preloaded: true
+      });
+      // Preload critical images in background
+      setTimeout(() => preloadCardImages(localCache.cards, 100), 10);
+      return true;
+    }
+    
+    // Fetch from Supabase or API if needed
+    const result = await fetchPokemonCards(setId, { loadAll: true });
+    if (result.cards.length > 0) {
+      // Already cached in fetchPokemonCards function
+      setTimeout(() => preloadCardImages(result.cards, 100), 10);
+      return true;
+    }
+    
+    return false;
+  } catch (e) {
+    console.error(`Error prefetching set ${setId}:`, e);
+    return false;
+  }
+};
+
 // Try to get data from Supabase first, fallback to API
 export const fetchPokemonCards = async (
   setId: string, 
@@ -261,7 +534,30 @@ export const fetchPokemonCards = async (
     };
   }
   
-  // Check chunked localStorage cache
+  // Try IndexedDB first
+  try {
+    const idbCards = await getCardsFromIndexedDB(setId);
+    if (idbCards && idbCards.length > 0) {
+      console.log(`Using ${idbCards.length} cards from IndexedDB for set ${setId}`);
+      
+      // Store in memory cache
+      cardCache.set(cacheKey, {
+        cards: idbCards,
+        timestamp: Date.now(),
+        preloaded: true
+      });
+      
+      return { 
+        cards: idbCards, 
+        totalCount: idbCards.length,
+        hasMore: false 
+      };
+    }
+  } catch (e) {
+    console.warn("IndexedDB access failed:", e);
+  }
+  
+  // Check chunked localStorage cache if IndexedDB fails
   const localCache = getCardsFromChunkedCache(setId);
   if (localCache) {
     console.log(`Using localStorage cache for set: ${setId}`);
@@ -480,6 +776,33 @@ export const getCachedSetMetadata = (setId: string): {
   }
 };
 
+// Helper function to cache sets
+const cacheSets = async (sets: PokemonSet[]) => {
+  console.log(`Caching ${sets.length} Pokemon sets`);
+  
+  // Update memory cache
+  setsCache.sets = sets;
+  setsCache.timestamp = Date.now();
+  
+  // Try to save to IndexedDB first
+  try {
+    await saveSetsToIndexedDB(sets);
+  } catch (e) {
+    console.warn("Error saving sets to IndexedDB:", e);
+    
+    // Fallback to localStorage
+    try {
+      localStorage.setItem(SETS_CACHE_KEY, JSON.stringify({
+        sets,
+        timestamp: Date.now(),
+        version: CACHE_VERSION
+      }));
+    } catch (localStorageError) {
+      console.warn("Error storing sets in localStorage:", localStorageError);
+    }
+  }
+};
+
 // Try to get sets from Supabase first, fallback to API
 export const fetchPokemonSets = async (): Promise<PokemonSet[]> => {
   console.log("Fetching Pokemon sets");
@@ -490,7 +813,23 @@ export const fetchPokemonSets = async (): Promise<PokemonSet[]> => {
     return setsCache.sets;
   }
   
-  // Check localStorage cache
+  // Try IndexedDB first
+  try {
+    const idbSets = await getSetsFromIndexedDB();
+    if (idbSets && idbSets.length > 0) {
+      console.log(`Using ${idbSets.length} sets from IndexedDB`);
+      
+      // Update memory cache
+      setsCache.sets = idbSets;
+      setsCache.timestamp = Date.now();
+      
+      return idbSets;
+    }
+  } catch (e) {
+    console.warn("IndexedDB sets access failed:", e);
+  }
+  
+  // Check localStorage cache if IndexedDB fails
   try {
     const localCache = localStorage.getItem(SETS_CACHE_KEY);
     
@@ -534,26 +873,6 @@ export const fetchPokemonSets = async (): Promise<PokemonSet[]> => {
   
   // Fallback to Pokemon TCG API
   return fetchSetsFromAPI();
-};
-
-// Helper function to cache sets
-const cacheSets = (sets: PokemonSet[]) => {
-  console.log(`Caching ${sets.length} Pokemon sets`);
-  
-  // Update memory cache
-  setsCache.sets = sets;
-  setsCache.timestamp = Date.now();
-  
-  // Cache in localStorage
-  try {
-    localStorage.setItem(SETS_CACHE_KEY, JSON.stringify({
-      sets,
-      timestamp: Date.now(),
-      version: CACHE_VERSION
-    }));
-  } catch (e) {
-    console.warn("Error storing in localStorage:", e);
-  }
 };
 
 // Fetch Pokemon sets from API
@@ -618,9 +937,10 @@ export const preloadCardImages = (cards: PokemonCard[], count: number = 30) => {
   schedulePreload(() => {
     console.log(`Preloading ${cardsToPreload.length} card images`);
     
-    cardsToPreload.forEach(card => {
+    cardsToPreload.forEach((card, index) => {
       if (card.images && card.images.small) {
         const img = new Image();
+        img.fetchPriority = index < 12 ? "high" : "auto";
         img.src = card.images.small;
       }
     });
@@ -628,11 +948,24 @@ export const preloadCardImages = (cards: PokemonCard[], count: number = 30) => {
 };
 
 // Clear all caches
-export const clearPokemonCaches = () => {
+export const clearPokemonCaches = async () => {
   // Clear memory caches
   cardCache.clear();
   setsCache.sets = [];
   setsCache.timestamp = 0;
+  
+  // Clear IndexedDB
+  try {
+    if (idbPromise) {
+      const db = await idbPromise;
+      const tx = db.transaction([CARD_STORE, SET_STORE], 'readwrite');
+      tx.objectStore(CARD_STORE).clear();
+      tx.objectStore(SET_STORE).clear();
+      console.log("IndexedDB caches cleared");
+    }
+  } catch (e) {
+    console.warn("Failed to clear IndexedDB:", e);
+  }
   
   // Clear localStorage caches
   try {
@@ -656,3 +989,52 @@ export const clearPokemonCaches = () => {
   }
 };
 
+// Attempt to prefetch sets and their cards
+export const initPokemonCardPrefetching = (recentSetIds: string[] = []) => {
+  try {
+    // Wait for browser idle time to start prefetching
+    const schedulePreload = (window as any).requestIdleCallback || 
+      ((callback: Function) => setTimeout(() => callback(), 1000));
+    
+    // Queue up prefetching of all recent sets
+    schedulePreload(async () => {
+      console.log("Starting prefetch of Pokemon sets and cards");
+      
+      // First make sure we have the sets data cached
+      try {
+        await fetchPokemonSets();
+      } catch (e) {
+        console.warn("Failed to prefetch sets:", e);
+      }
+      
+      // If specific set IDs are provided, prefetch them first
+      if (recentSetIds.length > 0) {
+        console.log(`Prefetching ${recentSetIds.length} specified sets first`);
+        for (const setId of recentSetIds) {
+          try {
+            await prefetchPokemonSet(setId);
+            // Add small delay between sets to avoid overwhelming the browser/server
+            await new Promise(r => setTimeout(r, 200));
+          } catch (e) {
+            console.warn(`Failed to prefetch set ${setId}:`, e);
+          }
+        }
+      }
+    });
+  } catch (e) {
+    console.warn("Failed to initialize prefetching:", e);
+  }
+};
+
+// Initialize prefetching on script load if possible
+try {
+  // Common recent sets - consider prefetching these
+  const recentSets = ['sv4', 'sv3pt5', 'sv3', 'sv2'];
+  
+  // Call after a slight delay to allow page to load
+  setTimeout(() => {
+    initPokemonCardPrefetching(recentSets);
+  }, 2000);
+} catch (e) {
+  console.warn("Failed to initialize prefetching:", e);
+}

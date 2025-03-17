@@ -21,7 +21,8 @@ import {
   fetchPokemonSets, 
   PokemonSet,
   preloadCardImages,
-  getCachedSetMetadata
+  getCachedSetMetadata,
+  prefetchPokemonSet
 } from "@/utils/pokemon-cards";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -46,6 +47,7 @@ const PokemonSetDetails = () => {
   const [hasSecretRares, setHasSecretRares] = useState(false);
   const [cardsPerRow, setCardsPerRow] = useState(5); // Default value for xl screens
   const [metadataLoaded, setMetadataLoaded] = useState(false); // Track if we've loaded metadata
+  const [isPrefetched, setIsPrefetched] = useState(false); // Track if set is prefetched
   
   // Determine which cards to display based on filtering state
   const displayedCards = isFiltering ? filteredCards : cards;
@@ -74,6 +76,23 @@ const PokemonSetDetails = () => {
     window.addEventListener('resize', updateCardsPerRow);
     return () => window.removeEventListener('resize', updateCardsPerRow);
   }, []);
+
+  // Immediately attempt to prefetch the set data on component mount
+  useEffect(() => {
+    if (!setId || isPrefetched) return;
+    
+    const fetchSetImmediately = async () => {
+      setIsPrefetched(true);
+      try {
+        // This will either use cached data or fetch new data
+        await prefetchPokemonSet(setId);
+      } catch (e) {
+        console.warn("Failed to prefetch set:", e);
+      }
+    };
+    
+    fetchSetImmediately();
+  }, [setId, isPrefetched]);
 
   // Load cached metadata first to show stats immediately
   useEffect(() => {
@@ -119,7 +138,7 @@ const PokemonSetDetails = () => {
     fetchSetDetails();
   }, [setId, toast]);
   
-  // 2. Then fetch all cards in the set at once
+  // 2. Then fetch all cards in the set at once - now with enhanced prefetching
   useEffect(() => {
     const fetchAllCards = async () => {
       if (!setId) return;
@@ -134,8 +153,8 @@ const PokemonSetDetails = () => {
         const fetchedCards = result.cards;
         console.log(`Received ${fetchedCards.length} cards for set ${setId}`);
         
-        // Preload some card images right after fetching
-        preloadCardImages(fetchedCards);
+        // Preload more card images right after fetching
+        preloadCardImages(fetchedCards, 50);
         
         setCards(fetchedCards);
         
@@ -267,6 +286,39 @@ const PokemonSetDetails = () => {
     return addPlaceholderCards(displayedCards);
   }, [displayedCards, cardsPerRow]);
 
+  // Prefetch related sets for better navigation experience
+  useEffect(() => {
+    if (!set) return;
+    
+    // Get series and find related sets to prefetch
+    const prefetchRelatedSets = async () => {
+      try {
+        const allSets = await fetchPokemonSets();
+        const relatedSets = allSets
+          .filter(s => s.series === set.series && s.set_id !== setId)
+          .slice(0, 3); // Limit to 3 most recent related sets
+        
+        if (relatedSets.length > 0) {
+          console.log(`Prefetching ${relatedSets.length} related sets in the background`);
+          
+          // Prefetch each related set with delay
+          relatedSets.forEach((relatedSet, index) => {
+            setTimeout(() => {
+              prefetchPokemonSet(relatedSet.set_id).catch(e => 
+                console.warn(`Failed to prefetch related set ${relatedSet.set_id}:`, e)
+              );
+            }, (index + 1) * 5000); // Staggered prefetch, 5 seconds apart
+          });
+        }
+      } catch (e) {
+        console.warn("Failed to prefetch related sets:", e);
+      }
+    };
+    
+    // Schedule this for later when the user is likely done viewing the current set
+    setTimeout(prefetchRelatedSets, 10000);
+  }, [set, setId]);
+
   return (
     <Layout>
       <div className="bg-white p-6 rounded-lg shadow-md mb-8">
@@ -293,6 +345,7 @@ const PokemonSetDetails = () => {
                       alt={`${set.name} logo`} 
                       className="h-24 object-contain"
                       loading="eager"
+                      fetchpriority="high"
                     />
                   )}
                   <div>
@@ -421,6 +474,7 @@ const PokemonSetDetails = () => {
                   isSecretRare={
                     hasSecretRares && secretRares.some(sr => sr.id === card.id)
                   }
+                  priority={index < 15} // Only prioritize loading for the first 15 cards
                 />
               )
             ))}
