@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useMemo, useRef } from "react";
+
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { useToast } from "@/hooks/use-toast";
@@ -18,10 +19,11 @@ import {
   fetchPokemonCards, 
   PokemonCard, 
   fetchPokemonSets, 
-  PokemonSet
+  PokemonSet,
+  preloadCardImages,
+  getCachedSetMetadata
 } from "@/utils/pokemon-cards";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Grid } from "@/components/ui/grid";
 
 const PokemonSetDetails = () => {
   const { setId } = useParams<{ setId: string }>();
@@ -43,6 +45,7 @@ const PokemonSetDetails = () => {
   const [secretRares, setSecretRares] = useState<PokemonCard[]>([]);
   const [hasSecretRares, setHasSecretRares] = useState(false);
   const [cardsPerRow, setCardsPerRow] = useState(5); // Default value for xl screens
+  const [metadataLoaded, setMetadataLoaded] = useState(false); // Track if we've loaded metadata
   
   // Determine which cards to display based on filtering state
   const displayedCards = isFiltering ? filteredCards : cards;
@@ -71,6 +74,18 @@ const PokemonSetDetails = () => {
     window.addEventListener('resize', updateCardsPerRow);
     return () => window.removeEventListener('resize', updateCardsPerRow);
   }, []);
+
+  // Load cached metadata first to show stats immediately
+  useEffect(() => {
+    if (!setId || metadataLoaded) return;
+    
+    const metadata = getCachedSetMetadata(setId);
+    if (metadata) {
+      console.log(`Using cached metadata for set ${setId}:`, metadata);
+      setHasSecretRares(metadata.hasSecretRares);
+      setMetadataLoaded(true);
+    }
+  }, [setId, metadataLoaded]);
 
   // 1. First fetch the set details
   useEffect(() => {
@@ -119,6 +134,9 @@ const PokemonSetDetails = () => {
         const fetchedCards = result.cards;
         console.log(`Received ${fetchedCards.length} cards for set ${setId}`);
         
+        // Preload some card images right after fetching
+        preloadCardImages(fetchedCards);
+        
         setCards(fetchedCards);
         
         // Check for secret rares
@@ -165,8 +183,8 @@ const PokemonSetDetails = () => {
     fetchAllCards();
   }, [setId, toast, set]);
   
-  // Handle filtering of cards separately
-  useEffect(() => {
+  // Handle filtering of cards separately - memoized for better performance
+  const applyFilters = useCallback(() => {
     // If no filter is applied, don't run this effect
     if (rarityFilter === "all" && typeFilter === "all" && !searchQuery) {
       setIsFiltering(false);
@@ -201,6 +219,11 @@ const PokemonSetDetails = () => {
     
     setFilteredCards(filtered);
   }, [searchQuery, rarityFilter, typeFilter, cards]);
+
+  // Apply filters whenever filter criteria change
+  useEffect(() => {
+    applyFilters();
+  }, [applyFilters]);
 
   const resetFilters = () => {
     setSearchQuery("");
@@ -280,9 +303,9 @@ const PokemonSetDetails = () => {
                     <p className="text-sm text-gray-600 mt-1">
                       {set.series} Series • Released {new Date(set.release_date).toLocaleDateString()} • 
                       {set.total || set.printed_total} cards
-                      {hasSecretRares && secretRares.length > 0 && (
+                      {hasSecretRares && (
                         <span className="text-red-500 font-medium ml-2">
-                          + {secretRares.length} secret rare{secretRares.length > 1 ? 's' : ''}
+                          + {secretRares.length > 0 ? secretRares.length : "?"} secret rare{secretRares.length !== 1 ? 's' : ''}
                         </span>
                       )}
                     </p>

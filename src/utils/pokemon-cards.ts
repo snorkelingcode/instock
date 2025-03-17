@@ -86,6 +86,8 @@ const setsCache: {
 // Local storage cache keys
 const SETS_CACHE_KEY = 'pokemon_sets_cache';
 const CARDS_CACHE_KEY_PREFIX = 'pokemon_cards_cache_';
+const SETS_META_CACHE_KEY = 'pokemon_sets_meta';
+const CACHE_VERSION = '1.1'; // Increment this when making cache format changes
 
 // Cache expiration time (10 minutes for sets, 30 minutes for cards)
 const SETS_CACHE_TTL = 10 * 60 * 1000; 
@@ -137,25 +139,104 @@ const normalizeCardData = (card: any): PokemonCard => {
   };
 };
 
-// Helper function to cache cards
+// Split card data into chunks for storage to avoid localStorage size limits
+const chunkArray = <T>(array: T[], chunkSize: number): T[][] => {
+  const chunks: T[][] = [];
+  for (let i = 0; i < array.length; i += chunkSize) {
+    chunks.push(array.slice(i, i + chunkSize));
+  }
+  return chunks;
+};
+
+// Helper function to cache cards - now with chunking for larger sets
 const cacheCards = (setId: string, cards: PokemonCard[]) => {
-  const cacheKey = `${setId}_full`;
-  
-  // Update memory cache
-  cardCache.set(cacheKey, {
+  // Update memory cache first (no need to chunk)
+  cardCache.set(`${setId}_full`, {
     cards,
     timestamp: Date.now()
   });
   
-  // Cache in localStorage
   try {
-    localStorage.setItem(`${CARDS_CACHE_KEY_PREFIX}${setId}`, JSON.stringify({
-      cards,
-      timestamp: Date.now()
-    }));
-    console.log(`Cached ${cards.length} cards for set ${setId}`);
+    // For localStorage, we need to handle potential storage limits
+    // Create metadata object for this set
+    const metaKey = `${CARDS_CACHE_KEY_PREFIX}${setId}_meta`;
+    const metadata = {
+      setId,
+      totalCards: cards.length,
+      timestamp: Date.now(),
+      version: CACHE_VERSION,
+      chunks: Math.ceil(cards.length / 100) // Store 100 cards per chunk
+    };
+    
+    // Store metadata
+    localStorage.setItem(metaKey, JSON.stringify(metadata));
+    
+    // Break cards into chunks and store separately
+    const cardChunks = chunkArray(cards, 100);
+    
+    cardChunks.forEach((chunk, index) => {
+      const chunkKey = `${CARDS_CACHE_KEY_PREFIX}${setId}_chunk_${index}`;
+      localStorage.setItem(chunkKey, JSON.stringify(chunk));
+    });
+    
+    console.log(`Cached ${cards.length} cards for set ${setId} in ${cardChunks.length} chunks`);
   } catch (e) {
     console.warn("Error storing cards in localStorage:", e);
+  }
+};
+
+// Get cards from chunked localStorage cache
+const getCardsFromChunkedCache = (setId: string): { cards: PokemonCard[], timestamp: number } | null => {
+  try {
+    const metaKey = `${CARDS_CACHE_KEY_PREFIX}${setId}_meta`;
+    const metaJson = localStorage.getItem(metaKey);
+    
+    if (!metaJson) return null;
+    
+    const metadata = JSON.parse(metaJson);
+    
+    // Version check - if cache format has changed, don't use old format
+    if (metadata.version !== CACHE_VERSION) {
+      console.log(`Cache version mismatch (${metadata.version} vs ${CACHE_VERSION}), ignoring cache`);
+      return null;
+    }
+    
+    // Check timestamp
+    if (Date.now() - metadata.timestamp > CARDS_CACHE_TTL) {
+      console.log(`Cache expired for set ${setId}`);
+      return null;
+    }
+    
+    // Retrieve and combine all chunks
+    const allCards: PokemonCard[] = [];
+    
+    for (let i = 0; i < metadata.chunks; i++) {
+      const chunkKey = `${CARDS_CACHE_KEY_PREFIX}${setId}_chunk_${i}`;
+      const chunkJson = localStorage.getItem(chunkKey);
+      
+      if (!chunkJson) {
+        console.warn(`Missing chunk ${i} for set ${setId}`);
+        return null; // If any chunk is missing, the cache is invalid
+      }
+      
+      const chunk = JSON.parse(chunkJson);
+      allCards.push(...chunk);
+    }
+    
+    if (allCards.length !== metadata.totalCards) {
+      console.warn(`Cache size mismatch for set ${setId}: expected ${metadata.totalCards}, got ${allCards.length}`);
+      return null;
+    }
+    
+    console.log(`Successfully loaded ${allCards.length} cards from chunked cache for set ${setId}`);
+    
+    return {
+      cards: allCards,
+      timestamp: metadata.timestamp
+    };
+  } catch (e) {
+    console.warn("Error reading chunked cache:", e);
+    return null;
   }
 };
 
@@ -180,31 +261,22 @@ export const fetchPokemonCards = async (
     };
   }
   
-  // Check localStorage cache
-  try {
-    const localCacheKey = `${CARDS_CACHE_KEY_PREFIX}${setId}`;
-    const localCache = localStorage.getItem(localCacheKey);
+  // Check chunked localStorage cache
+  const localCache = getCardsFromChunkedCache(setId);
+  if (localCache) {
+    console.log(`Using localStorage cache for set: ${setId}`);
     
-    if (localCache) {
-      const parsedCache = JSON.parse(localCache);
-      if (Date.now() - parsedCache.timestamp < CARDS_CACHE_TTL) {
-        console.log(`Using localStorage cache for set: ${setId}`);
-        
-        // Store in memory cache too
-        cardCache.set(cacheKey, {
-          cards: parsedCache.cards,
-          timestamp: parsedCache.timestamp
-        });
-        
-        return { 
-          cards: parsedCache.cards, 
-          totalCount: parsedCache.cards.length,
-          hasMore: false 
-        };
-      }
-    }
-  } catch (e) {
-    console.warn("Error accessing localStorage:", e);
+    // Store in memory cache too
+    cardCache.set(cacheKey, {
+      cards: localCache.cards,
+      timestamp: localCache.timestamp
+    });
+    
+    return { 
+      cards: localCache.cards, 
+      totalCount: localCache.cards.length,
+      hasMore: false 
+    };
   }
   
   // Try to get from Supabase
@@ -340,6 +412,74 @@ const fetchAllCardsFromAPI = async (setId: string): Promise<{ cards: PokemonCard
   }
 };
 
+// Track which sets metadata has been cached to avoid unnecessary localStorage operations
+const metaCacheTracking: Record<string, boolean> = {};
+
+// Store sets metadata for faster lookup
+const cacheSetMetadata = (setId: string, totalCount: number, hasSecretRares: boolean, secretRaresCount: number) => {
+  try {
+    // Skip if already cached recently
+    if (metaCacheTracking[setId]) {
+      return;
+    }
+    
+    // Get existing metadata
+    let allSetsMetadata: Record<string, any> = {};
+    const metaJson = localStorage.getItem(SETS_META_CACHE_KEY);
+    
+    if (metaJson) {
+      allSetsMetadata = JSON.parse(metaJson);
+    }
+    
+    // Update or add this set's metadata
+    allSetsMetadata[setId] = {
+      totalCount,
+      hasSecretRares,
+      secretRaresCount,
+      timestamp: Date.now()
+    };
+    
+    // Save back to localStorage
+    localStorage.setItem(SETS_META_CACHE_KEY, JSON.stringify(allSetsMetadata));
+    metaCacheTracking[setId] = true;
+    
+    console.log(`Cached metadata for set ${setId}: ${totalCount} cards, ${secretRaresCount} secret rares`);
+  } catch (e) {
+    console.warn("Error caching set metadata:", e);
+  }
+};
+
+// Get cached set metadata if available
+export const getCachedSetMetadata = (setId: string): { 
+  totalCount: number, 
+  hasSecretRares: boolean, 
+  secretRaresCount: number 
+} | null => {
+  try {
+    const metaJson = localStorage.getItem(SETS_META_CACHE_KEY);
+    if (!metaJson) return null;
+    
+    const allSetsMetadata = JSON.parse(metaJson);
+    
+    if (!allSetsMetadata[setId]) return null;
+    
+    // Check if metadata is fresh enough (within 24 hours)
+    const metadata = allSetsMetadata[setId];
+    if (Date.now() - metadata.timestamp > 24 * 60 * 60 * 1000) {
+      return null;
+    }
+    
+    return {
+      totalCount: metadata.totalCount,
+      hasSecretRares: metadata.hasSecretRares,
+      secretRaresCount: metadata.secretRaresCount
+    };
+  } catch (e) {
+    console.warn("Error reading set metadata:", e);
+    return null;
+  }
+};
+
 // Try to get sets from Supabase first, fallback to API
 export const fetchPokemonSets = async (): Promise<PokemonSet[]> => {
   console.log("Fetching Pokemon sets");
@@ -408,7 +548,8 @@ const cacheSets = (sets: PokemonSet[]) => {
   try {
     localStorage.setItem(SETS_CACHE_KEY, JSON.stringify({
       sets,
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      version: CACHE_VERSION
     }));
   } catch (e) {
     console.warn("Error storing in localStorage:", e);
@@ -465,6 +606,27 @@ const fetchSetsFromAPI = async (): Promise<PokemonSet[]> => {
   }
 };
 
+// Preload card images for a set to improve load times
+export const preloadCardImages = (cards: PokemonCard[], count: number = 30) => {
+  // Only preload the first N cards to avoid overloading the browser
+  const cardsToPreload = cards.slice(0, Math.min(count, cards.length));
+  
+  // Use requestIdleCallback if available, otherwise use setTimeout
+  const schedulePreload = (window as any).requestIdleCallback || 
+    ((callback: Function) => setTimeout(() => callback(), 100));
+  
+  schedulePreload(() => {
+    console.log(`Preloading ${cardsToPreload.length} card images`);
+    
+    cardsToPreload.forEach(card => {
+      if (card.images && card.images.small) {
+        const img = new Image();
+        img.src = card.images.small;
+      }
+    });
+  });
+};
+
 // Clear all caches
 export const clearPokemonCaches = () => {
   // Clear memory caches
@@ -475,8 +637,9 @@ export const clearPokemonCaches = () => {
   // Clear localStorage caches
   try {
     localStorage.removeItem(SETS_CACHE_KEY);
+    localStorage.removeItem(SETS_META_CACHE_KEY);
     
-    // Clear all card caches
+    // Clear all card caches - both old format and chunked format
     const keysToRemove: string[] = [];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
@@ -492,3 +655,4 @@ export const clearPokemonCaches = () => {
     console.warn("Error clearing localStorage caches:", e);
   }
 };
+

@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PokemonCard } from '@/utils/pokemon-cards';
@@ -10,6 +10,8 @@ interface PokemonCardComponentProps {
 }
 
 const PokemonCardComponent: React.FC<PokemonCardComponentProps> = ({ card, isSecretRare = false }) => {
+  const [imageLoaded, setImageLoaded] = useState(false);
+  
   // Determine rarity color
   const getRarityColor = () => {
     if (!card.rarity) return "bg-gray-500";
@@ -29,6 +31,11 @@ const PokemonCardComponent: React.FC<PokemonCardComponentProps> = ({ card, isSec
     return "bg-blue-500";
   };
   
+  // Function to handle image loading
+  const handleImageLoad = () => {
+    setImageLoaded(true);
+  };
+  
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-shadow relative group">
       {isSecretRare && (
@@ -36,12 +43,18 @@ const PokemonCardComponent: React.FC<PokemonCardComponentProps> = ({ card, isSec
           <Badge className="bg-yellow-500 text-xs font-bold">Secret Rare</Badge>
         </div>
       )}
-      <div className="relative pb-[140%] overflow-hidden">
+      <div className="relative pb-[140%] overflow-hidden bg-gray-100">
+        {!imageLoaded && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-12 h-12 border-2 border-t-2 border-gray-300 rounded-full animate-spin"></div>
+          </div>
+        )}
         <img
           src={card.images.small || card.images.large}
           alt={card.name}
-          className="absolute inset-0 w-full h-full object-contain hover:scale-105 transition-transform duration-300 ease-in-out"
+          className={`absolute inset-0 w-full h-full object-contain hover:scale-105 transition-transform duration-300 ease-in-out ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
           loading="lazy"
+          onLoad={handleImageLoad}
           decoding="async"
         />
       </div>
