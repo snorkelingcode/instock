@@ -116,8 +116,10 @@ export function usePokemonSets(options: UseTCGSetsOptions = {}) {
     fetchSets();
   }, [cacheTime, prioritizeRecent, initialChunkSize]);
 
-  // Load more sets
+  // Load more sets with debouncing to prevent multiple calls
   const loadMore = useCallback(() => {
+    if (loadingMore || displayedSets.length >= allSets.length) return;
+    
     setLoadingMore(true);
     
     // Calculate next chunk of sets to display
@@ -129,7 +131,7 @@ export function usePokemonSets(options: UseTCGSetsOptions = {}) {
       setDisplayedSets(prev => [...prev, ...nextChunk]);
       setLoadingMore(false);
     }, 300);
-  }, [displayedSets, allSets, additionalChunkSize]);
+  }, [displayedSets, allSets, additionalChunkSize, loadingMore]);
 
   // Check if there are more sets to load
   const hasMore = displayedSets.length < allSets.length;

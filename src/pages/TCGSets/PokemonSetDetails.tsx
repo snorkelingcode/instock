@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -85,14 +84,17 @@ const PokemonSetDetails = () => {
     return () => window.removeEventListener('resize', updateCardsPerRow);
   }, []);
 
-  // Setup IntersectionObserver for infinite scrolling
+  // Setup IntersectionObserver for infinite scrolling with improved parameters
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
         const [entry] = entries;
         setIsIntersecting(entry.isIntersecting);
       },
-      { threshold: 0.1, rootMargin: "100px" } // Increased rootMargin to detect earlier
+      { 
+        threshold: 0.1, 
+        rootMargin: "200px" // Increased rootMargin for earlier detection
+      }
     );
 
     const currentLoaderRef = loaderRef.current;
@@ -107,14 +109,25 @@ const PokemonSetDetails = () => {
     };
   }, []);
 
-  // Load more cards when bottom is reached
+  // Debug useEffect for monitoring intersection state
   useEffect(() => {
-    console.log("Intersection state:", isIntersecting, "Has more:", hasMoreCards, "Loading more:", loadingMoreCards, "Filtering:", isFiltering);
-    if (isIntersecting && hasMoreCards && !loadingMoreCards && !isFiltering) {
-      console.log("Triggering loadMoreCards due to intersection");
+    console.log("Scroll monitoring state:", {
+      isIntersecting,
+      hasMoreCards,
+      loadingMoreCards,
+      isFiltering,
+      totalDisplayed: displayedCards?.length || 0,
+      total: totalCardCount
+    });
+  }, [isIntersecting, hasMoreCards, loadingMoreCards, isFiltering, displayedCards, totalCardCount]);
+
+  // Load more cards when bottom is reached - improved dependency array and logic
+  useEffect(() => {
+    if (isIntersecting && hasMoreCards && !loadingMoreCards && !isFiltering && cards.length > 0) {
+      console.log("🔄 Intersection detected! Loading more cards...");
       loadMoreCards();
     }
-  }, [isIntersecting, hasMoreCards, loadingMoreCards, isFiltering]);
+  }, [isIntersecting, hasMoreCards, loadingMoreCards, isFiltering, cards.length]);
 
   // 1. First fetch the set details
   useEffect(() => {
@@ -334,9 +347,12 @@ const PokemonSetDetails = () => {
 
   const loadMoreCards = useCallback(() => {
     if (hasMoreCards && !loadingMoreCards) {
-      console.log('Loading more cards, page:', currentPage + 1);
+      console.log('📥 Loading more cards, page:', currentPage + 1);
       setLoadingMoreCards(true);
-      setCurrentPage(prev => prev + 1);
+      // Add a small delay to prevent multiple calls in quick succession
+      setTimeout(() => {
+        setCurrentPage(prev => prev + 1);
+      }, 100);
     }
   }, [hasMoreCards, loadingMoreCards, currentPage]);
 
@@ -396,18 +412,6 @@ const PokemonSetDetails = () => {
   const cardsWithPlaceholders = useMemo(() => {
     return addPlaceholderCards(displayedCards);
   }, [displayedCards, cardsPerRow]);
-
-  // Debug useEffect for monitoring intersection state
-  useEffect(() => {
-    console.log("Scroll monitoring state:", {
-      isIntersecting,
-      hasMoreCards,
-      loadingMoreCards,
-      isFiltering,
-      totalDisplayed: displayedCards.length,
-      total: totalCardCount
-    });
-  }, [isIntersecting, hasMoreCards, loadingMoreCards, isFiltering, displayedCards.length, totalCardCount]);
 
   return (
     <Layout>
@@ -570,28 +574,22 @@ const PokemonSetDetails = () => {
               ))}
             </div>
             
-            {/* Infinite scroll loader - moved outside the if hasMoreCards check */}
+            {/* Improved infinite scroll loader with better visibility */}
             <div 
               ref={loaderRef}
-              className="mt-8 flex justify-center items-center h-20"
-              style={{ marginBottom: '40px' }} // Add extra margin to ensure it's visible
+              className="mt-12 flex justify-center items-center h-24"
+              style={{ marginBottom: '60px' }} // Increased margin for better visibility
             >
-              {!isFiltering && hasMoreCards && loadingMoreCards && (
-                <div className="flex items-center space-x-2">
-                  <LoadingSpinner size="sm" />
-                  <span className="text-gray-500">Loading more cards...</span>
+              {!isFiltering && loadingMoreCards && (
+                <div className="flex flex-col items-center space-y-3">
+                  <LoadingSpinner size="md" />
+                  <span className="text-gray-600 font-medium">Loading more cards...</span>
                 </div>
               )}
               {!isFiltering && !hasMoreCards && cards.length > 0 && (
-                <p className="text-gray-500 italic">You've reached the end of this set</p>
+                <p className="text-gray-600 italic py-4">You've reached the end of this set</p>
               )}
             </div>
-            
-            {loadingMoreCards && (
-              <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-                {renderCardSkeletons()}
-              </div>
-            )}
           </>
         ) : (
           <div className="text-center py-16">
