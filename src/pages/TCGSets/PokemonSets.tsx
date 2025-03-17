@@ -41,7 +41,7 @@ const PokemonSets = () => {
 
   // Extract unique series for filter dropdown
   useEffect(() => {
-    if (sets.length > 0) {
+    if (sets && sets.length > 0) {
       const seriesArray = Array.from(new Set(sets.map(set => set.series))).sort();
       setUniqueSeries(seriesArray);
     }
@@ -49,7 +49,7 @@ const PokemonSets = () => {
 
   // Filter sets based on search query and series filter
   useEffect(() => {
-    let filtered = sets;
+    let filtered = sets || [];
     
     // Apply series filter
     if (seriesFilter !== "all") {
@@ -89,13 +89,26 @@ const PokemonSets = () => {
     ));
   };
 
-  if (error) {
-    toast({
-      title: "Error",
-      description: "Failed to load Pokémon sets",
-      variant: "destructive",
+  useEffect(() => {
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load Pokémon sets. " + (error.message || "Please try again."),
+        variant: "destructive",
+      });
+    }
+  }, [error, toast]);
+
+  // Debug state
+  useEffect(() => {
+    console.log("Pokemon Sets Page State:", { 
+      loading, 
+      loadingMore, 
+      setsCount: sets?.length || 0,
+      filteredCount: filteredSets?.length || 0,
+      hasError: !!error
     });
-  }
+  }, [loading, loadingMore, sets, filteredSets, error]);
 
   return (
     <Layout>
@@ -180,7 +193,7 @@ const PokemonSets = () => {
               ))}
             </div>
             
-            {hasMore && !seriesFilter && !searchQuery && (
+            {hasMore && !searchQuery && seriesFilter === "all" && (
               <div className="mt-8">
                 <Pagination>
                   <PaginationContent>
@@ -201,6 +214,13 @@ const PokemonSets = () => {
         ) : (
           <div className="text-center py-8">
             <p>No Pokémon sets found matching your filters.</p>
+            <Button 
+              onClick={() => window.location.reload()} 
+              variant="outline" 
+              className="mt-4"
+            >
+              Refresh Page
+            </Button>
           </div>
         )}
       </div>

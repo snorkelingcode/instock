@@ -1,7 +1,7 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { getCache, setCache } from '@/utils/cacheUtils';
+import { fetchPokemonSets } from '@/utils/pokemon-cards';
 
 interface UseTCGSetsOptions {
   cacheTime?: number; // Time in minutes to cache the data
@@ -28,10 +28,27 @@ export function usePokemonSets(options: UseTCGSetsOptions = {}) {
       try {
         setLoading(true);
         
-        // Try to get data from cache first
+        // First try to get from our pokemon-cards utility which combines caching
+        // and API fallback
+        try {
+          const pokemonSets = await fetchPokemonSets();
+          if (pokemonSets && pokemonSets.length > 0) {
+            setAllSets(pokemonSets);
+            // Only show initial chunk
+            setSets(pokemonSets.slice(0, initialChunkSize));
+            setHasMore(pokemonSets.length > initialChunkSize);
+            setLoading(false);
+            return;
+          }
+        } catch (err) {
+          console.warn("Error using fetchPokemonSets:", err);
+          // Continue to other methods if this fails
+        }
+        
+        // Try to get data from cache next
         const cachedSets = getCache<any[]>('pokemon_sets');
         
-        if (cachedSets) {
+        if (cachedSets && cachedSets.length > 0) {
           setAllSets(cachedSets);
           // Only show initial chunk
           setSets(cachedSets.slice(0, initialChunkSize));
@@ -49,12 +66,17 @@ export function usePokemonSets(options: UseTCGSetsOptions = {}) {
         if (error) throw error;
         
         // Store in cache for future use
-        if (data) {
+        if (data && data.length > 0) {
           setCache('pokemon_sets', data, cacheTime);
           setAllSets(data);
           // Only show initial chunk
           setSets(data.slice(0, initialChunkSize));
           setHasMore(data.length > initialChunkSize);
+        } else {
+          // No data found
+          setAllSets([]);
+          setSets([]);
+          setHasMore(false);
         }
       } catch (err: any) {
         console.error('Error fetching Pokemon sets:', err);

@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 // Interface for Pokemon Card
@@ -426,7 +427,7 @@ export const fetchPokemonSets = async (): Promise<PokemonSet[]> => {
   
   // Check memory cache first
   if (setsCache.sets.length > 0 && (Date.now() - setsCache.timestamp < SETS_CACHE_TTL)) {
-    console.log("Using memory cache for Pokemon sets");
+    console.log("Using memory cache for Pokemon sets, count:", setsCache.sets.length);
     return setsCache.sets;
   }
   
@@ -437,7 +438,7 @@ export const fetchPokemonSets = async (): Promise<PokemonSet[]> => {
     if (localCache) {
       const parsedCache = JSON.parse(localCache);
       if (Date.now() - parsedCache.timestamp < SETS_CACHE_TTL) {
-        console.log("Using localStorage cache for Pokemon sets");
+        console.log("Using localStorage cache for Pokemon sets, count:", parsedCache.sets.length);
         
         // Update memory cache
         setsCache.sets = parsedCache.sets;
@@ -478,6 +479,8 @@ export const fetchPokemonSets = async (): Promise<PokemonSet[]> => {
 
 // Helper function to cache sets
 const cacheSets = (sets: PokemonSet[]) => {
+  console.log(`Caching ${sets.length} Pokemon sets`);
+  
   // Update memory cache
   setsCache.sets = sets;
   setsCache.timestamp = Date.now();
@@ -512,6 +515,7 @@ const fetchSetsFromAPI = async (): Promise<PokemonSet[]> => {
     }
     
     const data = await response.json();
+    console.log(`Retrieved ${data.data.length} Pokemon sets from API`);
     
     // Transform API response to match our PokemonSet interface
     const transformedSets = data.data.map((set: any) => ({
