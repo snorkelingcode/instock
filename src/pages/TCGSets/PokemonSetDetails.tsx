@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -58,6 +59,9 @@ const PokemonSetDetails = () => {
   // Infinite scrolling refs and state
   const loaderRef = useRef<HTMLDivElement>(null);
   const [isIntersecting, setIsIntersecting] = useState(false);
+  
+  // Determine which cards to display based on filtering state - defined BEFORE it's used
+  const displayedCards = isFiltering ? filteredCards : cards;
   
   // Calculate grid columns based on screen size
   useEffect(() => {
@@ -385,9 +389,6 @@ const PokemonSetDetails = () => {
       </div>
     ));
   };
-
-  // Determine which cards to display based on filtering state
-  const displayedCards = isFiltering ? filteredCards : cards;
 
   // Function to add empty placeholder cards to ensure full rows
   const addPlaceholderCards = (cardsArray: PokemonCard[]) => {
