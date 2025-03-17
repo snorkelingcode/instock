@@ -15,27 +15,15 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePokemonSets } from "@/hooks/useTCGSets";
-import { 
-  Pagination, 
-  PaginationContent, 
-  PaginationItem,
-  PaginationLink,
-  PaginationNext
-} from "@/components/ui/pagination";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 
 const PokemonSets = () => {
-  // Use smaller initial chunk for faster first render, but load more sets when user scrolls
+  // Load all sets at once
   const { 
     sets, 
     loading, 
-    loadingMore, 
-    error, 
-    hasMore, 
-    loadMore 
+    error
   } = usePokemonSets({ 
-    initialChunkSize: 12,  // Start with fewer sets for faster initial load
-    additionalChunkSize: 12, // Load more in smaller batches 
     prioritizeRecent: true // Ensure most recent sets are loaded first
   });
   
@@ -82,13 +70,6 @@ const PokemonSets = () => {
     setSeriesFilter(value);
   };
 
-  // Function to handle the "Load More" button click
-  const handleLoadMoreClick = () => {
-    if (!loadingMore && hasMore) {
-      loadMore();
-    }
-  };
-
   // Render loading skeletons
   const renderSkeletons = () => {
     return Array(12).fill(0).map((_, index) => (
@@ -101,27 +82,6 @@ const PokemonSets = () => {
       </div>
     ));
   };
-
-  // Handle infinite scroll
-  const handleScroll = () => {
-    // Check if we're near the bottom of the page
-    if (
-      !loadingMore && 
-      hasMore && 
-      !searchQuery && 
-      seriesFilter === "all" &&
-      window.innerHeight + document.documentElement.scrollTop >= 
-      document.documentElement.offsetHeight - 1000 // Load more when 1000px from bottom
-    ) {
-      loadMore();
-    }
-  };
-
-  // Set up scroll listener
-  useEffect(() => {
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [loadingMore, hasMore, searchQuery, seriesFilter]);
 
   useEffect(() => {
     if (error) {
@@ -137,13 +97,11 @@ const PokemonSets = () => {
   useEffect(() => {
     console.log("Pokemon Sets Page State:", { 
       loading, 
-      loadingMore, 
       setsCount: sets?.length || 0,
       filteredCount: filteredSets?.length || 0,
-      hasMore,
       hasError: !!error
     });
-  }, [loading, loadingMore, sets, filteredSets, hasMore, error]);
+  }, [loading, sets, filteredSets, error]);
 
   return (
     <Layout>
@@ -211,48 +169,21 @@ const PokemonSets = () => {
             {renderSkeletons()}
           </div>
         ) : filteredSets.length > 0 ? (
-          <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {filteredSets.map((set) => (
-                <SetCard
-                  key={set.set_id}
-                  id={set.set_id}
-                  name={set.name}
-                  imageUrl={set.logo_url || set.images_url || set.symbol_url}
-                  releaseDate={set.release_date}
-                  totalCards={set.total || set.printed_total}
-                  description={`${set.series} Series • ${set.total || set.printed_total} Cards`}
-                  category="pokemon"
-                  color="#E53E3E"
-                />
-              ))}
-            </div>
-            
-            {loadingMore && (
-              <div className="flex justify-center items-center mt-8 py-4">
-                <LoadingSpinner size="md" />
-                <span className="ml-2">Loading more sets...</span>
-              </div>
-            )}
-            
-            {hasMore && !searchQuery && seriesFilter === "all" && !loadingMore && (
-              <div className="mt-8">
-                <Pagination>
-                  <PaginationContent>
-                    <PaginationItem className="w-full">
-                      <Button 
-                        onClick={handleLoadMoreClick}
-                        disabled={loadingMore}
-                        className="w-full"
-                      >
-                        {loadingMore ? "Loading..." : "Load More Sets"}
-                      </Button>
-                    </PaginationItem>
-                  </PaginationContent>
-                </Pagination>
-              </div>
-            )}
-          </>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {filteredSets.map((set) => (
+              <SetCard
+                key={set.set_id}
+                id={set.set_id}
+                name={set.name}
+                imageUrl={set.logo_url || set.images_url || set.symbol_url}
+                releaseDate={set.release_date}
+                totalCards={set.total || set.printed_total}
+                description={`${set.series} Series • ${set.total || set.printed_total} Cards`}
+                category="pokemon"
+                color="#E53E3E"
+              />
+            ))}
+          </div>
         ) : (
           <div className="text-center py-8">
             <p>No Pokémon sets found matching your filters.</p>

@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { getCache, setCache } from '@/utils/cacheUtils';
@@ -13,24 +12,19 @@ interface UseTCGSetsOptions {
 
 export function usePokemonSets(options: UseTCGSetsOptions = {}) {
   const [sets, setSets] = useState<any[]>([]);
-  const [allSets, setAllSets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<Error | null>(null);
-  const [hasMore, setHasMore] = useState(true);
   const { 
-    cacheTime = 30, 
-    initialChunkSize = 24, 
-    additionalChunkSize = 24,
+    cacheTime = 30,
     prioritizeRecent = true 
   } = options;
 
-  // Fetch all sets initially but only display a chunk
+  // Fetch all sets at once
   useEffect(() => {
     const fetchSets = async () => {
       try {
         setLoading(true);
-        console.log("Fetching Pokemon sets with initialChunkSize:", initialChunkSize);
+        console.log("Fetching all Pokemon sets at once");
         
         // First try to get from our pokemon-cards utility which combines caching
         // and API fallback
@@ -50,10 +44,7 @@ export function usePokemonSets(options: UseTCGSetsOptions = {}) {
               });
             }
             
-            setAllSets(sortedSets);
-            // Only show initial chunk
-            setSets(sortedSets.slice(0, initialChunkSize));
-            setHasMore(sortedSets.length > initialChunkSize);
+            setSets(sortedSets);
             setLoading(false);
             return;
           }
@@ -79,10 +70,7 @@ export function usePokemonSets(options: UseTCGSetsOptions = {}) {
             });
           }
           
-          setAllSets(sortedSets);
-          // Only show initial chunk
-          setSets(sortedSets.slice(0, initialChunkSize));
-          setHasMore(sortedSets.length > initialChunkSize);
+          setSets(sortedSets);
           setLoading(false);
           return;
         }
@@ -99,16 +87,11 @@ export function usePokemonSets(options: UseTCGSetsOptions = {}) {
         if (data && data.length > 0) {
           console.log(`Fetched ${data.length} Pokemon sets from database`);
           setCache('pokemon_sets', data, cacheTime);
-          setAllSets(data);
-          // Only show initial chunk
-          setSets(data.slice(0, initialChunkSize));
-          setHasMore(data.length > initialChunkSize);
+          setSets(data);
         } else {
           // No data found
           console.log("No Pokemon sets found in database");
-          setAllSets([]);
           setSets([]);
-          setHasMore(false);
         }
       } catch (err: any) {
         console.error('Error fetching Pokemon sets:', err);
@@ -119,26 +102,23 @@ export function usePokemonSets(options: UseTCGSetsOptions = {}) {
     };
 
     fetchSets();
-  }, [cacheTime, initialChunkSize, prioritizeRecent]);
+  }, [cacheTime, prioritizeRecent]);
 
-  // Function to load more sets
+  // These are kept for interface compatibility with previous implementation
+  // but they're no longer functional since we load all at once
   const loadMore = useCallback(() => {
-    if (loadingMore || !hasMore) return;
-    
-    setLoadingMore(true);
-    console.log("Loading more sets...");
-    
-    const currentLength = sets.length;
-    const nextChunk = allSets.slice(currentLength, currentLength + additionalChunkSize);
-    
-    console.log(`Adding ${nextChunk.length} more sets (${currentLength} to ${currentLength + nextChunk.length})`);
-    
-    setSets(prevSets => [...prevSets, ...nextChunk]);
-    setHasMore(currentLength + additionalChunkSize < allSets.length);
-    setLoadingMore(false);
-  }, [sets.length, allSets, loadingMore, hasMore, additionalChunkSize]);
+    console.log("loadMore called but has no effect in this implementation");
+    // No operation as we load all at once
+  }, []);
 
-  return { sets, loading, loadingMore, error, hasMore, loadMore };
+  return { 
+    sets, 
+    loading, 
+    loadingMore: false, 
+    error, 
+    hasMore: false, 
+    loadMore 
+  };
 }
 
 export function useMTGSets(options: UseTCGSetsOptions = {}) {
