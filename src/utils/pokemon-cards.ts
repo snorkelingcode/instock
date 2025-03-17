@@ -280,27 +280,51 @@ const fetchAllCardsFromAPI = async (setId: string): Promise<{ cards: PokemonCard
       return { cards: [], totalCount: 0, hasMore: false };
     }
     
-    // Now fetch all cards in one go with a MUCH larger page size
-    // Use a page size of 1000 to ensure we get ALL cards including secret rares
-    const pageSize = 1000; // Significantly increased from 500
+    // Now we'll make multiple requests to ensure we get ALL cards
+    // We'll make 2 requests: one with orderBy=number (default) and another with orderBy=-number
+    // This helps catch cards that might be missing from one request due to API limitations
     
-    console.log(`Fetching all ${totalCount}+ cards for set ${setId} with page size ${pageSize}`);
-    
-    const response = await fetch(
-      `https://api.pokemontcg.io/v2/cards?q=set.id:${setId}&pageSize=${pageSize}&orderBy=number`
+    // First request - get cards ordered by number ascending
+    console.log(`Fetching cards for set ${setId} with ascending order`);
+    const ascResponse = await fetch(
+      `https://api.pokemontcg.io/v2/cards?q=set.id:${setId}&pageSize=1000&orderBy=number`
     );
     
-    if (!response.ok) {
-      throw new Error(`API responded with status: ${response.status}`);
+    if (!ascResponse.ok) {
+      throw new Error(`API responded with status: ${ascResponse.status}`);
     }
     
-    const data = await response.json();
+    const ascData = await ascResponse.json();
+    const ascCards = ascData.data.map((card: any) => normalizeCardData(card));
     
-    // Process and sort all cards
-    const fetchedCards = data.data.map((card: any) => normalizeCardData(card));
-    const sortedCards = sortCardsByNumber(fetchedCards);
+    // Second request - get cards ordered by number descending to catch any potential stragglers
+    console.log(`Fetching cards for set ${setId} with descending order`);
+    const descResponse = await fetch(
+      `https://api.pokemontcg.io/v2/cards?q=set.id:${setId}&pageSize=1000&orderBy=-number`
+    );
     
-    console.log(`Fetched ${sortedCards.length} cards for set ${setId}`);
+    if (!descResponse.ok) {
+      throw new Error(`API responded with status: ${descResponse.status}`);
+    }
+    
+    const descData = await descResponse.json();
+    const descCards = descData.data.map((card: any) => normalizeCardData(card));
+    
+    // Combine both sets and remove duplicates by card ID
+    const cardMap = new Map<string, PokemonCard>();
+    
+    // Add all cards from both requests
+    [...ascCards, ...descCards].forEach(card => {
+      if (!cardMap.has(card.id)) {
+        cardMap.set(card.id, card);
+      }
+    });
+    
+    // Convert back to array and sort
+    const allCards = Array.from(cardMap.values());
+    const sortedCards = sortCardsByNumber(allCards);
+    
+    console.log(`Fetched ${sortedCards.length} total unique cards for set ${setId}`);
     
     // Cache the complete set
     cacheCards(setId, sortedCards);
