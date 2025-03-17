@@ -28,7 +28,7 @@ import {
   PaginationItem 
 } from "@/components/ui/pagination";
 
-const CARDS_PER_PAGE = 50;
+const CARDS_PER_PAGE = 24; // Reduced from 50 to 24 for faster initial load
 
 const PokemonSetDetails = () => {
   const { setId } = useParams<{ setId: string }>();
@@ -179,13 +179,20 @@ const PokemonSetDetails = () => {
       setLoadingCards(true);
       
       try {
-        // If we're filtering, fetch all cards for the set
+        // For filtering, we need to fetch a larger set of cards, but we'll do it in chunks
+        const initialFilterPage = 1;
+        const filterPageSize = 100; // Increased size but still reasonable
+        
         const result = await fetchPokemonCards(setId || '', {
-          page: 1,
-          pageSize: 1000 // Large number to get all cards
+          page: initialFilterPage,
+          pageSize: filterPageSize
         });
         
         let filtered = result.cards;
+        
+        // If we need more cards for complete filtering and there are more cards
+        let currentFilterPage = initialFilterPage;
+        let hasMoreFilterCards = result.hasMore;
         
         // Apply search filter
         if (searchQuery) {
@@ -206,6 +213,41 @@ const PokemonSetDetails = () => {
           filtered = filtered.filter(card => 
             card.types && card.types.includes(typeFilter)
           );
+        }
+        
+        // If filters are very restrictive, we might need to load more cards to get a decent amount
+        // But we'll limit this to prevent too many API calls
+        while (filtered.length < 24 && hasMoreFilterCards && currentFilterPage < 5) {
+          currentFilterPage++;
+          
+          const additionalResult = await fetchPokemonCards(setId || '', {
+            page: currentFilterPage,
+            pageSize: filterPageSize
+          });
+          
+          let additionalFiltered = additionalResult.cards;
+          
+          // Apply the same filters to the new cards
+          if (searchQuery) {
+            const query = searchQuery.toLowerCase();
+            additionalFiltered = additionalFiltered.filter(card => 
+              card.name.toLowerCase().includes(query) || 
+              card.number.toLowerCase().includes(query)
+            );
+          }
+          
+          if (rarityFilter !== "all") {
+            additionalFiltered = additionalFiltered.filter(card => card.rarity === rarityFilter);
+          }
+          
+          if (typeFilter !== "all") {
+            additionalFiltered = additionalFiltered.filter(card => 
+              card.types && card.types.includes(typeFilter)
+            );
+          }
+          
+          filtered = [...filtered, ...additionalFiltered];
+          hasMoreFilterCards = additionalResult.hasMore;
         }
         
         setFilteredCards(filtered);
@@ -254,7 +296,7 @@ const PokemonSetDetails = () => {
 
   // Render loading skeletons for cards
   const renderCardSkeletons = () => {
-    return Array(20).fill(0).map((_, index) => (
+    return Array(12).fill(0).map((_, index) => (
       <div key={`card-skeleton-${index}`} className="flex flex-col space-y-2">
         <Skeleton className="h-64 w-full bg-gray-200" />
         <Skeleton className="h-6 w-3/4 bg-gray-200" />

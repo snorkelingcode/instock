@@ -38,10 +38,11 @@ const PokemonCardComponent: React.FC<PokemonCardComponentProps> = ({ card, isSec
       )}
       <div className="relative pb-[140%] overflow-hidden">
         <img
-          src={card.images.large || card.images.small}
+          src={card.images.small || card.images.large}
           alt={card.name}
           className="absolute inset-0 w-full h-full object-contain hover:scale-105 transition-transform duration-300 ease-in-out"
           loading="lazy"
+          decoding="async"
         />
       </div>
       <CardContent className="p-3">

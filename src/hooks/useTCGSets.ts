@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { getCache, setCache } from '@/utils/cacheUtils';
@@ -11,20 +12,24 @@ interface UseTCGSetsOptions {
 }
 
 export function usePokemonSets(options: UseTCGSetsOptions = {}) {
-  const [sets, setSets] = useState<any[]>([]);
+  const [allSets, setAllSets] = useState<any[]>([]);
+  const [displayedSets, setDisplayedSets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const { 
     cacheTime = 30,
+    initialChunkSize = 12, // Initial number of sets to show
+    additionalChunkSize = 12, // Number of sets to load on "Load More"
     prioritizeRecent = true 
   } = options;
 
-  // Fetch all sets at once
+  // Fetch all sets but only display a chunk initially
   useEffect(() => {
     const fetchSets = async () => {
       try {
         setLoading(true);
-        console.log("Fetching all Pokemon sets at once");
+        console.log("Fetching Pokemon sets with pagination");
         
         // First try to get from our pokemon-cards utility which combines caching
         // and API fallback
@@ -44,7 +49,9 @@ export function usePokemonSets(options: UseTCGSetsOptions = {}) {
               });
             }
             
-            setSets(sortedSets);
+            setAllSets(sortedSets);
+            // Only display the initial chunk
+            setDisplayedSets(sortedSets.slice(0, initialChunkSize));
             setLoading(false);
             return;
           }
@@ -70,7 +77,9 @@ export function usePokemonSets(options: UseTCGSetsOptions = {}) {
             });
           }
           
-          setSets(sortedSets);
+          setAllSets(sortedSets);
+          // Only display the initial chunk
+          setDisplayedSets(sortedSets.slice(0, initialChunkSize));
           setLoading(false);
           return;
         }
@@ -87,11 +96,14 @@ export function usePokemonSets(options: UseTCGSetsOptions = {}) {
         if (data && data.length > 0) {
           console.log(`Fetched ${data.length} Pokemon sets from database`);
           setCache('pokemon_sets', data, cacheTime);
-          setSets(data);
+          setAllSets(data);
+          // Only display the initial chunk
+          setDisplayedSets(data.slice(0, initialChunkSize));
         } else {
           // No data found
           console.log("No Pokemon sets found in database");
-          setSets([]);
+          setAllSets([]);
+          setDisplayedSets([]);
         }
       } catch (err: any) {
         console.error('Error fetching Pokemon sets:', err);
@@ -102,22 +114,34 @@ export function usePokemonSets(options: UseTCGSetsOptions = {}) {
     };
 
     fetchSets();
-  }, [cacheTime, prioritizeRecent]);
+  }, [cacheTime, prioritizeRecent, initialChunkSize]);
 
-  // These are kept for interface compatibility with previous implementation
-  // but they're no longer functional since we load all at once
+  // Load more sets
   const loadMore = useCallback(() => {
-    console.log("loadMore called but has no effect in this implementation");
-    // No operation as we load all at once
-  }, []);
+    setLoadingMore(true);
+    
+    // Calculate next chunk of sets to display
+    const currentLength = displayedSets.length;
+    const nextChunk = allSets.slice(currentLength, currentLength + additionalChunkSize);
+    
+    // Add next chunk with a slight delay for better UX
+    setTimeout(() => {
+      setDisplayedSets(prev => [...prev, ...nextChunk]);
+      setLoadingMore(false);
+    }, 300);
+  }, [displayedSets, allSets, additionalChunkSize]);
+
+  // Check if there are more sets to load
+  const hasMore = displayedSets.length < allSets.length;
 
   return { 
-    sets, 
+    sets: displayedSets, 
     loading, 
-    loadingMore: false, 
+    loadingMore, 
     error, 
-    hasMore: false, 
-    loadMore 
+    hasMore, 
+    loadMore,
+    totalSetsCount: allSets.length
   };
 }
 

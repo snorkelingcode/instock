@@ -27,19 +27,26 @@ const PokemonSets = () => {
     keywords: "pokemon cards, pokemon tcg sets, pokemon card collection, trading cards, card sets, pokemon expansions"
   });
 
-  // Load all sets at once
+  // Load sets with pagination
   const { 
     sets, 
     loading, 
-    error
+    loadingMore,
+    error,
+    hasMore,
+    loadMore,
+    totalSetsCount
   } = usePokemonSets({ 
-    prioritizeRecent: true // Ensure most recent sets are loaded first
+    initialChunkSize: 12,
+    additionalChunkSize: 12,
+    prioritizeRecent: true
   });
   
   const [filteredSets, setFilteredSets] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [seriesFilter, setSeriesFilter] = useState<string>("all");
   const [uniqueSeries, setUniqueSeries] = useState<string[]>([]);
+  const [isFiltering, setIsFiltering] = useState(false);
   const { toast } = useToast();
 
   // Extract unique series for filter dropdown
@@ -52,6 +59,14 @@ const PokemonSets = () => {
 
   // Filter sets based on search query and series filter
   useEffect(() => {
+    const hasFilters = searchQuery.trim() !== "" || seriesFilter !== "all";
+    setIsFiltering(hasFilters);
+    
+    if (!hasFilters) {
+      setFilteredSets([]);
+      return;
+    }
+    
     let filtered = sets || [];
     
     // Apply series filter
@@ -102,15 +117,8 @@ const PokemonSets = () => {
     }
   }, [error, toast]);
 
-  // Debug state
-  useEffect(() => {
-    console.log("Pokemon Sets Page State:", { 
-      loading, 
-      setsCount: sets?.length || 0,
-      filteredCount: filteredSets?.length || 0,
-      hasError: !!error
-    });
-  }, [loading, sets, filteredSets, error]);
+  // Determine which sets to display based on filtering state
+  const displayedSets = isFiltering ? filteredSets : sets;
 
   return (
     <Layout>
@@ -158,7 +166,7 @@ const PokemonSets = () => {
           
           <div className="flex items-center justify-between">
             <p className="text-sm text-gray-500">
-              {filteredSets.length} {filteredSets.length === 1 ? 'set' : 'sets'} found
+              {displayedSets.length} {isFiltering ? `of ${totalSetsCount}` : ''} {displayedSets.length === 1 ? 'set' : 'sets'} found
             </p>
             
             <Button
@@ -180,10 +188,10 @@ const PokemonSets = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {renderSkeletons()}
           </div>
-        ) : filteredSets.length > 0 ? (
+        ) : displayedSets.length > 0 ? (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {filteredSets.slice(0, 8).map((set) => (
+              {displayedSets.map((set) => (
                 <SetCard
                   key={set.set_id}
                   id={set.set_id}
@@ -198,26 +206,30 @@ const PokemonSets = () => {
               ))}
             </div>
             
-            {/* Add an ad in the middle of the content */}
-            {filteredSets.length > 8 && (
-              <AdContainer adSlot="3214980134" adFormat="rectangle" className="my-8" />
+            {/* Load More Button */}
+            {!isFiltering && hasMore && (
+              <div className="mt-8 flex justify-center">
+                <Button 
+                  onClick={loadMore}
+                  disabled={loadingMore}
+                  className="min-w-40"
+                >
+                  {loadingMore ? (
+                    <>
+                      <LoadingSpinner size="sm" className="mr-2" /> 
+                      Loading More Sets...
+                    </>
+                  ) : (
+                    `Load More Sets (${displayedSets.length} of ${totalSetsCount})`
+                  )}
+                </Button>
+              </div>
             )}
             
-            {filteredSets.length > 8 && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-8">
-                {filteredSets.slice(8).map((set) => (
-                  <SetCard
-                    key={set.set_id}
-                    id={set.set_id}
-                    name={set.name}
-                    imageUrl={set.logo_url || set.images_url || set.symbol_url}
-                    releaseDate={set.release_date}
-                    totalCards={set.total || set.printed_total}
-                    description={`${set.series} Series • ${set.total || set.printed_total} Cards`}
-                    category="pokemon"
-                    color="#E53E3E"
-                  />
-                ))}
+            {/* Loading indicators for more sets */}
+            {loadingMore && (
+              <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {renderSkeletons()}
               </div>
             )}
             
@@ -228,11 +240,14 @@ const PokemonSets = () => {
           <div className="text-center py-8">
             <p>No Pokémon sets found matching your filters.</p>
             <Button 
-              onClick={() => window.location.reload()} 
+              onClick={() => {
+                setSearchQuery("");
+                setSeriesFilter("all");
+              }} 
               variant="outline" 
               className="mt-4"
             >
-              Refresh Page
+              Reset Filters
             </Button>
           </div>
         )}

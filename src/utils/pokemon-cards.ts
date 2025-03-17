@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 // Interface for Pokemon Card
@@ -166,7 +165,7 @@ export const fetchPokemonCards = async (
 ): Promise<{ cards: PokemonCard[], totalCount: number, hasMore: boolean }> => {
   console.log(`Fetching cards for set: ${setId}, page: ${options.page || 1}`);
   
-  const pageSize = options.pageSize || 50;
+  const pageSize = options.pageSize || 24; // Reduced default page size from 50 to 24
   const page = options.page || 1;
   const cacheKey = `${setId}_full`;
   
@@ -223,7 +222,7 @@ export const fetchPokemonCards = async (
   
   // Try to get from Supabase
   try {
-    console.log(`Trying to fetch from Supabase for set: ${setId}`);
+    console.log(`Trying to fetch from Supabase for set: ${setId}, page: ${page}`);
     
     // First get the total count
     const { count, error: countError } = await supabase
@@ -256,9 +255,11 @@ export const fetchPokemonCards = async (
       // Calculate if there are more pages
       const hasMore = page * pageSize < totalCount;
       
-      // If it's the first page, try to fetch the full set in the background for caching
-      if (page === 1) {
-        fetchFullSetForCaching(setId);
+      // If it's the first page, prefetch the next page in the background
+      if (page === 1 && hasMore) {
+        setTimeout(() => {
+          prefetchNextPage(setId, page + 1, pageSize);
+        }, 2000);
       }
       
       return { 
@@ -277,32 +278,15 @@ export const fetchPokemonCards = async (
   return fetchCardsFromAPIWithPagination(setId, page, pageSize);
 };
 
-// Helper function to fetch the full set for caching in the background
-const fetchFullSetForCaching = async (setId: string) => {
-  // Don't await this function as it's meant to run in the background
+// Prefetch next page for better UX
+const prefetchNextPage = async (setId: string, nextPage: number, pageSize: number) => {
   try {
-    console.log(`Fetching full set in background for caching: ${setId}`);
-    
-    // Try to get full data from Supabase
-    const { data: allCards, error } = await supabase
-      .from('pokemon_cards')
-      .select('*')
-      .eq('set_id', setId);
-      
-    if (!error && allCards && allCards.length > 0) {
-      // Process and cache all cards
-      const processedCards = allCards.map(card => normalizeCardData(card));
-      const sortedCards = sortCardsByNumber(processedCards);
-      
-      // Cache the complete set
-      cacheCards(setId, sortedCards);
-    } else {
-      // If Supabase doesn't have the full set, try the API
-      await fetchAllCardsFromAPI(setId);
-    }
+    // Don't await, just trigger the call
+    fetchPokemonCards(setId, { page: nextPage, pageSize });
+    console.log(`Prefetching page ${nextPage} for set ${setId} in background`);
   } catch (error) {
-    console.error(`Background caching failed for set ${setId}:`, error);
-    // Don't rethrow as this is a background operation
+    // Silently fail on prefetch errors
+    console.warn(`Background prefetch failed for set ${setId}:`, error);
   }
 };
 
@@ -321,8 +305,6 @@ const fetchCardsFromAPIWithPagination = async (
     
     try {
       // The API supports pagination, but we need to get total count first
-      // Instead of filtering by set.id, use q=set.id: to ensure we get ALL cards in the set
-      // including secret rares that might not be included in the official count
       const totalCountResponse = await fetch(
         `https://api.pokemontcg.io/v2/cards?q=set.id:${setId}&page=1&pageSize=1`, 
         { signal: controller.signal }
@@ -335,11 +317,11 @@ const fetchCardsFromAPIWithPagination = async (
       const totalCountData = await totalCountResponse.json();
       const totalCount = totalCountData.totalCount || 0;
       
-      // Fetch a larger pageSize for the first request to try to get all cards at once
-      // Secret rares are usually just a few cards beyond the official count
-      const actualPageSize = page === 1 ? Math.max(pageSize, 300) : pageSize;
+      // For the actual page request, use a more reasonable pageSize
+      // For the first page, make it slightly larger to include potential secret rares
+      const actualPageSize = page === 1 ? Math.min(pageSize + 10, 50) : pageSize;
       
-      // Now get the actual page with a larger page size to ensure we get all cards
+      // Now get the actual page
       const response = await fetch(
         `https://api.pokemontcg.io/v2/cards?q=set.id:${setId}&page=${page}&pageSize=${actualPageSize}&orderBy=number`, 
         { signal: controller.signal }
@@ -357,14 +339,16 @@ const fetchCardsFromAPIWithPagination = async (
       const fetchedCards = data.data.map((card: any) => normalizeCardData(card));
       const sortedCards = sortCardsByNumber(fetchedCards);
       
-      console.log(`Retrieved ${sortedCards.length} cards for set ${setId} including any secret rares`);
+      console.log(`Retrieved ${sortedCards.length} cards for set ${setId}`);
       
-      // Check if we have more cards than the set's printed total
+      // Check if we have more cards
       const hasMore = page * actualPageSize < totalCount;
       
-      // If it's the first page, trigger background fetch of all cards for caching
-      if (page === 1) {
-        fetchAllCardsFromAPI(setId);
+      // If it's the first page, prefetch the next page in the background for better UX
+      if (page === 1 && hasMore) {
+        setTimeout(() => {
+          prefetchNextPage(setId, page + 1, pageSize);
+        }, 2000);
       }
       
       return { 
