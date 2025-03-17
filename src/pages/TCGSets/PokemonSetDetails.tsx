@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { useToast } from "@/hooks/use-toast";
@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/pagination";
 import { Grid } from "@/components/ui/grid";
 
-const CARDS_PER_PAGE = 60; // Increased from 40 to 60 for fewer "Load More" clicks
+const CARDS_PER_PAGE = 60; // We'll keep this but load more on scroll
 
 const PokemonSetDetails = () => {
   const { setId } = useParams<{ setId: string }>();
@@ -56,6 +56,10 @@ const PokemonSetDetails = () => {
   const [hasSecretRares, setHasSecretRares] = useState(false);
   const [cardsPerRow, setCardsPerRow] = useState(5); // Default value for xl screens
   
+  // Infinite scrolling refs and state
+  const loaderRef = useRef<HTMLDivElement>(null);
+  const [isIntersecting, setIsIntersecting] = useState(false);
+  
   // Calculate grid columns based on screen size
   useEffect(() => {
     const updateCardsPerRow = () => {
@@ -81,8 +85,35 @@ const PokemonSetDetails = () => {
     return () => window.removeEventListener('resize', updateCardsPerRow);
   }, []);
 
-  // Split fetching into two separate useEffects for better performance
-  
+  // Setup IntersectionObserver for infinite scrolling
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        setIsIntersecting(entry.isIntersecting);
+      },
+      { threshold: 0.1 }
+    );
+
+    const currentLoaderRef = loaderRef.current;
+    if (currentLoaderRef) {
+      observer.observe(currentLoaderRef);
+    }
+
+    return () => {
+      if (currentLoaderRef) {
+        observer.unobserve(currentLoaderRef);
+      }
+    };
+  }, []);
+
+  // Load more cards when bottom is reached
+  useEffect(() => {
+    if (isIntersecting && hasMoreCards && !loadingMoreCards && !isFiltering) {
+      loadMoreCards();
+    }
+  }, [isIntersecting]);
+
   // 1. First fetch the set details
   useEffect(() => {
     const fetchSetDetails = async () => {
@@ -296,11 +327,13 @@ const PokemonSetDetails = () => {
     }
   }, [searchQuery, rarityFilter, typeFilter, cards, setId, toast]);
 
-  const loadMoreCards = () => {
+  const loadMoreCards = useCallback(() => {
     if (hasMoreCards && !loadingMoreCards) {
+      console.log('Loading more cards, page:', currentPage + 1);
+      setLoadingMoreCards(true);
       setCurrentPage(prev => prev + 1);
     }
-  };
+  }, [hasMoreCards, loadingMoreCards, currentPage]);
 
   const resetFilters = () => {
     setSearchQuery("");
@@ -323,7 +356,7 @@ const PokemonSetDetails = () => {
 
   // Render loading skeletons for cards
   const renderCardSkeletons = () => {
-    return Array(12).fill(0).map((_, index) => (
+    return Array(cardsPerRow * 2).fill(0).map((_, index) => (
       <div key={`card-skeleton-${index}`} className="flex flex-col space-y-2">
         <Skeleton className="h-64 w-full bg-gray-200" />
         <Skeleton className="h-6 w-3/4 bg-gray-200" />
@@ -520,23 +553,18 @@ const PokemonSetDetails = () => {
               ))}
             </div>
             
-            {/* Load More Button / Pagination Section */}
+            {/* Infinite scroll loader */}
             {!isFiltering && hasMoreCards && (
-              <div className="mt-8 flex justify-center">
-                <Button 
-                  onClick={loadMoreCards}
-                  disabled={loadingMoreCards}
-                  className="min-w-40"
-                >
-                  {loadingMoreCards ? (
-                    <>
-                      <LoadingSpinner size="sm" className="mr-2" /> 
-                      Loading...
-                    </>
-                  ) : (
-                    `Load More Cards (${cards.length} of ${totalCardCount})`
-                  )}
-                </Button>
+              <div 
+                ref={loaderRef}
+                className="mt-8 flex justify-center items-center h-16"
+              >
+                {loadingMoreCards && (
+                  <div className="flex items-center space-x-2">
+                    <LoadingSpinner size="sm" />
+                    <span className="text-gray-500">Loading more cards...</span>
+                  </div>
+                )}
               </div>
             )}
             

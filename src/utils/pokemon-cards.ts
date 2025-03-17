@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 // Interface for Pokemon Card
@@ -159,8 +160,8 @@ const cacheCards = (setId: string, cards: PokemonCard[]) => {
 };
 
 // Constants for cards per page and prefetching
-const CARDS_PER_PAGE = 60; // Increased from 40 to 60
-const PREFETCH_BUFFER = 20; // Extra buffer for secret rares
+const CARDS_PER_PAGE = 60; // Keep at 60 cards per page
+const PREFETCH_BUFFER = 30; // Increased buffer for secret rares
 
 // Try to get data from Supabase first, fallback to API
 export const fetchPokemonCards = async (
@@ -342,7 +343,7 @@ const fetchCardsFromAPIWithPagination = async (
       // For the actual page request, use a more reasonable pageSize
       // For the first page, make it larger to include potential secret rares
       const actualPageSize = page === 1 
-        ? Math.min(pageSize + PREFETCH_BUFFER, 80) // Increased buffer
+        ? Math.min(pageSize + PREFETCH_BUFFER, 100) // Further increased buffer for secret rares
         : pageSize;
       
       // Now get the actual page
@@ -416,7 +417,7 @@ const fetchAllCardsFromAPI = async (setId: string): Promise<void> => {
     
     // Now fetch all cards in one go (or with reasonable page size for larger sets)
     // Use a larger page size to try to get all cards including secret rares
-    const pageSize = Math.max(350, totalCount + 50); // Significantly increased buffer
+    const pageSize = Math.max(400, totalCount + 100); // Further increased buffer for secret rares
     
     console.log(`Fetching all ${totalCount}+ cards for set ${setId} with page size ${pageSize}`);
     
