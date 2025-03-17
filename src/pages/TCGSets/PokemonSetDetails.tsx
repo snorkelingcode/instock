@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState, useMemo, useRef, useCallback } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { useToast } from "@/hooks/use-toast";
@@ -22,14 +22,7 @@ import {
   PokemonSet
 } from "@/utils/pokemon-cards";
 import { Skeleton } from "@/components/ui/skeleton";
-import { 
-  Pagination, 
-  PaginationContent, 
-  PaginationItem 
-} from "@/components/ui/pagination";
 import { Grid } from "@/components/ui/grid";
-
-const CARDS_PER_PAGE = 60; // We'll keep this but load more on scroll
 
 const PokemonSetDetails = () => {
   const { setId } = useParams<{ setId: string }>();
@@ -41,26 +34,18 @@ const PokemonSetDetails = () => {
   const [filteredCards, setFilteredCards] = useState<PokemonCard[]>([]);
   const [loadingSet, setLoadingSet] = useState(true);
   const [loadingCards, setLoadingCards] = useState(true);
-  const [loadingMoreCards, setLoadingMoreCards] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [rarityFilter, setRarityFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
   const [uniqueRarities, setUniqueRarities] = useState<string[]>([]);
   const [uniqueTypes, setUniqueTypes] = useState<string[]>([]);
   const [isLoadingError, setIsLoadingError] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalCardCount, setTotalCardCount] = useState(0);
-  const [hasMoreCards, setHasMoreCards] = useState(false);
   const [isFiltering, setIsFiltering] = useState(false);
   const [secretRares, setSecretRares] = useState<PokemonCard[]>([]);
   const [hasSecretRares, setHasSecretRares] = useState(false);
   const [cardsPerRow, setCardsPerRow] = useState(5); // Default value for xl screens
   
-  // Infinite scrolling refs and state
-  const loaderRef = useRef<HTMLDivElement>(null);
-  const [isIntersecting, setIsIntersecting] = useState(false);
-  
-  // Determine which cards to display based on filtering state - defined BEFORE it's used
+  // Determine which cards to display based on filtering state
   const displayedCards = isFiltering ? filteredCards : cards;
   
   // Calculate grid columns based on screen size
@@ -87,51 +72,6 @@ const PokemonSetDetails = () => {
     window.addEventListener('resize', updateCardsPerRow);
     return () => window.removeEventListener('resize', updateCardsPerRow);
   }, []);
-
-  // Setup IntersectionObserver for infinite scrolling with improved parameters
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const [entry] = entries;
-        setIsIntersecting(entry.isIntersecting);
-      },
-      { 
-        threshold: 0.1, 
-        rootMargin: "200px" // Increased rootMargin for earlier detection
-      }
-    );
-
-    const currentLoaderRef = loaderRef.current;
-    if (currentLoaderRef) {
-      observer.observe(currentLoaderRef);
-    }
-
-    return () => {
-      if (currentLoaderRef) {
-        observer.unobserve(currentLoaderRef);
-      }
-    };
-  }, []);
-
-  // Debug useEffect for monitoring intersection state
-  useEffect(() => {
-    console.log("Scroll monitoring state:", {
-      isIntersecting,
-      hasMoreCards,
-      loadingMoreCards,
-      isFiltering,
-      totalDisplayed: displayedCards?.length || 0,
-      total: totalCardCount
-    });
-  }, [isIntersecting, hasMoreCards, loadingMoreCards, isFiltering, displayedCards, totalCardCount]);
-
-  // Load more cards when bottom is reached - improved dependency array and logic
-  useEffect(() => {
-    if (isIntersecting && hasMoreCards && !loadingMoreCards && !isFiltering && cards.length > 0) {
-      console.log("🔄 Intersection detected! Loading more cards...");
-      loadMoreCards();
-    }
-  }, [isIntersecting, hasMoreCards, loadingMoreCards, isFiltering, cards.length]);
 
   // 1. First fetch the set details
   useEffect(() => {
@@ -165,68 +105,50 @@ const PokemonSetDetails = () => {
     fetchSetDetails();
   }, [setId, toast]);
   
-  // 2. Then fetch the cards in the set, with pagination
+  // 2. Then fetch all cards in the set at once
   useEffect(() => {
-    const fetchCardsChunk = async () => {
+    const fetchAllCards = async () => {
       if (!setId) return;
       
-      // If we're filtering, don't apply pagination
-      if (isFiltering) return;
-      
-      setLoadingCards(currentPage === 1);
-      setLoadingMoreCards(currentPage > 1);
+      setLoadingCards(true);
       setIsLoadingError(false);
       
       try {
-        console.log(`Fetching cards for page ${currentPage}`);
-        const result = await fetchPokemonCards(setId, {
-          page: currentPage,
-          pageSize: CARDS_PER_PAGE
-        });
+        console.log(`Fetching all cards for set: ${setId}`);
+        const result = await fetchPokemonCards(setId, { loadAll: true });
         
         const fetchedCards = result.cards;
-        console.log(`Received ${fetchedCards.length} cards for page ${currentPage}`);
+        console.log(`Received ${fetchedCards.length} cards for set ${setId}`);
         
-        if (currentPage === 1) {
-          setCards(fetchedCards);
-          
-          // Check for secret rares
-          if (set) {
-            const printedTotal = set.printed_total || set.total || 0;
-            const secretRaresFound = fetchedCards.filter(card => {
-              const cardNumber = parseInt(card.number.match(/^\d+/)?.[0] || '0', 10);
-              return cardNumber > printedTotal;
-            });
-            
-            setSecretRares(secretRaresFound);
-            setHasSecretRares(secretRaresFound.length > 0);
-            
-            if (secretRaresFound.length > 0) {
-              console.log(`Found ${secretRaresFound.length} secret rares in set ${setId}`);
-              secretRaresFound.forEach(card => console.log(`Secret rare: ${card.name} (${card.number})`));
-            }
-          }
-        } else {
-          setCards(prevCards => [...prevCards, ...fetchedCards]);
-        }
+        setCards(fetchedCards);
         
-        setTotalCardCount(result.totalCount);
-        setHasMoreCards(result.hasMore);
-        console.log(`Total cards: ${result.totalCount}, Has more: ${result.hasMore}`);
-        
-        // Extract unique rarities and types for filters from the first page
-        if (currentPage === 1) {
-          const raritiesSet = new Set<string>();
-          const typesSet = new Set<string>();
-          
-          fetchedCards.forEach(card => {
-            if (card.rarity) raritiesSet.add(card.rarity);
-            if (card.types) card.types.forEach(type => typesSet.add(type));
+        // Check for secret rares
+        if (set) {
+          const printedTotal = set.printed_total || set.total || 0;
+          const secretRaresFound = fetchedCards.filter(card => {
+            const cardNumber = parseInt(card.number.match(/^\d+/)?.[0] || '0', 10);
+            return cardNumber > printedTotal;
           });
           
-          setUniqueRarities(Array.from(raritiesSet));
-          setUniqueTypes(Array.from(typesSet).sort());
+          setSecretRares(secretRaresFound);
+          setHasSecretRares(secretRaresFound.length > 0);
+          
+          if (secretRaresFound.length > 0) {
+            console.log(`Found ${secretRaresFound.length} secret rares in set ${setId}`);
+          }
         }
+        
+        // Extract unique rarities and types for filters
+        const raritiesSet = new Set<string>();
+        const typesSet = new Set<string>();
+        
+        fetchedCards.forEach(card => {
+          if (card.rarity) raritiesSet.add(card.rarity);
+          if (card.types) card.types.forEach(type => typesSet.add(type));
+        });
+        
+        setUniqueRarities(Array.from(raritiesSet));
+        setUniqueTypes(Array.from(typesSet).sort());
         
       } catch (cardsError) {
         console.error("Error fetching cards:", cardsError);
@@ -238,146 +160,55 @@ const PokemonSetDetails = () => {
         setIsLoadingError(true);
       } finally {
         setLoadingCards(false);
-        setLoadingMoreCards(false);
       }
     };
     
-    fetchCardsChunk();
-  }, [setId, currentPage, toast, isFiltering, set]);
+    fetchAllCards();
+  }, [setId, toast, set]);
   
   // Handle filtering of cards separately
   useEffect(() => {
-    const applyFilters = async () => {
-      // If no filter is applied, don't run this effect
-      if (rarityFilter === "all" && typeFilter === "all" && !searchQuery) {
-        setIsFiltering(false);
-        setFilteredCards(cards);
-        return;
-      }
-      
-      setIsFiltering(true);
-      setLoadingCards(true);
-      
-      try {
-        // For filtering, we need to fetch a larger set of cards, but we'll do it in chunks
-        const initialFilterPage = 1;
-        const filterPageSize = 100; // Increased size but still reasonable
-        
-        const result = await fetchPokemonCards(setId || '', {
-          page: initialFilterPage,
-          pageSize: filterPageSize
-        });
-        
-        let filtered = result.cards;
-        
-        // If we need more cards for complete filtering and there are more cards
-        let currentFilterPage = initialFilterPage;
-        let hasMoreFilterCards = result.hasMore;
-        
-        // Apply search filter
-        if (searchQuery) {
-          const query = searchQuery.toLowerCase();
-          filtered = filtered.filter(card => 
-            card.name.toLowerCase().includes(query) || 
-            card.number.toLowerCase().includes(query)
-          );
-        }
-        
-        // Apply rarity filter
-        if (rarityFilter !== "all") {
-          filtered = filtered.filter(card => card.rarity === rarityFilter);
-        }
-        
-        // Apply type filter
-        if (typeFilter !== "all") {
-          filtered = filtered.filter(card => 
-            card.types && card.types.includes(typeFilter)
-          );
-        }
-        
-        // If filters are very restrictive, we might need to load more cards to get a decent amount
-        // But we'll limit this to prevent too many API calls
-        while (filtered.length < 24 && hasMoreFilterCards && currentFilterPage < 5) {
-          currentFilterPage++;
-          
-          const additionalResult = await fetchPokemonCards(setId || '', {
-            page: currentFilterPage,
-            pageSize: filterPageSize
-          });
-          
-          let additionalFiltered = additionalResult.cards;
-          
-          // Apply the same filters to the new cards
-          if (searchQuery) {
-            const query = searchQuery.toLowerCase();
-            additionalFiltered = additionalFiltered.filter(card => 
-              card.name.toLowerCase().includes(query) || 
-              card.number.toLowerCase().includes(query)
-            );
-          }
-          
-          if (rarityFilter !== "all") {
-            additionalFiltered = additionalFiltered.filter(card => card.rarity === rarityFilter);
-          }
-          
-          if (typeFilter !== "all") {
-            additionalFiltered = additionalFiltered.filter(card => 
-              card.types && card.types.includes(typeFilter)
-            );
-          }
-          
-          filtered = [...filtered, ...additionalFiltered];
-          hasMoreFilterCards = additionalResult.hasMore;
-        }
-        
-        setFilteredCards(filtered);
-      } catch (error) {
-        console.error("Error applying filters:", error);
-        toast({
-          title: "Error",
-          description: "There was a problem filtering the cards",
-          variant: "destructive",
-        });
-      } finally {
-        setLoadingCards(false);
-      }
-    };
+    // If no filter is applied, don't run this effect
+    if (rarityFilter === "all" && typeFilter === "all" && !searchQuery) {
+      setIsFiltering(false);
+      return;
+    }
     
-    // Only run if we have cards or are actively filtering
-    if (cards.length > 0 || isFiltering) {
-      applyFilters();
+    setIsFiltering(true);
+    
+    // Apply filters to the already loaded cards
+    let filtered = [...cards];
+    
+    // Apply search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(card => 
+        card.name.toLowerCase().includes(query) || 
+        card.number.toLowerCase().includes(query)
+      );
     }
-  }, [searchQuery, rarityFilter, typeFilter, cards, setId, toast]);
-
-  const loadMoreCards = useCallback(() => {
-    if (hasMoreCards && !loadingMoreCards) {
-      console.log('📥 Loading more cards, page:', currentPage + 1);
-      setLoadingMoreCards(true);
-      // Add a small delay to prevent multiple calls in quick succession
-      setTimeout(() => {
-        setCurrentPage(prev => prev + 1);
-      }, 100);
+    
+    // Apply rarity filter
+    if (rarityFilter !== "all") {
+      filtered = filtered.filter(card => card.rarity === rarityFilter);
     }
-  }, [hasMoreCards, loadingMoreCards, currentPage]);
+    
+    // Apply type filter
+    if (typeFilter !== "all") {
+      filtered = filtered.filter(card => 
+        card.types && card.types.includes(typeFilter)
+      );
+    }
+    
+    setFilteredCards(filtered);
+  }, [searchQuery, rarityFilter, typeFilter, cards]);
 
   const resetFilters = () => {
     setSearchQuery("");
     setRarityFilter("all");
     setTypeFilter("all");
     setIsFiltering(false);
-    setCurrentPage(1); // Reset to first page
   };
-
-  // Calculate pagination info
-  const paginationInfo = useMemo(() => {
-    const totalPages = Math.ceil(totalCardCount / CARDS_PER_PAGE);
-    return {
-      currentPage,
-      totalPages,
-      totalItems: totalCardCount,
-      shownItems: isFiltering ? filteredCards.length : cards.length
-    };
-  }, [currentPage, totalCardCount, isFiltering, filteredCards.length, cards.length]);
 
   // Render loading skeletons for cards
   const renderCardSkeletons = () => {
@@ -515,8 +346,8 @@ const PokemonSetDetails = () => {
             
             <div className="flex items-center justify-between">
               <p className="text-sm text-gray-500">
-                {displayedCards.length} of {isFiltering ? displayedCards.length : totalCardCount} cards shown
-                {hasSecretRares && !isFiltering && secretRares.length > 0 && (
+                {displayedCards.length} of {cards.length} cards shown
+                {hasSecretRares && secretRares.length > 0 && (
                   <span className="text-red-500 ml-1">
                     (including {secretRares.length} secret rare{secretRares.length > 1 ? 's' : ''})
                   </span>
@@ -537,7 +368,7 @@ const PokemonSetDetails = () => {
         )}
         
         {/* Cards Display */}
-        {loadingCards && currentPage === 1 ? (
+        {loadingCards ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
             {renderCardSkeletons()}
           </div>
@@ -549,7 +380,6 @@ const PokemonSetDetails = () => {
               variant="default" 
               className="mt-4"
               onClick={() => {
-                setCurrentPage(1);
                 setIsLoadingError(false);
               }}
             >
@@ -557,41 +387,22 @@ const PokemonSetDetails = () => {
             </Button>
           </div>
         ) : displayedCards.length > 0 ? (
-          <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-              {cardsWithPlaceholders.map((card, index) => (
-                // Check if it's a placeholder
-                'isPlaceholder' in card ? (
-                  <div key={card.id} className="invisible"> </div>
-                ) : (
-                  <PokemonCardComponent 
-                    key={card.id} 
-                    card={card} 
-                    isSecretRare={
-                      hasSecretRares && secretRares.some(sr => sr.id === card.id)
-                    }
-                  />
-                )
-              ))}
-            </div>
-            
-            {/* Improved infinite scroll loader with better visibility */}
-            <div 
-              ref={loaderRef}
-              className="mt-12 flex justify-center items-center h-24"
-              style={{ marginBottom: '60px' }} // Increased margin for better visibility
-            >
-              {!isFiltering && loadingMoreCards && (
-                <div className="flex flex-col items-center space-y-3">
-                  <LoadingSpinner size="md" />
-                  <span className="text-gray-600 font-medium">Loading more cards...</span>
-                </div>
-              )}
-              {!isFiltering && !hasMoreCards && cards.length > 0 && (
-                <p className="text-gray-600 italic py-4">You've reached the end of this set</p>
-              )}
-            </div>
-          </>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+            {cardsWithPlaceholders.map((card, index) => (
+              // Check if it's a placeholder
+              'isPlaceholder' in card ? (
+                <div key={card.id} className="invisible"> </div>
+              ) : (
+                <PokemonCardComponent 
+                  key={card.id} 
+                  card={card} 
+                  isSecretRare={
+                    hasSecretRares && secretRares.some(sr => sr.id === card.id)
+                  }
+                />
+              )
+            ))}
+          </div>
         ) : (
           <div className="text-center py-16">
             <p className="text-lg font-medium">No cards matching your filters</p>
