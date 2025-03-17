@@ -25,9 +25,9 @@ const NewsPreview = ({
   image,
   onClick 
 }: NewsPreviewProps) => (
-  <Card className={`transition-all h-full flex flex-col ${featured ? 'border-blue-300 shadow-md' : ''}`}>
+  <Card className={`transition-all h-full flex flex-col ${featured ? 'border-red-300 shadow-md' : ''}`}>
     {image && (
-      <div className="w-full h-48 overflow-hidden">
+      <div className="w-full h-48 overflow-hidden rounded-t-lg">
         <img 
           src={image} 
           alt={title} 
@@ -40,7 +40,7 @@ const NewsPreview = ({
         <Badge variant={category === 'Product News' ? 'default' : category === 'Release Dates' ? 'secondary' : 'outline'}>
           {category}
         </Badge>
-        {featured && <Badge className="bg-blue-500">Featured</Badge>}
+        {featured && <Badge className="bg-red-500">Featured</Badge>}
       </div>
       <CardTitle className="text-xl">{title}</CardTitle>
       <CardDescription className="text-gray-500">{date}</CardDescription>
@@ -49,7 +49,7 @@ const NewsPreview = ({
       <p className="text-gray-700">{excerpt}</p>
     </CardContent>
     <CardFooter>
-      <Button variant="ghost" className="p-0 hover:bg-transparent text-blue-600" onClick={onClick}>
+      <Button variant="ghost" className="p-0 hover:bg-transparent text-red-600" onClick={onClick}>
         Read More <ArrowRight className="ml-1 h-4 w-4" />
       </Button>
     </CardFooter>
