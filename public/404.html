@@ -7,19 +7,18 @@
   <script>
     // Single Page Apps for GitHub Pages or Netlify
     // MIT License
-    // This script checks to see if a redirect is present in the query string,
-    // converts it back into the correct url and adds it to the
-    // browser's history using window.history.replaceState(...),
-    // which won't cause the browser to attempt to load the new url.
-    var segmentCount = 0;
-    var pathName = window.location.pathname;
+    // This script takes the current URL and converts the path and query
+    // string into just a query string, and then redirects the browser
+    // to the new URL with only a query string and hash fragment
+    var pathSegmentsToKeep = 0;
 
-    // This redirects to the correct path while preserving any query parameters or hash
-    window.location.replace(
-      window.location.origin + '/#' + 
-      pathName.slice(1) + 
-      (window.location.search || '') +
-      (window.location.hash || '')
+    var l = window.location;
+    l.replace(
+      l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
+      l.pathname.split('/').slice(0, 1 + pathSegmentsToKeep).join('/') + '/?/' +
+      l.pathname.slice(1).split('/').slice(pathSegmentsToKeep).join('/').replace(/&/g, '~and~') +
+      (l.search ? '&' + l.search.slice(1).replace(/&/g, '~and~') : '') +
+      l.hash
     );
   </script>
 </head>
