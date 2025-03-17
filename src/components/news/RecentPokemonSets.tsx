@@ -58,7 +58,7 @@ const RecentPokemonSets = () => {
             <p className="text-gray-500">Loading recent releases...</p>
           </div>
         ) : recentSets.length > 0 ? (
-          <div className="space-y-1">
+          <div className="space-y-1 overflow-hidden">
             {recentSets.map((set) => (
               <RecentRelease
                 key={set.id}
