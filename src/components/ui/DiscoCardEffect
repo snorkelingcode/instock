@@ -15,18 +15,18 @@ const DiscoCardEffect: React.FC<DiscoCardEffectProps> = ({
   const [cardColor, setCardColor] = useState("");
   const cardIntervalRef = useRef<number | null>(null);
   
-  // Green shades array for the disco effect
+  // Red shades array for the disco effect
   const discoColors = [
-    "#50C878", // Emerald green
-    "#228B22", // Forest green
-    "#7CFC00", // Lawn green
-    "#32CD32", // Lime green
-    "#00FF00", // Bright green
-    "#008000", // Medium green
-    "#ADFF2F", // Green yellow
-    "#006400", // Dark green
-    "#90EE90", // Light green
-    "#2E8B57"  // Sea green
+    "#FF0000", // Pure red
+    "#DC143C", // Crimson
+    "#CD5C5C", // Indian Red
+    "#B22222", // Firebrick
+    "#A52A2A", // Brown
+    "#FF6347", // Tomato
+    "#FF4500", // OrangeRed
+    "#E34234", // Vermilion
+    "#C41E3A", // Cardinal
+    "#D70040"  // Crimson glory
   ];
 
   // Function to get a random color that's different from the current one
