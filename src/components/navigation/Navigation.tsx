@@ -34,7 +34,7 @@ const Navigation = () => {
         {/* Mobile Menu Button */}
         <button
           onClick={toggleMenu}
-          className="md:hidden text-white focus:outline-none"
+          className="md:hidden text-white focus:outline-none z-50"
         >
           <svg
             className="h-6 w-6"
@@ -136,7 +136,7 @@ const Navigation = () => {
 
         {/* Mobile Menu */}
         {isOpen && (
-          <div className="md:hidden absolute top-16 left-0 right-0 bg-red-600 p-4 flex flex-col space-y-4 z-50">
+          <div className="md:hidden fixed top-16 left-0 right-0 bg-red-600 p-4 flex flex-col space-y-4 z-40">
             <Link
               to="/"
               className="hover:text-red-200 transition-colors"
