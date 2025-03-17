@@ -61,7 +61,7 @@ const Index = () => {
           <HowItWorksCard />
         </div>
         
-        <section className="mt-12">
+        <section className="mt-12 mb-16">
           <h2 className="text-3xl font-bold mb-6">Latest News</h2>
           {isLoadingArticles ? (
             <div className="flex justify-center py-6">
