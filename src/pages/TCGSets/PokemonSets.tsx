@@ -16,8 +16,17 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePokemonSets } from "@/hooks/useTCGSets";
 import LoadingSpinner from "@/components/ui/loading-spinner";
+import AdContainer from "@/components/ads/AdContainer";
+import { useMetaTags } from "@/hooks/use-meta-tags";
 
 const PokemonSets = () => {
+  // Set SEO meta tags for this page
+  useMetaTags({
+    title: "Pokémon TCG Sets | Complete Collection Database",
+    description: "Browse all Pokémon Trading Card Game sets, sorted by release date. Find detailed information on every Pokémon TCG expansion, series, and promo collection.",
+    keywords: "pokemon cards, pokemon tcg sets, pokemon card collection, trading cards, card sets, pokemon expansions"
+  });
+
   // Load all sets at once
   const { 
     sets, 
@@ -114,6 +123,9 @@ const PokemonSets = () => {
           Browse all Pokémon Trading Card Game sets, sorted by release date. Click on a set to view all cards in that set.
         </p>
         
+        {/* Insert ad container after introduction */}
+        <AdContainer adSlot="7259341254" adFormat="horizontal" className="my-4" />
+        
         <div className="mb-8 space-y-4">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="relative flex-1">
@@ -169,21 +181,49 @@ const PokemonSets = () => {
             {renderSkeletons()}
           </div>
         ) : filteredSets.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredSets.map((set) => (
-              <SetCard
-                key={set.set_id}
-                id={set.set_id}
-                name={set.name}
-                imageUrl={set.logo_url || set.images_url || set.symbol_url}
-                releaseDate={set.release_date}
-                totalCards={set.total || set.printed_total}
-                description={`${set.series} Series • ${set.total || set.printed_total} Cards`}
-                category="pokemon"
-                color="#E53E3E"
-              />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {filteredSets.slice(0, 8).map((set) => (
+                <SetCard
+                  key={set.set_id}
+                  id={set.set_id}
+                  name={set.name}
+                  imageUrl={set.logo_url || set.images_url || set.symbol_url}
+                  releaseDate={set.release_date}
+                  totalCards={set.total || set.printed_total}
+                  description={`${set.series} Series • ${set.total || set.printed_total} Cards`}
+                  category="pokemon"
+                  color="#E53E3E"
+                />
+              ))}
+            </div>
+            
+            {/* Add an ad in the middle of the content */}
+            {filteredSets.length > 8 && (
+              <AdContainer adSlot="3214980134" adFormat="rectangle" className="my-8" />
+            )}
+            
+            {filteredSets.length > 8 && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-8">
+                {filteredSets.slice(8).map((set) => (
+                  <SetCard
+                    key={set.set_id}
+                    id={set.set_id}
+                    name={set.name}
+                    imageUrl={set.logo_url || set.images_url || set.symbol_url}
+                    releaseDate={set.release_date}
+                    totalCards={set.total || set.printed_total}
+                    description={`${set.series} Series • ${set.total || set.printed_total} Cards`}
+                    category="pokemon"
+                    color="#E53E3E"
+                  />
+                ))}
+              </div>
+            )}
+            
+            {/* Add an ad at the bottom of the content */}
+            <AdContainer adSlot="5984712058" adFormat="horizontal" className="mt-8" />
+          </>
         ) : (
           <div className="text-center py-8">
             <p>No Pokémon sets found matching your filters.</p>
