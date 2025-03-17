@@ -92,7 +92,7 @@ const PokemonSetDetails = () => {
         const [entry] = entries;
         setIsIntersecting(entry.isIntersecting);
       },
-      { threshold: 0.1 }
+      { threshold: 0.1, rootMargin: "100px" } // Increased rootMargin to detect earlier
     );
 
     const currentLoaderRef = loaderRef.current;
@@ -109,10 +109,12 @@ const PokemonSetDetails = () => {
 
   // Load more cards when bottom is reached
   useEffect(() => {
+    console.log("Intersection state:", isIntersecting, "Has more:", hasMoreCards, "Loading more:", loadingMoreCards, "Filtering:", isFiltering);
     if (isIntersecting && hasMoreCards && !loadingMoreCards && !isFiltering) {
+      console.log("Triggering loadMoreCards due to intersection");
       loadMoreCards();
     }
-  }, [isIntersecting]);
+  }, [isIntersecting, hasMoreCards, loadingMoreCards, isFiltering]);
 
   // 1. First fetch the set details
   useEffect(() => {
@@ -159,12 +161,14 @@ const PokemonSetDetails = () => {
       setIsLoadingError(false);
       
       try {
+        console.log(`Fetching cards for page ${currentPage}`);
         const result = await fetchPokemonCards(setId, {
           page: currentPage,
           pageSize: CARDS_PER_PAGE
         });
         
         const fetchedCards = result.cards;
+        console.log(`Received ${fetchedCards.length} cards for page ${currentPage}`);
         
         if (currentPage === 1) {
           setCards(fetchedCards);
@@ -191,6 +195,7 @@ const PokemonSetDetails = () => {
         
         setTotalCardCount(result.totalCount);
         setHasMoreCards(result.hasMore);
+        console.log(`Total cards: ${result.totalCount}, Has more: ${result.hasMore}`);
         
         // Extract unique rarities and types for filters from the first page
         if (currentPage === 1) {
@@ -392,6 +397,18 @@ const PokemonSetDetails = () => {
     return addPlaceholderCards(displayedCards);
   }, [displayedCards, cardsPerRow]);
 
+  // Debug useEffect for monitoring intersection state
+  useEffect(() => {
+    console.log("Scroll monitoring state:", {
+      isIntersecting,
+      hasMoreCards,
+      loadingMoreCards,
+      isFiltering,
+      totalDisplayed: displayedCards.length,
+      total: totalCardCount
+    });
+  }, [isIntersecting, hasMoreCards, loadingMoreCards, isFiltering, displayedCards.length, totalCardCount]);
+
   return (
     <Layout>
       <div className="bg-white p-6 rounded-lg shadow-md mb-8">
@@ -553,20 +570,22 @@ const PokemonSetDetails = () => {
               ))}
             </div>
             
-            {/* Infinite scroll loader */}
-            {!isFiltering && hasMoreCards && (
-              <div 
-                ref={loaderRef}
-                className="mt-8 flex justify-center items-center h-16"
-              >
-                {loadingMoreCards && (
-                  <div className="flex items-center space-x-2">
-                    <LoadingSpinner size="sm" />
-                    <span className="text-gray-500">Loading more cards...</span>
-                  </div>
-                )}
-              </div>
-            )}
+            {/* Infinite scroll loader - moved outside the if hasMoreCards check */}
+            <div 
+              ref={loaderRef}
+              className="mt-8 flex justify-center items-center h-20"
+              style={{ marginBottom: '40px' }} // Add extra margin to ensure it's visible
+            >
+              {!isFiltering && hasMoreCards && loadingMoreCards && (
+                <div className="flex items-center space-x-2">
+                  <LoadingSpinner size="sm" />
+                  <span className="text-gray-500">Loading more cards...</span>
+                </div>
+              )}
+              {!isFiltering && !hasMoreCards && cards.length > 0 && (
+                <p className="text-gray-500 italic">You've reached the end of this set</p>
+              )}
+            </div>
             
             {loadingMoreCards && (
               <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
