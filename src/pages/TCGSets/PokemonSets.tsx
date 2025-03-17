@@ -15,7 +15,6 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePokemonSets } from "@/hooks/useTCGSets";
-import LoadingSpinner from "@/components/ui/loading-spinner";
 import AdContainer from "@/components/ads/AdContainer";
 import { useMetaTags } from "@/hooks/use-meta-tags";
 
@@ -31,14 +30,9 @@ const PokemonSets = () => {
   const { 
     sets, 
     loading, 
-    loadingMore,
     error,
-    hasMore,
-    loadMore,
     totalSetsCount
   } = usePokemonSets({ 
-    initialChunkSize: 12,
-    additionalChunkSize: 12,
     prioritizeRecent: true
   });
   
@@ -205,33 +199,6 @@ const PokemonSets = () => {
                 />
               ))}
             </div>
-            
-            {/* Load More Button */}
-            {!isFiltering && hasMore && (
-              <div className="mt-8 flex justify-center">
-                <Button 
-                  onClick={loadMore}
-                  disabled={loadingMore}
-                  className="min-w-40"
-                >
-                  {loadingMore ? (
-                    <>
-                      <LoadingSpinner size="sm" className="mr-2" /> 
-                      Loading More Sets...
-                    </>
-                  ) : (
-                    `Load More Sets (${displayedSets.length} of ${totalSetsCount})`
-                  )}
-                </Button>
-              </div>
-            )}
-            
-            {/* Loading indicators for more sets */}
-            {loadingMore && (
-              <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {renderSkeletons()}
-              </div>
-            )}
             
             {/* Add an ad at the bottom of the content */}
             <AdContainer adSlot="5984712058" adFormat="horizontal" className="mt-8" />

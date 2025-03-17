@@ -1,35 +1,28 @@
-
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { getCache, setCache } from '@/utils/cacheUtils';
 import { fetchPokemonSets } from '@/utils/pokemon-cards';
 
 interface UseTCGSetsOptions {
   cacheTime?: number; // Time in minutes to cache the data
-  initialChunkSize?: number; // Initial number of sets to load
-  additionalChunkSize?: number; // Number of sets to load when loadMore is called
   prioritizeRecent?: boolean; // Whether to prioritize recent sets (default: true)
 }
 
 export function usePokemonSets(options: UseTCGSetsOptions = {}) {
   const [allSets, setAllSets] = useState<any[]>([]);
-  const [displayedSets, setDisplayedSets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const { 
     cacheTime = 30,
-    initialChunkSize = 24, // Increased from 20 to 24
-    additionalChunkSize = 24, // Increased from 20 to 24
     prioritizeRecent = true 
   } = options;
 
-  // Fetch all sets but only display a chunk initially
+  // Fetch all sets at once
   useEffect(() => {
     const fetchSets = async () => {
       try {
         setLoading(true);
-        console.log("Fetching Pokemon sets with pagination");
+        console.log("Fetching all Pokemon sets");
         
         // First try to get from our pokemon-cards utility which combines caching
         // and API fallback
@@ -50,8 +43,6 @@ export function usePokemonSets(options: UseTCGSetsOptions = {}) {
             }
             
             setAllSets(sortedSets);
-            // Only display the initial chunk
-            setDisplayedSets(sortedSets.slice(0, initialChunkSize));
             setLoading(false);
             return;
           }
@@ -78,8 +69,6 @@ export function usePokemonSets(options: UseTCGSetsOptions = {}) {
           }
           
           setAllSets(sortedSets);
-          // Only display the initial chunk
-          setDisplayedSets(sortedSets.slice(0, initialChunkSize));
           setLoading(false);
           return;
         }
@@ -97,13 +86,10 @@ export function usePokemonSets(options: UseTCGSetsOptions = {}) {
           console.log(`Fetched ${data.length} Pokemon sets from database`);
           setCache('pokemon_sets', data, cacheTime);
           setAllSets(data);
-          // Only display the initial chunk
-          setDisplayedSets(data.slice(0, initialChunkSize));
         } else {
           // No data found
           console.log("No Pokemon sets found in database");
           setAllSets([]);
-          setDisplayedSets([]);
         }
       } catch (err: any) {
         console.error('Error fetching Pokemon sets:', err);
@@ -114,35 +100,12 @@ export function usePokemonSets(options: UseTCGSetsOptions = {}) {
     };
 
     fetchSets();
-  }, [cacheTime, prioritizeRecent, initialChunkSize]);
-
-  // Load more sets with debouncing to prevent multiple calls
-  const loadMore = useCallback(() => {
-    if (loadingMore || displayedSets.length >= allSets.length) return;
-    
-    setLoadingMore(true);
-    
-    // Calculate next chunk of sets to display
-    const currentLength = displayedSets.length;
-    const nextChunk = allSets.slice(currentLength, currentLength + additionalChunkSize);
-    
-    // Add next chunk with a slight delay for better UX
-    setTimeout(() => {
-      setDisplayedSets(prev => [...prev, ...nextChunk]);
-      setLoadingMore(false);
-    }, 300);
-  }, [displayedSets, allSets, additionalChunkSize, loadingMore]);
-
-  // Check if there are more sets to load
-  const hasMore = displayedSets.length < allSets.length;
+  }, [cacheTime, prioritizeRecent]);
 
   return { 
-    sets: displayedSets, 
+    sets: allSets, 
     loading, 
-    loadingMore, 
     error, 
-    hasMore, 
-    loadMore,
     totalSetsCount: allSets.length
   };
 }
