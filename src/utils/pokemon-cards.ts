@@ -321,6 +321,8 @@ const fetchCardsFromAPIWithPagination = async (
     
     try {
       // The API supports pagination, but we need to get total count first
+      // Instead of filtering by set.id, use q=set.id: to ensure we get ALL cards in the set
+      // including secret rares that might not be included in the official count
       const totalCountResponse = await fetch(
         `https://api.pokemontcg.io/v2/cards?q=set.id:${setId}&page=1&pageSize=1`, 
         { signal: controller.signal }
@@ -333,9 +335,13 @@ const fetchCardsFromAPIWithPagination = async (
       const totalCountData = await totalCountResponse.json();
       const totalCount = totalCountData.totalCount || 0;
       
-      // Now get the actual page
+      // Fetch a larger pageSize for the first request to try to get all cards at once
+      // Secret rares are usually just a few cards beyond the official count
+      const actualPageSize = page === 1 ? Math.max(pageSize, 300) : pageSize;
+      
+      // Now get the actual page with a larger page size to ensure we get all cards
       const response = await fetch(
-        `https://api.pokemontcg.io/v2/cards?q=set.id:${setId}&page=${page}&pageSize=${pageSize}&orderBy=number`, 
+        `https://api.pokemontcg.io/v2/cards?q=set.id:${setId}&page=${page}&pageSize=${actualPageSize}&orderBy=number`, 
         { signal: controller.signal }
       );
       
@@ -350,7 +356,11 @@ const fetchCardsFromAPIWithPagination = async (
       // Apply normalization to ensure consistent data structure
       const fetchedCards = data.data.map((card: any) => normalizeCardData(card));
       const sortedCards = sortCardsByNumber(fetchedCards);
-      const hasMore = page * pageSize < totalCount;
+      
+      console.log(`Retrieved ${sortedCards.length} cards for set ${setId} including any secret rares`);
+      
+      // Check if we have more cards than the set's printed total
+      const hasMore = page * actualPageSize < totalCount;
       
       // If it's the first page, trigger background fetch of all cards for caching
       if (page === 1) {
@@ -397,7 +407,11 @@ const fetchAllCardsFromAPI = async (setId: string): Promise<void> => {
     }
     
     // Now fetch all cards in one go (or with reasonable page size for larger sets)
-    const pageSize = Math.min(250, totalCount); // API might have a limit
+    // Use a larger page size to try to get all cards including secret rares
+    const pageSize = Math.max(300, totalCount + 20); // Add extra buffer for secret rares
+    
+    console.log(`Fetching all ${totalCount}+ cards for set ${setId} with page size ${pageSize}`);
+    
     const response = await fetch(
       `https://api.pokemontcg.io/v2/cards?q=set.id:${setId}&pageSize=${pageSize}&orderBy=number`
     );
@@ -411,6 +425,25 @@ const fetchAllCardsFromAPI = async (setId: string): Promise<void> => {
     // Process and cache all cards
     const fetchedCards = data.data.map((card: any) => normalizeCardData(card));
     const sortedCards = sortCardsByNumber(fetchedCards);
+    
+    console.log(`Fetched ${sortedCards.length} cards for set ${setId}`);
+    
+    // Log any secret rares found (cards with numbers greater than the printed total)
+    const setDetails = await fetchPokemonSets();
+    const currentSet = setDetails.find(set => set.set_id === setId);
+    
+    if (currentSet) {
+      const printedTotal = currentSet.printed_total || currentSet.total || 0;
+      const secretRares = sortedCards.filter(card => {
+        const cardNumber = parseInt(card.number.match(/^\d+/)?.[0] || '0', 10);
+        return cardNumber > printedTotal;
+      });
+      
+      if (secretRares.length > 0) {
+        console.log(`Found ${secretRares.length} secret rares in set ${setId} beyond the printed total of ${printedTotal}`);
+        secretRares.forEach(card => console.log(`Secret rare: ${card.name} (${card.number})`));
+      }
+    }
     
     // Cache the complete set
     cacheCards(setId, sortedCards);

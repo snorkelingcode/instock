@@ -51,6 +51,8 @@ const PokemonSetDetails = () => {
   const [totalCardCount, setTotalCardCount] = useState(0);
   const [hasMoreCards, setHasMoreCards] = useState(false);
   const [isFiltering, setIsFiltering] = useState(false);
+  const [secretRares, setSecretRares] = useState<PokemonCard[]>([]);
+  const [hasSecretRares, setHasSecretRares] = useState(false);
 
   // Split fetching into two separate useEffects for better performance
   
@@ -108,6 +110,23 @@ const PokemonSetDetails = () => {
         
         if (currentPage === 1) {
           setCards(fetchedCards);
+          
+          // Check for secret rares
+          if (set) {
+            const printedTotal = set.printed_total || set.total || 0;
+            const secretRaresFound = fetchedCards.filter(card => {
+              const cardNumber = parseInt(card.number.match(/^\d+/)?.[0] || '0', 10);
+              return cardNumber > printedTotal;
+            });
+            
+            setSecretRares(secretRaresFound);
+            setHasSecretRares(secretRaresFound.length > 0);
+            
+            if (secretRaresFound.length > 0) {
+              console.log(`Found ${secretRaresFound.length} secret rares in set ${setId}`);
+              secretRaresFound.forEach(card => console.log(`Secret rare: ${card.name} (${card.number})`));
+            }
+          }
         } else {
           setCards(prevCards => [...prevCards, ...fetchedCards]);
         }
@@ -144,7 +163,7 @@ const PokemonSetDetails = () => {
     };
     
     fetchCardsChunk();
-  }, [setId, currentPage, toast, isFiltering]);
+  }, [setId, currentPage, toast, isFiltering, set]);
   
   // Handle filtering of cards separately
   useEffect(() => {
@@ -283,6 +302,11 @@ const PokemonSetDetails = () => {
                     <p className="text-sm text-gray-600 mt-1">
                       {set.series} Series • Released {new Date(set.release_date).toLocaleDateString()} • 
                       {set.total || set.printed_total} cards
+                      {hasSecretRares && secretRares.length > 0 && (
+                        <span className="text-red-500 font-medium ml-2">
+                          + {secretRares.length} secret rare{secretRares.length > 1 ? 's' : ''}
+                        </span>
+                      )}
                     </p>
                   </div>
                 </>
@@ -344,6 +368,11 @@ const PokemonSetDetails = () => {
             <div className="flex items-center justify-between">
               <p className="text-sm text-gray-500">
                 {displayedCards.length} of {isFiltering ? displayedCards.length : totalCardCount} cards shown
+                {hasSecretRares && !isFiltering && secretRares.length > 0 && (
+                  <span className="text-red-500 ml-1">
+                    (including {secretRares.length} secret rare{secretRares.length > 1 ? 's' : ''})
+                  </span>
+                )}
               </p>
               
               <Button
@@ -383,7 +412,13 @@ const PokemonSetDetails = () => {
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
               {displayedCards.map((card) => (
-                <PokemonCardComponent key={card.id} card={card} />
+                <PokemonCardComponent 
+                  key={card.id} 
+                  card={card} 
+                  isSecretRare={
+                    hasSecretRares && secretRares.some(sr => sr.id === card.id)
+                  }
+                />
               ))}
             </div>
             
