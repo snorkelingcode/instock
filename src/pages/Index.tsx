@@ -68,7 +68,7 @@ const Index = () => {
               <p className="text-gray-500">Loading articles...</p>
             </div>
           ) : articles.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-16 md:mt-8">
               {articles.map(article => (
                 <NewsPreview
                   key={article.id}
