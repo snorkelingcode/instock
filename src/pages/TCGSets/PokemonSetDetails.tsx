@@ -27,8 +27,9 @@ import {
   PaginationContent, 
   PaginationItem 
 } from "@/components/ui/pagination";
+import { Grid } from "@/components/ui/grid";
 
-const CARDS_PER_PAGE = 24; // Reduced from 50 to 24 for faster initial load
+const CARDS_PER_PAGE = 40; // Increased from 24 to 40 to reduce button clicks
 
 const PokemonSetDetails = () => {
   const { setId } = useParams<{ setId: string }>();
@@ -53,6 +54,32 @@ const PokemonSetDetails = () => {
   const [isFiltering, setIsFiltering] = useState(false);
   const [secretRares, setSecretRares] = useState<PokemonCard[]>([]);
   const [hasSecretRares, setHasSecretRares] = useState(false);
+  const [cardsPerRow, setCardsPerRow] = useState(5); // Default value for xl screens
+  
+  // Calculate grid columns based on screen size
+  useEffect(() => {
+    const updateCardsPerRow = () => {
+      // Determine how many cards per row based on screen width
+      if (window.innerWidth >= 1280) { // xl
+        setCardsPerRow(5);
+      } else if (window.innerWidth >= 1024) { // lg
+        setCardsPerRow(4);
+      } else if (window.innerWidth >= 768) { // md
+        setCardsPerRow(3);
+      } else if (window.innerWidth >= 640) { // sm
+        setCardsPerRow(2);
+      } else {
+        setCardsPerRow(1);
+      }
+    };
+
+    // Set initial value
+    updateCardsPerRow();
+
+    // Update on resize
+    window.addEventListener('resize', updateCardsPerRow);
+    return () => window.removeEventListener('resize', updateCardsPerRow);
+  }, []);
 
   // Split fetching into two separate useEffects for better performance
   
@@ -308,6 +335,30 @@ const PokemonSetDetails = () => {
   // Determine which cards to display based on filtering state
   const displayedCards = isFiltering ? filteredCards : cards;
 
+  // Function to add empty placeholder cards to ensure full rows
+  const addPlaceholderCards = (cardsArray: PokemonCard[]) => {
+    if (cardsArray.length === 0 || !cardsPerRow) return cardsArray;
+    
+    const remainder = cardsArray.length % cardsPerRow;
+    if (remainder === 0) return cardsArray; // Already even rows
+    
+    // Calculate how many placeholder cards are needed
+    const placeholdersNeeded = cardsPerRow - remainder;
+    
+    // Create array of placeholder cards with unique keys
+    const placeholders = Array(placeholdersNeeded).fill(null).map((_, idx) => ({
+      id: `placeholder-${idx}`,
+      isPlaceholder: true
+    } as unknown as PokemonCard));
+    
+    return [...cardsArray, ...placeholders];
+  };
+
+  // Get cards with placeholders if needed
+  const cardsWithPlaceholders = useMemo(() => {
+    return addPlaceholderCards(displayedCards);
+  }, [displayedCards, cardsPerRow]);
+
   return (
     <Layout>
       <div className="bg-white p-6 rounded-lg shadow-md mb-8">
@@ -453,14 +504,19 @@ const PokemonSetDetails = () => {
         ) : displayedCards.length > 0 ? (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-              {displayedCards.map((card) => (
-                <PokemonCardComponent 
-                  key={card.id} 
-                  card={card} 
-                  isSecretRare={
-                    hasSecretRares && secretRares.some(sr => sr.id === card.id)
-                  }
-                />
+              {cardsWithPlaceholders.map((card, index) => (
+                // Check if it's a placeholder
+                'isPlaceholder' in card ? (
+                  <div key={card.id} className="invisible"> </div>
+                ) : (
+                  <PokemonCardComponent 
+                    key={card.id} 
+                    card={card} 
+                    isSecretRare={
+                      hasSecretRares && secretRares.some(sr => sr.id === card.id)
+                    }
+                  />
+                )
               ))}
             </div>
             

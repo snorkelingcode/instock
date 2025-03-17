@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 // Interface for Pokemon Card
@@ -165,7 +166,7 @@ export const fetchPokemonCards = async (
 ): Promise<{ cards: PokemonCard[], totalCount: number, hasMore: boolean }> => {
   console.log(`Fetching cards for set: ${setId}, page: ${options.page || 1}`);
   
-  const pageSize = options.pageSize || 24; // Reduced default page size from 50 to 24
+  const pageSize = options.pageSize || 40; // Increased from 24 to 40
   const page = options.page || 1;
   const cacheKey = `${setId}_full`;
   
@@ -179,6 +180,15 @@ export const fetchPokemonCards = async (
     const endIdx = startIdx + pageSize;
     const paginatedCards = cached.cards.slice(startIdx, endIdx);
     const hasMore = endIdx < cached.cards.length;
+    
+    // If we're near the end, prefetch the next chunk in the background
+    if (hasMore && cached.cards.length - endIdx < pageSize) {
+      console.log("Near the end of cached data, prefetching next chunk");
+      // No need to wait for this to complete
+      setTimeout(() => {
+        prefetchNextPage(setId, page + 1, pageSize);
+      }, 1000);
+    }
     
     return { 
       cards: paginatedCards, 
@@ -256,10 +266,19 @@ export const fetchPokemonCards = async (
       const hasMore = page * pageSize < totalCount;
       
       // If it's the first page, prefetch the next page in the background
-      if (page === 1 && hasMore) {
+      if (hasMore) {
+        // Prefetch next page for smoother experience
         setTimeout(() => {
           prefetchNextPage(setId, page + 1, pageSize);
-        }, 2000);
+        }, 1000);
+        
+        // Also start a background fetch of all cards if we're on the first page
+        // This will help with future browsing
+        if (page === 1) {
+          setTimeout(() => {
+            fetchAllCardsFromAPI(setId);
+          }, 3000);
+        }
       }
       
       return { 
@@ -319,7 +338,7 @@ const fetchCardsFromAPIWithPagination = async (
       
       // For the actual page request, use a more reasonable pageSize
       // For the first page, make it slightly larger to include potential secret rares
-      const actualPageSize = page === 1 ? Math.min(pageSize + 10, 50) : pageSize;
+      const actualPageSize = page === 1 ? Math.min(pageSize + 10, 60) : pageSize;
       
       // Now get the actual page
       const response = await fetch(
@@ -344,11 +363,11 @@ const fetchCardsFromAPIWithPagination = async (
       // Check if we have more cards
       const hasMore = page * actualPageSize < totalCount;
       
-      // If it's the first page, prefetch the next page in the background for better UX
-      if (page === 1 && hasMore) {
+      // If we have more pages, prefetch the next one in the background
+      if (hasMore) {
         setTimeout(() => {
           prefetchNextPage(setId, page + 1, pageSize);
-        }, 2000);
+        }, 1000);
       }
       
       return { 

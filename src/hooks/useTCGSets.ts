@@ -19,8 +19,8 @@ export function usePokemonSets(options: UseTCGSetsOptions = {}) {
   const [error, setError] = useState<Error | null>(null);
   const { 
     cacheTime = 30,
-    initialChunkSize = 12, // Initial number of sets to show
-    additionalChunkSize = 12, // Number of sets to load on "Load More"
+    initialChunkSize = 20, // Increased from 12 to 20
+    additionalChunkSize = 20, // Increased from 12 to 20
     prioritizeRecent = true 
   } = options;
 
