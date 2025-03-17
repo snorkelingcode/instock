@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -22,7 +21,8 @@ import {
   PokemonSet,
   preloadCardImages,
   getCachedSetMetadata,
-  prefetchPokemonSet
+  prefetchPokemonSet,
+  sortCardsByNumber
 } from "@/utils/pokemon-cards";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -49,13 +49,10 @@ const PokemonSetDetails = () => {
   const [metadataLoaded, setMetadataLoaded] = useState(false); // Track if we've loaded metadata
   const [isPrefetched, setIsPrefetched] = useState(false); // Track if set is prefetched
   
-  // Determine which cards to display based on filtering state
   const displayedCards = isFiltering ? filteredCards : cards;
   
-  // Calculate grid columns based on screen size
   useEffect(() => {
     const updateCardsPerRow = () => {
-      // Determine how many cards per row based on screen width
       if (window.innerWidth >= 1280) { // xl
         setCardsPerRow(5);
       } else if (window.innerWidth >= 1024) { // lg
@@ -69,22 +66,18 @@ const PokemonSetDetails = () => {
       }
     };
 
-    // Set initial value
     updateCardsPerRow();
 
-    // Update on resize
     window.addEventListener('resize', updateCardsPerRow);
     return () => window.removeEventListener('resize', updateCardsPerRow);
   }, []);
 
-  // Immediately attempt to prefetch the set data on component mount
   useEffect(() => {
     if (!setId || isPrefetched) return;
     
     const fetchSetImmediately = async () => {
       setIsPrefetched(true);
       try {
-        // This will either use cached data or fetch new data
         await prefetchPokemonSet(setId);
       } catch (e) {
         console.warn("Failed to prefetch set:", e);
@@ -94,7 +87,6 @@ const PokemonSetDetails = () => {
     fetchSetImmediately();
   }, [setId, isPrefetched]);
 
-  // Load cached metadata first to show stats immediately
   useEffect(() => {
     if (!setId || metadataLoaded) return;
     
@@ -106,7 +98,6 @@ const PokemonSetDetails = () => {
     }
   }, [setId, metadataLoaded]);
 
-  // 1. First fetch the set details
   useEffect(() => {
     const fetchSetDetails = async () => {
       if (!setId) return;
@@ -114,7 +105,6 @@ const PokemonSetDetails = () => {
       setLoadingSet(true);
       
       try {
-        // Get all sets and find the one matching our ID
         const allSets = await fetchPokemonSets();
         const currentSet = allSets.find(s => s.set_id === setId);
         
@@ -138,7 +128,6 @@ const PokemonSetDetails = () => {
     fetchSetDetails();
   }, [setId, toast]);
   
-  // 2. Then fetch all cards in the set at once - now with enhanced prefetching
   useEffect(() => {
     const fetchAllCards = async () => {
       if (!setId) return;
@@ -153,15 +142,15 @@ const PokemonSetDetails = () => {
         const fetchedCards = result.cards;
         console.log(`Received ${fetchedCards.length} cards for set ${setId}`);
         
-        // Preload more card images right after fetching
-        preloadCardImages(fetchedCards, 50);
+        const sortedCards = sortCardsByNumber(fetchedCards);
         
-        setCards(fetchedCards);
+        preloadCardImages(sortedCards, 50);
         
-        // Check for secret rares
+        setCards(sortedCards);
+        
         if (set) {
           const printedTotal = set.printed_total || set.total || 0;
-          const secretRaresFound = fetchedCards.filter(card => {
+          const secretRaresFound = sortedCards.filter(card => {
             const cardNumber = parseInt(card.number.match(/^\d+/)?.[0] || '0', 10);
             return cardNumber > printedTotal;
           });
@@ -174,11 +163,10 @@ const PokemonSetDetails = () => {
           }
         }
         
-        // Extract unique rarities and types for filters
         const raritiesSet = new Set<string>();
         const typesSet = new Set<string>();
         
-        fetchedCards.forEach(card => {
+        sortedCards.forEach(card => {
           if (card.rarity) raritiesSet.add(card.rarity);
           if (card.types) card.types.forEach(type => typesSet.add(type));
         });
@@ -202,9 +190,7 @@ const PokemonSetDetails = () => {
     fetchAllCards();
   }, [setId, toast, set]);
   
-  // Handle filtering of cards separately - memoized for better performance
   const applyFilters = useCallback(() => {
-    // If no filter is applied, don't run this effect
     if (rarityFilter === "all" && typeFilter === "all" && !searchQuery) {
       setIsFiltering(false);
       return;
@@ -212,10 +198,8 @@ const PokemonSetDetails = () => {
     
     setIsFiltering(true);
     
-    // Apply filters to the already loaded cards
     let filtered = [...cards];
     
-    // Apply search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(card => 
@@ -224,12 +208,10 @@ const PokemonSetDetails = () => {
       );
     }
     
-    // Apply rarity filter
     if (rarityFilter !== "all") {
       filtered = filtered.filter(card => card.rarity === rarityFilter);
     }
     
-    // Apply type filter
     if (typeFilter !== "all") {
       filtered = filtered.filter(card => 
         card.types && card.types.includes(typeFilter)
@@ -239,7 +221,6 @@ const PokemonSetDetails = () => {
     setFilteredCards(filtered);
   }, [searchQuery, rarityFilter, typeFilter, cards]);
 
-  // Apply filters whenever filter criteria change
   useEffect(() => {
     applyFilters();
   }, [applyFilters]);
@@ -251,7 +232,6 @@ const PokemonSetDetails = () => {
     setIsFiltering(false);
   };
 
-  // Render loading skeletons for cards
   const renderCardSkeletons = () => {
     return Array(cardsPerRow * 2).fill(0).map((_, index) => (
       <div key={`card-skeleton-${index}`} className="flex flex-col space-y-2">
@@ -262,17 +242,14 @@ const PokemonSetDetails = () => {
     ));
   };
 
-  // Function to add empty placeholder cards to ensure full rows
   const addPlaceholderCards = (cardsArray: PokemonCard[]) => {
     if (cardsArray.length === 0 || !cardsPerRow) return cardsArray;
     
     const remainder = cardsArray.length % cardsPerRow;
-    if (remainder === 0) return cardsArray; // Already even rows
+    if (remainder === 0) return cardsArray;
     
-    // Calculate how many placeholder cards are needed
     const placeholdersNeeded = cardsPerRow - remainder;
     
-    // Create array of placeholder cards with unique keys
     const placeholders = Array(placeholdersNeeded).fill(null).map((_, idx) => ({
       id: `placeholder-${idx}`,
       isPlaceholder: true
@@ -281,33 +258,29 @@ const PokemonSetDetails = () => {
     return [...cardsArray, ...placeholders];
   };
 
-  // Get cards with placeholders if needed
   const cardsWithPlaceholders = useMemo(() => {
     return addPlaceholderCards(displayedCards);
   }, [displayedCards, cardsPerRow]);
 
-  // Prefetch related sets for better navigation experience
   useEffect(() => {
     if (!set) return;
     
-    // Get series and find related sets to prefetch
     const prefetchRelatedSets = async () => {
       try {
         const allSets = await fetchPokemonSets();
         const relatedSets = allSets
           .filter(s => s.series === set.series && s.set_id !== setId)
-          .slice(0, 3); // Limit to 3 most recent related sets
+          .slice(0, 3);
         
         if (relatedSets.length > 0) {
           console.log(`Prefetching ${relatedSets.length} related sets in the background`);
           
-          // Prefetch each related set with delay
           relatedSets.forEach((relatedSet, index) => {
             setTimeout(() => {
               prefetchPokemonSet(relatedSet.set_id).catch(e => 
                 console.warn(`Failed to prefetch related set ${relatedSet.set_id}:`, e)
               );
-            }, (index + 1) * 5000); // Staggered prefetch, 5 seconds apart
+            }, (index + 1) * 5000);
           });
         }
       } catch (e) {
@@ -315,14 +288,12 @@ const PokemonSetDetails = () => {
       }
     };
     
-    // Schedule this for later when the user is likely done viewing the current set
     setTimeout(prefetchRelatedSets, 10000);
   }, [set, setId]);
 
   return (
     <Layout>
       <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-        {/* Back button and header */}
         <div className="mb-6">
           <Button 
             variant="ghost" 
@@ -345,7 +316,7 @@ const PokemonSetDetails = () => {
                       alt={`${set.name} logo`} 
                       className="h-24 object-contain"
                       loading="eager"
-                      fetchpriority="high"
+                      fetchPriority="high"
                     />
                   )}
                   <div>
@@ -373,7 +344,6 @@ const PokemonSetDetails = () => {
           </div>
         </div>
         
-        {/* Filters */}
         {!loadingSet && (
           <div className="mb-6 space-y-4">
             <div className="flex flex-col md:flex-row gap-4">
@@ -442,7 +412,6 @@ const PokemonSetDetails = () => {
           </div>
         )}
         
-        {/* Cards Display */}
         {loadingCards ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
             {renderCardSkeletons()}
@@ -464,7 +433,6 @@ const PokemonSetDetails = () => {
         ) : displayedCards.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
             {cardsWithPlaceholders.map((card, index) => (
-              // Check if it's a placeholder
               'isPlaceholder' in card ? (
                 <div key={card.id} className="invisible"> </div>
               ) : (
@@ -474,7 +442,7 @@ const PokemonSetDetails = () => {
                   isSecretRare={
                     hasSecretRares && secretRares.some(sr => sr.id === card.id)
                   }
-                  priority={index < 15} // Only prioritize loading for the first 15 cards
+                  priority={index < 15}
                 />
               )
             ))}

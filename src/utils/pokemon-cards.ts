@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 // Interface for Pokemon Card
@@ -159,24 +158,37 @@ const isNumeric = (str: string) => {
   return numericPart !== null;
 };
 
-// Sort cards by number correctly
+// Improved sort function for card numbers
 export const sortCardsByNumber = (cards: PokemonCard[]): PokemonCard[] => {
   return [...cards].sort((a, b) => {
-    // Handle non-numeric card numbers (like promos)
+    // Extract the numeric parts of the card numbers
+    const aMatch = a.number.match(/^(\d+)([a-zA-Z]*)$/);
+    const bMatch = b.number.match(/^(\d+)([a-zA-Z]*)$/);
+    
+    // If both have numeric parts
+    if (aMatch && bMatch) {
+      // Compare the numeric parts first
+      const aNum = parseInt(aMatch[1], 10);
+      const bNum = parseInt(bMatch[1], 10);
+      
+      if (aNum !== bNum) {
+        return aNum - bNum;
+      }
+      
+      // If numbers are the same, sort by any suffix (e.g., 1a, 1b)
+      return (aMatch[2] || '').localeCompare(bMatch[2] || '');
+    }
+    
+    // Handle special cases (promos, etc.)
     if (!isNumeric(a.number) && isNumeric(b.number)) {
       return 1; // Non-numeric after numeric
     }
     if (isNumeric(a.number) && !isNumeric(b.number)) {
       return -1; // Numeric before non-numeric
     }
-    if (!isNumeric(a.number) && !isNumeric(b.number)) {
-      return a.number.localeCompare(b.number); // Both non-numeric, sort alphabetically
-    }
-
-    // For numeric values, extract the numeric part and compare
-    const aNum = parseInt(a.number.match(/^\d+/)?.[0] || '0', 10);
-    const bNum = parseInt(b.number.match(/^\d+/)?.[0] || '0', 10);
-    return aNum - bNum;
+    
+    // Both non-numeric, sort alphabetically
+    return a.number.localeCompare(b.number);
   });
 };
 

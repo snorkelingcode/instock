@@ -66,7 +66,7 @@ const PokemonCardComponent: React.FC<PokemonCardComponentProps> = ({
             alt={card.name}
             className={`absolute inset-0 w-full h-full object-contain hover:scale-105 transition-transform duration-300 ease-in-out ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
             loading={priority ? "eager" : "lazy"}
-            fetchpriority={priority ? "high" : "auto"}
+            fetchPriority={priority ? "high" : "auto"}
             onLoad={handleImageLoad}
             decoding={priority ? "sync" : "async"}
           />
