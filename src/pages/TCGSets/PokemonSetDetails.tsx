@@ -22,6 +22,13 @@ import {
   PokemonSet
 } from "@/utils/pokemon-cards";
 import { Skeleton } from "@/components/ui/skeleton";
+import { 
+  Pagination, 
+  PaginationContent, 
+  PaginationItem 
+} from "@/components/ui/pagination";
+
+const CARDS_PER_PAGE = 50;
 
 const PokemonSetDetails = () => {
   const { setId } = useParams<{ setId: string }>();
@@ -33,12 +40,17 @@ const PokemonSetDetails = () => {
   const [filteredCards, setFilteredCards] = useState<PokemonCard[]>([]);
   const [loadingSet, setLoadingSet] = useState(true);
   const [loadingCards, setLoadingCards] = useState(true);
+  const [loadingMoreCards, setLoadingMoreCards] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [rarityFilter, setRarityFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
   const [uniqueRarities, setUniqueRarities] = useState<string[]>([]);
   const [uniqueTypes, setUniqueTypes] = useState<string[]>([]);
   const [isLoadingError, setIsLoadingError] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCardCount, setTotalCardCount] = useState(0);
+  const [hasMoreCards, setHasMoreCards] = useState(false);
+  const [isFiltering, setIsFiltering] = useState(false);
 
   // Split fetching into two separate useEffects for better performance
   
@@ -74,35 +86,48 @@ const PokemonSetDetails = () => {
     fetchSetDetails();
   }, [setId, toast]);
   
-  // 2. Then fetch the cards in the set
+  // 2. Then fetch the cards in the set, with pagination
   useEffect(() => {
-    const fetchCards = async () => {
+    const fetchCardsChunk = async () => {
       if (!setId) return;
       
-      setLoadingCards(true);
+      // If we're filtering, don't apply pagination
+      if (isFiltering) return;
+      
+      setLoadingCards(currentPage === 1);
+      setLoadingMoreCards(currentPage > 1);
       setIsLoadingError(false);
       
       try {
-        const fetchedCards = await fetchPokemonCards(setId);
-        setCards(fetchedCards);
-        setFilteredCards(fetchedCards);
-        
-        // Extract unique rarities and types for filters
-        const raritiesSet = new Set<string>();
-        fetchedCards.forEach(card => {
-          if (card.rarity) raritiesSet.add(card.rarity);
+        const result = await fetchPokemonCards(setId, {
+          page: currentPage,
+          pageSize: CARDS_PER_PAGE
         });
         
-        const rarities = Array.from(raritiesSet);
-        setUniqueRarities(rarities);
+        const fetchedCards = result.cards;
         
-        const typesSet = new Set<string>();
-        fetchedCards.forEach(card => {
-          if (card.types) card.types.forEach(type => typesSet.add(type));
-        });
+        if (currentPage === 1) {
+          setCards(fetchedCards);
+        } else {
+          setCards(prevCards => [...prevCards, ...fetchedCards]);
+        }
         
-        const types = Array.from(typesSet).sort();
-        setUniqueTypes(types);
+        setTotalCardCount(result.totalCount);
+        setHasMoreCards(result.hasMore);
+        
+        // Extract unique rarities and types for filters from the first page
+        if (currentPage === 1) {
+          const raritiesSet = new Set<string>();
+          const typesSet = new Set<string>();
+          
+          fetchedCards.forEach(card => {
+            if (card.rarity) raritiesSet.add(card.rarity);
+            if (card.types) card.types.forEach(type => typesSet.add(type));
+          });
+          
+          setUniqueRarities(Array.from(raritiesSet));
+          setUniqueTypes(Array.from(typesSet).sort());
+        }
         
       } catch (cardsError) {
         console.error("Error fetching cards:", cardsError);
@@ -114,47 +139,99 @@ const PokemonSetDetails = () => {
         setIsLoadingError(true);
       } finally {
         setLoadingCards(false);
+        setLoadingMoreCards(false);
       }
     };
     
-    fetchCards();
-  }, [setId, toast]);
+    fetchCardsChunk();
+  }, [setId, currentPage, toast, isFiltering]);
   
-  // Handle filtering of cards
+  // Handle filtering of cards separately
   useEffect(() => {
-    if (!cards.length) return;
+    const applyFilters = async () => {
+      // If no filter is applied, don't run this effect
+      if (rarityFilter === "all" && typeFilter === "all" && !searchQuery) {
+        setIsFiltering(false);
+        setFilteredCards(cards);
+        return;
+      }
+      
+      setIsFiltering(true);
+      setLoadingCards(true);
+      
+      try {
+        // If we're filtering, fetch all cards for the set
+        const result = await fetchPokemonCards(setId || '', {
+          page: 1,
+          pageSize: 1000 // Large number to get all cards
+        });
+        
+        let filtered = result.cards;
+        
+        // Apply search filter
+        if (searchQuery) {
+          const query = searchQuery.toLowerCase();
+          filtered = filtered.filter(card => 
+            card.name.toLowerCase().includes(query) || 
+            card.number.toLowerCase().includes(query)
+          );
+        }
+        
+        // Apply rarity filter
+        if (rarityFilter !== "all") {
+          filtered = filtered.filter(card => card.rarity === rarityFilter);
+        }
+        
+        // Apply type filter
+        if (typeFilter !== "all") {
+          filtered = filtered.filter(card => 
+            card.types && card.types.includes(typeFilter)
+          );
+        }
+        
+        setFilteredCards(filtered);
+      } catch (error) {
+        console.error("Error applying filters:", error);
+        toast({
+          title: "Error",
+          description: "There was a problem filtering the cards",
+          variant: "destructive",
+        });
+      } finally {
+        setLoadingCards(false);
+      }
+    };
     
-    let filtered = [...cards];
-    
-    // Apply search filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(card => 
-        card.name.toLowerCase().includes(query) || 
-        card.number.toLowerCase().includes(query)
-      );
+    // Only run if we have cards or are actively filtering
+    if (cards.length > 0 || isFiltering) {
+      applyFilters();
     }
-    
-    // Apply rarity filter
-    if (rarityFilter !== "all") {
-      filtered = filtered.filter(card => card.rarity === rarityFilter);
+  }, [searchQuery, rarityFilter, typeFilter, cards, setId, toast]);
+
+  const loadMoreCards = () => {
+    if (hasMoreCards && !loadingMoreCards) {
+      setCurrentPage(prev => prev + 1);
     }
-    
-    // Apply type filter
-    if (typeFilter !== "all") {
-      filtered = filtered.filter(card => 
-        card.types && card.types.includes(typeFilter)
-      );
-    }
-    
-    setFilteredCards(filtered);
-  }, [searchQuery, rarityFilter, typeFilter, cards]);
+  };
 
   const resetFilters = () => {
     setSearchQuery("");
     setRarityFilter("all");
     setTypeFilter("all");
+    setIsFiltering(false);
+    setCurrentPage(1); // Reset to first page
   };
+
+  // Calculate pagination info
+  const paginationInfo = useMemo(() => {
+    const totalPages = Math.ceil(totalCardCount / CARDS_PER_PAGE);
+    return {
+      currentPage,
+      totalPages,
+      totalItems: totalCardCount,
+      shownItems: isFiltering ? filteredCards.length : cards.length
+    };
+  }, [currentPage, totalCardCount, isFiltering, filteredCards.length, cards.length]);
 
   // Render loading skeletons for cards
   const renderCardSkeletons = () => {
@@ -166,6 +243,9 @@ const PokemonSetDetails = () => {
       </div>
     ));
   };
+
+  // Determine which cards to display based on filtering state
+  const displayedCards = isFiltering ? filteredCards : cards;
 
   return (
     <Layout>
@@ -263,7 +343,7 @@ const PokemonSetDetails = () => {
             
             <div className="flex items-center justify-between">
               <p className="text-sm text-gray-500">
-                {filteredCards.length} {filteredCards.length === 1 ? 'card' : 'cards'} found
+                {displayedCards.length} of {isFiltering ? displayedCards.length : totalCardCount} cards shown
               </p>
               
               <Button
@@ -280,7 +360,7 @@ const PokemonSetDetails = () => {
         )}
         
         {/* Cards Display */}
-        {loadingCards ? (
+        {loadingCards && currentPage === 1 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
             {renderCardSkeletons()}
           </div>
@@ -292,33 +372,47 @@ const PokemonSetDetails = () => {
               variant="default" 
               className="mt-4"
               onClick={() => {
-                setLoadingCards(true);
+                setCurrentPage(1);
                 setIsLoadingError(false);
-                fetchPokemonCards(setId || '').then(cards => {
-                  setCards(cards);
-                  setFilteredCards(cards);
-                  setLoadingCards(false);
-                }).catch(err => {
-                  console.error("Error retrying card fetch:", err);
-                  setIsLoadingError(true);
-                  setLoadingCards(false);
-                  toast({
-                    title: "Error",
-                    description: "Failed to load cards. Please try again later.",
-                    variant: "destructive",
-                  });
-                });
               }}
             >
               Try Again
             </Button>
           </div>
-        ) : filteredCards.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-            {filteredCards.map((card) => (
-              <PokemonCardComponent key={card.id} card={card} />
-            ))}
-          </div>
+        ) : displayedCards.length > 0 ? (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+              {displayedCards.map((card) => (
+                <PokemonCardComponent key={card.id} card={card} />
+              ))}
+            </div>
+            
+            {/* Load More Button / Pagination Section */}
+            {!isFiltering && hasMoreCards && (
+              <div className="mt-8 flex justify-center">
+                <Button 
+                  onClick={loadMoreCards}
+                  disabled={loadingMoreCards}
+                  className="min-w-40"
+                >
+                  {loadingMoreCards ? (
+                    <>
+                      <LoadingSpinner size="sm" className="mr-2" /> 
+                      Loading...
+                    </>
+                  ) : (
+                    `Load More Cards (${cards.length} of ${totalCardCount})`
+                  )}
+                </Button>
+              </div>
+            )}
+            
+            {loadingMoreCards && (
+              <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                {renderCardSkeletons()}
+              </div>
+            )}
+          </>
         ) : (
           <div className="text-center py-16">
             <p className="text-lg font-medium">No cards matching your filters</p>

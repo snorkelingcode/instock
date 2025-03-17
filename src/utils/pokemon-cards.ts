@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 // Interface for Pokemon Card
@@ -138,14 +137,32 @@ const normalizeCardData = (card: any): PokemonCard => {
 };
 
 // Try to get data from Supabase first, fallback to API
-export const fetchPokemonCards = async (setId: string): Promise<PokemonCard[]> => {
-  console.log(`Fetching cards for set: ${setId}`);
+export const fetchPokemonCards = async (
+  setId: string, 
+  options: { page?: number; pageSize?: number } = {}
+): Promise<{ cards: PokemonCard[], totalCount: number, hasMore: boolean }> => {
+  console.log(`Fetching cards for set: ${setId}, page: ${options.page || 1}`);
   
-  // Check memory cache first
-  const cached = cardCache.get(setId);
+  const pageSize = options.pageSize || 50;
+  const page = options.page || 1;
+  const cacheKey = `${setId}_full`;
+  
+  // Check memory cache first for the full set
+  const cached = cardCache.get(cacheKey);
   if (cached && (Date.now() - cached.timestamp < CARDS_CACHE_TTL)) {
     console.log(`Using memory cache for set: ${setId}`);
-    return cached.cards;
+    
+    // Process pagination from the cached complete set
+    const startIdx = (page - 1) * pageSize;
+    const endIdx = startIdx + pageSize;
+    const paginatedCards = cached.cards.slice(startIdx, endIdx);
+    const hasMore = endIdx < cached.cards.length;
+    
+    return { 
+      cards: paginatedCards, 
+      totalCount: cached.cards.length,
+      hasMore 
+    };
   }
   
   // Check localStorage cache
@@ -159,37 +176,73 @@ export const fetchPokemonCards = async (setId: string): Promise<PokemonCard[]> =
         console.log(`Using localStorage cache for set: ${setId}`);
         
         // Store in memory cache too
-        cardCache.set(setId, {
+        cardCache.set(cacheKey, {
           cards: parsedCache.cards,
           timestamp: parsedCache.timestamp
         });
         
-        return parsedCache.cards;
+        // Process pagination from the cached complete set
+        const startIdx = (page - 1) * pageSize;
+        const endIdx = startIdx + pageSize;
+        const paginatedCards = parsedCache.cards.slice(startIdx, endIdx);
+        const hasMore = endIdx < parsedCache.cards.length;
+        
+        return { 
+          cards: paginatedCards, 
+          totalCount: parsedCache.cards.length,
+          hasMore 
+        };
       }
     }
   } catch (e) {
     console.warn("Error accessing localStorage:", e);
   }
   
-  // Try to get from Supabase first
+  // Try to get from Supabase
   try {
     console.log(`Trying to fetch from Supabase for set: ${setId}`);
+    
+    // First get the total count
+    const { count, error: countError } = await supabase
+      .from('pokemon_cards')
+      .select('*', { count: 'exact', head: true })
+      .eq('set_id', setId);
+      
+    if (countError) {
+      console.error(`Error counting cards in Supabase for set: ${setId}:`, countError);
+      throw countError;
+    }
+    
+    const totalCount = count || 0;
+    console.log(`Total cards in set ${setId}: ${totalCount}`);
+    
+    // Then get the paginated results
     const { data: supabaseCards, error } = await supabase
       .from('pokemon_cards')
       .select('*')
-      .eq('set_id', setId);
+      .eq('set_id', setId)
+      .range((page - 1) * pageSize, page * pageSize - 1);
       
     if (!error && supabaseCards && supabaseCards.length > 0) {
       console.log(`Found ${supabaseCards.length} cards in Supabase for set: ${setId}`);
       
-      // Process the cards and cache them
+      // Process the cards
       const processedCards = supabaseCards.map(card => normalizeCardData(card));
       const sortedCards = sortCardsByNumber(processedCards);
       
-      // Cache the results
-      cacheCards(setId, sortedCards);
+      // Calculate if there are more pages
+      const hasMore = page * pageSize < totalCount;
       
-      return sortedCards;
+      // If it's the first page, try to fetch the full set in the background for caching
+      if (page === 1) {
+        fetchFullSetForCaching(setId);
+      }
+      
+      return { 
+        cards: sortedCards, 
+        totalCount,
+        hasMore 
+      };
     } else {
       console.log(`No cards found in Supabase for set: ${setId}, falling back to API`);
     }
@@ -197,95 +250,153 @@ export const fetchPokemonCards = async (setId: string): Promise<PokemonCard[]> =
     console.error(`Error fetching from Supabase for set: ${setId}:`, supabaseError);
   }
   
-  // Fallback to Pokemon TCG API
-  return fetchCardsFromAPI(setId);
+  // Fallback to Pokemon TCG API with pagination
+  return fetchCardsFromAPIWithPagination(setId, page, pageSize);
 };
 
-// Helper function to cache cards
-const cacheCards = (setId: string, cards: PokemonCard[]) => {
-  // Cache in memory
-  cardCache.set(setId, {
-    cards,
-    timestamp: Date.now()
-  });
-  
-  // Cache in localStorage
+// Helper function to fetch the full set for caching in the background
+const fetchFullSetForCaching = async (setId: string) => {
+  // Don't await this function as it's meant to run in the background
   try {
-    const localCacheKey = `${CARDS_CACHE_KEY_PREFIX}${setId}`;
-    localStorage.setItem(localCacheKey, JSON.stringify({
-      cards,
-      timestamp: Date.now()
-    }));
-  } catch (e) {
-    console.warn("Error storing in localStorage:", e);
+    console.log(`Fetching full set in background for caching: ${setId}`);
+    
+    // Try to get full data from Supabase
+    const { data: allCards, error } = await supabase
+      .from('pokemon_cards')
+      .select('*')
+      .eq('set_id', setId);
+      
+    if (!error && allCards && allCards.length > 0) {
+      // Process and cache all cards
+      const processedCards = allCards.map(card => normalizeCardData(card));
+      const sortedCards = sortCardsByNumber(processedCards);
+      
+      // Cache the complete set
+      cacheCards(setId, sortedCards);
+    } else {
+      // If Supabase doesn't have the full set, try the API
+      await fetchAllCardsFromAPI(setId);
+    }
+  } catch (error) {
+    console.error(`Background caching failed for set ${setId}:`, error);
+    // Don't rethrow as this is a background operation
   }
 };
 
-// Fetch cards from API with optimized error handling and retries
-const fetchCardsFromAPI = async (setId: string): Promise<PokemonCard[]> => {
-  console.log(`Fetching from API for set: ${setId}`);
+// Fetch cards from API with pagination
+const fetchCardsFromAPIWithPagination = async (
+  setId: string, 
+  page: number, 
+  pageSize: number
+): Promise<{ cards: PokemonCard[], totalCount: number, hasMore: boolean }> => {
+  console.log(`Fetching from API for set: ${setId}, page: ${page}, pageSize: ${pageSize}`);
   
-  // Maximum retries for API errors
-  const MAX_RETRIES = 3;
-  let retryCount = 0;
-  
-  while (retryCount <= MAX_RETRIES) {
+  try {
+    // Use consistent timeout - 8 seconds
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
+    
     try {
-      // Use consistent timeout - 8 seconds
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 8000);
+      // The API supports pagination, but we need to get total count first
+      const totalCountResponse = await fetch(
+        `https://api.pokemontcg.io/v2/cards?q=set.id:${setId}&page=1&pageSize=1`, 
+        { signal: controller.signal }
+      );
       
-      try {
-        const response = await fetch(
-          `https://api.pokemontcg.io/v2/cards?q=set.id:${setId}&orderBy=number&pageSize=250`, 
-          { signal: controller.signal }
-        );
-        
-        clearTimeout(timeoutId);
-        
-        if (!response.ok) {
-          throw new Error(`API responded with status: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        
-        // Apply normalization to ensure consistent data structure
-        const fetchedCards = data.data.map((card: any) => normalizeCardData(card));
-        const sortedCards = sortCardsByNumber(fetchedCards);
-        
-        // Cache the results
-        cacheCards(setId, sortedCards);
-        
-        return sortedCards;
-      } catch (error) {
-        if (error.name === 'AbortError') {
-          console.error('API request timed out, retrying...');
-          retryCount++;
-          // Add exponential backoff - wait longer between retries
-          await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
-          
-          // If we have more retries to go, continue the loop
-          if (retryCount <= MAX_RETRIES) continue;
-          throw new Error('Request timed out after multiple attempts. The API is taking too long to respond.');
-        }
-        throw error;
+      if (!totalCountResponse.ok) {
+        throw new Error(`API responded with status: ${totalCountResponse.status}`);
       }
+      
+      const totalCountData = await totalCountResponse.json();
+      const totalCount = totalCountData.totalCount || 0;
+      
+      // Now get the actual page
+      const response = await fetch(
+        `https://api.pokemontcg.io/v2/cards?q=set.id:${setId}&page=${page}&pageSize=${pageSize}&orderBy=number`, 
+        { signal: controller.signal }
+      );
+      
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        throw new Error(`API responded with status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      // Apply normalization to ensure consistent data structure
+      const fetchedCards = data.data.map((card: any) => normalizeCardData(card));
+      const sortedCards = sortCardsByNumber(fetchedCards);
+      const hasMore = page * pageSize < totalCount;
+      
+      // If it's the first page, trigger background fetch of all cards for caching
+      if (page === 1) {
+        fetchAllCardsFromAPI(setId);
+      }
+      
+      return { 
+        cards: sortedCards,
+        totalCount,
+        hasMore
+      };
     } catch (error) {
-      retryCount++;
-      if (retryCount <= MAX_RETRIES) {
-        console.error(`Error fetching cards for set ${setId}, retry ${retryCount}:`, error);
-        // Wait a second before retrying with exponential backoff
-        await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
-        continue;
+      if (error.name === 'AbortError') {
+        console.error('API request timed out, retrying...');
+        throw new Error('Request timed out. The API is taking too long to respond.');
       }
-      
-      console.error(`Failed to fetch cards for set ${setId} after ${MAX_RETRIES} retries:`, error);
       throw error;
     }
+  } catch (error) {
+    console.error(`Error fetching cards for set ${setId}:`, error);
+    throw error;
   }
+};
+
+// New function to fetch all cards for background caching
+const fetchAllCardsFromAPI = async (setId: string): Promise<void> => {
+  console.log(`Background fetch of all cards for set: ${setId}`);
   
-  // This should not be reached due to the throw in the catch block, but TypeScript wants a return
-  throw new Error(`Failed to fetch cards for set ${setId} after ${MAX_RETRIES} retries`);
+  try {
+    // Get the total count first
+    const countResponse = await fetch(
+      `https://api.pokemontcg.io/v2/cards?q=set.id:${setId}&page=1&pageSize=1`
+    );
+    
+    if (!countResponse.ok) {
+      throw new Error(`API count request failed: ${countResponse.status}`);
+    }
+    
+    const countData = await countResponse.json();
+    const totalCount = countData.totalCount || 0;
+    
+    if (totalCount === 0) {
+      return;
+    }
+    
+    // Now fetch all cards in one go (or with reasonable page size for larger sets)
+    const pageSize = Math.min(250, totalCount); // API might have a limit
+    const response = await fetch(
+      `https://api.pokemontcg.io/v2/cards?q=set.id:${setId}&pageSize=${pageSize}&orderBy=number`
+    );
+    
+    if (!response.ok) {
+      throw new Error(`API responded with status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    // Process and cache all cards
+    const fetchedCards = data.data.map((card: any) => normalizeCardData(card));
+    const sortedCards = sortCardsByNumber(fetchedCards);
+    
+    // Cache the complete set
+    cacheCards(setId, sortedCards);
+    
+    console.log(`Successfully cached all ${sortedCards.length} cards for set ${setId}`);
+  } catch (error) {
+    console.error(`Background caching of all cards failed for set ${setId}:`, error);
+    // Don't rethrow as this is a background operation
+  }
 };
 
 // Try to get sets from Supabase first, fallback to API

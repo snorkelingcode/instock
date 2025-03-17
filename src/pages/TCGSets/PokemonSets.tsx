@@ -13,46 +13,39 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { PokemonSet, fetchPokemonSets } from "@/utils/pokemon-cards";
 import { Skeleton } from "@/components/ui/skeleton";
+import { usePokemonSets } from "@/hooks/useTCGSets";
+import { 
+  Pagination, 
+  PaginationContent, 
+  PaginationItem,
+  PaginationLink,
+  PaginationNext
+} from "@/components/ui/pagination";
 
 const PokemonSets = () => {
-  const [sets, setSets] = useState<PokemonSet[]>([]);
-  const [filteredSets, setFilteredSets] = useState<PokemonSet[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const { 
+    sets, 
+    loading, 
+    loadingMore, 
+    error, 
+    hasMore, 
+    loadMore 
+  } = usePokemonSets({ initialChunkSize: 24, additionalChunkSize: 24 });
+  
+  const [filteredSets, setFilteredSets] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [seriesFilter, setSeriesFilter] = useState<string>("all");
   const [uniqueSeries, setUniqueSeries] = useState<string[]>([]);
   const { toast } = useToast();
 
-  const fetchSets = async () => {
-    try {
-      setLoading(true);
-      
-      const fetchedSets = await fetchPokemonSets();
-      setSets(fetchedSets);
-
-      // Extract unique series for filter dropdown
-      const seriesArray = Array.from(new Set(fetchedSets.map(set => set.series))).sort();
-      setUniqueSeries(seriesArray);
-      
-      // Initialize with all sets
-      setFilteredSets(fetchedSets);
-    } catch (error) {
-      console.error('Error fetching Pokémon sets:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load Pokémon sets",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Extract unique series for filter dropdown
   useEffect(() => {
-    fetchSets();
-  }, [toast]);
+    if (sets.length > 0) {
+      const seriesArray = Array.from(new Set(sets.map(set => set.series))).sort();
+      setUniqueSeries(seriesArray);
+    }
+  }, [sets]);
 
   // Filter sets based on search query and series filter
   useEffect(() => {
@@ -95,6 +88,14 @@ const PokemonSets = () => {
       </div>
     ));
   };
+
+  if (error) {
+    toast({
+      title: "Error",
+      description: "Failed to load Pokémon sets",
+      variant: "destructive",
+    });
+  }
 
   return (
     <Layout>
@@ -162,21 +163,41 @@ const PokemonSets = () => {
             {renderSkeletons()}
           </div>
         ) : filteredSets.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredSets.map((set) => (
-              <SetCard
-                key={set.set_id}
-                id={set.set_id}
-                name={set.name}
-                imageUrl={set.logo_url || set.images_url || set.symbol_url}
-                releaseDate={set.release_date}
-                totalCards={set.total || set.printed_total}
-                description={`${set.series} Series • ${set.total || set.printed_total} Cards`}
-                category="pokemon"
-                color="#E53E3E"
-              />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {filteredSets.map((set) => (
+                <SetCard
+                  key={set.set_id}
+                  id={set.set_id}
+                  name={set.name}
+                  imageUrl={set.logo_url || set.images_url || set.symbol_url}
+                  releaseDate={set.release_date}
+                  totalCards={set.total || set.printed_total}
+                  description={`${set.series} Series • ${set.total || set.printed_total} Cards`}
+                  category="pokemon"
+                  color="#E53E3E"
+                />
+              ))}
+            </div>
+            
+            {hasMore && !seriesFilter && !searchQuery && (
+              <div className="mt-8">
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <Button 
+                        onClick={loadMore}
+                        disabled={loadingMore}
+                        className="w-full"
+                      >
+                        {loadingMore ? "Loading..." : "Load More Sets"}
+                      </Button>
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}
+          </>
         ) : (
           <div className="text-center py-8">
             <p>No Pokémon sets found matching your filters.</p>
