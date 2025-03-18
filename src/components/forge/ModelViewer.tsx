@@ -78,24 +78,24 @@ const ModelDisplay = ({ url, customOptions }: { url: string, customOptions: Reco
     
     switch(material) {
       case 'metal':
-        return new THREE.MeshStandardMaterial({ 
+        return {
           color, 
           metalness: 0.8, 
           roughness: 0.2,
-        });
+        };
       case 'wood':
-        return new THREE.MeshStandardMaterial({ 
+        return {
           color, 
           roughness: 0.8, 
           metalness: 0.1,
-        });
+        };
       case 'plastic':
       default:
-        return new THREE.MeshStandardMaterial({ 
+        return {
           color, 
           roughness: 0.5, 
           metalness: 0.1,
-        });
+        };
     }
   };
   
@@ -131,7 +131,7 @@ const ModelDisplay = ({ url, customOptions }: { url: string, customOptions: Reco
       rotation={[0, 0, 0]}
     >
       <primitive object={geometry} attach="geometry" />
-      {getMaterial()}
+      <meshStandardMaterial {...getMaterial()} />
     </mesh>
   );
 };
@@ -181,12 +181,13 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
           alpha: false,
           logarithmicDepthBuffer: true
         }}
-        camera={{ position: [0, 0, 10], fov: 40 }}
+        camera={{ position: [-8, 3, 2], fov: 40 }}
         onCreated={({ gl }) => {
           gl.localClippingEnabled = true;
           gl.shadowMap.enabled = true;
           gl.shadowMap.type = THREE.PCFSoftShadowMap;
-          gl.outputEncoding = THREE.sRGBEncoding;
+          // Replace deprecated outputEncoding with outputColorSpace
+          gl.outputColorSpace = THREE.SRGBColorSpace;
           gl.toneMapping = THREE.ACESFilmicToneMapping;
           gl.toneMappingExposure = 1.0;
         }}
