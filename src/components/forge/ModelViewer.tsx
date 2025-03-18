@@ -1,3 +1,4 @@
+
 import React, { useRef, useState, useEffect, Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Center, GizmoHelper, GizmoViewport, PerspectiveCamera } from '@react-three/drei';
@@ -160,14 +161,13 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
         <color attach="background" args={['#1f2937']} />
         <PerspectiveCamera 
           makeDefault 
-          position={[-5, 0, 0]} 
-          rotation={[0, -Math.PI/2, 0]} 
+          position={[-8, 3, 2]} 
           fov={40} 
         />
         
         <ambientLight intensity={0.3} />
         <spotLight 
-          position={[-10, 10, 0]} 
+          position={[-10, 10, 5]} 
           angle={0.15} 
           penumbra={1} 
           intensity={1} 
@@ -175,7 +175,7 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
           shadow-mapSize={[2048, 2048]}
         />
         <directionalLight 
-          position={[-10, 5, -5]} 
+          position={[-5, 8, 0]} 
           intensity={0.5} 
           castShadow 
         />
@@ -202,7 +202,8 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
         <OrbitControls 
           enablePan={true}
           minDistance={2}
-          maxDistance={10}
+          maxDistance={20}
+          target={[0, 0, 0]}
         />
         <GizmoHelper alignment="bottom-right" margin={[80, 80]}>
           <GizmoViewport axisColors={['red', 'green', 'blue']} labelColor="white" />
