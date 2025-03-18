@@ -1,4 +1,3 @@
-
 import React, { useRef, useState, useEffect, Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Center, GizmoHelper, GizmoViewport, PerspectiveCamera } from '@react-three/drei';
@@ -29,9 +28,7 @@ const ModelDisplay = ({ url, customOptions }: { url: string, customOptions: Reco
     loader.load(
       url,
       (loadedGeometry) => {
-        // Center the model
         loadedGeometry.center();
-        // Compute vertex normals if they don't exist
         if (!loadedGeometry.attributes.normal) {
           loadedGeometry.computeVertexNormals();
         }
@@ -39,27 +36,21 @@ const ModelDisplay = ({ url, customOptions }: { url: string, customOptions: Reco
         setLoading(false);
       },
       (xhr) => {
-        // Progress callback
         console.log(`${Math.round(xhr.loaded / xhr.total * 100)}% loaded`);
       },
       (err) => {
-        // Error callback
         console.error('Error loading STL:', err);
-        // Fix: Handle the unknown type properly
         const errorMessage = err instanceof Error ? err.message : 'Unknown error';
         setError(`Failed to load model: ${errorMessage}`);
         setLoading(false);
       }
     );
     
-    // Cleanup
     return () => {
-      // STLLoader doesn't have an abort method, but we can clean up state
       setGeometry(null);
     };
   }, [url]);
   
-  // Apply material based on customization options
   const getMaterial = () => {
     const color = customOptions.color || '#ffffff';
     const material = customOptions.material || 'plastic';
@@ -105,7 +96,6 @@ const ModelDisplay = ({ url, customOptions }: { url: string, customOptions: Reco
     );
   }
   
-  // Apply customization options
   const scale = customOptions.scale || 1;
   
   return (
@@ -114,7 +104,7 @@ const ModelDisplay = ({ url, customOptions }: { url: string, customOptions: Reco
       scale={[scale, scale, scale]}
       castShadow
       receiveShadow
-      rotation={[0, -Math.PI/2, 0]} // Rotate -90 degrees on Y axis
+      rotation={[0, -Math.PI/2, 0]}
     >
       <primitive object={geometry} attach="geometry" />
       <meshStandardMaterial 
@@ -133,7 +123,6 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
   const { user } = useAuth();
   const [viewerError, setViewerError] = useState<string | null>(null);
   
-  // Combine default options with user customizations
   const effectiveOptions = {
     ...model.default_options,
     ...customizationOptions
@@ -169,7 +158,6 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
         }}
       >
         <color attach="background" args={['#1f2937']} />
-        {/* Position camera on negative X axis and rotate it to look at the model */}
         <PerspectiveCamera 
           makeDefault 
           position={[-5, 0, 0]} 
@@ -206,7 +194,6 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
           </Suspense>
         </Center>
         
-        {/* Floor for shadow casting */}
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -2, 0]} receiveShadow>
           <planeGeometry args={[100, 100]} />
           <shadowMaterial transparent opacity={0.2} />
@@ -226,4 +213,3 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
 };
 
 export default ModelViewer;
-
