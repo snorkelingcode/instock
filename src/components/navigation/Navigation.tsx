@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -25,14 +24,13 @@ const Navigation = () => {
   return (
     <nav className="bg-red-600 text-white py-4 relative">
       <div className="container mx-auto px-4 flex justify-between items-center relative z-50">
-        {/* Logo and Title */}
+        {/* Logo only */}
         <Link to="/" className="flex items-center">
           <img 
             src="/lovable-uploads/9955d37d-dda9-41f4-99af-f7307dddce93.png" 
             alt="TCG In-Stock Tracker" 
-            className="h-10 mr-3"
+            className="h-10"
           />
-          <span className="text-xl font-bold">TCG In-Stock Tracker</span>
         </Link>
 
         {/* Mobile Menu Button */}
@@ -45,7 +43,7 @@ const Navigation = () => {
           </SheetTrigger>
           <SheetContent side="left" className="w-full p-0 bg-white">
             <div className="flex flex-col h-full">
-              {/* Logo centered at the top */}
+              {/* Logo centered at the top - keeping this full logo with image for the mobile menu */}
               <div className="flex justify-center py-6 border-b border-gray-200">
                 <img 
                   src="/lovable-uploads/9955d37d-dda9-41f4-99af-f7307dddce93.png" 
