@@ -1,7 +1,17 @@
 
 import React, { useRef, useState, useEffect, Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Center, GizmoHelper, GizmoViewport, PerspectiveCamera } from '@react-three/drei';
+import { 
+  OrbitControls, 
+  Center, 
+  GizmoHelper, 
+  GizmoViewport, 
+  PerspectiveCamera,
+  Environment,
+  Grid,
+  Stage,
+  useProgress
+} from '@react-three/drei';
 import * as THREE from 'three';
 import { STLLoader } from 'three/addons/loaders/STLLoader.js';
 import { useAuth } from '@/contexts/AuthContext';
@@ -13,6 +23,16 @@ interface ModelViewerProps {
   model: ThreeDModel;
   customizationOptions: Record<string, any>;
 }
+
+const LoadingScreen = () => {
+  const { progress } = useProgress();
+  return (
+    <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900/80 text-white z-10">
+      <Loader2 className="h-10 w-10 animate-spin mb-2" />
+      <div className="text-sm font-medium">{Math.round(progress)}% loaded</div>
+    </div>
+  );
+};
 
 const ModelDisplay = ({ url, customOptions }: { url: string, customOptions: Record<string, any> }) => {
   const [geometry, setGeometry] = useState<THREE.BufferGeometry | null>(null);
@@ -97,8 +117,8 @@ const ModelDisplay = ({ url, customOptions }: { url: string, customOptions: Reco
     );
   }
   
-  // Calculate a more appropriate scale value - using a base scale of 0.5 and then applying user customization
-  const baseScale = 0.5;
+  // Calculate a more appropriate scale value - using a base scale of 0.2 (smaller than before)
+  const baseScale = 0.2;
   const userScale = customOptions.scale || 1;
   const finalScale = baseScale * userScale;
   
@@ -108,17 +128,10 @@ const ModelDisplay = ({ url, customOptions }: { url: string, customOptions: Reco
       scale={[finalScale, finalScale, finalScale]}
       castShadow
       receiveShadow
-      rotation={[0, -Math.PI/2, 0]}
+      rotation={[0, 0, 0]}
     >
       <primitive object={geometry} attach="geometry" />
-      <meshStandardMaterial 
-        color={customOptions.color || '#ffffff'}
-        metalness={customOptions.material === 'metal' ? 0.8 : 0.1}
-        roughness={
-          customOptions.material === 'metal' ? 0.2 : 
-          customOptions.material === 'wood' ? 0.8 : 0.5
-        }
-      />
+      {getMaterial()}
     </mesh>
   );
 };
@@ -126,11 +139,21 @@ const ModelDisplay = ({ url, customOptions }: { url: string, customOptions: Reco
 const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }) => {
   const { user } = useAuth();
   const [viewerError, setViewerError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   
   const effectiveOptions = {
     ...model.default_options,
     ...customizationOptions
   };
+  
+  useEffect(() => {
+    // Simulate loading time for Sketchfab-like experience
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 500);
+    
+    return () => clearTimeout(timer);
+  }, [model]);
   
   if (!model || !model.stl_file_path) {
     return (
@@ -141,77 +164,91 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
   }
 
   return (
-    <div className="w-full h-full bg-gray-800 rounded-lg relative">
+    <div className="w-full h-full bg-gradient-to-b from-gray-900 to-gray-800 rounded-lg relative overflow-hidden">
       {viewerError && (
         <div className="absolute top-0 left-0 right-0 bg-red-500 text-white p-2 z-10 text-sm">
           {viewerError}
         </div>
       )}
       
+      {loading && <LoadingScreen />}
+      
       <Canvas
         shadows
         dpr={[1, 2]}
+        gl={{ 
+          antialias: true,
+          alpha: false,
+          logarithmicDepthBuffer: true
+        }}
+        camera={{ position: [0, 0, 10], fov: 40 }}
         onCreated={({ gl }) => {
           gl.localClippingEnabled = true;
           gl.shadowMap.enabled = true;
           gl.shadowMap.type = THREE.PCFSoftShadowMap;
+          gl.outputEncoding = THREE.sRGBEncoding;
+          gl.toneMapping = THREE.ACESFilmicToneMapping;
+          gl.toneMappingExposure = 1.0;
         }}
         onError={(error) => {
           console.error("Canvas error:", error);
           setViewerError("Error rendering 3D model");
         }}
       >
-        <color attach="background" args={['#1f2937']} />
-        <PerspectiveCamera 
-          makeDefault 
-          position={[-8, 3, 2]} 
-          fov={40} 
-        />
+        <color attach="background" args={['#1a1a1a']} />
         
-        <ambientLight intensity={0.3} />
-        <spotLight 
-          position={[-10, 10, 5]} 
-          angle={0.15} 
-          penumbra={1} 
-          intensity={1} 
-          castShadow 
-          shadow-mapSize={[2048, 2048]}
-        />
-        <directionalLight 
-          position={[-5, 8, 0]} 
-          intensity={0.5} 
-          castShadow 
-        />
-        
-        <Center>
-          <Suspense fallback={
-            <mesh>
-              <sphereGeometry args={[1, 8, 8]} />
-              <meshBasicMaterial color="#666666" wireframe />
-            </mesh>
-          }>
+        <Stage
+          preset="rembrandt"
+          intensity={1.5}
+          environment="city"
+          adjustCamera={false}
+        >
+          <Suspense fallback={null}>
             <ModelDisplay 
               url={model.stl_file_path} 
               customOptions={effectiveOptions} 
             />
           </Suspense>
-        </Center>
+        </Stage>
         
-        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -2, 0]} receiveShadow>
-          <planeGeometry args={[100, 100]} />
-          <shadowMaterial transparent opacity={0.2} />
-        </mesh>
+        <Grid
+          position={[0, -1, 0]}
+          args={[10, 10]}
+          cellSize={0.5}
+          cellThickness={0.5}
+          cellColor="#555555"
+          sectionSize={3}
+          sectionThickness={1}
+          sectionColor="#888888"
+          fadeDistance={25}
+          fadeStrength={1}
+          infiniteGrid
+        />
         
         <OrbitControls 
           enablePan={true}
-          minDistance={2}
+          enableZoom={true}
+          enableRotate={true}
+          minDistance={3}
           maxDistance={20}
+          minPolarAngle={0}
+          maxPolarAngle={Math.PI / 1.75}
           target={[0, 0, 0]}
+          makeDefault
         />
-        <GizmoHelper alignment="bottom-right" margin={[80, 80]}>
-          <GizmoViewport axisColors={['red', 'green', 'blue']} labelColor="white" />
+        
+        <GizmoHelper alignment="bottom-right" margin={[80, 80]} renderPriority={2}>
+          <GizmoViewport 
+            axisColors={['#ff3653', '#8adb00', '#2c8fff']} 
+            labelColor="white" 
+            hideNegativeAxes
+          />
         </GizmoHelper>
       </Canvas>
+      
+      <div className="absolute bottom-2 right-2 text-xs text-white/50 pointer-events-none">
+        Use mouse to rotate | Scroll to zoom | Shift+drag to pan
+      </div>
     </div>
   );
 };
