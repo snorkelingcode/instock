@@ -99,7 +99,7 @@ const ModelDisplay = ({ url, customOptions }: { url: string, customOptions: Reco
   if (error || !geometry) {
     return (
       <mesh>
-        <boxGeometry args={[2, 0.1, 2]} />
+        <boxGeometry args={[1, 16, 16]} />
         <meshStandardMaterial color="red" />
       </mesh>
     );
@@ -172,7 +172,7 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
         {/* Position camera on negative X axis and rotate it to look at the model */}
         <PerspectiveCamera 
           makeDefault 
-          position={[0, 0, 1000]} 
+          position={[0, 0, 0]} 
           rotation={[0, 180, 0]} 
           fov={40} 
         />
