@@ -1,12 +1,24 @@
-import React, { useRef, useState, useEffect, Suspense } from 'react';
-import { Canvas } from '@react-three/fiber';
+<Canvas
+        shadows
+        dpr={[1, 2]}
+        onCreated={({ gl, scene, camera }) => {
+          gl.localClippingEnabled = true;
+          gl.shadowMap.enabled = true;
+          gl.shadowMap.type = THREE.PCFSoftShadowMap;
+          
+          // Move camera to a better viewing position
+          camera.position.set(0, 0, 200);
+          camera.lookAt(0, 0, 0);
+        }}
+        onError={(error) => {
+          console.error("Canvas error:", error);
+          setViewimport React, { useRef, useState, useEffect, Suspense } from 'react';
+import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls, GizmoHelper, GizmoViewport, PerspectiveCamera } from '@react-three/drei';
 import * as THREE from 'three';
 import { STLLoader } from 'three/addons/loaders/STLLoader.js';
 import { useAuth } from '@/contexts/AuthContext';
 import { ThreeDModel } from '@/types/model';
-import { useUserCustomization } from '@/hooks/use-model';
-import { Loader2 } from 'lucide-react';
 
 interface ModelViewerProps {
   model: ThreeDModel;
@@ -107,7 +119,7 @@ const ModelDisplay = ({ url, customOptions }: { url: string, customOptions: Reco
   }
   
   // Apply customization options with a much smaller default scale for large models
-  const scale = customOptions.scale || 0.05; // Scale down to 5% of original size
+  const scale = customOptions.scale || 0.01; // Scale down to 1% of original size
   
   return (
     <mesh 
@@ -115,8 +127,8 @@ const ModelDisplay = ({ url, customOptions }: { url: string, customOptions: Reco
       scale={[scale, scale, scale]}
       castShadow
       receiveShadow
-      position={[0, 0, -15]} // Position the model farther from the camera (15 units)
-      rotation={[0, -Math.PI/2, 0]} // Rotate -90 degrees on Y axis
+      position={[0, 0, 0]} // Position at origin
+      rotation={[0, 0, 0]} // No rotation
     >
       <primitive object={geometry} attach="geometry" />
       <meshStandardMaterial 
@@ -160,10 +172,14 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
       <Canvas
         shadows
         dpr={[1, 2]}
-        onCreated={({ gl }) => {
+        onCreated={({ gl, scene, camera }) => {
           gl.localClippingEnabled = true;
           gl.shadowMap.enabled = true;
           gl.shadowMap.type = THREE.PCFSoftShadowMap;
+          
+          // Move camera to a better viewing position
+          camera.position.set(0, 0, 200);
+          camera.lookAt(0, 0, 0);
         }}
         onError={(error) => {
           console.error("Canvas error:", error);
@@ -171,28 +187,36 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
         }}
       >
         <color attach="background" args={['#1f2937']} />
+        
+        {/* Scene setup component to ensure proper camera positioning */}
+        <SceneSetup />
         {/* Position camera at origin and looking down negative Z axis */}
+        {/* Sketchfab-like setup with camera far from the object */}
         <PerspectiveCamera 
           makeDefault 
-          position={[0, 0, 15]} 
-          fov={50}
-          far={1000}
+          position={[200, 100, 200]} 
+          fov={45}
+          far={2000}
           near={0.1}
         />
         
-        <ambientLight intensity={0.3} />
+        <ambientLight intensity={0.5} />
         <spotLight 
-          position={[-20, 20, -15]} // Further adjusted light position to illuminate the model
+          position={[200, 200, 200]} 
           angle={0.3} 
           penumbra={1} 
-          intensity={1.2} 
+          intensity={0.8} 
           castShadow 
           shadow-mapSize={[2048, 2048]}
         />
         <directionalLight 
-          position={[-15, 10, -20]} // Further adjusted light position
-          intensity={0.5} 
+          position={[100, 200, 100]} 
+          intensity={0.8} 
           castShadow 
+        />
+        <directionalLight 
+          position={[-100, -100, -100]} 
+          intensity={0.3} 
         />
         
         <Suspense fallback={null}>
@@ -202,20 +226,31 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
           />
         </Suspense>
         
-        {/* Floor for shadow casting, moved in front of camera */}
-        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -10, -15]} receiveShadow>
-          <planeGeometry args={[200, 200]} />
-          <shadowMaterial transparent opacity={0.2} />
-        </mesh>
+        {/* Grid helper (Sketchfab-like grid) */}
+        <gridHelper args={[1000, 100, 0x888888, 0x444444]} position={[0, -50, 0]} />
+        
+        {/* Axes helper to visualize world axes */}
+        <axesHelper args={[100]} />
         
         <OrbitControls 
           enablePan={true}
-          minDistance={5}
-          maxDistance={50}
-          target={[0, 0, -15]} // Set orbit controls to target the updated model position
+          minDistance={50}
+          maxDistance={500}
+          target={[0, 0, 0]} // Target the center of the scene
+          makeDefault
         />
-        <GizmoHelper alignment="bottom-right" margin={[80, 80]}>
-          <GizmoViewport axisColors={['red', 'green', 'blue']} labelColor="white" />
+        <GizmoHelper 
+          alignment="bottom-right" 
+          margin={[80, 80]}
+          onUpdate={() => state.invalidate()}
+          renderPriority={2}
+        >
+          <GizmoViewport 
+            axisColors={['#ff3653', '#0aff2c', '#2c8eff']} 
+            labelColor="black" 
+            axisHeadScale={1}
+            axisScale={0.5}
+          />
         </GizmoHelper>
       </Canvas>
     </div>
