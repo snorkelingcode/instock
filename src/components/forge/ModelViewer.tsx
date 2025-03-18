@@ -114,9 +114,9 @@ const ModelDisplay = ({ url, customOptions }: { url: string, customOptions: Reco
       scale={[scale, scale, scale]}
       castShadow
       receiveShadow
+      rotation={[0, -Math.PI/2, 0]} // Rotate -90 degrees on Y axis
     >
       <primitive object={geometry} attach="geometry" />
-      {/* Fix: Use meshStandardMaterial as a JSX element instead of a direct object */}
       <meshStandardMaterial 
         color={customOptions.color || '#ffffff'}
         metalness={customOptions.material === 'metal' ? 0.8 : 0.1}
@@ -169,11 +169,17 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
         }}
       >
         <color attach="background" args={['#1f2937']} />
-        <PerspectiveCamera makeDefault position={[0, 0, 5]} fov={40} />
+        {/* Position camera on negative X axis and rotate it to look at the model */}
+        <PerspectiveCamera 
+          makeDefault 
+          position={[-5, 0, 0]} 
+          rotation={[0, -Math.PI/2, 0]} 
+          fov={40} 
+        />
         
         <ambientLight intensity={0.3} />
         <spotLight 
-          position={[10, 10, 10]} 
+          position={[-10, 10, 0]} 
           angle={0.15} 
           penumbra={1} 
           intensity={1} 
@@ -220,3 +226,4 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
 };
 
 export default ModelViewer;
+
