@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
@@ -137,12 +136,6 @@ const Index = () => {
           {isLoading && (
             <div className="flex justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-red-500" />
-            </div>
-          )}
-          
-          {!isLoading && !hasMore && articles.length > 0 && (
-            <div className="text-center py-8 text-gray-500">
-              <p>You've reached the end of the articles</p>
             </div>
           )}
         </section>
