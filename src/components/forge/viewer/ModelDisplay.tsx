@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
-import { STLLoader } from 'three/addons/loaders/STLLoader.js';
+import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
 
 interface ModelDisplayProps {
   url: string;
@@ -15,7 +15,6 @@ const ModelDisplay: React.FC<ModelDisplayProps> = ({ url, customOptions }) => {
   const [error, setError] = useState<string | null>(null);
   const [boundingBox, setBoundingBox] = useState<THREE.Box3 | null>(null);
   const modelRef = useRef<THREE.Mesh>(null);
-  const { camera } = useThree();
   
   useEffect(() => {
     setLoading(true);
@@ -23,9 +22,13 @@ const ModelDisplay: React.FC<ModelDisplayProps> = ({ url, customOptions }) => {
     
     const loader = new STLLoader();
     
+    console.log("Loading model from URL:", url);
+    
     loader.load(
       url,
       (loadedGeometry) => {
+        console.log("Model loaded successfully");
+        
         // Center the geometry
         loadedGeometry.center();
         
@@ -38,8 +41,6 @@ const ModelDisplay: React.FC<ModelDisplayProps> = ({ url, customOptions }) => {
         const box = new THREE.Box3().setFromObject(
           new THREE.Mesh(loadedGeometry)
         );
-        const size = new THREE.Vector3();
-        box.getSize(size);
         
         // Set the geometry and its bounding information
         setGeometry(loadedGeometry);

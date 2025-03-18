@@ -59,16 +59,27 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
         gl={{ 
           antialias: true,
           alpha: false,
-          logarithmicDepthBuffer: true
+          logarithmicDepthBuffer: true,
+          preserveDrawingBuffer: true
         }}
-        camera={{ position: [-5, 5, 5], fov: 45 }}
-        onCreated={({ gl }) => {
+        camera={{ 
+          position: [0, 0, 10], 
+          fov: 45,
+          near: 0.1,
+          far: 1000
+        }}
+        onCreated={({ gl, scene, camera }) => {
+          gl.setClearColor(new THREE.Color('#1a1a1a'));
           gl.localClippingEnabled = true;
           gl.shadowMap.enabled = true;
           gl.shadowMap.type = THREE.PCFSoftShadowMap;
           gl.outputColorSpace = THREE.SRGBColorSpace;
           gl.toneMapping = THREE.ACESFilmicToneMapping;
           gl.toneMappingExposure = 1.0;
+          
+          // Position camera to view the model correctly
+          camera.position.set(5, 5, 5);
+          camera.lookAt(0, 0, 0);
         }}
         onError={(error) => {
           console.error("Canvas error:", error);

@@ -11,9 +11,10 @@ const SmartModelContainer: React.FC<SmartModelContainerProps> = ({ children }) =
   
   useEffect(() => {
     // Automatically fit model to camera view after a short delay
+    // Using a delay gives time for the model to load completely
     const timeoutId = setTimeout(() => {
       bounds.refresh().fit();
-    }, 300);
+    }, 500);
     
     return () => clearTimeout(timeoutId);
   }, [bounds]);

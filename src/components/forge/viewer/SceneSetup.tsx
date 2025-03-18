@@ -17,7 +17,7 @@ const SceneSetup: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       </Stage>
       
       <Grid
-        position={[0, -1, 0]}
+        position={[0, -0.5, 0]}
         args={[10, 10]}
         cellSize={0.5}
         cellThickness={0.5}
@@ -31,14 +31,14 @@ const SceneSetup: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       />
       
       <OrbitControls 
+        makeDefault
         enablePan={true}
         enableZoom={true}
         enableRotate={true}
-        minDistance={2}
+        minDistance={1}
         maxDistance={20}
         minPolarAngle={0}
         maxPolarAngle={Math.PI / 1.75}
-        makeDefault
       />
       
       <GizmoHelper alignment="bottom-right" margin={[80, 80]} renderPriority={2}>
