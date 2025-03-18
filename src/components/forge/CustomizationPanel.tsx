@@ -19,9 +19,13 @@ import {
 } from "@/components/ui/toggle-group";
 import { Circle, Square, Triangle, BoltIcon, Hammer, Save } from 'lucide-react';
 import { ThreeDModel } from '@/types/model';
+import ModelSelector from './ModelSelector';
 
 interface CustomizationPanelProps {
   model: ThreeDModel;
+  models: ThreeDModel[];
+  selectedModelId: string;
+  onSelectModel: (modelId: string) => void;
   options: Record<string, any>;
   onChange: (key: string, value: any) => void;
   onSave: () => void;
@@ -29,6 +33,9 @@ interface CustomizationPanelProps {
 
 const CustomizationPanel: React.FC<CustomizationPanelProps> = ({ 
   model, 
+  models,
+  selectedModelId,
+  onSelectModel,
   options, 
   onChange, 
   onSave 
@@ -51,6 +58,16 @@ const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
         </div>
         
         <div className="space-y-4">
+          {/* Model Selector */}
+          <div className="space-y-2">
+            <Label>Select Model</Label>
+            <ModelSelector
+              models={models}
+              selectedModelId={selectedModelId}
+              onSelectModel={onSelectModel}
+            />
+          </div>
+          
           {availableOptions.includes('color') && (
             <div className="space-y-2">
               <Label htmlFor="color">Color</Label>

@@ -7,7 +7,6 @@ import { useModels, useModel, useSaveCustomization, useUserCustomization } from 
 import ModelViewer from '@/components/forge/ModelViewer';
 import CustomizationPanel from '@/components/forge/CustomizationPanel';
 import InstructionsPanel from '@/components/forge/InstructionsPanel';
-import ModelSelector from '@/components/forge/ModelSelector';
 import { 
   ResizablePanelGroup,
   ResizablePanel,
@@ -97,19 +96,6 @@ const Forge = () => {
           <p className="text-gray-600">Customize and personalize 3D models to your liking</p>
         </div>
         
-        {/* Model Selector */}
-        <div className="mb-6">
-          {models && models.length > 0 ? (
-            <ModelSelector
-              models={models}
-              selectedModelId={selectedModelId}
-              onSelectModel={setSelectedModelId}
-            />
-          ) : (
-            <div className="text-gray-500">No models available</div>
-          )}
-        </div>
-        
         {isLoading ? (
           <div className="flex justify-center items-center min-h-[500px]">
             <Loader2 className="w-12 h-12 animate-spin text-red-600" />
@@ -131,11 +117,14 @@ const Forge = () => {
             
             <ResizableHandle withHandle />
             
-            {/* Right: Customization Panel */}
+            {/* Right: Customization Panel with Model Selector */}
             <ResizablePanel defaultSize={30} minSize={20}>
-              {selectedModel && (
+              {selectedModel && models && (
                 <CustomizationPanel
                   model={selectedModel}
+                  models={models}
+                  selectedModelId={selectedModelId}
+                  onSelectModel={setSelectedModelId}
                   options={customizationOptions}
                   onChange={handleCustomizationChange}
                   onSave={handleSaveCustomization}
