@@ -231,7 +231,7 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
         </Suspense>
         
         {/* Grid helper (Sketchfab-like grid) */}
-        <gridHelper args={[1000, 100, 0x888888, 0x444444]} position={[0, -50, 0]} />
+        <gridHelper args={[1000, 100, "#888888", "#444444"]} position={[0, -50, 0]} />
         
         {/* Axes helper to visualize world axes */}
         <axesHelper args={[100]} />
@@ -246,11 +246,10 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
         <GizmoHelper 
           alignment="bottom-right" 
           margin={[80, 80]}
-          onUpdate={() => state.invalidate()}
           renderPriority={2}
         >
           <GizmoViewport 
-            axisColors={['#ff3653', '#0aff2c', '#2c8eff']} 
+            axisColors={["#ff3653", "#0aff2c", "#2c8eff"]} 
             labelColor="black" 
             axisHeadScale={1}
             axisScale={0.5}
