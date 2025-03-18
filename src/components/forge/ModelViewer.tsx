@@ -38,7 +38,9 @@ const ModelDisplay = ({ url, customOptions }: { url: string, customOptions: Reco
       (err) => {
         // Error callback
         console.error('Error loading STL:', err);
-        setError(`Failed to load model: ${err.message || 'Unknown error'}`);
+        // Fix: Handle the unknown type properly
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+        setError(`Failed to load model: ${errorMessage}`);
         setLoading(false);
       }
     );
