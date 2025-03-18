@@ -27,7 +27,13 @@ const Forge = () => {
   const [selectedModelId, setSelectedModelId] = useState<string>('');
   const { data: selectedModel, isLoading: modelLoading } = useModel(selectedModelId);
   const { data: savedCustomization } = useUserCustomization(selectedModelId);
-  const [customizationOptions, setCustomizationOptions] = useState<Record<string, any>>({});
+  const [customizationOptions, setCustomizationOptions] = useState<Record<string, any>>({
+    corners: 'rounded',
+    centering: 'off-top-left',
+    color: '#ff0000',
+    scale: 1,
+    material: 'plastic',
+  });
   
   const saveCustomization = useSaveCustomization();
 
@@ -42,9 +48,17 @@ const Forge = () => {
   useEffect(() => {
     if (selectedModel) {
       if (savedCustomization) {
-        setCustomizationOptions(savedCustomization.customization_options);
+        setCustomizationOptions(prev => ({
+          ...prev,
+          ...savedCustomization.customization_options
+        }));
       } else {
-        setCustomizationOptions(selectedModel.default_options || {});
+        setCustomizationOptions(prev => ({
+          ...prev,
+          ...selectedModel.default_options,
+          corners: prev.corners || 'rounded',
+          centering: prev.centering || 'off-top-left'
+        }));
       }
     }
   }, [selectedModel, savedCustomization]);

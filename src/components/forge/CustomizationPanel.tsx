@@ -17,7 +17,15 @@ import {
   ToggleGroup, 
   ToggleGroupItem 
 } from "@/components/ui/toggle-group";
-import { Circle, Square, Triangle, BoltIcon, Hammer, Save } from 'lucide-react';
+import { 
+  Circle, 
+  Square, 
+  Triangle, 
+  BoltIcon, 
+  Hammer, 
+  Save,
+  Download 
+} from 'lucide-react';
 import { ThreeDModel } from '@/types/model';
 import ModelSelector from './ModelSelector';
 
@@ -43,6 +51,12 @@ const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
   // Get available options from the model's default_options
   const availableOptions = Object.keys(model.default_options || {});
   
+  const handleDownload = () => {
+    // For now, just trigger the same onSave function
+    // Later this could be replaced with actual download functionality
+    onSave();
+  };
+  
   return (
     <Card className="w-full h-full overflow-auto">
       <CardContent className="p-4">
@@ -66,6 +80,45 @@ const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
               selectedModelId={selectedModelId}
               onSelectModel={onSelectModel}
             />
+          </div>
+          
+          {/* Corners Dropdown */}
+          <div className="space-y-2">
+            <Label htmlFor="corners">Corners</Label>
+            <Select 
+              value={options.corners || 'rounded'} 
+              onValueChange={(value) => onChange('corners', value)}
+            >
+              <SelectTrigger id="corners">
+                <SelectValue placeholder="Select corner style" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="rounded">Rounded</SelectItem>
+                <SelectItem value="squared">Squared</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          {/* Centering Dropdown */}
+          <div className="space-y-2">
+            <Label htmlFor="centering">Centering</Label>
+            <Select 
+              value={options.centering || 'off-top-left'} 
+              onValueChange={(value) => onChange('centering', value)}
+            >
+              <SelectTrigger id="centering">
+                <SelectValue placeholder="Select centering style" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="off-top-left">Off-Top-Left (Default)</SelectItem>
+                <SelectItem value="off-top-right">Off-Top-Right</SelectItem>
+                <SelectItem value="top-centered">Top-Centered</SelectItem>
+                <SelectItem value="centered">Centered</SelectItem>
+                <SelectItem value="off-left">Off-Left</SelectItem>
+                <SelectItem value="off-right">Off-Right</SelectItem>
+                <SelectItem value="bottom-centered">Bottom-Centered</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           
           {availableOptions.includes('color') && (
@@ -179,11 +232,11 @@ const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
           
           <Button 
             className="w-full mt-8 gap-2" 
-            onClick={onSave}
+            onClick={handleDownload}
             variant="default"
           >
-            <Save className="h-4 w-4" />
-            Save Customization
+            <Download className="h-4 w-4" />
+            Download Model
           </Button>
         </div>
       </CardContent>
