@@ -1,8 +1,8 @@
 
 import React, { useRef, useState, useEffect, Suspense } from 'react';
-import { Canvas } from '@react-three/fiber';
-import { OrbitControls, useLoader, Center, GizmoHelper, GizmoViewport } from '@react-three/drei';
-import { STLLoader } from 'three/examples/jsm/loaders/STLLoader';
+import { Canvas, useLoader } from '@react-three/fiber';
+import { OrbitControls, Center, GizmoHelper, GizmoViewport } from '@react-three/drei';
+import { STLLoader } from 'three/addons/loaders/STLLoader.js';
 import { useAuth } from '@/contexts/AuthContext';
 import { ThreeDModel } from '@/types/model';
 import { useUserCustomization } from '@/hooks/use-model';
