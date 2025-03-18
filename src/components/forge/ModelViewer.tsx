@@ -1,3 +1,4 @@
+
 import React, { useRef, useState, useEffect, Suspense } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls, GizmoHelper, GizmoViewport, PerspectiveCamera } from '@react-three/drei';
@@ -116,6 +117,7 @@ const ModelDisplay = ({ url, customOptions }: { url: string, customOptions: Reco
   if (error || !geometry) {
     return (
       <mesh>
+        {/* Fixed: Ensure args is an array */}
         <boxGeometry args={[1, 16, 16]} />
         <meshStandardMaterial color="red" />
       </mesh>
@@ -230,10 +232,10 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
           />
         </Suspense>
         
-        {/* Grid helper (Sketchfab-like grid) */}
+        {/* Fix: Ensure gridHelper args is an array */}
         <gridHelper args={[1000, 100, "#888888", "#444444"]} position={[0, -50, 0]} />
         
-        {/* Axes helper to visualize world axes */}
+        {/* Fix: Ensure axesHelper args is an array */}
         <axesHelper args={[100]} />
         
         <OrbitControls 
@@ -261,4 +263,3 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
 };
 
 export default ModelViewer;
-
