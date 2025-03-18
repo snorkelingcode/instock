@@ -34,6 +34,13 @@ const ModelDisplay = ({ url, customOptions }: { url: string, customOptions: Reco
         if (!loadedGeometry.attributes.normal) {
           loadedGeometry.computeVertexNormals();
         }
+        
+        // Get the bounding box of the geometry to check its size
+        const boundingBox = new THREE.Box3().setFromBufferAttribute(loadedGeometry.attributes.position);
+        const size = new THREE.Vector3();
+        boundingBox.getSize(size);
+        console.log('Model dimensions:', size);
+        
         setGeometry(loadedGeometry);
         setLoading(false);
       },
@@ -99,8 +106,8 @@ const ModelDisplay = ({ url, customOptions }: { url: string, customOptions: Reco
     );
   }
   
-  // Apply customization options
-  const scale = customOptions.scale || 1;
+  // Apply customization options with a much smaller default scale for large models
+  const scale = customOptions.scale || 0.05; // Scale down to 5% of original size
   
   return (
     <mesh 
@@ -108,7 +115,7 @@ const ModelDisplay = ({ url, customOptions }: { url: string, customOptions: Reco
       scale={[scale, scale, scale]}
       castShadow
       receiveShadow
-      position={[0, 0, -10]} // Position the model farther from the camera (10 units)
+      position={[0, 0, -15]} // Position the model farther from the camera (15 units)
       rotation={[0, -Math.PI/2, 0]} // Rotate -90 degrees on Y axis
     >
       <primitive object={geometry} attach="geometry" />
@@ -167,23 +174,23 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
         {/* Position camera at origin and looking down negative Z axis */}
         <PerspectiveCamera 
           makeDefault 
-          position={[0, 0, 5]} 
-          fov={40}
+          position={[0, 0, 15]} 
+          fov={50}
           far={1000}
           near={0.1}
         />
         
         <ambientLight intensity={0.3} />
         <spotLight 
-          position={[-10, 10, -10]} // Further adjusted light position to illuminate the model
-          angle={0.15} 
+          position={[-20, 20, -15]} // Further adjusted light position to illuminate the model
+          angle={0.3} 
           penumbra={1} 
-          intensity={1} 
+          intensity={1.2} 
           castShadow 
           shadow-mapSize={[2048, 2048]}
         />
         <directionalLight 
-          position={[-10, 5, -15]} // Further adjusted light position
+          position={[-15, 10, -20]} // Further adjusted light position
           intensity={0.5} 
           castShadow 
         />
@@ -196,16 +203,16 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
         </Suspense>
         
         {/* Floor for shadow casting, moved in front of camera */}
-        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -2, -10]} receiveShadow>
-          <planeGeometry args={[100, 100]} />
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -10, -15]} receiveShadow>
+          <planeGeometry args={[200, 200]} />
           <shadowMaterial transparent opacity={0.2} />
         </mesh>
         
         <OrbitControls 
           enablePan={true}
-          minDistance={2}
-          maxDistance={20}
-          target={[0, 0, -10]} // Set orbit controls to target the updated model position
+          minDistance={5}
+          maxDistance={50}
+          target={[0, 0, -15]} // Set orbit controls to target the updated model position
         />
         <GizmoHelper alignment="bottom-right" margin={[80, 80]}>
           <GizmoViewport axisColors={['red', 'green', 'blue']} labelColor="white" />
