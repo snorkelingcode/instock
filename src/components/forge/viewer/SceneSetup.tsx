@@ -41,7 +41,8 @@ const SceneSetup: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         maxPolarAngle={Math.PI / 1.75}
       />
       
-      <GizmoHelper alignment="bottom-right" margin={[80, 80]} renderPriority={2}>
+      {/* Fix gizmo trail by ensuring it has a unique key and proper z-index */}
+      <GizmoHelper alignment="bottom-right" margin={[80, 80]} renderPriority={1}>
         <GizmoViewport 
           axisColors={['#ff3653', '#8adb00', '#2c8fff']} 
           labelColor="white" 

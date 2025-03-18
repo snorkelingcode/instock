@@ -15,6 +15,7 @@ const ModelDisplay: React.FC<ModelDisplayProps> = ({ url, customOptions }) => {
   const [error, setError] = useState<string | null>(null);
   const [boundingBox, setBoundingBox] = useState<THREE.Box3 | null>(null);
   const modelRef = useRef<THREE.Mesh>(null);
+  const { scene } = useThree();
   
   useEffect(() => {
     setLoading(true);
@@ -46,6 +47,9 @@ const ModelDisplay: React.FC<ModelDisplayProps> = ({ url, customOptions }) => {
         setGeometry(loadedGeometry);
         setBoundingBox(box);
         setLoading(false);
+        
+        // Log to confirm geometry was processed
+        console.log("Geometry set with vertices:", loadedGeometry.attributes.position.count);
       },
       (xhr) => {
         console.log(`${Math.round(xhr.loaded / xhr.total * 100)}% loaded`);
@@ -63,6 +67,17 @@ const ModelDisplay: React.FC<ModelDisplayProps> = ({ url, customOptions }) => {
       setBoundingBox(null);
     };
   }, [url]);
+  
+  // Ensure model is visible in scene
+  useEffect(() => {
+    if (modelRef.current && !loading && geometry) {
+      // Make sure model is added to scene
+      console.log("Model is rendered in scene");
+      
+      // Force a scene update
+      scene.updateMatrixWorld(true);
+    }
+  }, [scene, geometry, loading]);
   
   const getMaterial = () => {
     const color = customOptions.color || '#ffffff';
@@ -140,10 +155,12 @@ const ModelDisplay: React.FC<ModelDisplayProps> = ({ url, customOptions }) => {
       castShadow
       receiveShadow
       rotation={[0, 0, 0]}
+      visible={true}
     >
       <primitive object={geometry} attach="geometry" />
       <meshStandardMaterial 
         {...materialProps}
+        side={THREE.DoubleSide} // Render both sides of faces
       />
     </mesh>
   );
