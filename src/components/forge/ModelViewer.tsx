@@ -97,12 +97,15 @@ const ModelDisplay = ({ url, customOptions }: { url: string, customOptions: Reco
     );
   }
   
-  const scale = customOptions.scale || 1;
+  // Calculate a more appropriate scale value - using a base scale of 0.5 and then applying user customization
+  const baseScale = 0.5;
+  const userScale = customOptions.scale || 1;
+  const finalScale = baseScale * userScale;
   
   return (
     <mesh 
       ref={modelRef}
-      scale={[scale, scale, scale]}
+      scale={[finalScale, finalScale, finalScale]}
       castShadow
       receiveShadow
       rotation={[0, -Math.PI/2, 0]}
