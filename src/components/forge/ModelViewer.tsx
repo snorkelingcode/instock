@@ -116,7 +116,15 @@ const ModelDisplay = ({ url, customOptions }: { url: string, customOptions: Reco
       receiveShadow
     >
       <primitive object={geometry} attach="geometry" />
-      {getMaterial()}
+      {/* Fix: Use meshStandardMaterial as a JSX element instead of a direct object */}
+      <meshStandardMaterial 
+        color={customOptions.color || '#ffffff'}
+        metalness={customOptions.material === 'metal' ? 0.8 : 0.1}
+        roughness={
+          customOptions.material === 'metal' ? 0.2 : 
+          customOptions.material === 'wood' ? 0.8 : 0.5
+        }
+      />
     </mesh>
   );
 };
