@@ -1,18 +1,33 @@
 
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
-import { Download } from 'lucide-react';
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Slider } from "@/components/ui/slider";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { 
+  ToggleGroup, 
+  ToggleGroupItem 
+} from "@/components/ui/toggle-group";
+import { 
+  Circle, 
+  Square, 
+  Triangle, 
+  BoltIcon, 
+  Hammer, 
+  Save,
+  Download 
+} from 'lucide-react';
 import { ThreeDModel } from '@/types/model';
 import ModelSelector from './ModelSelector';
-import ColorOption from './options/ColorOption';
-import ScaleOption from './options/ScaleOption';
-import MaterialOption from './options/MaterialOption';
-import ShapeOption from './options/ShapeOption';
-import TextOption from './options/TextOption';
-import SwitchOption from './options/SwitchOption';
-import SelectOption from './options/SelectOption';
-import ActionButton from './options/ActionButton';
-import { Label } from "@/components/ui/label";
 
 interface CustomizationPanelProps {
   model: ThreeDModel;
@@ -38,6 +53,7 @@ const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
   
   const handleDownload = () => {
     // For now, just trigger the same onSave function
+    // Later this could be replaced with actual download functionality
     onSave();
   };
   
@@ -56,9 +72,9 @@ const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
         </div>
         
         <div className="space-y-4">
-          {/* Model Selector with Label */}
+          {/* Model Selector */}
           <div className="space-y-2">
-            <Label htmlFor="model-selector" className="font-medium">Models</Label>
+            <Label>Select Model</Label>
             <ModelSelector
               models={models}
               selectedModelId={selectedModelId}
@@ -66,93 +82,162 @@ const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
             />
           </div>
           
-          {/* Common Select Options */}
-          <SelectOption
-            id="corners"
-            label="Corners"
-            value={options.corners || 'rounded'}
-            onChange={(value) => onChange('corners', value)}
-            options={[
-              { value: 'rounded', label: 'Rounded' },
-              { value: 'squared', label: 'Squared' }
-            ]}
-            defaultValue="rounded"
-          />
+          {/* Corners Dropdown */}
+          <div className="space-y-2">
+            <Label htmlFor="corners">Corners</Label>
+            <Select 
+              value={options.corners || 'rounded'} 
+              onValueChange={(value) => onChange('corners', value)}
+            >
+              <SelectTrigger id="corners">
+                <SelectValue placeholder="Select corner style" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="rounded">Rounded</SelectItem>
+                <SelectItem value="squared">Squared</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           
-          <SelectOption
-            id="centering"
-            label="Centering"
-            value={options.centering || 'off-top-left'}
-            onChange={(value) => onChange('centering', value)}
-            options={[
-              { value: 'off-top-left', label: 'Off-Top-Left (Default)' },
-              { value: 'off-top-right', label: 'Off-Top-Right' },
-              { value: 'top-centered', label: 'Top-Centered' },
-              { value: 'centered', label: 'Centered' },
-              { value: 'off-left', label: 'Off-Left' },
-              { value: 'off-right', label: 'Off-Right' },
-              { value: 'bottom-centered', label: 'Bottom-Centered' }
-            ]}
-            defaultValue="off-top-left"
-          />
+          {/* Centering Dropdown */}
+          <div className="space-y-2">
+            <Label htmlFor="centering">Centering</Label>
+            <Select 
+              value={options.centering || 'off-top-left'} 
+              onValueChange={(value) => onChange('centering', value)}
+            >
+              <SelectTrigger id="centering">
+                <SelectValue placeholder="Select centering style" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="off-top-left">Off-Top-Left (Default)</SelectItem>
+                <SelectItem value="off-top-right">Off-Top-Right</SelectItem>
+                <SelectItem value="top-centered">Top-Centered</SelectItem>
+                <SelectItem value="centered">Centered</SelectItem>
+                <SelectItem value="off-left">Off-Left</SelectItem>
+                <SelectItem value="off-right">Off-Right</SelectItem>
+                <SelectItem value="bottom-centered">Bottom-Centered</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           
-          {/* Model-specific Options */}
           {availableOptions.includes('color') && (
-            <ColorOption
-              value={options.color || ''}
-              onChange={(value) => onChange('color', value)}
-              defaultValue={model.default_options.color || '#ffffff'}
-            />
+            <div className="space-y-2">
+              <Label htmlFor="color">Color</Label>
+              <div className="grid grid-cols-5 gap-2">
+                {['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff'].map((colorOption) => (
+                  <div 
+                    key={colorOption}
+                    className={`w-full aspect-square rounded-full cursor-pointer border-2 ${
+                      options.color === colorOption ? 'border-white ring-2 ring-red-500' : 'border-gray-300'
+                    }`}
+                    style={{ backgroundColor: colorOption }}
+                    onClick={() => onChange('color', colorOption)}
+                  />
+                ))}
+              </div>
+              <Input
+                id="color"
+                type="color"
+                value={options.color || model.default_options.color || '#ffffff'}
+                onChange={(e) => onChange('color', e.target.value)}
+                className="w-full h-8 mt-2"
+              />
+            </div>
           )}
           
           {availableOptions.includes('scale') && (
-            <ScaleOption
-              value={options.scale || 0}
-              onChange={(value) => onChange('scale', value)}
-              defaultValue={model.default_options.scale || 1}
-            />
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <Label htmlFor="scale">Scale</Label>
+                <span className="text-sm font-mono">{(options.scale || model.default_options.scale || 1).toFixed(1)}</span>
+              </div>
+              <Slider
+                id="scale"
+                defaultValue={[options.scale || model.default_options.scale || 1]}
+                min={0.5}
+                max={2}
+                step={0.1}
+                onValueChange={(value) => onChange('scale', value[0])}
+              />
+            </div>
           )}
           
           {availableOptions.includes('material') && (
-            <MaterialOption
-              value={options.material || ''}
-              onChange={(value) => onChange('material', value)}
-              defaultValue={model.default_options.material || 'plastic'}
-            />
+            <div className="space-y-2">
+              <Label htmlFor="material">Material</Label>
+              <Select 
+                value={options.material || model.default_options.material || 'plastic'} 
+                onValueChange={(value) => onChange('material', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select material" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="plastic">Plastic</SelectItem>
+                  <SelectItem value="metal">Metal</SelectItem>
+                  <SelectItem value="wood">Wood</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           )}
           
           {availableOptions.includes('shape') && (
-            <ShapeOption
-              value={options.shape || ''}
-              onChange={(value) => onChange('shape', value)}
-              defaultValue={model.default_options.shape || 'circle'}
-            />
+            <div className="space-y-2">
+              <Label>Shape</Label>
+              <ToggleGroup 
+                type="single" 
+                value={options.shape || model.default_options.shape || 'circle'}
+                onValueChange={(value) => {
+                  if (value) onChange('shape', value);
+                }}
+                className="justify-start"
+              >
+                <ToggleGroupItem value="circle" aria-label="Circle">
+                  <Circle className="h-4 w-4" />
+                </ToggleGroupItem>
+                <ToggleGroupItem value="square" aria-label="Square">
+                  <Square className="h-4 w-4" />
+                </ToggleGroupItem>
+                <ToggleGroupItem value="triangle" aria-label="Triangle">
+                  <Triangle className="h-4 w-4" />
+                </ToggleGroupItem>
+              </ToggleGroup>
+            </div>
           )}
           
           {availableOptions.includes('text') && (
-            <TextOption
-              value={options.text || ''}
-              onChange={(value) => onChange('text', value)}
-              defaultValue={model.default_options.text || ''}
-            />
+            <div className="space-y-2">
+              <Label htmlFor="text">Custom Text</Label>
+              <Input
+                id="text"
+                value={options.text || model.default_options.text || ''}
+                onChange={(e) => onChange('text', e.target.value)}
+                placeholder="Enter custom text"
+                maxLength={20}
+              />
+            </div>
           )}
           
           {availableOptions.includes('showLogo') && (
-            <SwitchOption
-              id="showLogo"
-              label="Show Logo"
-              checked={options.showLogo || false}
-              onChange={(checked) => onChange('showLogo', checked)}
-              defaultChecked={model.default_options.showLogo || false}
-            />
+            <div className="flex items-center justify-between">
+              <Label htmlFor="showLogo" className="cursor-pointer">Show Logo</Label>
+              <Switch
+                id="showLogo"
+                checked={options.showLogo || model.default_options.showLogo || false}
+                onCheckedChange={(checked) => onChange('showLogo', checked)}
+              />
+            </div>
           )}
           
-          <ActionButton 
-            label="Download Model"
+          <Button 
+            className="w-full mt-8 gap-2" 
             onClick={handleDownload}
-            icon={Download}
-            className="mt-8"
-          />
+            variant="default"
+          >
+            <Download className="h-4 w-4" />
+            Download Model
+          </Button>
         </div>
       </CardContent>
     </Card>

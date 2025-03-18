@@ -1,39 +1,143 @@
 
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useRef, useState, useEffect, Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
+import { OrbitControls, Center, GizmoHelper, GizmoViewport, PerspectiveCamera } from '@react-three/drei';
 import * as THREE from 'three';
+import { STLLoader } from 'three/addons/loaders/STLLoader.js';
 import { useAuth } from '@/contexts/AuthContext';
 import { ThreeDModel } from '@/types/model';
-
-// Import refactored components
-import LoadingScreen from './viewer/LoadingScreen';
-import SmartModelContainer from './viewer/SmartModelContainer';
-import ModelDisplay from './viewer/ModelDisplay';
-import SceneSetup from './viewer/SceneSetup';
+import { useUserCustomization } from '@/hooks/use-model';
+import { Loader2 } from 'lucide-react';
 
 interface ModelViewerProps {
   model: ThreeDModel;
   customizationOptions: Record<string, any>;
 }
 
+const ModelDisplay = ({ url, customOptions }: { url: string, customOptions: Record<string, any> }) => {
+  const [geometry, setGeometry] = useState<THREE.BufferGeometry | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const modelRef = useRef<THREE.Mesh>(null);
+  
+  useEffect(() => {
+    setLoading(true);
+    setError(null);
+    
+    const loader = new STLLoader();
+    
+    loader.load(
+      url,
+      (loadedGeometry) => {
+        // Center the model
+        loadedGeometry.center();
+        // Compute vertex normals if they don't exist
+        if (!loadedGeometry.attributes.normal) {
+          loadedGeometry.computeVertexNormals();
+        }
+        setGeometry(loadedGeometry);
+        setLoading(false);
+      },
+      (xhr) => {
+        // Progress callback
+        console.log(`${Math.round(xhr.loaded / xhr.total * 100)}% loaded`);
+      },
+      (err) => {
+        // Error callback
+        console.error('Error loading STL:', err);
+        // Fix: Handle the unknown type properly
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+        setError(`Failed to load model: ${errorMessage}`);
+        setLoading(false);
+      }
+    );
+    
+    // Cleanup
+    return () => {
+      // STLLoader doesn't have an abort method, but we can clean up state
+      setGeometry(null);
+    };
+  }, [url]);
+  
+  // Apply material based on customization options
+  const getMaterial = () => {
+    const color = customOptions.color || '#ffffff';
+    const material = customOptions.material || 'plastic';
+    
+    switch(material) {
+      case 'metal':
+        return new THREE.MeshStandardMaterial({ 
+          color, 
+          metalness: 0.8, 
+          roughness: 0.2,
+        });
+      case 'wood':
+        return new THREE.MeshStandardMaterial({ 
+          color, 
+          roughness: 0.8, 
+          metalness: 0.1,
+        });
+      case 'plastic':
+      default:
+        return new THREE.MeshStandardMaterial({ 
+          color, 
+          roughness: 0.5, 
+          metalness: 0.1,
+        });
+    }
+  };
+  
+  if (loading) {
+    return (
+      <mesh>
+        <sphereGeometry args={[1, 16, 16]} />
+        <meshStandardMaterial color="#cccccc" wireframe />
+      </mesh>
+    );
+  }
+  
+  if (error || !geometry) {
+    return (
+      <mesh>
+        <boxGeometry args={[2, 0.1, 2]} />
+        <meshStandardMaterial color="red" />
+      </mesh>
+    );
+  }
+  
+  // Apply customization options
+  const scale = customOptions.scale || 1;
+  
+  return (
+    <mesh 
+      ref={modelRef}
+      scale={[scale, scale, scale]}
+      castShadow
+      receiveShadow
+      rotation={[0, -Math.PI/2, 0]} // Rotate -90 degrees on Y axis
+    >
+      <primitive object={geometry} attach="geometry" />
+      <meshStandardMaterial 
+        color={customOptions.color || '#ffffff'}
+        metalness={customOptions.material === 'metal' ? 0.8 : 0.1}
+        roughness={
+          customOptions.material === 'metal' ? 0.2 : 
+          customOptions.material === 'wood' ? 0.8 : 0.5
+        }
+      />
+    </mesh>
+  );
+};
+
 const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }) => {
   const { user } = useAuth();
   const [viewerError, setViewerError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
   
+  // Combine default options with user customizations
   const effectiveOptions = {
     ...model.default_options,
     ...customizationOptions
   };
-  
-  useEffect(() => {
-    // Simulate loading time for Sketchfab-like experience
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 500);
-    
-    return () => clearTimeout(timer);
-  }, [model]);
   
   if (!model || !model.stl_file_path) {
     return (
@@ -44,65 +148,82 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
   }
 
   return (
-    <div className="w-full h-full bg-gradient-to-b from-gray-900 to-gray-800 rounded-lg relative overflow-hidden">
+    <div className="w-full h-full bg-gray-800 rounded-lg relative">
       {viewerError && (
         <div className="absolute top-0 left-0 right-0 bg-red-500 text-white p-2 z-10 text-sm">
           {viewerError}
         </div>
       )}
       
-      {loading && <LoadingScreen />}
-      
       <Canvas
         shadows
         dpr={[1, 2]}
-        gl={{ 
-          antialias: true,
-          alpha: false,
-          logarithmicDepthBuffer: true,
-          preserveDrawingBuffer: true
-        }}
-        camera={{ 
-          position: [0, 0, 10], 
-          fov: 45,
-          near: 0.1,
-          far: 1000
-        }}
-        onCreated={({ gl, scene, camera }) => {
-          gl.setClearColor(new THREE.Color('#1a1a1a'));
+        onCreated={({ gl }) => {
           gl.localClippingEnabled = true;
           gl.shadowMap.enabled = true;
           gl.shadowMap.type = THREE.PCFSoftShadowMap;
-          gl.outputColorSpace = THREE.SRGBColorSpace;
-          gl.toneMapping = THREE.ACESFilmicToneMapping;
-          gl.toneMappingExposure = 1.0;
-          
-          // Position camera to view the model correctly
-          camera.position.set(5, 5, 5);
-          camera.lookAt(0, 0, 0);
         }}
         onError={(error) => {
           console.error("Canvas error:", error);
           setViewerError("Error rendering 3D model");
         }}
       >
-        <Suspense fallback={null}>
-          <SceneSetup>
-            <SmartModelContainer>
-              <ModelDisplay 
-                url={model.stl_file_path} 
-                customOptions={effectiveOptions} 
-              />
-            </SmartModelContainer>
-          </SceneSetup>
-        </Suspense>
+        <color attach="background" args={['#1f2937']} />
+        {/* Position camera on negative X axis and rotate it to look at the model */}
+        <PerspectiveCamera 
+          makeDefault 
+          position={[-5, 0, 0]} 
+          rotation={[0, -Math.PI/2, 0]} 
+          fov={40} 
+        />
+        
+        <ambientLight intensity={0.3} />
+        <spotLight 
+          position={[-10, 10, 0]} 
+          angle={0.15} 
+          penumbra={1} 
+          intensity={1} 
+          castShadow 
+          shadow-mapSize={[2048, 2048]}
+        />
+        <directionalLight 
+          position={[-10, 5, -5]} 
+          intensity={0.5} 
+          castShadow 
+        />
+        
+        <Center>
+          <Suspense fallback={
+            <mesh>
+              <sphereGeometry args={[1, 8, 8]} />
+              <meshBasicMaterial color="#666666" wireframe />
+            </mesh>
+          }>
+            <ModelDisplay 
+              url={model.stl_file_path} 
+              customOptions={effectiveOptions} 
+            />
+          </Suspense>
+        </Center>
+        
+        {/* Floor for shadow casting */}
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -2, 0]} receiveShadow>
+          <planeGeometry args={[100, 100]} />
+          <shadowMaterial transparent opacity={0.2} />
+        </mesh>
+        
+        <OrbitControls 
+          enablePan={true}
+          minDistance={2}
+          maxDistance={10}
+        />
+        <GizmoHelper alignment="bottom-right" margin={[80, 80]}>
+          <GizmoViewport axisColors={['red', 'green', 'blue']} labelColor="white" />
+        </GizmoHelper>
       </Canvas>
-      
-      <div className="absolute bottom-2 right-2 text-xs text-white/50 pointer-events-none">
-        Use mouse to rotate | Scroll to zoom | Shift+drag to pan
-      </div>
     </div>
   );
 };
 
 export default ModelViewer;
+
