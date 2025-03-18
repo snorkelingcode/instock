@@ -108,7 +108,7 @@ const ModelDisplay = ({ url, customOptions }: { url: string, customOptions: Reco
       scale={[scale, scale, scale]}
       castShadow
       receiveShadow
-      position={[0, 0, -5]} // Position the model 5 units in front of the camera
+      position={[0, 0, -10]} // Position the model farther from the camera (10 units)
       rotation={[0, -Math.PI/2, 0]} // Rotate -90 degrees on Y axis
     >
       <primitive object={geometry} attach="geometry" />
@@ -167,13 +167,15 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
         {/* Position camera at origin and looking down negative Z axis */}
         <PerspectiveCamera 
           makeDefault 
-          position={[0, 0, 0]} 
-          fov={40} 
+          position={[0, 0, 5]} 
+          fov={40}
+          far={1000}
+          near={0.1}
         />
         
         <ambientLight intensity={0.3} />
         <spotLight 
-          position={[-10, 10, -5]} // Adjusted light position to illuminate the model in front
+          position={[-10, 10, -10]} // Further adjusted light position to illuminate the model
           angle={0.15} 
           penumbra={1} 
           intensity={1} 
@@ -181,7 +183,7 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
           shadow-mapSize={[2048, 2048]}
         />
         <directionalLight 
-          position={[-10, 5, -10]} // Adjusted light position
+          position={[-10, 5, -15]} // Further adjusted light position
           intensity={0.5} 
           castShadow 
         />
@@ -194,7 +196,7 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
         </Suspense>
         
         {/* Floor for shadow casting, moved in front of camera */}
-        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -2, -5]} receiveShadow>
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -2, -10]} receiveShadow>
           <planeGeometry args={[100, 100]} />
           <shadowMaterial transparent opacity={0.2} />
         </mesh>
@@ -202,8 +204,8 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
         <OrbitControls 
           enablePan={true}
           minDistance={2}
-          maxDistance={10}
-          target={[0, 0, -5]} // Set orbit controls to target the model position
+          maxDistance={20}
+          target={[0, 0, -10]} // Set orbit controls to target the updated model position
         />
         <GizmoHelper alignment="bottom-right" margin={[80, 80]}>
           <GizmoViewport axisColors={['red', 'green', 'blue']} labelColor="white" />
