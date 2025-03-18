@@ -25,6 +25,8 @@ import PokemonSets from "./pages/TCGSets/PokemonSets";
 import PokemonSetDetails from "./pages/TCGSets/PokemonSetDetails";
 import SetSyncPage from "./pages/TCGSets/SetSyncPage";
 import ManagePokemonReleases from "./pages/admin/ManagePokemonReleases";
+import Forge from "./pages/Forge";
+import ManageModels from "./pages/admin/ManageModels";
 
 const queryClient = new QueryClient();
 
@@ -91,6 +93,24 @@ const App = () => {
                 element={
                   <RequireAdmin>
                     <ManagePokemonReleases />
+                  </RequireAdmin>
+                } 
+              />
+              
+              <Route 
+                path="/forge" 
+                element={
+                  <RequireAuth>
+                    <Forge />
+                  </RequireAuth>
+                } 
+              />
+              
+              <Route 
+                path="/admin/models" 
+                element={
+                  <RequireAdmin>
+                    <ManageModels />
                   </RequireAdmin>
                 } 
               />

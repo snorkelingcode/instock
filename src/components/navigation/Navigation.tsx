@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -109,6 +110,17 @@ const Navigation = () => {
                   </Link>
                 </SheetClose>
                 
+                {user && (
+                  <SheetClose asChild>
+                    <Link
+                      to="/forge"
+                      className="py-3 px-6 text-red-600 font-medium border-b border-gray-200 hover:bg-red-50 transition-colors text-left"
+                    >
+                      Forge
+                    </Link>
+                  </SheetClose>
+                )}
+                
                 {user ? (
                   <>
                     {isAdmin && (
@@ -130,6 +142,14 @@ const Navigation = () => {
                             className="py-3 px-6 text-red-600 font-medium border-b border-gray-200 hover:bg-red-50 transition-colors text-left"
                           >
                             Manage Pokémon Releases
+                          </Link>
+                        </SheetClose>
+                        <SheetClose asChild>
+                          <Link
+                            to="/admin/models"
+                            className="py-3 px-6 text-red-600 font-medium border-b border-gray-200 hover:bg-red-50 transition-colors text-left"
+                          >
+                            Manage 3D Models
                           </Link>
                         </SheetClose>
                         <SheetClose asChild>
@@ -196,6 +216,15 @@ const Navigation = () => {
             Contact
           </Link>
           
+          {user && (
+            <Link
+              to="/forge"
+              className="hover:text-red-200 transition-colors"
+            >
+              Forge
+            </Link>
+          )}
+          
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -214,6 +243,11 @@ const Navigation = () => {
                     <DropdownMenuItem>
                       <Link to="/admin/pokemon-releases" className="w-full">
                         Manage Pokémon Releases
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                      <Link to="/admin/models" className="w-full">
+                        Manage 3D Models
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem>

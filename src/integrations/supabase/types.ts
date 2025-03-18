@@ -795,6 +795,80 @@ export type Database = {
         }
         Relationships: []
       }
+      threed_models: {
+        Row: {
+          category: Database["public"]["Enums"]["model_category"]
+          created_at: string
+          customizable: boolean
+          default_options: Json
+          description: string | null
+          id: string
+          name: string
+          stl_file_path: string
+          thumbnail_path: string | null
+          updated_at: string
+        }
+        Insert: {
+          category?: Database["public"]["Enums"]["model_category"]
+          created_at?: string
+          customizable?: boolean
+          default_options?: Json
+          description?: string | null
+          id?: string
+          name: string
+          stl_file_path: string
+          thumbnail_path?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["model_category"]
+          created_at?: string
+          customizable?: boolean
+          default_options?: Json
+          description?: string | null
+          id?: string
+          name?: string
+          stl_file_path?: string
+          thumbnail_path?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_customizations: {
+        Row: {
+          created_at: string
+          customization_options: Json
+          id: string
+          model_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          customization_options?: Json
+          id?: string
+          model_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          customization_options?: Json
+          id?: string
+          model_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_customizations_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
+            referencedRelation: "threed_models"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string
@@ -1160,6 +1234,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
+      model_category: "display" | "holder" | "marker" | "promotional" | "other"
     }
     CompositeTypes: {
       [_ in never]: never
