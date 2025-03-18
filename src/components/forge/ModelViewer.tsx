@@ -1,10 +1,12 @@
 
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, useGLTF, Center, GizmoHelper, GizmoViewport } from '@react-three/drei';
+import { OrbitControls, useLoader, Center, GizmoHelper, GizmoViewport } from '@react-three/drei';
+import { STLLoader } from 'three/examples/jsm/loaders/STLLoader';
 import { useAuth } from '@/contexts/AuthContext';
 import { ThreeDModel } from '@/types/model';
 import { useUserCustomization } from '@/hooks/use-model';
+import { Loader2 } from 'lucide-react';
 
 interface ModelViewerProps {
   model: ThreeDModel;
@@ -12,35 +14,33 @@ interface ModelViewerProps {
 }
 
 const Model = ({ url, customOptions }: { url: string, customOptions: Record<string, any> }) => {
-  const gltf = useGLTF(url);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
-  // Apply customization options to the model
-  // This is simplified and would depend on the actual customization options
-  useEffect(() => {
-    if (gltf.scene && customOptions) {
-      // Example: Apply color if available
-      if (customOptions.color) {
-        gltf.scene.traverse((child: any) => {
-          if (child.isMesh) {
-            child.material.color.set(customOptions.color);
-          }
-        });
-      }
-      
-      // Example: Apply scale if available
-      if (customOptions.scale) {
-        gltf.scene.scale.set(
-          customOptions.scale, 
-          customOptions.scale, 
-          customOptions.scale
-        );
-      }
-    }
-  }, [gltf, customOptions]);
-  
-  return (
-    <primitive object={gltf.scene} position={[0, 0, 0]} />
-  );
+  try {
+    // Use STLLoader directly for STL files
+    const geometry = useLoader(STLLoader, url);
+    
+    // Apply customization options to the material
+    const color = customOptions.color || '#ffffff';
+    const scale = customOptions.scale || 1;
+    
+    useEffect(() => {
+      setLoading(false);
+    }, [geometry]);
+    
+    return (
+      <mesh scale={[scale, scale, scale]}>
+        <primitive object={geometry} attach="geometry" />
+        <meshStandardMaterial color={color} />
+      </mesh>
+    );
+  } catch (err) {
+    console.error("Error loading model:", err);
+    setError(`Failed to load model: ${err}`);
+    setLoading(false);
+    return null;
+  }
 };
 
 const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }) => {
@@ -59,10 +59,12 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
         <ambientLight intensity={0.5} />
         <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} intensity={1} castShadow />
         <Center>
-          <Model 
-            url={model.stl_file_path} 
-            customOptions={effectiveOptions} 
-          />
+          <Suspense fallback={null}>
+            <Model 
+              url={model.stl_file_path} 
+              customOptions={effectiveOptions} 
+            />
+          </Suspense>
         </Center>
         <OrbitControls 
           enablePan={false}
