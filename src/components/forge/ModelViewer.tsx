@@ -1,24 +1,28 @@
-<Canvas
-        shadows
-        dpr={[1, 2]}
-        onCreated={({ gl, scene, camera }) => {
-          gl.localClippingEnabled = true;
-          gl.shadowMap.enabled = true;
-          gl.shadowMap.type = THREE.PCFSoftShadowMap;
-          
-          // Move camera to a better viewing position
-          camera.position.set(0, 0, 200);
-          camera.lookAt(0, 0, 0);
-        }}
-        onError={(error) => {
-          console.error("Canvas error:", error);
-          setViewimport React, { useRef, useState, useEffect, Suspense } from 'react';
+import React, { useRef, useState, useEffect, Suspense } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls, GizmoHelper, GizmoViewport, PerspectiveCamera } from '@react-three/drei';
 import * as THREE from 'three';
 import { STLLoader } from 'three/addons/loaders/STLLoader.js';
 import { useAuth } from '@/contexts/AuthContext';
 import { ThreeDModel } from '@/types/model';
+import { useUserCustomization } from '@/hooks/use-model';
+import { Loader2 } from 'lucide-react';
+
+// Add a helper component to automatically set up scene
+const SceneSetup = () => {
+  const { scene, camera } = useThree();
+  
+  useEffect(() => {
+    // Ensure camera is positioned outside the model
+    camera.position.set(200, 100, 200);
+    camera.lookAt(0, 0, 0);
+    
+    // Force a scene update
+    return () => {};
+  }, [scene, camera]);
+  
+  return null;
+};
 
 interface ModelViewerProps {
   model: ThreeDModel;
@@ -190,7 +194,7 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
         
         {/* Scene setup component to ensure proper camera positioning */}
         <SceneSetup />
-        {/* Position camera at origin and looking down negative Z axis */}
+        
         {/* Sketchfab-like setup with camera far from the object */}
         <PerspectiveCamera 
           makeDefault 
