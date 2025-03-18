@@ -172,7 +172,7 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
         {/* Position camera on negative X axis and rotate it to look at the model */}
         <PerspectiveCamera 
           makeDefault 
-          position={[-90, 0, 0]} 
+          position={[0, 90, 0]} 
           rotation={[0, 90, 0]} 
           fov={40} 
         />
