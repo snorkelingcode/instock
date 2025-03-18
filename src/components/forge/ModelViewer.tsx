@@ -1,22 +1,21 @@
 
-import React, { useRef, useState, useEffect, Suspense } from 'react';
-import { Canvas } from '@react-three/fiber';
+import React, { useRef, useState, useEffect, Suspense, useMemo } from 'react';
+import { Canvas, useThree } from '@react-three/fiber';
 import { 
   OrbitControls, 
   Center, 
   GizmoHelper, 
   GizmoViewport, 
-  PerspectiveCamera,
   Environment,
   Grid,
   Stage,
-  useProgress
+  useProgress,
+  useBounds
 } from '@react-three/drei';
 import * as THREE from 'three';
 import { STLLoader } from 'three/addons/loaders/STLLoader.js';
 import { useAuth } from '@/contexts/AuthContext';
 import { ThreeDModel } from '@/types/model';
-import { useUserCustomization } from '@/hooks/use-model';
 import { Loader2 } from 'lucide-react';
 
 interface ModelViewerProps {
@@ -34,11 +33,33 @@ const LoadingScreen = () => {
   );
 };
 
+// Smart model container that auto-positions camera based on model dimensions
+const SmartModelContainer = ({ children }) => {
+  const bounds = useBounds();
+  
+  useEffect(() => {
+    // Automatically fit model to camera view after a short delay
+    const timeoutId = setTimeout(() => {
+      bounds.refresh().fit();
+    }, 300);
+    
+    return () => clearTimeout(timeoutId);
+  }, [bounds]);
+  
+  return (
+    <group>
+      {children}
+    </group>
+  );
+};
+
 const ModelDisplay = ({ url, customOptions }: { url: string, customOptions: Record<string, any> }) => {
   const [geometry, setGeometry] = useState<THREE.BufferGeometry | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [boundingBox, setBoundingBox] = useState<THREE.Box3 | null>(null);
   const modelRef = useRef<THREE.Mesh>(null);
+  const { camera } = useThree();
   
   useEffect(() => {
     setLoading(true);
@@ -49,11 +70,24 @@ const ModelDisplay = ({ url, customOptions }: { url: string, customOptions: Reco
     loader.load(
       url,
       (loadedGeometry) => {
+        // Center the geometry
         loadedGeometry.center();
+        
+        // Compute vertex normals if they don't exist
         if (!loadedGeometry.attributes.normal) {
           loadedGeometry.computeVertexNormals();
         }
+        
+        // Calculate bounding box for smart scaling
+        const box = new THREE.Box3().setFromObject(
+          new THREE.Mesh(loadedGeometry)
+        );
+        const size = new THREE.Vector3();
+        box.getSize(size);
+        
+        // Set the geometry and its bounding information
         setGeometry(loadedGeometry);
+        setBoundingBox(box);
         setLoading(false);
       },
       (xhr) => {
@@ -69,6 +103,7 @@ const ModelDisplay = ({ url, customOptions }: { url: string, customOptions: Reco
     
     return () => {
       setGeometry(null);
+      setBoundingBox(null);
     };
   }, [url]);
   
@@ -79,25 +114,47 @@ const ModelDisplay = ({ url, customOptions }: { url: string, customOptions: Reco
     switch(material) {
       case 'metal':
         return {
-          color, 
+          color: color, 
           metalness: 0.8, 
           roughness: 0.2,
         };
       case 'wood':
         return {
-          color, 
+          color: color, 
           roughness: 0.8, 
           metalness: 0.1,
         };
       case 'plastic':
       default:
         return {
-          color, 
+          color: color, 
           roughness: 0.5, 
           metalness: 0.1,
         };
     }
   };
+  
+  // Calculate smart scale based on bounding box
+  const smartScale = useMemo(() => {
+    if (!boundingBox) return 1;
+    
+    const size = new THREE.Vector3();
+    boundingBox.getSize(size);
+    
+    // Get the largest dimension
+    const maxDimension = Math.max(size.x, size.y, size.z);
+    
+    // Target size we want the model to appear as (in world units)
+    const targetSize = 2.5;
+    
+    // Calculate scale factor to achieve target size
+    let scaleFactor = targetSize / maxDimension;
+    
+    // Apply user scale on top of smart scale
+    const userScale = customOptions.scale || 1;
+    
+    return scaleFactor * userScale;
+  }, [boundingBox, customOptions.scale]);
   
   if (loading) {
     return (
@@ -117,21 +174,22 @@ const ModelDisplay = ({ url, customOptions }: { url: string, customOptions: Reco
     );
   }
   
-  // Calculate a more appropriate scale value - using a base scale of 0.2 (smaller than before)
-  const baseScale = 0.2;
-  const userScale = customOptions.scale || 1;
-  const finalScale = baseScale * userScale;
+  const materialProps = getMaterial();
   
   return (
     <mesh 
       ref={modelRef}
-      scale={[finalScale, finalScale, finalScale]}
+      scale={[smartScale, smartScale, smartScale]}
       castShadow
       receiveShadow
       rotation={[0, 0, 0]}
     >
       <primitive object={geometry} attach="geometry" />
-      <meshStandardMaterial {...getMaterial()} />
+      <meshStandardMaterial 
+        color={materialProps.color}
+        metalness={materialProps.metalness} 
+        roughness={materialProps.roughness}
+      />
     </mesh>
   );
 };
@@ -181,12 +239,11 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
           alpha: false,
           logarithmicDepthBuffer: true
         }}
-        camera={{ position: [-8, 3, 2], fov: 40 }}
+        camera={{ position: [-5, 5, 5], fov: 45 }}
         onCreated={({ gl }) => {
           gl.localClippingEnabled = true;
           gl.shadowMap.enabled = true;
           gl.shadowMap.type = THREE.PCFSoftShadowMap;
-          // Replace deprecated outputEncoding with outputColorSpace
           gl.outputColorSpace = THREE.SRGBColorSpace;
           gl.toneMapping = THREE.ACESFilmicToneMapping;
           gl.toneMappingExposure = 1.0;
@@ -205,10 +262,12 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
           adjustCamera={false}
         >
           <Suspense fallback={null}>
-            <ModelDisplay 
-              url={model.stl_file_path} 
-              customOptions={effectiveOptions} 
-            />
+            <SmartModelContainer>
+              <ModelDisplay 
+                url={model.stl_file_path} 
+                customOptions={effectiveOptions} 
+              />
+            </SmartModelContainer>
           </Suspense>
         </Stage>
         
@@ -230,11 +289,10 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
           enablePan={true}
           enableZoom={true}
           enableRotate={true}
-          minDistance={3}
+          minDistance={2}
           maxDistance={20}
           minPolarAngle={0}
           maxPolarAngle={Math.PI / 1.75}
-          target={[0, 0, 0]}
           makeDefault
         />
         

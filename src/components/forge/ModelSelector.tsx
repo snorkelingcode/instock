@@ -30,7 +30,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
         value={selectedModelId} 
         onValueChange={onSelectModel}
       >
-        <SelectTrigger className="w-full">
+        <SelectTrigger id="model-selector" className="w-full">
           <SelectValue placeholder="Select a model" />
         </SelectTrigger>
         <SelectContent>

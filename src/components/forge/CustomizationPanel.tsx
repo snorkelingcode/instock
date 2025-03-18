@@ -12,6 +12,7 @@ import TextOption from './options/TextOption';
 import SwitchOption from './options/SwitchOption';
 import SelectOption from './options/SelectOption';
 import ActionButton from './options/ActionButton';
+import { Label } from "@/components/ui/label";
 
 interface CustomizationPanelProps {
   model: ThreeDModel;
@@ -55,8 +56,9 @@ const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
         </div>
         
         <div className="space-y-4">
-          {/* Model Selector */}
+          {/* Model Selector with Label */}
           <div className="space-y-2">
+            <Label htmlFor="model-selector" className="font-medium">Models</Label>
             <ModelSelector
               models={models}
               selectedModelId={selectedModelId}
