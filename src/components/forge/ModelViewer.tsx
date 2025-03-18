@@ -1,7 +1,6 @@
-
 import React, { useRef, useState, useEffect, Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Center, GizmoHelper, GizmoViewport, PerspectiveCamera } from '@react-three/drei';
+import { OrbitControls, GizmoHelper, GizmoViewport, PerspectiveCamera } from '@react-three/drei';
 import * as THREE from 'three';
 import { STLLoader } from 'three/addons/loaders/STLLoader.js';
 import { useAuth } from '@/contexts/AuthContext';
@@ -88,12 +87,7 @@ const ModelDisplay = ({ url, customOptions }: { url: string, customOptions: Reco
   };
   
   if (loading) {
-    return (
-      <mesh>
-        <sphereGeometry args={[1, 16, 16]} />
-        <meshStandardMaterial color="#cccccc" wireframe />
-      </mesh>
-    );
+    return null; // Removed the sphere object
   }
   
   if (error || !geometry) {
@@ -114,6 +108,7 @@ const ModelDisplay = ({ url, customOptions }: { url: string, customOptions: Reco
       scale={[scale, scale, scale]}
       castShadow
       receiveShadow
+      position={[0, 0, -5]} // Position the model 5 units in front of the camera
       rotation={[0, -Math.PI/2, 0]} // Rotate -90 degrees on Y axis
     >
       <primitive object={geometry} attach="geometry" />
@@ -169,17 +164,16 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
         }}
       >
         <color attach="background" args={['#1f2937']} />
-        {/* Position camera on negative X axis and rotate it to look at the model */}
+        {/* Position camera at origin and looking down negative Z axis */}
         <PerspectiveCamera 
           makeDefault 
           position={[0, 0, 0]} 
-          rotation={[0, 180, 0]} 
           fov={40} 
         />
         
         <ambientLight intensity={0.3} />
         <spotLight 
-          position={[-10, 10, 0]} 
+          position={[-10, 10, -5]} // Adjusted light position to illuminate the model in front
           angle={0.15} 
           penumbra={1} 
           intensity={1} 
@@ -187,27 +181,20 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
           shadow-mapSize={[2048, 2048]}
         />
         <directionalLight 
-          position={[-10, 5, -5]} 
+          position={[-10, 5, -10]} // Adjusted light position
           intensity={0.5} 
           castShadow 
         />
         
-        <Center>
-          <Suspense fallback={
-            <mesh>
-              <sphereGeometry args={[1, 8, 8]} />
-              <meshBasicMaterial color="#666666" wireframe />
-            </mesh>
-          }>
-            <ModelDisplay 
-              url={model.stl_file_path} 
-              customOptions={effectiveOptions} 
-            />
-          </Suspense>
-        </Center>
+        <Suspense fallback={null}>
+          <ModelDisplay 
+            url={model.stl_file_path} 
+            customOptions={effectiveOptions} 
+          />
+        </Suspense>
         
-        {/* Floor for shadow casting */}
-        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -2, 0]} receiveShadow>
+        {/* Floor for shadow casting, moved in front of camera */}
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -2, -5]} receiveShadow>
           <planeGeometry args={[100, 100]} />
           <shadowMaterial transparent opacity={0.2} />
         </mesh>
@@ -216,6 +203,7 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
           enablePan={true}
           minDistance={2}
           maxDistance={10}
+          target={[0, 0, -5]} // Set orbit controls to target the model position
         />
         <GizmoHelper alignment="bottom-right" margin={[80, 80]}>
           <GizmoViewport axisColors={['red', 'green', 'blue']} labelColor="white" />
