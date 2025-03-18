@@ -1,7 +1,7 @@
 
 import React, { useRef, useState, useEffect, Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Center, GizmoHelper, GizmoViewport } from '@react-three/drei';
+import { OrbitControls, Center, GizmoHelper, GizmoViewport, PerspectiveCamera } from '@react-three/drei';
 import * as THREE from 'three';
 import { STLLoader } from 'three/addons/loaders/STLLoader.js';
 import { useAuth } from '@/contexts/AuthContext';
@@ -18,6 +18,7 @@ const ModelDisplay = ({ url, customOptions }: { url: string, customOptions: Reco
   const [geometry, setGeometry] = useState<THREE.BufferGeometry | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const modelRef = useRef<THREE.Mesh>(null);
   
   useEffect(() => {
     setLoading(true);
@@ -28,6 +29,12 @@ const ModelDisplay = ({ url, customOptions }: { url: string, customOptions: Reco
     loader.load(
       url,
       (loadedGeometry) => {
+        // Center the model
+        loadedGeometry.center();
+        // Compute vertex normals if they don't exist
+        if (!loadedGeometry.attributes.normal) {
+          loadedGeometry.computeVertexNormals();
+        }
         setGeometry(loadedGeometry);
         setLoading(false);
       },
@@ -52,6 +59,34 @@ const ModelDisplay = ({ url, customOptions }: { url: string, customOptions: Reco
     };
   }, [url]);
   
+  // Apply material based on customization options
+  const getMaterial = () => {
+    const color = customOptions.color || '#ffffff';
+    const material = customOptions.material || 'plastic';
+    
+    switch(material) {
+      case 'metal':
+        return new THREE.MeshStandardMaterial({ 
+          color, 
+          metalness: 0.8, 
+          roughness: 0.2,
+        });
+      case 'wood':
+        return new THREE.MeshStandardMaterial({ 
+          color, 
+          roughness: 0.8, 
+          metalness: 0.1,
+        });
+      case 'plastic':
+      default:
+        return new THREE.MeshStandardMaterial({ 
+          color, 
+          roughness: 0.5, 
+          metalness: 0.1,
+        });
+    }
+  };
+  
   if (loading) {
     return (
       <mesh>
@@ -70,14 +105,18 @@ const ModelDisplay = ({ url, customOptions }: { url: string, customOptions: Reco
     );
   }
   
-  // Apply customization options to the material
-  const color = customOptions.color || '#ffffff';
+  // Apply customization options
   const scale = customOptions.scale || 1;
   
   return (
-    <mesh scale={[scale, scale, scale]}>
+    <mesh 
+      ref={modelRef}
+      scale={[scale, scale, scale]}
+      castShadow
+      receiveShadow
+    >
       <primitive object={geometry} attach="geometry" />
-      <meshStandardMaterial color={color} />
+      {getMaterial()}
     </mesh>
   );
 };
@@ -101,7 +140,7 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
   }
 
   return (
-    <div className="w-full h-full bg-gray-800 rounded-lg">
+    <div className="w-full h-full bg-gray-800 rounded-lg relative">
       {viewerError && (
         <div className="absolute top-0 left-0 right-0 bg-red-500 text-white p-2 z-10 text-sm">
           {viewerError}
@@ -109,17 +148,36 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
       )}
       
       <Canvas
-        camera={{ position: [0, 0, 5], fov: 50 }}
+        shadows
+        dpr={[1, 2]}
         onCreated={({ gl }) => {
           gl.localClippingEnabled = true;
+          gl.shadowMap.enabled = true;
+          gl.shadowMap.type = THREE.PCFSoftShadowMap;
         }}
         onError={(error) => {
           console.error("Canvas error:", error);
           setViewerError("Error rendering 3D model");
         }}
       >
-        <ambientLight intensity={0.5} />
-        <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} intensity={1} castShadow />
+        <color attach="background" args={['#1f2937']} />
+        <PerspectiveCamera makeDefault position={[0, 0, 5]} fov={40} />
+        
+        <ambientLight intensity={0.3} />
+        <spotLight 
+          position={[10, 10, 10]} 
+          angle={0.15} 
+          penumbra={1} 
+          intensity={1} 
+          castShadow 
+          shadow-mapSize={[2048, 2048]}
+        />
+        <directionalLight 
+          position={[-10, 5, -5]} 
+          intensity={0.5} 
+          castShadow 
+        />
+        
         <Center>
           <Suspense fallback={
             <mesh>
@@ -133,12 +191,19 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
             />
           </Suspense>
         </Center>
+        
+        {/* Floor for shadow casting */}
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -2, 0]} receiveShadow>
+          <planeGeometry args={[100, 100]} />
+          <shadowMaterial transparent opacity={0.2} />
+        </mesh>
+        
         <OrbitControls 
-          enablePan={false}
+          enablePan={true}
           minDistance={2}
           maxDistance={10}
         />
-        <GizmoHelper alignment="top-left" margin={[80, 80]}>
+        <GizmoHelper alignment="bottom-right" margin={[80, 80]}>
           <GizmoViewport axisColors={['red', 'green', 'blue']} labelColor="white" />
         </GizmoHelper>
       </Canvas>

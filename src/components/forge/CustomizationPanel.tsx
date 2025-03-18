@@ -12,6 +12,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { 
+  ToggleGroup, 
+  ToggleGroupItem 
+} from "@/components/ui/toggle-group";
+import { Circle, Square, Triangle, BoltIcon, Hammer, Save } from 'lucide-react';
 import { ThreeDModel } from '@/types/model';
 
 interface CustomizationPanelProps {
@@ -48,18 +54,34 @@ const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
           {availableOptions.includes('color') && (
             <div className="space-y-2">
               <Label htmlFor="color">Color</Label>
+              <div className="grid grid-cols-5 gap-2">
+                {['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff'].map((colorOption) => (
+                  <div 
+                    key={colorOption}
+                    className={`w-full aspect-square rounded-full cursor-pointer border-2 ${
+                      options.color === colorOption ? 'border-white ring-2 ring-red-500' : 'border-gray-300'
+                    }`}
+                    style={{ backgroundColor: colorOption }}
+                    onClick={() => onChange('color', colorOption)}
+                  />
+                ))}
+              </div>
               <Input
                 id="color"
                 type="color"
                 value={options.color || model.default_options.color || '#ffffff'}
                 onChange={(e) => onChange('color', e.target.value)}
+                className="w-full h-8 mt-2"
               />
             </div>
           )}
           
           {availableOptions.includes('scale') && (
             <div className="space-y-2">
-              <Label htmlFor="scale">Scale: {options.scale || model.default_options.scale || 1}</Label>
+              <div className="flex justify-between">
+                <Label htmlFor="scale">Scale</Label>
+                <span className="text-sm font-mono">{(options.scale || model.default_options.scale || 1).toFixed(1)}</span>
+              </div>
               <Slider
                 id="scale"
                 defaultValue={[options.scale || model.default_options.scale || 1]}
@@ -90,11 +112,60 @@ const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
             </div>
           )}
           
+          {availableOptions.includes('shape') && (
+            <div className="space-y-2">
+              <Label>Shape</Label>
+              <ToggleGroup 
+                type="single" 
+                value={options.shape || model.default_options.shape || 'circle'}
+                onValueChange={(value) => {
+                  if (value) onChange('shape', value);
+                }}
+                className="justify-start"
+              >
+                <ToggleGroupItem value="circle" aria-label="Circle">
+                  <Circle className="h-4 w-4" />
+                </ToggleGroupItem>
+                <ToggleGroupItem value="square" aria-label="Square">
+                  <Square className="h-4 w-4" />
+                </ToggleGroupItem>
+                <ToggleGroupItem value="triangle" aria-label="Triangle">
+                  <Triangle className="h-4 w-4" />
+                </ToggleGroupItem>
+              </ToggleGroup>
+            </div>
+          )}
+          
+          {availableOptions.includes('text') && (
+            <div className="space-y-2">
+              <Label htmlFor="text">Custom Text</Label>
+              <Input
+                id="text"
+                value={options.text || model.default_options.text || ''}
+                onChange={(e) => onChange('text', e.target.value)}
+                placeholder="Enter custom text"
+                maxLength={20}
+              />
+            </div>
+          )}
+          
+          {availableOptions.includes('showLogo') && (
+            <div className="flex items-center justify-between">
+              <Label htmlFor="showLogo" className="cursor-pointer">Show Logo</Label>
+              <Switch
+                id="showLogo"
+                checked={options.showLogo || model.default_options.showLogo || false}
+                onCheckedChange={(checked) => onChange('showLogo', checked)}
+              />
+            </div>
+          )}
+          
           <Button 
-            className="w-full mt-8" 
+            className="w-full mt-8 gap-2" 
             onClick={onSave}
             variant="default"
           >
+            <Save className="h-4 w-4" />
             Save Customization
           </Button>
         </div>

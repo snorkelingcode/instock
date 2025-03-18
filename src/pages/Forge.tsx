@@ -3,11 +3,16 @@ import React, { useState, useEffect } from 'react';
 import { Shell } from "@/components/layout/Shell";
 import { useMetaTags } from "@/hooks/use-meta-tags";
 import { useAuth } from "@/contexts/AuthContext";
-import { useModels, useModel, useSaveCustomization } from '@/hooks/use-model';
+import { useModels, useModel, useSaveCustomization, useUserCustomization } from '@/hooks/use-model';
 import ModelViewer from '@/components/forge/ModelViewer';
 import CustomizationPanel from '@/components/forge/CustomizationPanel';
 import InstructionsPanel from '@/components/forge/InstructionsPanel';
 import ModelSelector from '@/components/forge/ModelSelector';
+import { 
+  ResizablePanelGroup,
+  ResizablePanel,
+  ResizableHandle 
+} from "@/components/ui/resizable";
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -22,6 +27,7 @@ const Forge = () => {
   const { data: models, isLoading: modelsLoading } = useModels();
   const [selectedModelId, setSelectedModelId] = useState<string>('');
   const { data: selectedModel, isLoading: modelLoading } = useModel(selectedModelId);
+  const { data: savedCustomization } = useUserCustomization(selectedModelId);
   const [customizationOptions, setCustomizationOptions] = useState<Record<string, any>>({});
   
   const saveCustomization = useSaveCustomization();
@@ -33,12 +39,16 @@ const Forge = () => {
     }
   }, [models, selectedModelId]);
 
-  // Initialize customization options from model defaults
+  // Initialize customization options from saved customization or model defaults
   useEffect(() => {
     if (selectedModel) {
-      setCustomizationOptions(selectedModel.default_options || {});
+      if (savedCustomization) {
+        setCustomizationOptions(savedCustomization.customization_options);
+      } else {
+        setCustomizationOptions(selectedModel.default_options || {});
+      }
     }
-  }, [selectedModel]);
+  }, [selectedModel, savedCustomization]);
 
   const handleCustomizationChange = (key: string, value: any) => {
     setCustomizationOptions(prev => ({
@@ -60,6 +70,20 @@ const Forge = () => {
     saveCustomization.mutate({
       modelId: selectedModelId,
       options: customizationOptions
+    }, {
+      onSuccess: () => {
+        toast({
+          title: "Success",
+          description: "Your customization has been saved.",
+        });
+      },
+      onError: () => {
+        toast({
+          title: "Error",
+          description: "Failed to save your customization.",
+          variant: "destructive",
+        });
+      }
     });
   };
 
@@ -67,8 +91,8 @@ const Forge = () => {
 
   return (
     <Shell>
-      <div className="container mx-auto py-8 px-4">
-        <div className="mb-8">
+      <div className="container mx-auto py-6 px-4">
+        <div className="mb-6">
           <h1 className="text-3xl font-bold">3D Model Forge</h1>
           <p className="text-gray-600">Customize and personalize 3D models to your liking</p>
         </div>
@@ -91,19 +115,24 @@ const Forge = () => {
             <Loader2 className="w-12 h-12 animate-spin text-red-600" />
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <ResizablePanelGroup
+            direction="horizontal"
+            className="min-h-[600px] rounded-lg border"
+          >
             {/* Left: 3D Viewer */}
-            <div className="md:col-span-2 h-[500px]">
+            <ResizablePanel defaultSize={70} minSize={30}>
               {selectedModel && (
                 <ModelViewer
                   model={selectedModel}
                   customizationOptions={customizationOptions}
                 />
               )}
-            </div>
+            </ResizablePanel>
+            
+            <ResizableHandle withHandle />
             
             {/* Right: Customization Panel */}
-            <div className="h-[500px]">
+            <ResizablePanel defaultSize={30} minSize={20}>
               {selectedModel && (
                 <CustomizationPanel
                   model={selectedModel}
@@ -112,8 +141,8 @@ const Forge = () => {
                   onSave={handleSaveCustomization}
                 />
               )}
-            </div>
-          </div>
+            </ResizablePanel>
+          </ResizablePanelGroup>
         )}
         
         {/* Bottom: Instructions */}
