@@ -15,8 +15,8 @@ const SceneSetup = () => {
   const { scene, camera, invalidate } = useThree();
   
   useEffect(() => {
-    // Ensure camera is positioned outside the model
-    camera.position.set(200, 100, 200);
+    // Update camera position to center on X-axis and maintain good Y and Z values
+    camera.position.set(0, 100, 200);
     camera.lookAt(0, 0, 0);
     
     // Force a render update
@@ -124,7 +124,7 @@ const ModelDisplay = ({ url, customOptions }: { url: string, customOptions: Reco
     return (
       <mesh>
         <boxGeometry args={[1, 16, 16]} />
-        <meshStandardMaterial color={new THREE.Color("red")} />
+        <meshStandardMaterial color="red" />
       </mesh>
     );
   }
@@ -132,14 +132,15 @@ const ModelDisplay = ({ url, customOptions }: { url: string, customOptions: Reco
   // Apply customization options with a much smaller default scale for large models
   const scale = customOptions.scale || 0.01; // Scale down to 1% of original size
   
+  // Apply the mirror on X-axis by using negative scale and rotate 90 degrees on Z-axis
   return (
     <mesh 
       ref={modelRef}
-      scale={[scale, scale, scale]}
+      scale={[-scale, scale, scale]} // Mirror on X-axis by using negative scale
       castShadow
       receiveShadow
       position={[0, 0, 0]} // Position at origin
-      rotation={[0, 0, 0]} // No rotation
+      rotation={[0, 0, Math.PI / 2]} // Rotate 90 degrees (π/2 radians) on Z-axis
     >
       <primitive object={geometry} attach="geometry" />
       <meshStandardMaterial 
@@ -169,15 +170,15 @@ const ModelViewerContent = ({ model, effectiveOptions }: { model: ThreeDModel, e
           gl.shadowMap.type = THREE.PCFSoftShadowMap;
         }}
       >
-        <color attach="background" args={["#1f2937"]} />
+        <color attach="background" args={[["#1f2937"]]} />
         
         {/* Scene setup component to ensure proper camera positioning */}
         <SceneSetup />
         
-        {/* Sketchfab-like setup with camera far from the object */}
+        {/* Updated camera position to center on X-axis */}
         <PerspectiveCamera 
           makeDefault 
-          position={[200, 100, 200]} 
+          position={[0, 100, 200]} 
           fov={45}
           far={2000}
           near={0.1}

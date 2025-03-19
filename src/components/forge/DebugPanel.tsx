@@ -13,14 +13,14 @@ const DebugPanel: React.FC<DebugPanelProps> = () => {
   // Since we can't use useThree/useFrame outside Canvas,
   // we'll use simplified static state for demonstration
   const [cameraData] = useState({
-    position: new THREE.Vector3(200, 100, 200),
+    position: new THREE.Vector3(0, 100, 200),
     rotation: new THREE.Euler(0, 0, 0),
   });
   
   const [modelData] = useState({
     position: new THREE.Vector3(0, 0, 0),
-    rotation: new THREE.Euler(0, 0, 0),
-    scale: new THREE.Vector3(0.01, 0.01, 0.01)
+    rotation: new THREE.Euler(0, 0, Math.PI / 2), // 90 degrees on Z-axis
+    scale: new THREE.Vector3(-0.01, 0.01, 0.01) // Mirrored on X-axis
   });
 
   const formatVector = (vec: THREE.Vector3) => 
