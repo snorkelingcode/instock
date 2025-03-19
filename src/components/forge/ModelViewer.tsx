@@ -212,7 +212,10 @@ const ModelViewerContent = ({ model, effectiveOptions }: { model: ThreeDModel, e
           />
         </Suspense>
         
-        <gridHelper args={[1000, 100]} position={[0, -50, 0]} />
+        {/* Fixed: Ensure gridHelper args is an array of (size, divisions, colorCenterLine, colorGrid) */}
+        <gridHelper args={[1000, 100, "#888888", "#444444"]} position={[0, -50, 0]} />
+        
+        {/* Fixed: Ensure axesHelper args is an array with just the size */}
         <axesHelper args={[100]} />
         
         <OrbitControls 
