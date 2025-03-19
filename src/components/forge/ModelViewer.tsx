@@ -350,15 +350,22 @@ const ModelDisplay = ({
   );
 };
 
+// Fixed implementation of ModelRotationControls
 const ModelRotationControls = ({ modelRef }: { modelRef: React.RefObject<THREE.Group> }) => {
-  const { gl, camera } = useThree();
+  const { gl } = useThree();
   const [isDragging, setIsDragging] = useState(false);
   const [previousMousePosition, setPreviousMousePosition] = useState({ x: 0, y: 0 });
   
   useEffect(() => {
     const handleMouseDown = (event: MouseEvent) => {
-      setIsDragging(true);
-      setPreviousMousePosition({ x: event.clientX, y: event.clientY });
+      if (!modelRef.current) return;
+      
+      // Only respond to clicks on the canvas
+      if (event.target === gl.domElement) {
+        setIsDragging(true);
+        setPreviousMousePosition({ x: event.clientX, y: event.clientY });
+        event.preventDefault();
+      }
     };
     
     const handleMouseMove = (event: MouseEvent) => {
@@ -370,26 +377,73 @@ const ModelRotationControls = ({ modelRef }: { modelRef: React.RefObject<THREE.G
         
         const rotationSpeed = 0.01;
         
-        modelRef.current.rotation.y -= deltaMove.x * rotationSpeed;
-        modelRef.current.rotation.x -= deltaMove.y * rotationSpeed;
+        // Apply rotation to the model
+        modelRef.current.rotation.y += deltaMove.x * rotationSpeed;
+        modelRef.current.rotation.x += deltaMove.y * rotationSpeed;
         
         setPreviousMousePosition({ x: event.clientX, y: event.clientY });
       }
     };
     
-    const handleMouseUp = () => {
+    const handleMouseUp = (event: MouseEvent) => {
       setIsDragging(false);
     };
     
+    // Add event listeners to the document for better drag handling
     const canvas = gl.domElement;
     canvas.addEventListener('mousedown', handleMouseDown);
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    
+    // Add touch event support for mobile devices
+    const handleTouchStart = (event: TouchEvent) => {
+      if (!modelRef.current || event.touches.length !== 1) return;
+      
+      setIsDragging(true);
+      setPreviousMousePosition({ 
+        x: event.touches[0].clientX, 
+        y: event.touches[0].clientY 
+      });
+      event.preventDefault();
+    };
+    
+    const handleTouchMove = (event: TouchEvent) => {
+      if (!isDragging || !modelRef.current || event.touches.length !== 1) return;
+      
+      const deltaMove = {
+        x: event.touches[0].clientX - previousMousePosition.x,
+        y: event.touches[0].clientY - previousMousePosition.y
+      };
+      
+      const rotationSpeed = 0.01;
+      
+      modelRef.current.rotation.y += deltaMove.x * rotationSpeed;
+      modelRef.current.rotation.x += deltaMove.y * rotationSpeed;
+      
+      setPreviousMousePosition({ 
+        x: event.touches[0].clientX, 
+        y: event.touches[0].clientY 
+      });
+      
+      event.preventDefault();
+    };
+    
+    const handleTouchEnd = (event: TouchEvent) => {
+      setIsDragging(false);
+    };
+    
+    canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+    canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+    canvas.addEventListener('touchend', handleTouchEnd);
     
     return () => {
       canvas.removeEventListener('mousedown', handleMouseDown);
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      
+      canvas.removeEventListener('touchstart', handleTouchStart);
+      canvas.removeEventListener('touchmove', handleTouchMove);
+      canvas.removeEventListener('touchend', handleTouchEnd);
     };
   }, [gl, modelRef, isDragging, previousMousePosition]);
   
@@ -468,6 +522,7 @@ const ModelViewerContent = ({
           powerPreference: 'high-performance'
         }}
         frameloop="demand"
+        style={{ cursor: 'grab' }}
       >
         <color attach="background" args={["#F8F9FA"]} />
         
