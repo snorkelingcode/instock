@@ -1,4 +1,3 @@
-
 import React, { useRef, useState, useEffect, Suspense } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { OrbitControls, GizmoHelper, GizmoViewport, PerspectiveCamera } from '@react-three/drei';
@@ -10,7 +9,6 @@ import { useUserCustomization } from '@/hooks/use-model';
 import { Loader2 } from 'lucide-react';
 import DebugPanel from './DebugPanel';
 
-// Create a scene component that will track camera and model data
 const SceneSetup = ({ 
   updateDebugInfo, 
   modelRef 
@@ -21,17 +19,13 @@ const SceneSetup = ({
   const { camera } = useThree();
   
   useEffect(() => {
-    // Lock camera in the specified position and rotation
     camera.position.set(0, 500, 0);
-    
-    // Convert degrees to radians for setting rotation
     const degToRad = (deg: number) => deg * (Math.PI / 180);
     camera.rotation.set(
-      degToRad(-90), // x: -90 degrees
-      degToRad(-0.00), // y: -0.00 degrees
-      degToRad(-180) // z: -180 degrees
+      degToRad(-90),
+      degToRad(-0.00),
+      degToRad(-180)
     );
-    
     camera.updateProjectionMatrix();
   }, [camera]);
   
@@ -154,7 +148,7 @@ const ModelDisplay = ({ url, customOptions, modelRef }: ModelDisplayProps) => {
         castShadow
         receiveShadow
         position={[0, 0, 0]}
-        rotation={[Math.PI, Math.PI, Math.PI / 2]} // 180°, 180°, 90°
+        rotation={[Math.PI, Math.PI, Math.PI / 2]}
       >
         <primitive object={geometry} attach="geometry" />
         <meshStandardMaterial 
@@ -279,8 +273,7 @@ const ModelViewerContent = ({ model, effectiveOptions, onDebugInfoUpdate }: Mode
           />
         </Suspense>
         
-        {/* Shrinking the grid by 25% by reducing its size from 1000 to 750 */}
-        <gridHelper args={[750, 75, "#ea384c", "#ea384c"]} position={[0, -50, 0]} />
+        <gridHelper args={[250, 25, "#ea384c", "#ea384c"]} position={[0, -50, 0]} />
         
         <OrbitControls 
           enabled={false}
