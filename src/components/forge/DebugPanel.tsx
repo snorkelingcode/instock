@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Vector3, Euler } from 'three';
+import * as THREE from 'three';
 
 interface DebugPanelProps {
   modelRef?: React.RefObject<THREE.Mesh>;
@@ -13,20 +13,20 @@ const DebugPanel: React.FC<DebugPanelProps> = () => {
   // Since we can't use useThree/useFrame outside Canvas,
   // we'll use simplified static state for demonstration
   const [cameraData] = useState({
-    position: new Vector3(200, 100, 200),
-    rotation: new Euler(0, 0, 0),
+    position: new THREE.Vector3(200, 100, 200),
+    rotation: new THREE.Euler(0, 0, 0),
   });
   
   const [modelData] = useState({
-    position: new Vector3(0, 0, 0),
-    rotation: new Euler(0, 0, 0),
-    scale: new Vector3(0.01, 0.01, 0.01)
+    position: new THREE.Vector3(0, 0, 0),
+    rotation: new THREE.Euler(0, 0, 0),
+    scale: new THREE.Vector3(0.01, 0.01, 0.01)
   });
 
-  const formatVector = (vec: Vector3) => 
+  const formatVector = (vec: THREE.Vector3) => 
     `x: ${vec.x.toFixed(2)}, y: ${vec.y.toFixed(2)}, z: ${vec.z.toFixed(2)}`;
   
-  const formatEuler = (euler: Euler) => 
+  const formatEuler = (euler: THREE.Euler) => 
     `x: ${(euler.x * (180/Math.PI)).toFixed(2)}°, y: ${(euler.y * (180/Math.PI)).toFixed(2)}°, z: ${(euler.z * (180/Math.PI)).toFixed(2)}°`;
 
   return (
