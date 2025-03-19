@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { ThreeDModel, UserCustomization } from "@/types/model";
 import { toast } from "@/hooks/use-toast";
@@ -161,6 +162,18 @@ export const updateModel = async (
 
 export const deleteModel = async (id: string): Promise<boolean> => {
   try {
+    // First delete any related customizations to avoid foreign key constraint errors
+    const { error: customizationsError } = await supabase
+      .from('user_customizations')
+      .delete()
+      .eq('model_id', id);
+      
+    if (customizationsError) {
+      console.error("Error deleting related customizations:", customizationsError);
+      throw customizationsError;
+    }
+    
+    // Now safe to delete the model
     const { error } = await supabase
       .from('threed_models')
       .delete()
@@ -329,6 +342,10 @@ export const getUserCustomization = async (
 
     if (error) {
       if (error.code === 'PGRST116') { // No rows returned
+        return null;
+      }
+      if (error.code === '406') { // Not Acceptable, happens with some Supabase queries
+        console.warn("Got 406 Not Acceptable when fetching user customization, returning null");
         return null;
       }
       console.error("Error fetching user customization:", error);

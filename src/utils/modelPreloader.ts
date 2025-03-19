@@ -15,6 +15,61 @@ let isBatchLoading = false;
 const failedUrls = new Set<string>();
 // Track models that need cleanup (deleted from storage but still in DB)
 const modelsNeedingCleanup = new Set<string>();
+// All model combinations that have been preloaded
+const preloadedCombinations = new Set<string>();
+
+/**
+ * Use browser storage to persist preload cache across page loads
+ */
+const saveCacheToStorage = () => {
+  try {
+    const cacheData = {
+      failedUrls: Array.from(failedUrls),
+      loadStates: Object.fromEntries(modelLoadStates.entries()),
+      timestamp: Date.now()
+    };
+    localStorage.setItem('modelPreloaderCache', JSON.stringify(cacheData));
+  } catch (error) {
+    console.error('Failed to save cache to storage:', error);
+  }
+};
+
+/**
+ * Restore cache from browser storage
+ */
+const restoreCacheFromStorage = () => {
+  try {
+    const cacheData = localStorage.getItem('modelPreloaderCache');
+    if (cacheData) {
+      const parsedCache = JSON.parse(cacheData);
+      
+      // Only use cache if it's less than 1 hour old
+      if (Date.now() - parsedCache.timestamp < 60 * 60 * 1000) {
+        // Restore failed URLs
+        if (parsedCache.failedUrls) {
+          parsedCache.failedUrls.forEach((url: string) => failedUrls.add(url));
+        }
+        
+        // Restore load states
+        if (parsedCache.loadStates) {
+          Object.entries(parsedCache.loadStates).forEach(([url, state]) => {
+            modelLoadStates.set(url, state as 'loading' | 'loaded' | 'error');
+          });
+        }
+        
+        console.log('Restored model preloader cache from storage');
+        return true;
+      }
+    }
+    return false;
+  } catch (error) {
+    console.error('Failed to restore cache from storage:', error);
+    return false;
+  }
+};
+
+// Initialize by restoring cache
+restoreCacheFromStorage();
 
 /**
  * Preload a 3D model geometry
@@ -83,6 +138,9 @@ export const preloadModelGeometry = async (url: string): Promise<THREE.BufferGeo
           // Update state
           modelLoadStates.set(url, 'loaded');
           
+          // Update storage cache
+          saveCacheToStorage();
+          
           // Remove from loading promises once done
           loadingPromises.delete(url);
           
@@ -93,6 +151,7 @@ export const preloadModelGeometry = async (url: string): Promise<THREE.BufferGeo
           modelLoadStates.set(url, 'error');
           failedUrls.add(url);
           loadingPromises.delete(url);
+          saveCacheToStorage();
           reject(error);
         }
       },
@@ -111,6 +170,8 @@ export const preloadModelGeometry = async (url: string): Promise<THREE.BufferGeo
         if (errorMessage && (errorMessage.includes('400') || errorMessage.includes('404'))) {
           modelsNeedingCleanup.add(url);
         }
+        // Update storage cache
+        saveCacheToStorage();
         // Remove from loading promises on error
         loadingPromises.delete(url);
         reject(error);
@@ -124,6 +185,7 @@ export const preloadModelGeometry = async (url: string): Promise<THREE.BufferGeo
     modelLoadStates.set(url, 'error');
     failedUrls.add(url);
     loadingPromises.delete(url);
+    saveCacheToStorage();
     // Add to models needing cleanup if it's a 400/404 error
     const errorMessage = error instanceof Error ? error.message : String(error);
     if (errorMessage && (errorMessage.includes('400') || errorMessage.includes('404'))) {
@@ -241,6 +303,7 @@ export const preloadModels = async (
       // Don't retry failed URLs
       failedUrls.add(url);
       modelLoadStates.set(url, 'error');
+      saveCacheToStorage();
       if (onProgress) {
         onProgress(loaded, total); // Still update progress even on error
       }
@@ -255,13 +318,57 @@ export const preloadModels = async (
 };
 
 /**
+ * Store combination keys for all model variants
+ * @param models Array of models to extract combinations from
+ */
+export const trackModelCombinations = (models: ThreeDModel[]): Set<string> => {
+  const modelTypes = new Set<string>();
+  const cornerStyles = new Set<string>();
+  const magnetsOptions = new Set<string>();
+  
+  models.forEach(model => {
+    const defaultOptions = model.default_options || {};
+    if (defaultOptions.modelType) modelTypes.add(defaultOptions.modelType);
+    if (defaultOptions.corners) cornerStyles.add(defaultOptions.corners);
+    if (defaultOptions.magnets) magnetsOptions.add(defaultOptions.magnets);
+  });
+  
+  const allCombinations = new Set<string>();
+  modelTypes.forEach(modelType => {
+    cornerStyles.forEach(corners => {
+      magnetsOptions.forEach(magnets => {
+        allCombinations.add(`${modelType}-${corners}-${magnets}`);
+      });
+    });
+  });
+  
+  preloadedCombinations.clear();
+  allCombinations.forEach(combo => preloadedCombinations.add(combo));
+  
+  return allCombinations;
+};
+
+/**
+ * Check if a combination has been preloaded
+ * @param combinationKey The combination key to check
+ * @returns True if the combination is ready for morphing
+ */
+export const isCombinationPreloaded = (combinationKey: string): boolean => {
+  return preloadedCombinations.has(combinationKey);
+};
+
+/**
  * Reset the loader state to prevent stale data between sessions
  */
 export const resetLoaderState = (): void => {
   modelLoadStates.clear();
   failedUrls.clear();
   modelsNeedingCleanup.clear();
+  preloadedCombinations.clear();
   isBatchLoading = false;
+  
+  // Also clear the storage cache
+  localStorage.removeItem('modelPreloaderCache');
 };
 
 /**
@@ -322,7 +429,11 @@ export const clearPreloadCache = (): void => {
   modelLoadStates.clear();
   failedUrls.clear();
   modelsNeedingCleanup.clear();
+  preloadedCombinations.clear();
   isBatchLoading = false;
+  
+  // Also clear the storage cache
+  localStorage.removeItem('modelPreloaderCache');
 };
 
 /**
@@ -336,6 +447,7 @@ export const getPreloadStatus = (): {
   modelsNeedingCleanup: number;
   modelStates: { loading: number; loaded: number; error: number };
   isBatchLoading: boolean;
+  combinationsTracked: number;
 } => {
   // Count models by state
   let loadingCount = 0;
@@ -358,7 +470,8 @@ export const getPreloadStatus = (): {
       loaded: loadedCount,
       error: errorCount
     },
-    isBatchLoading
+    isBatchLoading,
+    combinationsTracked: preloadedCombinations.size
   };
 };
 
@@ -381,6 +494,8 @@ export const getModelsNeedingCleanup = (): string[] => {
 export default {
   preloadModelGeometry,
   preloadModels,
+  trackModelCombinations,
+  isCombinationPreloaded,
   isModelPreloaded,
   isModelLoading,
   didModelFail,

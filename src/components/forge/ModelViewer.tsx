@@ -1,3 +1,4 @@
+
 import React, { useRef, useState, useEffect, Suspense } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera } from '@react-three/drei';
@@ -7,6 +8,7 @@ import { ThreeDModel } from '@/types/model';
 import { Loader2 } from 'lucide-react';
 import { getPreloadedGeometry, isModelPreloaded, preloadModelGeometry, didModelFail } from '@/utils/modelPreloader';
 
+// Shared geometry cache to prevent reloading same models
 const globalGeometryCache = new Map<string, THREE.BufferGeometry>();
 
 const SceneSetup = ({ 
@@ -57,6 +59,7 @@ const ModelDisplay = ({
   const [isTransitioning, setIsTransitioning] = useState(false);
   const lastUrlRef = useRef<string | null>(null);
   
+  // Enhanced geometry loading with multiple cache layers
   const loadGeometry = async (url: string): Promise<THREE.BufferGeometry> => {
     if (!url || url.trim() === '') {
       console.error('Invalid URL provided to loadGeometry');
@@ -68,20 +71,14 @@ const ModelDisplay = ({
       return Promise.reject(new Error(`URL previously failed: ${url}`));
     }
     
+    // Priority 1: Get from preloaded geometries (global application cache)
     const preloadedGeometry = getPreloadedGeometry(url);
     if (preloadedGeometry) {
       console.log(`Using preloaded geometry for ${url}`);
       return preloadedGeometry;
     }
     
-    if (globalGeometryCache.has(url)) {
-      const cachedGeometry = globalGeometryCache.get(url);
-      if (cachedGeometry) {
-        console.log(`Using geometry from global cache for ${url}`);
-        return cachedGeometry.clone();
-      }
-    }
-    
+    // Priority 2: Check component-level cache
     if (loadedModels.has(url)) {
       const cachedGeometry = loadedModels.get(url);
       if (cachedGeometry) {
@@ -90,9 +87,20 @@ const ModelDisplay = ({
       }
     }
     
+    // Priority 3: Check global cache
+    if (globalGeometryCache.has(url)) {
+      const cachedGeometry = globalGeometryCache.get(url);
+      if (cachedGeometry) {
+        console.log(`Using geometry from global cache for ${url}`);
+        return cachedGeometry.clone();
+      }
+    }
+    
+    // Last resort: Load from server
     console.log(`No cached geometry found for ${url}, loading from server`);
     try {
       const geometry = await preloadModelGeometry(url);
+      // Store in global cache for future use
       globalGeometryCache.set(url, geometry.clone());
       return geometry;
     } catch (error) {
@@ -101,6 +109,7 @@ const ModelDisplay = ({
     }
   };
   
+  // Load geometries when URL changes
   useEffect(() => {
     let isMounted = true;
     
@@ -129,13 +138,16 @@ const ModelDisplay = ({
         
         if (!isMounted) return;
         
+        // Store in caches
         globalGeometryCache.set(url, newGeometry.clone());
         onModelsLoaded(url, newGeometry.clone());
         
+        // Check if we should morph (if previous model exists, urls are different, and morphing is enabled)
         const shouldMorph = prevUrl && prevUrl !== url && morphEnabled && currentGeometry;
         
         if (shouldMorph && prevUrl) {
           try {
+            // Setup morphing by storing previous geometry and setting new geometry
             setPreviousGeometry(currentGeometry);
             setCurrentGeometry(newGeometry);
             setMorphProgress(0);
@@ -143,6 +155,7 @@ const ModelDisplay = ({
             console.log(`Morphing from ${prevUrl} to ${url}`);
           } catch (err) {
             console.error('Failed to setup morphing:', err);
+            // Fallback to direct geometry change
             setCurrentGeometry(newGeometry);
             setIsTransitioning(false);
           }
@@ -169,10 +182,11 @@ const ModelDisplay = ({
     };
   }, [url, prevUrl, morphEnabled, loadedModels, onModelsLoaded]);
   
+  // Handle morphing animation
   useFrame((_, delta) => {
     if (isTransitioning && (previousGeometry || currentGeometry)) {
       setMorphProgress((prev) => {
-        const newProgress = prev + delta * 2;
+        const newProgress = prev + delta * 2; // Adjust speed as needed
         
         if (newProgress >= 1) {
           setIsTransitioning(false);
@@ -185,6 +199,7 @@ const ModelDisplay = ({
     }
   });
   
+  // Create material based on custom options
   const getMaterial = () => {
     const color = customOptions.color || '#ffffff';
     const material = customOptions.material || 'plastic';
@@ -229,6 +244,7 @@ const ModelDisplay = ({
   
   return (
     <group ref={modelRef}>
+      {/* Render previous model during transition */}
       {previousGeometry && isTransitioning && (
         <mesh 
           scale={[scale, scale, scale]}
@@ -247,6 +263,7 @@ const ModelDisplay = ({
         </mesh>
       )}
       
+      {/* Render current model */}
       {currentGeometry && (
         <mesh 
           scale={[scale, scale, scale]}
@@ -331,6 +348,38 @@ const ModelViewerContent = ({
   onModelsLoaded 
 }: ModelViewerContentProps) => {
   const modelRef = useRef<THREE.Group>(null);
+  const [webGLError, setWebGLError] = useState<string | null>(null);
+  
+  // Handle WebGL context loss
+  useEffect(() => {
+    const handleContextLost = () => {
+      console.error("WebGL context lost");
+      setWebGLError("WebGL context lost. Please refresh the page.");
+    };
+    
+    window.addEventListener('webglcontextlost', handleContextLost);
+    
+    return () => {
+      window.removeEventListener('webglcontextlost', handleContextLost);
+    };
+  }, []);
+  
+  if (webGLError) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-gray-800 text-white p-4">
+        <div className="text-center">
+          <p className="text-lg font-semibold mb-2">Graphics Error</p>
+          <p>{webGLError}</p>
+          <button 
+            className="mt-4 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+            onClick={() => window.location.reload()}
+          >
+            Refresh Page
+          </button>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <>
@@ -341,6 +390,12 @@ const ModelViewerContent = ({
           gl.localClippingEnabled = true;
           gl.shadowMap.enabled = true;
           gl.shadowMap.type = THREE.PCFSoftShadowMap;
+          gl.powerPreference = 'high-performance';
+        }}
+        gl={{ 
+          antialias: true,
+          alpha: false,
+          preserveDrawingBuffer: true
         }}
       >
         <color attach="background" args={["#FFFFFF"]} />
@@ -424,6 +479,7 @@ const ModelViewer: React.FC<ModelViewerProps> = ({
 }) => {
   const [viewerError, setViewerError] = useState<string | null>(null);
   
+  // Combine default options with user customizations
   const effectiveOptions = {
     ...model.default_options,
     ...customizationOptions
@@ -458,4 +514,3 @@ const ModelViewer: React.FC<ModelViewerProps> = ({
 };
 
 export default ModelViewer;
-

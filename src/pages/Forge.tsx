@@ -13,6 +13,7 @@ import {
   ResizableHandle 
 } from "@/components/ui/resizable";
 import { Loader2 } from 'lucide-react';
+import { Progress } from "@/components/ui/progress";
 import { useToast } from '@/hooks/use-toast';
 import { ThreeDModel } from '@/types/model';
 import * as THREE from 'three';
@@ -26,12 +27,15 @@ import {
   didModelFail,
   getModelsNeedingCleanup,
   clearPreloadCache,
-  getPreloadedGeometry
+  getPreloadedGeometry,
+  trackModelCombinations,
+  isCombinationPreloaded
 } from '@/utils/modelPreloader';
 import { cleanupInvalidModels } from '@/services/modelService';
 
 const CACHE_KEY_MODELS = 'forgeModels';
 const CACHE_KEY_PRELOAD_STATUS = 'forgePreloadStatus';
+const PRELOAD_TIMEOUT = 30000; // 30 seconds max preload time
 
 const Forge = () => {
   useMetaTags({
@@ -48,7 +52,6 @@ const Forge = () => {
   const { data: savedCustomization } = useUserCustomization(selectedModelId, { 
     enabled: !!user?.id && !!selectedModelId,
     staleTime: Infinity,
-    cacheTime: Infinity,
     retry: false,
     onError: (error: any) => {
       console.error("Error fetching user customization:", error);
@@ -72,10 +75,12 @@ const Forge = () => {
   const modelSelectTimeout = useRef<NodeJS.Timeout | null>(null);
   const lastSelectedId = useRef<string>('');
   
-  const preloadedCombinations = useRef<Set<string>>(new Set());
+  const preloadTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const availableCombinations = useRef<Set<string>>(new Set());
   
   const [preloadProgress, setPreloadProgress] = useState({ loaded: 0, total: 0 });
   const [preloadComplete, setPreloadComplete] = useState(false);
+  const [preloadStarted, setPreloadStarted] = useState(false);
   const [performedCleanup, setPerformedCleanup] = useState(false);
   const initialLoadComplete = useRef(false);
   
@@ -106,92 +111,88 @@ const Forge = () => {
         
         toast({
           title: "Models Cleanup",
-          description: `Removed ${invalidUrls.length} invalid model references from the database. Please re-upload these models.`,
+          description: `Removed ${invalidUrls.length} invalid model references from the database.`,
         });
       }
     } catch (error) {
       console.error("Failed to clean up invalid models:", error);
       toast({
         title: "Error",
-        description: "There was an error cleaning up invalid models. Please try again or use the admin page.",
+        description: "There was an error cleaning up invalid models. Please try again.",
         variant: "destructive",
       });
     }
   };
 
-  // Initialize and preload models
+  // Start preloading immediately when models are available
   useEffect(() => {
-    if (!models || models.length === 0 || modelsLoading) return;
+    if (!models || models.length === 0 || modelsLoading || preloadStarted) return;
+    
+    setPreloadStarted(true);
+    
+    // Set a safety timeout to avoid infinite loading
+    if (preloadTimeoutRef.current) {
+      clearTimeout(preloadTimeoutRef.current);
+    }
+    
+    preloadTimeoutRef.current = setTimeout(() => {
+      if (!preloadComplete) {
+        console.warn('Preload timeout reached, showing UI anyway');
+        setPreloadComplete(true);
+        initialLoadComplete.current = true;
+        
+        toast({
+          title: "Warning",
+          description: "Model preloading timed out. Some models may load slower than expected.",
+          variant: "destructive",
+        });
+      }
+    }, PRELOAD_TIMEOUT);
     
     // Check if we have a cached preload status
     const cachedStatus = getCache<{ complete: boolean }>(CACHE_KEY_PRELOAD_STATUS);
     if (cachedStatus?.complete && initialLoadComplete.current) {
       console.log('Using cached preload status, skipping preload');
       setPreloadComplete(true);
+      if (preloadTimeoutRef.current) {
+        clearTimeout(preloadTimeoutRef.current);
+      }
       return;
-    }
-    
-    // Clear preload cache on fresh load to ensure we don't have stale data
-    if (!initialLoadComplete.current) {
-      console.log('First load, clearing preload cache');
-      clearPreloadCache();
     }
     
     const preloadAllModels = async () => {
       console.log(`Starting preload of all ${models.length} models`);
       
-      if (!initialLoadComplete.current) {
-        resetLoaderState();
-      }
-      
       try {
+        // Track all possible model combinations first
+        const combinations = trackModelCombinations(models);
+        availableCombinations.current = combinations;
+        console.log(`Tracked ${combinations.size} model combinations for morphing`);
+        
+        // Preload all models
         await preloadModels(models, (loaded, total) => {
           setPreloadProgress({ loaded, total });
+          // Only complete preload when all models are loaded or timeout
           if (loaded === total) {
+            setPreloadComplete(true);
+            initialLoadComplete.current = true;
+            if (preloadTimeoutRef.current) {
+              clearTimeout(preloadTimeoutRef.current);
+            }
+            
             // Cache preload status
             setCache(CACHE_KEY_PRELOAD_STATUS, { complete: true }, 30); // Cache for 30 minutes
-            setPreloadComplete(true);
           }
         });
         
-        const modelTypes = new Set<string>();
-        const cornerStyles = new Set<string>();
-        const magnetsOptions = new Set<string>();
-        
-        models.forEach(model => {
-          const defaultOptions = model.default_options || {};
-          if (defaultOptions.modelType) modelTypes.add(defaultOptions.modelType);
-          if (defaultOptions.corners) cornerStyles.add(defaultOptions.corners);
-          if (defaultOptions.magnets) magnetsOptions.add(defaultOptions.magnets);
-        });
-        
-        const allCombinations = new Set<string>();
-        modelTypes.forEach(modelType => {
-          cornerStyles.forEach(corners => {
-            magnetsOptions.forEach(magnets => {
-              allCombinations.add(`${modelType}-${corners}-${magnets}`);
-            });
-          });
-        });
-        
-        preloadedCombinations.current = allCombinations;
-        setPreloadComplete(true);
-        initialLoadComplete.current = true;
-        
-        // Cache models and combination keys
-        setCache(CACHE_KEY_MODELS, {
-          models: models,
-          combinations: Array.from(allCombinations)
-        }, 30); // Cache for 30 minutes
-        
         await handleCleanupInvalidModels();
         
-        console.log(`Preloading complete. All ${allCombinations.size} combinations tracked.`);
         console.log('Preload status:', getPreloadStatus());
       } catch (error) {
         console.error("Error during model preloading:", error);
         setPreloadComplete(true);
         initialLoadComplete.current = true;
+        
         toast({
           title: "Warning",
           description: "Some models failed to preload. You may experience issues when changing model types.",
@@ -201,7 +202,13 @@ const Forge = () => {
     };
     
     preloadAllModels();
-  }, [models, modelsLoading]);
+    
+    return () => {
+      if (preloadTimeoutRef.current) {
+        clearTimeout(preloadTimeoutRef.current);
+      }
+    };
+  }, [models, modelsLoading, preloadStarted]);
 
   // Find and switch to the matching model based on customization options
   useEffect(() => {
@@ -213,17 +220,21 @@ const Forge = () => {
 
     const findMatchingModel = () => {
       const preloadStatus = getPreloadStatus();
-      if (!preloadComplete || (preloadStatus.isBatchLoading && preloadStatus.pending > 0)) {
+      
+      // Get current model combination
+      const modelType = customizationOptions.modelType || 'Slab-Slider';
+      const corners = customizationOptions.corners || 'rounded';
+      const magnets = customizationOptions.magnets || 'no';
+      const combinationKey = `${modelType}-${corners}-${magnets}`;
+      
+      // Allow proceed if preload is complete or we've already preloaded this specific combination
+      const readyForMorphing = preloadComplete || isCombinationPreloaded(combinationKey);
+      
+      if (!readyForMorphing && preloadStatus.isBatchLoading) {
         console.log('Still preloading models, waiting before changing model...');
         setTimeout(findMatchingModel, 500);
         return;
       }
-      
-      const modelType = customizationOptions.modelType || 'Slab-Slider';
-      const corners = customizationOptions.corners || 'rounded';
-      const magnets = customizationOptions.magnets || 'no';
-      
-      const combinationKey = `${modelType}-${corners}-${magnets}`;
       
       const matchingModel = models.find(model => {
         const defaultOptions = model.default_options || {};
@@ -242,15 +253,14 @@ const Forge = () => {
           const isModelInCache = isModelPreloaded(matchingModel.stl_file_path) || 
                                loadedModels.has(matchingModel.stl_file_path) ||
                                getPreloadedGeometry(matchingModel.stl_file_path) !== null;
-                               
-          // Should morph if model is in cache or if this isn't the first model selection
-          const shouldMorph = isModelInCache || initialLoadComplete.current;
           
-          setMorphEnabled(shouldMorph);
+          // Always enable morphing when all models are preloaded
+          setMorphEnabled(true);
+          
           lastSelectedId.current = selectedModelId;
           setSelectedModelId(matchingModel.id);
           
-          console.log(`Switching to model ${matchingModel.id} (${combinationKey}), morphing: ${shouldMorph}`);
+          console.log(`Switching to model ${matchingModel.id} (${combinationKey}), morphing: true`);
         }
       } else if (!selectedModelId && models.length > 0) {
         const firstValidModel = models.find(model => 
@@ -282,16 +292,6 @@ const Forge = () => {
       }
     };
   }, [models, customizationOptions, selectedModelId, selectedModel, loadedModels, preloadComplete]);
-
-  // Reset morphing after transition
-  useEffect(() => {
-    if (morphEnabled) {
-      const timer = setTimeout(() => {
-        setMorphEnabled(true); // Keep morphing enabled for future transitions
-      }, 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [morphEnabled, selectedModelId]);
 
   // Apply saved customization or default options
   useEffect(() => {
@@ -362,7 +362,7 @@ const Forge = () => {
     ? [...new Set(models.map(model => model.default_options?.modelType).filter(Boolean))]
     : [];
 
-  const isLoading = modelsLoading || modelLoading || !selectedModel || (models && models.length > 0 && !preloadComplete);
+  const isLoading = modelsLoading || modelLoading || !selectedModel || !preloadComplete;
 
   return (
     <Shell>
@@ -377,13 +377,14 @@ const Forge = () => {
             <Loader2 className="w-12 h-12 animate-spin text-red-600 mb-4" />
             {preloadProgress.total > 0 && (
               <div className="w-64 text-center">
-                <p>Preloading models: {preloadProgress.loaded} of {preloadProgress.total}</p>
-                <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2">
-                  <div 
-                    className="bg-blue-600 h-2.5 rounded-full" 
-                    style={{ width: `${Math.round((preloadProgress.loaded / preloadProgress.total) * 100)}%` }}
-                  />
-                </div>
+                <p className="mb-2">Preloading models: {preloadProgress.loaded} of {preloadProgress.total}</p>
+                <Progress 
+                  value={(preloadProgress.loaded / preloadProgress.total) * 100} 
+                  className="h-2 w-full"
+                />
+                <p className="mt-2 text-sm text-gray-500">
+                  This ensures smooth transitions between models
+                </p>
               </div>
             )}
           </div>
