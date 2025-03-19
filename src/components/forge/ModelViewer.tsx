@@ -7,6 +7,7 @@ import { ThreeDModel } from '@/types/model';
 import { Loader2 } from 'lucide-react';
 import { getPreloadedGeometry, isModelPreloaded, preloadModelGeometry, didModelFail } from '@/utils/modelPreloader';
 import LoadingSpinner from '@/components/ui/loading-spinner';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const globalGeometryCache = new Map<string, THREE.BufferGeometry>();
 
@@ -236,6 +237,17 @@ const ModelDisplay = ({
     const color = customOptions.color || '#ffffff';
     const material = customOptions.material || 'plastic';
     
+    const isMobile = window.innerWidth < 768;
+    
+    if (isMobile) {
+      return new THREE.MeshStandardMaterial({ 
+        color, 
+        roughness: 0.5, 
+        metalness: 0.2,
+        flatShading: true
+      });
+    }
+    
     switch(material) {
       case 'metal':
         return new THREE.MeshStandardMaterial({ 
@@ -340,7 +352,7 @@ const ModelRotationControls = ({ modelRef }: { modelRef: React.RefObject<THREE.G
     };
     
     const onPointerDown = (event: PointerEvent) => {
-      if (event.target === gl.domElement && event.button === 0) {
+      if (event.target === gl.domElement && (event.button === 0 || event.pointerType === 'touch')) {
         event.preventDefault();
         rotationActive.current = true;
         lastPointerPosition.current = { x: event.clientX, y: event.clientY };
@@ -364,7 +376,7 @@ const ModelRotationControls = ({ modelRef }: { modelRef: React.RefObject<THREE.G
       const deltaX = event.clientX - lastPointerPosition.current.x;
       const deltaY = event.clientY - lastPointerPosition.current.y;
       
-      const sensitivity = 0.005;
+      const sensitivity = isTouchDevice.current ? 0.008 : 0.005;
       
       modelRef.current.rotation.y = initialRotation.current.y - deltaX * sensitivity;
       modelRef.current.rotation.x = initialRotation.current.x - deltaY * sensitivity;
@@ -590,6 +602,7 @@ export const ModelViewer: React.FC<ModelViewerProps> = ({
   preserveExistingModel = false
 }) => {
   const [viewerError, setViewerError] = useState<string | null>(null);
+  const isMobile = useIsMobile();
   
   const effectiveOptions = model?.default_options 
     ? { ...model.default_options, ...customizationOptions }
@@ -606,8 +619,10 @@ export const ModelViewer: React.FC<ModelViewerProps> = ({
     );
   }
 
+  const containerHeight = isMobile ? "h-[400px]" : "h-full";
+
   return (
-    <div className="w-full h-full bg-white rounded-lg relative">
+    <div className={`w-full ${containerHeight} bg-white rounded-lg relative`}>
       {viewerError && (
         <div className="absolute top-0 left-0 right-0 bg-red-500 text-white p-2 z-10 text-sm">
           {viewerError}

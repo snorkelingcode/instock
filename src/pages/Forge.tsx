@@ -12,7 +12,7 @@ import {
   ResizablePanel,
   ResizableHandle 
 } from "@/components/ui/resizable";
-import { Loader2 } from 'lucide-react';
+import { Loader2, ChevronDown, ChevronUp } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
 import { useToast } from '@/hooks/use-toast';
 import { ThreeDModel } from '@/types/model';
@@ -33,6 +33,9 @@ import {
 } from '@/utils/modelPreloader';
 import { cleanupInvalidModels } from '@/services/modelService';
 import LoadingSpinner from '@/components/ui/loading-spinner';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const CACHE_KEY_MODELS = 'forgeModels';
 const CACHE_KEY_PRELOAD_STATUS = 'forgePreloadStatus';
@@ -46,6 +49,7 @@ const Forge = () => {
 
   const { user } = useAuth();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const { data: models, isLoading: modelsLoading, refetch: refetchModels } = useModels();
   const [selectedModelId, setSelectedModelId] = useState<string>('');
   const { data: selectedModel, isLoading: modelLoading } = useModel(selectedModelId);
@@ -84,7 +88,11 @@ const Forge = () => {
   const [preloadStarted, setPreloadStarted] = useState(false);
   const [performedCleanup, setPerformedCleanup] = useState(false);
   const initialLoadComplete = useRef(false);
-  const forceShowInterface = useRef(false); // New ref to force show interface after initial preload
+  const forceShowInterface = useRef(false); // Ref to force show interface after initial preload
+  
+  // Mobile-specific states
+  const [activeTab, setActiveTab] = useState<string>("model");
+  const [showInstructions, setShowInstructions] = useState(false);
   
   const saveCustomization = useSaveCustomization();
 
@@ -382,6 +390,11 @@ const Forge = () => {
     }
   }, [models, selectedModelId, modelsLoading]);
 
+  // Toggle instructions visibility for mobile
+  const toggleInstructions = () => {
+    setShowInstructions(prev => !prev);
+  };
+
   return (
     <Shell>
       <div className="container mx-auto py-6 px-4">
@@ -406,46 +419,105 @@ const Forge = () => {
               </div>
             )}
           </div>
+        ) : isMobile ? (
+          // Mobile Layout
+          <div className="flex flex-col space-y-4">
+            {/* Tabs for Mobile */}
+            <Tabs defaultValue="model" value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="model">Model</TabsTrigger>
+                <TabsTrigger value="customize">Customize</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="model" className="min-h-[400px] border rounded-lg">
+                {models && (
+                  <ModelViewer
+                    model={selectedModel || (models[0] || null)}
+                    previousModel={previousModelRef.current}
+                    customizationOptions={customizationOptions}
+                    morphEnabled={morphEnabled}
+                    loadedModels={loadedModels}
+                    onModelsLoaded={handleModelLoaded}
+                    preloadComplete={preloadComplete || forceShowInterface.current}
+                    preserveExistingModel={true}
+                  />
+                )}
+              </TabsContent>
+              
+              <TabsContent value="customize" className="border rounded-lg p-4">
+                {models && (
+                  <CustomizationPanel
+                    model={selectedModel || (models[0] || null)}
+                    modelTypes={modelTypeOptions}
+                    options={customizationOptions}
+                    onChange={handleCustomizationChange}
+                    onSave={handleSaveCustomization}
+                    isAuthenticated={!!user}
+                  />
+                )}
+              </TabsContent>
+            </Tabs>
+            
+            {/* Collapsible Instructions Panel for Mobile */}
+            <div className="border rounded-lg overflow-hidden">
+              <button 
+                onClick={toggleInstructions}
+                className="w-full flex justify-between items-center p-4 bg-gray-50 hover:bg-gray-100 transition-colors"
+              >
+                <span className="font-medium">Instructions</span>
+                {showInstructions ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+              </button>
+              
+              {showInstructions && (
+                <div className="p-4">
+                  <InstructionsPanel isAuthenticated={!!user} />
+                </div>
+              )}
+            </div>
+          </div>
         ) : (
-          <ResizablePanelGroup
-            direction="horizontal"
-            className="min-h-[600px] rounded-lg border"
-          >
-            <ResizablePanel defaultSize={70} minSize={30}>
-              {models && (
-                <ModelViewer
-                  model={selectedModel || (models[0] || null)}
-                  previousModel={previousModelRef.current}
-                  customizationOptions={customizationOptions}
-                  morphEnabled={morphEnabled}
-                  loadedModels={loadedModels}
-                  onModelsLoaded={handleModelLoaded}
-                  preloadComplete={preloadComplete || forceShowInterface.current}
-                  preserveExistingModel={true}
-                />
-              )}
-            </ResizablePanel>
+          // Desktop Layout
+          <div>
+            <ResizablePanelGroup
+              direction="horizontal"
+              className="min-h-[600px] rounded-lg border"
+            >
+              <ResizablePanel defaultSize={70} minSize={30}>
+                {models && (
+                  <ModelViewer
+                    model={selectedModel || (models[0] || null)}
+                    previousModel={previousModelRef.current}
+                    customizationOptions={customizationOptions}
+                    morphEnabled={morphEnabled}
+                    loadedModels={loadedModels}
+                    onModelsLoaded={handleModelLoaded}
+                    preloadComplete={preloadComplete || forceShowInterface.current}
+                    preserveExistingModel={true}
+                  />
+                )}
+              </ResizablePanel>
+              
+              <ResizableHandle withHandle />
+              
+              <ResizablePanel defaultSize={30} minSize={20}>
+                {models && (
+                  <CustomizationPanel
+                    model={selectedModel || (models[0] || null)}
+                    modelTypes={modelTypeOptions}
+                    options={customizationOptions}
+                    onChange={handleCustomizationChange}
+                    onSave={handleSaveCustomization}
+                    isAuthenticated={!!user}
+                  />
+                )}
+              </ResizablePanel>
+            </ResizablePanelGroup>
             
-            <ResizableHandle withHandle />
-            
-            <ResizablePanel defaultSize={30} minSize={20}>
-              {models && (
-                <CustomizationPanel
-                  model={selectedModel || (models[0] || null)}
-                  modelTypes={modelTypeOptions}
-                  options={customizationOptions}
-                  onChange={handleCustomizationChange}
-                  onSave={handleSaveCustomization}
-                  isAuthenticated={!!user}
-                />
-              )}
-            </ResizablePanel>
-          </ResizablePanelGroup>
+            <div className="mt-6">
+              <InstructionsPanel isAuthenticated={!!user} />
+            </div>
+          </div>
         )}
-        
-        <div className="mt-6">
-          <InstructionsPanel isAuthenticated={!!user} />
-        </div>
       </div>
     </Shell>
   );
