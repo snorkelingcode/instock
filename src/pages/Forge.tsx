@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Shell } from "@/components/layout/Shell";
 import { useMetaTags } from "@/hooks/use-meta-tags";
@@ -17,7 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ThreeDModel } from '@/types/model';
 import * as THREE from 'three';
 import { getCache, setCache } from '@/utils/cacheUtils';
-import { preloadModels, getPreloadStatus, isModelPreloaded } from '@/utils/modelPreloader';
+import { preloadModels, getPreloadStatus, isModelPreloaded, resetLoaderState } from '@/utils/modelPreloader';
 
 const Forge = () => {
   useMetaTags({
@@ -83,6 +82,9 @@ const Forge = () => {
     const preloadAllModels = async () => {
       console.log(`Starting preload of all ${models.length} models`);
       
+      // Reset the loader state before starting a new preload
+      resetLoaderState();
+      
       // Preload all models at once
       await preloadModels(models, (loaded, total) => {
         setPreloadProgress({ loaded, total });
@@ -91,10 +93,7 @@ const Forge = () => {
         }
       });
       
-      // Mark all combinations as preloaded
-      const allCombinations = new Set<string>();
-      
-      // Get all unique values for each option
+      // Get all unique model types, corners, and magnets options
       const modelTypes = new Set<string>();
       const cornerStyles = new Set<string>();
       const magnetsOptions = new Set<string>();
@@ -106,12 +105,12 @@ const Forge = () => {
         if (defaultOptions.magnets) magnetsOptions.add(defaultOptions.magnets);
       });
       
-      // Generate all possible combinations
+      // Track all possible combinations
+      const allCombinations = new Set<string>();
       modelTypes.forEach(modelType => {
         cornerStyles.forEach(corners => {
           magnetsOptions.forEach(magnets => {
-            const combinationKey = `${modelType}-${corners}-${magnets}`;
-            allCombinations.add(combinationKey);
+            allCombinations.add(`${modelType}-${corners}-${magnets}`);
           });
         });
       });
@@ -136,6 +135,14 @@ const Forge = () => {
     }
 
     const findMatchingModel = () => {
+      // If currently loading a batch, wait for completion
+      const preloadStatus = getPreloadStatus();
+      if (preloadStatus.isBatchLoading && preloadStatus.pending > 0) {
+        console.log('Still preloading models, waiting before changing model...');
+        setTimeout(findMatchingModel, 500);
+        return;
+      }
+      
       const modelType = customizationOptions.modelType || 'Slab-Slider';
       const corners = customizationOptions.corners || 'rounded';
       const magnets = customizationOptions.magnets || 'no';
@@ -180,7 +187,7 @@ const Forge = () => {
     }
     
     // Add a small delay to prevent multiple model changes in quick succession
-    modelSelectTimeout.current = setTimeout(findMatchingModel, 100);
+    modelSelectTimeout.current = setTimeout(findMatchingModel, 300);
     
     return () => {
       if (modelSelectTimeout.current) {

@@ -7,7 +7,6 @@ import { ThreeDModel } from '@/types/model';
 import { Loader2 } from 'lucide-react';
 import { getPreloadedGeometry, isModelPreloaded, preloadModelGeometry } from '@/utils/modelPreloader';
 
-// Global cache to persist between component remounts
 const globalGeometryCache = new Map<string, THREE.BufferGeometry>();
 
 const SceneSetup = ({ 
@@ -62,7 +61,7 @@ const ModelDisplay = ({
     // First check preloaded geometries from our utility
     const preloadedGeometry = getPreloadedGeometry(url);
     if (preloadedGeometry) {
-      console.log(`Loading geometry from preloader cache for ${url}`);
+      console.log(`Using preloaded geometry for ${url}`);
       return preloadedGeometry;
     }
     
@@ -70,7 +69,7 @@ const ModelDisplay = ({
     if (globalGeometryCache.has(url)) {
       const cachedGeometry = globalGeometryCache.get(url);
       if (cachedGeometry) {
-        console.log(`Loading geometry from global cache for ${url}`);
+        console.log(`Using geometry from global cache for ${url}`);
         return cachedGeometry.clone();
       }
     }
@@ -79,14 +78,19 @@ const ModelDisplay = ({
     if (loadedModels.has(url)) {
       const cachedGeometry = loadedModels.get(url);
       if (cachedGeometry) {
-        console.log(`Loading geometry from component cache for ${url}`);
+        console.log(`Using geometry from component cache for ${url}`);
         return cachedGeometry.clone();
       }
     }
     
     // If not available anywhere, load it using the preloader
     console.log(`No cached geometry found for ${url}, loading from server`);
-    return preloadModelGeometry(url);
+    try {
+      return await preloadModelGeometry(url);
+    } catch (error) {
+      console.error(`Error loading geometry for ${url}:`, error);
+      throw error;
+    }
   };
   
   useEffect(() => {
@@ -94,6 +98,12 @@ const ModelDisplay = ({
     
     const loadCurrentModel = async () => {
       if (!url) return;
+      
+      // Avoid reloading the same model
+      if (lastUrlRef.current === url && currentGeometry) {
+        console.log(`Model ${url} is already loaded, skipping reload`);
+        return;
+      }
       
       setLoading(true);
       setError(null);
@@ -111,35 +121,20 @@ const ModelDisplay = ({
         onModelsLoaded(url, newGeometry.clone());
         
         // Determine if we should morph
-        const shouldMorph = prevUrl && prevUrl !== url && (morphEnabled || isModelPreloaded(prevUrl));
+        const shouldMorph = prevUrl && prevUrl !== url && morphEnabled && currentGeometry;
         
-        if (shouldMorph) {
+        if (shouldMorph && prevUrl) {
           // Always set previous geometry if morphing is enabled
           try {
-            // Check if we have a cached version of the previous model
-            let prevGeometry;
-            
-            if (loadedModels.has(prevUrl)) {
-              prevGeometry = loadedModels.get(prevUrl)?.clone();
-            } else if (globalGeometryCache.has(prevUrl)) {
-              prevGeometry = globalGeometryCache.get(prevUrl)?.clone();
-            } else if (isModelPreloaded(prevUrl)) {
-              prevGeometry = getPreloadedGeometry(prevUrl);
-            } else {
-              // Load it if not in cache
-              prevGeometry = await loadGeometry(prevUrl);
-            }
-            
-            if (isMounted && prevGeometry) {
-              setPreviousGeometry(prevGeometry);
-              setCurrentGeometry(newGeometry);
-              setMorphProgress(0);
-              setIsTransitioning(true);
-              console.log(`Morphing from ${prevUrl} to ${url}`);
-            }
+            // Use current geometry as previous for morphing
+            setPreviousGeometry(currentGeometry);
+            setCurrentGeometry(newGeometry);
+            setMorphProgress(0);
+            setIsTransitioning(true);
+            console.log(`Morphing from ${prevUrl} to ${url}`);
           } catch (err) {
-            console.error('Failed to load previous geometry for morphing:', err);
-            // Fall back to no transition if previous model can't be loaded
+            console.error('Failed to setup morphing:', err);
+            // Fall back to no transition if previous model can't be used
             setCurrentGeometry(newGeometry);
             setIsTransitioning(false);
           }
