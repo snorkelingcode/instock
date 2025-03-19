@@ -10,31 +10,47 @@ import { useUserCustomization } from '@/hooks/use-model';
 import { Loader2 } from 'lucide-react';
 import DebugPanel from './DebugPanel';
 
-const SceneSetup = () => {
-  const { scene, camera, invalidate } = useThree();
+// Create a scene component that will track camera and model data
+const SceneSetup = ({ updateDebugInfo }: { updateDebugInfo: (data: any) => void }) => {
+  const { scene, camera } = useThree();
+  const modelRef = useRef<THREE.Group>(null);
   
   useEffect(() => {
     camera.position.set(0, 200, 100);
     camera.lookAt(0, 0, 0);
     
-    invalidate();
-    
     return () => {};
-  }, [scene, camera, invalidate]);
+  }, [scene, camera]);
+  
+  useFrame(() => {
+    if (camera && modelRef.current) {
+      updateDebugInfo({
+        camera: {
+          position: camera.position.clone(),
+          rotation: camera.rotation.clone(),
+        },
+        model: modelRef.current ? {
+          position: modelRef.current.position.clone(),
+          rotation: modelRef.current.rotation.clone(),
+          scale: modelRef.current.scale.clone(),
+        } : null
+      });
+    }
+  });
   
   return null;
 };
 
-interface ModelViewerProps {
-  model: ThreeDModel;
-  customizationOptions: Record<string, any>;
+interface ModelDisplayProps {
+  url: string;
+  customOptions: Record<string, any>;
+  modelRef: React.RefObject<THREE.Group>;
 }
 
-const ModelDisplay = ({ url, customOptions }: { url: string, customOptions: Record<string, any> }) => {
+const ModelDisplay = ({ url, customOptions, modelRef }: ModelDisplayProps) => {
   const [geometry, setGeometry] = useState<THREE.BufferGeometry | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const modelRef = useRef<THREE.Mesh>(null);
   
   useEffect(() => {
     setLoading(true);
@@ -119,29 +135,36 @@ const ModelDisplay = ({ url, customOptions }: { url: string, customOptions: Reco
   const scale = customOptions.scale || 0.01;
   
   return (
-    <mesh 
-      ref={modelRef}
-      scale={[scale, scale, scale]}
-      castShadow
-      receiveShadow
-      position={[0, 0, 0]}
-      rotation={[Math.PI * -1, Math.PI, Math.PI / 2]} // -180°, 180°, 90°
-    >
-      <primitive object={geometry} attach="geometry" />
-      <meshStandardMaterial 
-        color={customOptions.color || '#ffffff'}
-        metalness={customOptions.material === 'metal' ? 0.8 : 0.1}
-        roughness={
-          customOptions.material === 'metal' ? 0.2 : 
-          customOptions.material === 'wood' ? 0.8 : 0.5
-        }
-      />
-    </mesh>
+    <group ref={modelRef}>
+      <mesh 
+        scale={[scale, scale, scale]}
+        castShadow
+        receiveShadow
+        position={[0, 0, 0]}
+        rotation={[Math.PI * -1, Math.PI, Math.PI / 2]} // -180°, 180°, 90°
+      >
+        <primitive object={geometry} attach="geometry" />
+        <meshStandardMaterial 
+          color={customOptions.color || '#ffffff'}
+          metalness={customOptions.material === 'metal' ? 0.8 : 0.1}
+          roughness={
+            customOptions.material === 'metal' ? 0.2 : 
+            customOptions.material === 'wood' ? 0.8 : 0.5
+          }
+        />
+      </mesh>
+    </group>
   );
 };
 
-const ModelViewerContent = ({ model, effectiveOptions }: { model: ThreeDModel, effectiveOptions: Record<string, any> }) => {
-  const modelRef = useRef<THREE.Mesh>(null);
+interface ModelViewerContentProps {
+  model: ThreeDModel;
+  effectiveOptions: Record<string, any>;
+  onDebugInfoUpdate: (data: any) => void;
+}
+
+const ModelViewerContent = ({ model, effectiveOptions, onDebugInfoUpdate }: ModelViewerContentProps) => {
+  const modelRef = useRef<THREE.Group>(null);
   
   return (
     <>
@@ -156,7 +179,7 @@ const ModelViewerContent = ({ model, effectiveOptions }: { model: ThreeDModel, e
       >
         <color attach="background" args={["#1f2937"]} />
         
-        <SceneSetup />
+        <SceneSetup updateDebugInfo={onDebugInfoUpdate} />
         
         <PerspectiveCamera 
           makeDefault 
@@ -191,7 +214,8 @@ const ModelViewerContent = ({ model, effectiveOptions }: { model: ThreeDModel, e
         <Suspense fallback={null}>
           <ModelDisplay 
             url={model.stl_file_path} 
-            customOptions={effectiveOptions} 
+            customOptions={effectiveOptions}
+            modelRef={modelRef}
           />
         </Suspense>
         
@@ -215,17 +239,29 @@ const ModelViewerContent = ({ model, effectiveOptions }: { model: ThreeDModel, e
           />
         </GizmoHelper>
       </Canvas>
-      
-      <div className="absolute bottom-4 right-4 z-10">
-        <DebugPanel />
-      </div>
     </>
   );
 };
 
+interface ModelViewerProps {
+  model: ThreeDModel;
+  customizationOptions: Record<string, any>;
+}
+
 const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }) => {
   const { user } = useAuth();
   const [viewerError, setViewerError] = useState<string | null>(null);
+  const [debugInfo, setDebugInfo] = useState({
+    camera: {
+      position: new THREE.Vector3(0, 200, 100),
+      rotation: new THREE.Euler(0, 0, 0),
+    },
+    model: {
+      position: new THREE.Vector3(0, 0, 0),
+      rotation: new THREE.Euler(Math.PI * -1, Math.PI, Math.PI / 2),
+      scale: new THREE.Vector3(0.01, 0.01, 0.01),
+    }
+  });
   
   const effectiveOptions = {
     ...model.default_options,
@@ -240,6 +276,13 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
     );
   }
 
+  const handleDebugInfoUpdate = (data: any) => {
+    setDebugInfo({
+      camera: data.camera,
+      model: data.model || debugInfo.model
+    });
+  };
+
   return (
     <div className="w-full h-full bg-gray-800 rounded-lg relative">
       {viewerError && (
@@ -248,7 +291,21 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
         </div>
       )}
       
-      <ModelViewerContent model={model} effectiveOptions={effectiveOptions} />
+      <ModelViewerContent 
+        model={model} 
+        effectiveOptions={effectiveOptions} 
+        onDebugInfoUpdate={handleDebugInfoUpdate} 
+      />
+      
+      <div className="absolute bottom-4 right-4 z-10">
+        <DebugPanel 
+          cameraPosition={debugInfo.camera.position}
+          cameraRotation={debugInfo.camera.rotation}
+          modelPosition={debugInfo.model.position}
+          modelRotation={debugInfo.model.rotation}
+          modelScale={debugInfo.model.scale}
+        />
+      </div>
     </div>
   );
 };
