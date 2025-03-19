@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Shell } from "@/components/layout/Shell";
 import { useMetaTags } from "@/hooks/use-meta-tags";
@@ -82,6 +83,7 @@ const Forge = () => {
   const [preloadStarted, setPreloadStarted] = useState(false);
   const [performedCleanup, setPerformedCleanup] = useState(false);
   const initialLoadComplete = useRef(false);
+  const forceShowInterface = useRef(false); // New ref to force show interface after initial preload
   
   const saveCustomization = useSaveCustomization();
 
@@ -138,6 +140,7 @@ const Forge = () => {
         console.warn('Preload timeout reached, showing UI anyway');
         setPreloadComplete(true);
         initialLoadComplete.current = true;
+        forceShowInterface.current = true;
         
         toast({
           title: "Warning",
@@ -151,6 +154,7 @@ const Forge = () => {
     if (cachedStatus?.complete && initialLoadComplete.current) {
       console.log('Using cached preload status, skipping preload');
       setPreloadComplete(true);
+      forceShowInterface.current = true;
       if (preloadTimeoutRef.current) {
         clearTimeout(preloadTimeoutRef.current);
       }
@@ -173,6 +177,7 @@ const Forge = () => {
             console.log("✅ All models preloaded successfully!");
             setPreloadComplete(true);
             initialLoadComplete.current = true;
+            forceShowInterface.current = true;
             if (preloadTimeoutRef.current) {
               clearTimeout(preloadTimeoutRef.current);
             }
@@ -188,6 +193,7 @@ const Forge = () => {
         console.error("Error during model preloading:", error);
         setPreloadComplete(true);
         initialLoadComplete.current = true;
+        forceShowInterface.current = true;
         
         toast({
           title: "Warning",
@@ -221,7 +227,8 @@ const Forge = () => {
       const magnets = customizationOptions.magnets || 'no';
       const combinationKey = `${modelType}-${corners}-${magnets}`;
       
-      const readyForMorphing = initialLoadComplete.current || preloadComplete;
+      // Only wait for preloading if it's the initial load - after that, allow immediate changing
+      const readyForMorphing = initialLoadComplete.current || preloadComplete || forceShowInterface.current;
       
       if (!readyForMorphing && preloadStatus.isBatchLoading) {
         console.log('Still preloading models, waiting before changing model...');
@@ -346,7 +353,10 @@ const Forge = () => {
     ? [...new Set(models.map(model => model.default_options?.modelType).filter(Boolean))]
     : [];
 
-  const isLoading = (modelsLoading || !models || models.length === 0) && !initialLoadComplete.current;
+  // Change this to show the interface once initial load or forced showing is complete
+  const isLoading = (modelsLoading || !models || models.length === 0) && 
+                   !initialLoadComplete.current && 
+                   !forceShowInterface.current;
 
   return (
     <Shell>
@@ -386,7 +396,8 @@ const Forge = () => {
                   morphEnabled={morphEnabled}
                   loadedModels={loadedModels}
                   onModelsLoaded={handleModelLoaded}
-                  preloadComplete={initialLoadComplete.current || preloadComplete}
+                  preloadComplete={initialLoadComplete.current || preloadComplete || forceShowInterface.current}
+                  preserveExistingModel={true} // Always preserve existing model to avoid blank screens
                 />
               )}
             </ResizablePanel>

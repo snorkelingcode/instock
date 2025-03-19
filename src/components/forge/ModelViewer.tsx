@@ -41,6 +41,7 @@ interface ModelDisplayProps {
   loadedModels: Map<string, THREE.BufferGeometry>;
   onModelsLoaded: (url: string, geometry: THREE.BufferGeometry) => void;
   preloadComplete: boolean;
+  preserveExistingModel: boolean;
 }
 
 const ModelDisplay = ({ 
@@ -51,7 +52,8 @@ const ModelDisplay = ({
   morphEnabled,
   loadedModels,
   onModelsLoaded,
-  preloadComplete
+  preloadComplete,
+  preserveExistingModel
 }: ModelDisplayProps) => {
   const [currentGeometry, setCurrentGeometry] = useState<THREE.BufferGeometry | null>(null);
   const [previousGeometry, setPreviousGeometry] = useState<THREE.BufferGeometry | null>(null);
@@ -117,14 +119,15 @@ const ModelDisplay = ({
   useEffect(() => {
     let isMounted = true;
     
-    // FIXED: Skip loading if both URLs are the same
+    // Skip loading if both URLs are the same
     if (lastUrlRef.current === url && currentGeometry) {
       console.log(`Model ${url} is already loaded, skipping reload`);
       return;
     }
     
-    // FIXED: Don't show loading state if we have preloaded models
-    if (!preloadComplete) {
+    // Don't show loading state if we have preloaded models and after initial load
+    const shouldShowLoading = !preloadComplete && !currentGeometry;
+    if (shouldShowLoading) {
       setLoading(true);
     }
     
@@ -166,7 +169,7 @@ const ModelDisplay = ({
         let newGeometry;
         
         try {
-          // FIXED: Use a faster path for preloaded models to avoid loading indicators
+          // Use a faster path for preloaded models to avoid loading indicators
           if (isModelPreloaded(url) || globalGeometryCache.has(url) || loadedModels.has(url)) {
             newGeometry = await loadGeometry(url);
             console.log(`Fast path: Using cached/preloaded geometry for ${url}`);
@@ -181,7 +184,7 @@ const ModelDisplay = ({
           globalGeometryCache.set(url, newGeometry.clone());
           onModelsLoaded(url, newGeometry.clone());
           
-          // FIXED: Track initial load properly
+          // Track initial load properly
           if (!initialLoadCompleted.current) {
             console.log(`Initial load complete for ${url}`);
             initialLoadCompleted.current = true;
@@ -195,25 +198,30 @@ const ModelDisplay = ({
             setMorphProgress(0);
             setIsTransitioning(true);
           } else {
-            // Direct swap without morphing
-            if (previousGeometryLoaded) {
-              // We have previous geometry but morphing is disabled
-              console.log(`Direct swap from ${prevUrl} to ${url} (morphing disabled)`);
-            } else if (initialLoadCompleted.current) {
-              console.log(`Direct swap to ${url} (no previous geometry available)`);
+            // Keep existing model visible during transition if preserveExistingModel is true
+            if (preserveExistingModel && currentGeometry) {
+              // Start a seamless transition even if we don't have the previous model
+              setPreviousGeometry(currentGeometry.clone());
+              setCurrentGeometry(newGeometry);
+              setMorphProgress(0);
+              setIsTransitioning(true);
             } else {
-              console.log(`First load for ${url}`);
+              // Direct swap without morphing
+              setCurrentGeometry(newGeometry);
+              setIsTransitioning(false);
             }
-            
-            setCurrentGeometry(newGeometry);
-            setIsTransitioning(false);
           }
           
-          // FIXED: Only update lastUrlRef after successful load
+          // Only update lastUrlRef after successful load
           lastUrlRef.current = url;
         } catch (geometryErr) {
           console.error(`Failed to load geometry for ${url}:`, geometryErr);
           setError(`Failed to load model geometry: ${geometryErr.message || 'Unknown error'}`);
+          
+          // If we have a current geometry, keep it visible rather than showing an error
+          if (preserveExistingModel && currentGeometry) {
+            console.log(`Keeping existing model visible due to load error`);
+          }
         }
       } catch (err) {
         if (!isMounted) return;
@@ -233,7 +241,7 @@ const ModelDisplay = ({
     return () => {
       isMounted = false;
     };
-  }, [url, prevUrl, morphEnabled, loadedModels, onModelsLoaded, preloadComplete]);
+  }, [url, prevUrl, morphEnabled, loadedModels, onModelsLoaded, preloadComplete, preserveExistingModel]);
   
   // Handle morphing animation
   useFrame((_, delta) => {
@@ -280,14 +288,16 @@ const ModelDisplay = ({
     }
   };
   
-  // FIXED: Show model while loading if we already have a previous geometry
+  // Show model while loading if we already have a previous geometry
   const shouldShowLoadingIndicator = loading && !currentGeometry && !previousGeometry;
   
-  if (shouldShowLoadingIndicator) {
+  // Only show loading indicator during initial load
+  if (shouldShowLoadingIndicator && !initialLoadCompleted.current) {
     return null;
   }
   
   if (error && !currentGeometry && !previousGeometry) {
+    // If there's an error and we have nothing to show, render a red box as an error indicator
     return (
       <mesh>
         <boxGeometry args={[1, 16, 16]} />
@@ -394,6 +404,7 @@ interface ModelViewerContentProps {
   loadedModels: Map<string, THREE.BufferGeometry>;
   onModelsLoaded: (url: string, geometry: THREE.BufferGeometry) => void;
   preloadComplete: boolean;
+  preserveExistingModel: boolean;
 }
 
 const ModelViewerContent = ({ 
@@ -403,7 +414,8 @@ const ModelViewerContent = ({
   morphEnabled,
   loadedModels,
   onModelsLoaded,
-  preloadComplete
+  preloadComplete,
+  preserveExistingModel
 }: ModelViewerContentProps) => {
   const modelRef = useRef<THREE.Group>(null);
   const [webGLError, setWebGLError] = useState<string | null>(null);
@@ -455,8 +467,9 @@ const ModelViewerContent = ({
           preserveDrawingBuffer: true,
           powerPreference: 'high-performance'
         }}
+        frameloop="demand"
       >
-        <color attach="background" args={["#FFFFFF"]} />
+        <color attach="background" args={["#F8F9FA"]} />
         
         <SceneSetup modelRef={modelRef} />
         <ModelRotationControls modelRef={modelRef} />
@@ -501,6 +514,7 @@ const ModelViewerContent = ({
             loadedModels={loadedModels}
             onModelsLoaded={onModelsLoaded}
             preloadComplete={preloadComplete}
+            preserveExistingModel={preserveExistingModel}
           />
         </Suspense>
         
@@ -527,6 +541,7 @@ interface ModelViewerProps {
   loadedModels: Map<string, THREE.BufferGeometry>;
   onModelsLoaded: (url: string, geometry: THREE.BufferGeometry) => void;
   preloadComplete: boolean;
+  preserveExistingModel?: boolean;
 }
 
 export const ModelViewer: React.FC<ModelViewerProps> = ({ 
@@ -536,7 +551,8 @@ export const ModelViewer: React.FC<ModelViewerProps> = ({
   morphEnabled,
   loadedModels,
   onModelsLoaded,
-  preloadComplete
+  preloadComplete,
+  preserveExistingModel = false
 }) => {
   const [viewerError, setViewerError] = useState<string | null>(null);
   
@@ -548,14 +564,14 @@ export const ModelViewer: React.FC<ModelViewerProps> = ({
   
   if (!model || !model.stl_file_path) {
     return (
-      <div className="w-full h-full bg-gray-800 rounded-lg flex items-center justify-center">
-        <p className="text-white">No model available</p>
+      <div className="w-full h-full bg-gray-100 rounded-lg flex items-center justify-center">
+        <p className="text-gray-600">No model available</p>
       </div>
     );
   }
 
   return (
-    <div className="w-full h-full bg-gray-800 rounded-lg relative">
+    <div className="w-full h-full bg-white rounded-lg relative">
       {viewerError && (
         <div className="absolute top-0 left-0 right-0 bg-red-500 text-white p-2 z-10 text-sm">
           {viewerError}
@@ -570,6 +586,7 @@ export const ModelViewer: React.FC<ModelViewerProps> = ({
         loadedModels={loadedModels}
         onModelsLoaded={onModelsLoaded}
         preloadComplete={preloadComplete}
+        preserveExistingModel={preserveExistingModel}
       />
     </div>
   );
