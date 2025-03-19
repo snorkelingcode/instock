@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { ThreeDModel } from '@/types/model';
 import { useUserCustomization } from '@/hooks/use-model';
 import { Loader2 } from 'lucide-react';
+import DebugPanel from './DebugPanel';
 
 // Add a helper component to automatically set up scene
 const SceneSetup = () => {
@@ -116,13 +117,12 @@ const ModelDisplay = ({ url, customOptions }: { url: string, customOptions: Reco
   };
   
   if (loading) {
-    return null; // Removed the sphere object
+    return null;
   }
   
   if (error || !geometry) {
     return (
       <mesh>
-        {/* Fix: Change args format to correct array structure */}
         <boxGeometry args={[1, 16, 16]} />
         <meshStandardMaterial color="red" />
       </mesh>
@@ -154,32 +154,12 @@ const ModelDisplay = ({ url, customOptions }: { url: string, customOptions: Reco
   );
 };
 
-const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }) => {
-  const { user } = useAuth();
-  const [viewerError, setViewerError] = useState<string | null>(null);
+// Create a container component to connect the 3D canvas with the debug panel
+const ModelViewerContent = ({ model, effectiveOptions }: { model: ThreeDModel, effectiveOptions: Record<string, any> }) => {
+  const modelRef = useRef<THREE.Mesh>(null);
   
-  // Combine default options with user customizations
-  const effectiveOptions = {
-    ...model.default_options,
-    ...customizationOptions
-  };
-  
-  if (!model || !model.stl_file_path) {
-    return (
-      <div className="w-full h-full bg-gray-800 rounded-lg flex items-center justify-center">
-        <p className="text-white">No model available</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="w-full h-full bg-gray-800 rounded-lg relative">
-      {viewerError && (
-        <div className="absolute top-0 left-0 right-0 bg-red-500 text-white p-2 z-10 text-sm">
-          {viewerError}
-        </div>
-      )}
-      
+    <>
       <Canvas
         shadows
         dpr={1}
@@ -188,12 +168,7 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
           gl.shadowMap.enabled = true;
           gl.shadowMap.type = THREE.PCFSoftShadowMap;
         }}
-        onError={(error) => {
-          console.error("Canvas error:", error);
-          setViewerError("Error rendering 3D model");
-        }}
       >
-        {/* Fix: Change args format for color to be a string, not an array */}
         <color attach="background" args={["#1f2937"]} />
         
         {/* Scene setup component to ensure proper camera positioning */}
@@ -237,10 +212,7 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
           />
         </Suspense>
         
-        {/* Fix: Change args format for gridHelper */}
         <gridHelper args={[1000, 100]} position={[0, -50, 0]} />
-        
-        {/* Fix: Change args format for axesHelper */}
         <axesHelper args={[100]} />
         
         <OrbitControls 
@@ -250,7 +222,6 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
           target={[0, 0, 0]} // Target the center of the scene
           makeDefault
         />
-        {/* Simplified GizmoHelper to avoid potential issues */}
         <GizmoHelper
           alignment="bottom-right"
           margin={[80, 80]}
@@ -260,6 +231,38 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
           />
         </GizmoHelper>
       </Canvas>
+      <DebugPanel modelRef={modelRef} />
+    </>
+  );
+};
+
+const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }) => {
+  const { user } = useAuth();
+  const [viewerError, setViewerError] = useState<string | null>(null);
+  
+  // Combine default options with user customizations
+  const effectiveOptions = {
+    ...model.default_options,
+    ...customizationOptions
+  };
+  
+  if (!model || !model.stl_file_path) {
+    return (
+      <div className="w-full h-full bg-gray-800 rounded-lg flex items-center justify-center">
+        <p className="text-white">No model available</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full h-full bg-gray-800 rounded-lg relative">
+      {viewerError && (
+        <div className="absolute top-0 left-0 right-0 bg-red-500 text-white p-2 z-10 text-sm">
+          {viewerError}
+        </div>
+      )}
+      
+      <ModelViewerContent model={model} effectiveOptions={effectiveOptions} />
     </div>
   );
 };
