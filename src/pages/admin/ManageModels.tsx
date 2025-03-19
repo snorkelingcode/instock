@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { Shell } from "@/components/layout/Shell";
 import { useMetaTags } from "@/hooks/use-meta-tags";
 import { useAuth } from "@/contexts/AuthContext";
-import { useModels, useCreateModel, useUpdateModel } from "@/hooks/use-model";
+import { useModels, useCreateModel, useUpdateModel, useDeleteModel } from "@/hooks/use-model";
 import { uploadModelFile } from "@/services/modelService";
 import { ThreeDModel } from "@/types/model";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -38,6 +38,7 @@ const ManageModels = () => {
   const { data: models, isLoading } = useModels();
   const createModel = useCreateModel();
   const updateModel = useUpdateModel();
+  const deleteModel = useDeleteModel();
   
   const [uploadedModels, setUploadedModels] = useState<Record<string, boolean>>({});
   
@@ -143,6 +144,41 @@ const ManageModels = () => {
     }
   };
 
+  const handleDeleteModel = async (modelId: string) => {
+    try {
+      const modelType = modelTypes.find(type => type.id === modelId);
+      if (!modelType) throw new Error("Invalid model type");
+      
+      // Find the model to delete
+      const modelToDelete = models?.find(model => model.name === modelType.title);
+      
+      if (!modelToDelete) {
+        throw new Error("Model not found");
+      }
+      
+      // Delete the model
+      await deleteModel.mutateAsync(modelToDelete.id);
+      
+      // Update uploaded status
+      setUploadedModels(prev => ({
+        ...prev,
+        [modelId]: false
+      }));
+      
+      toast({
+        title: "Success",
+        description: `${modelType.title} deleted successfully.`,
+      });
+    } catch (error: any) {
+      console.error("Error deleting model:", error);
+      toast({
+        title: "Error",
+        description: `Failed to delete model: ${error.message}`,
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <Shell>
       <div className="container mx-auto py-8 px-4">
@@ -176,6 +212,7 @@ const ManageModels = () => {
                         title={model.title}
                         onFileUpload={handleModelUpload}
                         isUploaded={!!uploadedModels[model.id]}
+                        onDeleteModel={handleDeleteModel}
                       />
                     ))
                   }
@@ -203,6 +240,7 @@ const ManageModels = () => {
                         title={model.title}
                         onFileUpload={handleModelUpload}
                         isUploaded={!!uploadedModels[model.id]}
+                        onDeleteModel={handleDeleteModel}
                       />
                     ))
                   }
