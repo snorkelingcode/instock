@@ -1,3 +1,4 @@
+
 import React, { useRef, useState, useEffect, Suspense } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls, GizmoHelper, GizmoViewport, PerspectiveCamera } from '@react-three/drei';
@@ -10,16 +11,19 @@ import { Loader2 } from 'lucide-react';
 
 // Add a helper component to automatically set up scene
 const SceneSetup = () => {
-  const { scene, camera } = useThree();
+  const { scene, camera, invalidate } = useThree();
   
   useEffect(() => {
     // Ensure camera is positioned outside the model
     camera.position.set(200, 100, 200);
     camera.lookAt(0, 0, 0);
     
+    // Force a render update
+    invalidate();
+    
     // Force a scene update
     return () => {};
-  }, [scene, camera]);
+  }, [scene, camera, invalidate]);
   
   return null;
 };
@@ -52,7 +56,9 @@ const ModelDisplay = ({ url, customOptions }: { url: string, customOptions: Reco
         }
         
         // Get the bounding box of the geometry to check its size
-        const boundingBox = new THREE.Box3().setFromBufferAttribute(loadedGeometry.attributes.position);
+        const boundingBox = new THREE.Box3().setFromBufferAttribute(
+          loadedGeometry.attributes.position as THREE.BufferAttribute
+        );
         const size = new THREE.Vector3();
         boundingBox.getSize(size);
         console.log('Model dimensions:', size);
@@ -116,7 +122,7 @@ const ModelDisplay = ({ url, customOptions }: { url: string, customOptions: Reco
   if (error || !geometry) {
     return (
       <mesh>
-        <boxGeometry args={[1, 16, 16]} />
+        <boxGeometry args={[[1, 16, 16]]} />
         <meshStandardMaterial color="red" />
       </mesh>
     );
@@ -175,22 +181,18 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
       
       <Canvas
         shadows
-        dpr={[1, 2]}
-        onCreated={({ gl, scene, camera }) => {
+        dpr={1}
+        onCreated={({ gl }) => {
           gl.localClippingEnabled = true;
           gl.shadowMap.enabled = true;
           gl.shadowMap.type = THREE.PCFSoftShadowMap;
-          
-          // Move camera to a better viewing position
-          camera.position.set(0, 0, 200);
-          camera.lookAt(0, 0, 0);
         }}
         onError={(error) => {
           console.error("Canvas error:", error);
           setViewerError("Error rendering 3D model");
         }}
       >
-        <color attach="background" args={['#1f2937']} />
+        <color attach="background" args={[["#1f2937"]]} />
         
         {/* Scene setup component to ensure proper camera positioning */}
         <SceneSetup />
@@ -217,11 +219,13 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
         <directionalLight 
           position={[100, 200, 100]} 
           intensity={0.8} 
-          castShadow 
+          castShadow
+          shadow-mapSize-width={2048}
+          shadow-mapSize-height={2048} 
         />
         <directionalLight 
           position={[-100, -100, -100]} 
-          intensity={0.3} 
+          intensity={0.3}
         />
         
         <Suspense fallback={null}>
@@ -232,10 +236,10 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
         </Suspense>
         
         {/* Grid helper (Sketchfab-like grid) */}
-        <gridHelper args={[1000, 100, "#888888", "#444444"]} position={[0, -50, 0]} />
+        <gridHelper args={[[1000, 100, "#888888", "#444444"]]} position={[0, -50, 0]} />
         
         {/* Axes helper to visualize world axes */}
-        <axesHelper args={[100]} />
+        <axesHelper args={[[100]]} />
         
         <OrbitControls 
           enablePan={true}
@@ -244,16 +248,13 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
           target={[0, 0, 0]} // Target the center of the scene
           makeDefault
         />
-        <GizmoHelper 
-          alignment="bottom-right" 
+        {/* Simplified GizmoHelper to avoid potential issues */}
+        <GizmoHelper
+          alignment="bottom-right"
           margin={[80, 80]}
-          renderPriority={2}
         >
-          <GizmoViewport 
-            axisColors={["#ff3653", "#0aff2c", "#2c8eff"]} 
-            labelColor="black" 
-            axisHeadScale={1}
-            axisScale={0.5}
+          <GizmoViewport
+            labelColor="black"
           />
         </GizmoHelper>
       </Canvas>
