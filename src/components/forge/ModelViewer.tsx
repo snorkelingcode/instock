@@ -1,4 +1,3 @@
-
 import React, { useRef, useState, useEffect, Suspense } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { OrbitControls, GizmoHelper, GizmoViewport, PerspectiveCamera } from '@react-three/drei';
@@ -8,13 +7,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { ThreeDModel } from '@/types/model';
 import { useUserCustomization } from '@/hooks/use-model';
 import { Loader2 } from 'lucide-react';
-import DebugPanel from './DebugPanel';
 
 const SceneSetup = ({ 
-  updateDebugInfo, 
   modelRef 
 }: { 
-  updateDebugInfo: (data: any) => void, 
   modelRef: React.RefObject<THREE.Group> 
 }) => {
   const { camera } = useThree();
@@ -29,22 +25,6 @@ const SceneSetup = ({
     );
     camera.updateProjectionMatrix();
   }, [camera]);
-  
-  useFrame(() => {
-    if (camera && modelRef.current) {
-      updateDebugInfo({
-        camera: {
-          position: camera.position.clone(),
-          rotation: camera.rotation.clone(),
-        },
-        model: {
-          position: modelRef.current.position.clone(),
-          rotation: modelRef.current.rotation.clone(),
-          scale: modelRef.current.scale.clone(),
-        }
-      });
-    }
-  });
   
   return null;
 };
@@ -214,10 +194,9 @@ const ModelRotationControls = ({ modelRef }: { modelRef: React.RefObject<THREE.G
 interface ModelViewerContentProps {
   model: ThreeDModel;
   effectiveOptions: Record<string, any>;
-  onDebugInfoUpdate: (data: any) => void;
 }
 
-const ModelViewerContent = ({ model, effectiveOptions, onDebugInfoUpdate }: ModelViewerContentProps) => {
+const ModelViewerContent = ({ model, effectiveOptions }: ModelViewerContentProps) => {
   const modelRef = useRef<THREE.Group>(null);
   
   return (
@@ -233,7 +212,7 @@ const ModelViewerContent = ({ model, effectiveOptions, onDebugInfoUpdate }: Mode
       >
         <color attach="background" args={["#FFFFFF"]} />
         
-        <SceneSetup updateDebugInfo={onDebugInfoUpdate} modelRef={modelRef} />
+        <SceneSetup modelRef={modelRef} />
         <ModelRotationControls modelRef={modelRef} />
         
         <PerspectiveCamera 
@@ -274,8 +253,6 @@ const ModelViewerContent = ({ model, effectiveOptions, onDebugInfoUpdate }: Mode
           />
         </Suspense>
         
-        <gridHelper args={[500, 50, "#ea384c", "#ea384c"]} position={[0, -50, 0]} />
-        
         <OrbitControls 
           enabled={false}
           enablePan={false}
@@ -307,17 +284,6 @@ interface ModelViewerProps {
 const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }) => {
   const { user } = useAuth();
   const [viewerError, setViewerError] = useState<string | null>(null);
-  const [debugInfo, setDebugInfo] = useState({
-    camera: {
-      position: new THREE.Vector3(0, 200, 100),
-      rotation: new THREE.Euler(0, 0, 0),
-    },
-    model: {
-      position: new THREE.Vector3(0, 0, 0),
-      rotation: new THREE.Euler(Math.PI, Math.PI, Math.PI / 2),
-      scale: new THREE.Vector3(0.01, 0.01, 0.01),
-    }
-  });
   
   const effectiveOptions = {
     ...model.default_options,
@@ -332,10 +298,6 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
     );
   }
 
-  const handleDebugInfoUpdate = (data: any) => {
-    setDebugInfo(data);
-  };
-
   return (
     <div className="w-full h-full bg-gray-800 rounded-lg relative">
       {viewerError && (
@@ -347,18 +309,7 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
       <ModelViewerContent 
         model={model} 
         effectiveOptions={effectiveOptions} 
-        onDebugInfoUpdate={handleDebugInfoUpdate} 
       />
-      
-      <div className="absolute bottom-4 right-4 z-10">
-        <DebugPanel 
-          cameraPosition={debugInfo.camera.position}
-          cameraRotation={debugInfo.camera.rotation}
-          modelPosition={debugInfo.model.position}
-          modelRotation={debugInfo.model.rotation}
-          modelScale={debugInfo.model.scale}
-        />
-      </div>
     </div>
   );
 };
