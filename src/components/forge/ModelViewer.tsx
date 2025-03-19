@@ -1,4 +1,3 @@
-
 import React, { useRef, useState, useEffect, Suspense } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls, GizmoHelper, GizmoViewport, PerspectiveCamera } from '@react-three/drei';
@@ -53,17 +52,10 @@ const ModelDisplay = ({ url, customOptions }: { url: string, customOptions: Reco
         }
         
         // Get the bounding box of the geometry to check its size
-        // Use a safe type check before using setFromBufferAttribute
-        if (loadedGeometry.attributes.position) {
-          const boundingBox = new THREE.Box3();
-          // Use proper typing for Box3.setFromBufferAttribute
-          boundingBox.setFromBufferAttribute(
-            loadedGeometry.attributes.position as THREE.BufferAttribute
-          );
-          const size = new THREE.Vector3();
-          boundingBox.getSize(size);
-          console.log('Model dimensions:', size);
-        }
+        const boundingBox = new THREE.Box3().setFromBufferAttribute(loadedGeometry.attributes.position);
+        const size = new THREE.Vector3();
+        boundingBox.getSize(size);
+        console.log('Model dimensions:', size);
         
         setGeometry(loadedGeometry);
         setLoading(false);
@@ -75,6 +67,7 @@ const ModelDisplay = ({ url, customOptions }: { url: string, customOptions: Reco
       (err) => {
         // Error callback
         console.error('Error loading STL:', err);
+        // Fix: Handle the unknown type properly
         const errorMessage = err instanceof Error ? err.message : 'Unknown error';
         setError(`Failed to load model: ${errorMessage}`);
         setLoading(false);
@@ -123,8 +116,7 @@ const ModelDisplay = ({ url, customOptions }: { url: string, customOptions: Reco
   if (error || !geometry) {
     return (
       <mesh>
-        {/* Fixed: Ensure args is an array */}
-        <boxGeometry args={[1, 1, 1]} />
+        <boxGeometry args={[1, 16, 16]} />
         <meshStandardMaterial color="red" />
       </mesh>
     );
@@ -219,7 +211,8 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
           penumbra={1} 
           intensity={0.8} 
           castShadow 
-          shadow-mapSize={[2048, 2048]}
+          shadow-mapSize-width={2048}
+          shadow-mapSize-height={2048}
         />
         <directionalLight 
           position={[100, 200, 100]} 
@@ -238,10 +231,10 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
           />
         </Suspense>
         
-        {/* Fix: Ensure gridHelper args is an array */}
+        {/* Grid helper (Sketchfab-like grid) */}
         <gridHelper args={[1000, 100, "#888888", "#444444"]} position={[0, -50, 0]} />
         
-        {/* Fix: Ensure axesHelper args is an array */}
+        {/* Axes helper to visualize world axes */}
         <axesHelper args={[100]} />
         
         <OrbitControls 
