@@ -65,7 +65,6 @@ const ModelDisplay = ({
   const morphAttempted = useRef<boolean>(false);
   const initialLoadCompleted = useRef<boolean>(false);
   
-  // Enhanced geometry loading with multiple cache layers
   const loadGeometry = async (url: string): Promise<THREE.BufferGeometry> => {
     if (!url || url.trim() === '') {
       console.error('Invalid URL provided to loadGeometry');
@@ -77,14 +76,11 @@ const ModelDisplay = ({
       return Promise.reject(new Error(`URL previously failed: ${url}`));
     }
     
-    // Priority 1: Get from preloaded geometries (global application cache)
-    const preloadedGeometry = getPreloadedGeometry(url);
-    if (preloadedGeometry) {
+    if (getPreloadedGeometry(url)) {
       console.log(`Using preloaded geometry for ${url}`);
-      return preloadedGeometry.clone(); // Use clone() to prevent modifying the cached original
+      return getPreloadedGeometry(url).clone();
     }
     
-    // Priority 2: Check component-level cache
     if (loadedModels.has(url)) {
       const cachedGeometry = loadedModels.get(url);
       if (cachedGeometry) {
@@ -93,7 +89,6 @@ const ModelDisplay = ({
       }
     }
     
-    // Priority 3: Check global cache
     if (globalGeometryCache.has(url)) {
       const cachedGeometry = globalGeometryCache.get(url);
       if (cachedGeometry) {
@@ -102,11 +97,9 @@ const ModelDisplay = ({
       }
     }
     
-    // Last resort: Load from server
     console.log(`No cached geometry found for ${url}, loading from server`);
     try {
       const geometry = await preloadModelGeometry(url);
-      // Store in global cache for future use
       globalGeometryCache.set(url, geometry.clone());
       return geometry;
     } catch (error) {
@@ -115,17 +108,14 @@ const ModelDisplay = ({
     }
   };
   
-  // Load geometries when URL changes - with improved morphing
   useEffect(() => {
     let isMounted = true;
     
-    // Skip loading if both URLs are the same
     if (lastUrlRef.current === url && currentGeometry) {
       console.log(`Model ${url} is already loaded, skipping reload`);
       return;
     }
     
-    // Don't show loading state if we have preloaded models and after initial load
     const shouldShowLoading = !preloadComplete && !currentGeometry;
     if (shouldShowLoading) {
       setLoading(true);
@@ -144,53 +134,43 @@ const ModelDisplay = ({
       setError(null);
       
       try {
-        // Always attempt to load the previous model first if it exists and morphing is enabled
         const shouldMorph = prevUrl && prevUrl !== url && morphEnabled && preloadComplete;
         let previousGeometryLoaded = null;
         
         if (shouldMorph && prevUrl) {
           try {
-            // Check if previous model was already loaded in current scene first
             if (currentGeometry && lastUrlRef.current === prevUrl) {
               console.log(`Using current geometry as previous for morphing from ${prevUrl}`);
               previousGeometryLoaded = currentGeometry.clone();
             } else {
               previousGeometryLoaded = await loadGeometry(prevUrl);
             }
-            // Keep track that we attempted morphing
             morphAttempted.current = true;
           } catch (err) {
             console.error(`Failed to load previous model for morphing: ${prevUrl}`, err);
-            // Even if previous geometry fails, continue with current model
           }
         }
         
-        // Load current model - first check if it's preloaded
         let newGeometry;
         
         try {
-          // Use a faster path for preloaded models to avoid loading indicators
           if (isModelPreloaded(url) || globalGeometryCache.has(url) || loadedModels.has(url)) {
             newGeometry = await loadGeometry(url);
             console.log(`Fast path: Using cached/preloaded geometry for ${url}`);
           } else {
-            // This is a slower path that will trigger loading indicators if needed
             newGeometry = await loadGeometry(url);
           }
           
           if (!isMounted) return;
           
-          // Store in caches
           globalGeometryCache.set(url, newGeometry.clone());
           onModelsLoaded(url, newGeometry.clone());
           
-          // Track initial load properly
           if (!initialLoadCompleted.current) {
             console.log(`Initial load complete for ${url}`);
             initialLoadCompleted.current = true;
           }
           
-          // Set up morphing if previous geometry was loaded
           if (shouldMorph && previousGeometryLoaded) {
             console.log(`Morphing from ${prevUrl} to ${url}`);
             setPreviousGeometry(previousGeometryLoaded);
@@ -198,27 +178,22 @@ const ModelDisplay = ({
             setMorphProgress(0);
             setIsTransitioning(true);
           } else {
-            // Keep existing model visible during transition if preserveExistingModel is true
             if (preserveExistingModel && currentGeometry) {
-              // Start a seamless transition even if we don't have the previous model
               setPreviousGeometry(currentGeometry.clone());
               setCurrentGeometry(newGeometry);
               setMorphProgress(0);
               setIsTransitioning(true);
             } else {
-              // Direct swap without morphing
               setCurrentGeometry(newGeometry);
               setIsTransitioning(false);
             }
           }
           
-          // Only update lastUrlRef after successful load
           lastUrlRef.current = url;
         } catch (geometryErr) {
           console.error(`Failed to load geometry for ${url}:`, geometryErr);
           setError(`Failed to load model geometry: ${geometryErr.message || 'Unknown error'}`);
           
-          // If we have a current geometry, keep it visible rather than showing an error
           if (preserveExistingModel && currentGeometry) {
             console.log(`Keeping existing model visible due to load error`);
           }
@@ -229,7 +204,6 @@ const ModelDisplay = ({
         console.error(`Failed to load model ${url}:`, errorMessage);
         setError(`Failed to load model: ${errorMessage}`);
       } finally {
-        // Always turn off loading state when done
         if (isMounted) {
           setLoading(false);
         }
@@ -243,11 +217,10 @@ const ModelDisplay = ({
     };
   }, [url, prevUrl, morphEnabled, loadedModels, onModelsLoaded, preloadComplete, preserveExistingModel]);
   
-  // Handle morphing animation
   useFrame((_, delta) => {
     if (isTransitioning && (previousGeometry || currentGeometry)) {
       setMorphProgress((prev) => {
-        const newProgress = prev + delta * 2; // Adjust speed as needed (higher = faster)
+        const newProgress = prev + delta * 2;
         
         if (newProgress >= 1) {
           setIsTransitioning(false);
@@ -260,7 +233,6 @@ const ModelDisplay = ({
     }
   });
   
-  // Create material based on custom options
   const getMaterial = () => {
     const color = customOptions.color || '#ffffff';
     const material = customOptions.material || 'plastic';
@@ -288,16 +260,13 @@ const ModelDisplay = ({
     }
   };
   
-  // Show model while loading if we already have a previous geometry
   const shouldShowLoadingIndicator = loading && !currentGeometry && !previousGeometry;
   
-  // Only show loading indicator during initial load
   if (shouldShowLoadingIndicator && !initialLoadCompleted.current) {
     return null;
   }
   
   if (error && !currentGeometry && !previousGeometry) {
-    // If there's an error and we have nothing to show, render a red box as an error indicator
     return (
       <mesh>
         <boxGeometry args={[1, 16, 16]} />
@@ -310,7 +279,6 @@ const ModelDisplay = ({
   
   return (
     <group ref={modelRef}>
-      {/* Render previous model during transition */}
       {previousGeometry && isTransitioning && (
         <mesh 
           scale={[scale, scale, scale]}
@@ -329,7 +297,6 @@ const ModelDisplay = ({
         </mesh>
       )}
       
-      {/* Render current model */}
       {currentGeometry && (
         <mesh 
           scale={[scale, scale, scale]}
@@ -350,100 +317,76 @@ const ModelDisplay = ({
   );
 };
 
-// Fixed implementation of ModelRotationControls
 const ModelRotationControls = ({ modelRef }: { modelRef: React.RefObject<THREE.Group> }) => {
   const { gl } = useThree();
   const [isDragging, setIsDragging] = useState(false);
   const [previousMousePosition, setPreviousMousePosition] = useState({ x: 0, y: 0 });
   
   useEffect(() => {
-    const handleMouseDown = (event: MouseEvent) => {
+    if (!modelRef.current) return;
+    
+    const handlePointerDown = (event: PointerEvent) => {
       if (!modelRef.current) return;
       
-      // Only respond to clicks on the canvas
       if (event.target === gl.domElement) {
         setIsDragging(true);
-        setPreviousMousePosition({ x: event.clientX, y: event.clientY });
+        setPreviousMousePosition({ 
+          x: event.clientX, 
+          y: event.clientY 
+        });
+        gl.domElement.style.cursor = 'grabbing';
         event.preventDefault();
       }
     };
     
-    const handleMouseMove = (event: MouseEvent) => {
-      if (isDragging && modelRef.current) {
-        const deltaMove = {
-          x: event.clientX - previousMousePosition.x,
-          y: event.clientY - previousMousePosition.y
-        };
-        
-        const rotationSpeed = 0.01;
-        
-        // Apply rotation to the model
-        modelRef.current.rotation.y += deltaMove.x * rotationSpeed;
-        modelRef.current.rotation.x += deltaMove.y * rotationSpeed;
-        
-        setPreviousMousePosition({ x: event.clientX, y: event.clientY });
-      }
-    };
-    
-    const handleMouseUp = (event: MouseEvent) => {
-      setIsDragging(false);
-    };
-    
-    // Add event listeners to the document for better drag handling
-    const canvas = gl.domElement;
-    canvas.addEventListener('mousedown', handleMouseDown);
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-    
-    // Add touch event support for mobile devices
-    const handleTouchStart = (event: TouchEvent) => {
-      if (!modelRef.current || event.touches.length !== 1) return;
-      
-      setIsDragging(true);
-      setPreviousMousePosition({ 
-        x: event.touches[0].clientX, 
-        y: event.touches[0].clientY 
-      });
-      event.preventDefault();
-    };
-    
-    const handleTouchMove = (event: TouchEvent) => {
-      if (!isDragging || !modelRef.current || event.touches.length !== 1) return;
+    const handlePointerMove = (event: PointerEvent) => {
+      if (!isDragging || !modelRef.current) return;
       
       const deltaMove = {
-        x: event.touches[0].clientX - previousMousePosition.x,
-        y: event.touches[0].clientY - previousMousePosition.y
+        x: event.clientX - previousMousePosition.x,
+        y: event.clientY - previousMousePosition.y
       };
       
-      const rotationSpeed = 0.01;
+      const rotationSpeed = 0.005;
       
       modelRef.current.rotation.y += deltaMove.x * rotationSpeed;
       modelRef.current.rotation.x += deltaMove.y * rotationSpeed;
       
       setPreviousMousePosition({ 
-        x: event.touches[0].clientX, 
-        y: event.touches[0].clientY 
+        x: event.clientX, 
+        y: event.clientY 
       });
-      
-      event.preventDefault();
     };
     
-    const handleTouchEnd = (event: TouchEvent) => {
-      setIsDragging(false);
+    const handlePointerUp = () => {
+      if (isDragging) {
+        setIsDragging(false);
+        gl.domElement.style.cursor = 'grab';
+      }
     };
     
-    canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
-    canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
-    canvas.addEventListener('touchend', handleTouchEnd);
+    const handlePointerLeave = () => {
+      if (isDragging) {
+        setIsDragging(false);
+        gl.domElement.style.cursor = 'grab';
+      }
+    };
+    
+    gl.domElement.style.cursor = 'grab';
+    
+    const canvas = gl.domElement;
+    canvas.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('pointermove', handlePointerMove);
+    document.addEventListener('pointerup', handlePointerUp);
+    document.addEventListener('pointerleave', handlePointerLeave);
     
     return () => {
-      canvas.removeEventListener('mousedown', handleMouseDown);
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
+      canvas.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('pointermove', handlePointerMove);
+      document.removeEventListener('pointerup', handlePointerUp);
+      document.removeEventListener('pointerleave', handlePointerLeave);
       
-      canvas.removeEventListener('touchstart', handleTouchStart);
-      canvas.removeEventListener('touchmove', handleTouchMove);
-      canvas.removeEventListener('touchend', handleTouchEnd);
+      gl.domElement.style.cursor = 'auto';
     };
   }, [gl, modelRef, isDragging, previousMousePosition]);
   
@@ -474,7 +417,6 @@ const ModelViewerContent = ({
   const modelRef = useRef<THREE.Group>(null);
   const [webGLError, setWebGLError] = useState<string | null>(null);
   
-  // Handle WebGL context loss
   useEffect(() => {
     const handleContextLost = () => {
       console.error("WebGL context lost");
@@ -522,7 +464,6 @@ const ModelViewerContent = ({
           powerPreference: 'high-performance'
         }}
         frameloop="demand"
-        style={{ cursor: 'grab' }}
       >
         <color attach="background" args={["#F8F9FA"]} />
         
@@ -611,7 +552,6 @@ export const ModelViewer: React.FC<ModelViewerProps> = ({
 }) => {
   const [viewerError, setViewerError] = useState<string | null>(null);
   
-  // Combine default options with user customizations
   const effectiveOptions = {
     ...model.default_options,
     ...customizationOptions
