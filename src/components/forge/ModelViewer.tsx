@@ -31,54 +31,99 @@ const SceneSetup = ({
 
 interface ModelDisplayProps {
   url: string;
+  prevUrl: string | null;
   customOptions: Record<string, any>;
   modelRef: React.RefObject<THREE.Group>;
 }
 
-const ModelDisplay = ({ url, customOptions, modelRef }: ModelDisplayProps) => {
-  const [geometry, setGeometry] = useState<THREE.BufferGeometry | null>(null);
+const ModelDisplay = ({ url, prevUrl, customOptions, modelRef }: ModelDisplayProps) => {
+  const [currentGeometry, setCurrentGeometry] = useState<THREE.BufferGeometry | null>(null);
+  const [previousGeometry, setPreviousGeometry] = useState<THREE.BufferGeometry | null>(null);
+  const [morphProgress, setMorphProgress] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  
+  const loadGeometry = (url: string): Promise<THREE.BufferGeometry> => {
+    return new Promise((resolve, reject) => {
+      const loader = new STLLoader();
+      
+      loader.load(
+        url,
+        (loadedGeometry) => {
+          loadedGeometry.center();
+          if (!loadedGeometry.attributes.normal) {
+            loadedGeometry.computeVertexNormals();
+          }
+          resolve(loadedGeometry);
+        },
+        (xhr) => {
+          console.log(`${Math.round(xhr.loaded / xhr.total * 100)}% loaded`);
+        },
+        (err) => {
+          console.error('Error loading STL:', err);
+          const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+          reject(new Error(`Failed to load model: ${errorMessage}`));
+        }
+      );
+    });
+  };
   
   useEffect(() => {
+    let isMounted = true;
     setLoading(true);
     setError(null);
     
-    const loader = new STLLoader();
+    const isModelChange = prevUrl && prevUrl !== url;
     
-    loader.load(
-      url,
-      (loadedGeometry) => {
-        loadedGeometry.center();
-        if (!loadedGeometry.attributes.normal) {
-          loadedGeometry.computeVertexNormals();
+    const loadModels = async () => {
+      try {
+        const newGeometry = await loadGeometry(url);
+        
+        if (!isMounted) return;
+        
+        if (isModelChange && currentGeometry) {
+          setPreviousGeometry(currentGeometry);
+          setCurrentGeometry(newGeometry);
+          setMorphProgress(0);
+          setIsTransitioning(true);
+        } else {
+          setCurrentGeometry(newGeometry);
+          setPreviousGeometry(null);
+          setIsTransitioning(false);
         }
         
-        const boundingBox = new THREE.Box3().setFromBufferAttribute(
-          loadedGeometry.attributes.position as THREE.BufferAttribute
-        );
-        const size = new THREE.Vector3();
-        boundingBox.getSize(size);
-        console.log('Model dimensions:', size);
-        
-        setGeometry(loadedGeometry);
         setLoading(false);
-      },
-      (xhr) => {
-        console.log(`${Math.round(xhr.loaded / xhr.total * 100)}% loaded`);
-      },
-      (err) => {
-        console.error('Error loading STL:', err);
+      } catch (err) {
+        if (!isMounted) return;
         const errorMessage = err instanceof Error ? err.message : 'Unknown error';
         setError(`Failed to load model: ${errorMessage}`);
         setLoading(false);
       }
-    );
+    };
+    
+    loadModels();
     
     return () => {
-      setGeometry(null);
+      isMounted = false;
     };
-  }, [url]);
+  }, [url, prevUrl]);
+  
+  useFrame((_, delta) => {
+    if (isTransitioning && previousGeometry && currentGeometry) {
+      setMorphProgress((prev) => {
+        const newProgress = prev + delta * 2;
+        
+        if (newProgress >= 1) {
+          setIsTransitioning(false);
+          setPreviousGeometry(null);
+          return 1;
+        }
+        
+        return newProgress;
+      });
+    }
+  });
   
   const getMaterial = () => {
     const color = customOptions.color || '#ffffff';
@@ -107,11 +152,11 @@ const ModelDisplay = ({ url, customOptions, modelRef }: ModelDisplayProps) => {
     }
   };
   
-  if (loading) {
+  if (loading && !currentGeometry) {
     return null;
   }
   
-  if (error || !geometry) {
+  if (error || (!currentGeometry && !previousGeometry)) {
     return (
       <mesh>
         <boxGeometry args={[1, 16, 16]} />
@@ -124,23 +169,42 @@ const ModelDisplay = ({ url, customOptions, modelRef }: ModelDisplayProps) => {
   
   return (
     <group ref={modelRef}>
-      <mesh 
-        scale={[scale, scale, scale]}
-        castShadow
-        receiveShadow
-        position={[0, 0, 0]}
-        rotation={[Math.PI, Math.PI, Math.PI / 2]}
-      >
-        <primitive object={geometry} attach="geometry" />
-        <meshStandardMaterial 
-          color={customOptions.color || '#ffffff'}
-          metalness={customOptions.material === 'metal' ? 0.8 : 0.1}
-          roughness={
-            customOptions.material === 'metal' ? 0.2 : 
-            customOptions.material === 'wood' ? 0.8 : 0.5
-          }
-        />
-      </mesh>
+      {previousGeometry && isTransitioning && (
+        <mesh 
+          scale={[scale, scale, scale]}
+          castShadow
+          receiveShadow
+          position={[0, 0, 0]}
+          rotation={[Math.PI, Math.PI, Math.PI / 2]}
+          visible={morphProgress < 1}
+          material={getMaterial()}
+        >
+          <primitive object={previousGeometry} attach="geometry" />
+          <meshStandardMaterial 
+            {...getMaterial()}
+            transparent={true}
+            opacity={1 - morphProgress}
+          />
+        </mesh>
+      )}
+      
+      {currentGeometry && (
+        <mesh 
+          scale={[scale, scale, scale]}
+          castShadow
+          receiveShadow
+          position={[0, 0, 0]}
+          rotation={[Math.PI, Math.PI, Math.PI / 2]}
+          material={getMaterial()}
+        >
+          <primitive object={currentGeometry} attach="geometry" />
+          <meshStandardMaterial 
+            {...getMaterial()}
+            transparent={isTransitioning}
+            opacity={isTransitioning ? morphProgress : 1}
+          />
+        </mesh>
+      )}
     </group>
   );
 };
@@ -193,10 +257,11 @@ const ModelRotationControls = ({ modelRef }: { modelRef: React.RefObject<THREE.G
 
 interface ModelViewerContentProps {
   model: ThreeDModel;
+  previousModel: ThreeDModel | null;
   effectiveOptions: Record<string, any>;
 }
 
-const ModelViewerContent = ({ model, effectiveOptions }: ModelViewerContentProps) => {
+const ModelViewerContent = ({ model, previousModel, effectiveOptions }: ModelViewerContentProps) => {
   const modelRef = useRef<THREE.Group>(null);
   
   return (
@@ -248,6 +313,7 @@ const ModelViewerContent = ({ model, effectiveOptions }: ModelViewerContentProps
         <Suspense fallback={null}>
           <ModelDisplay 
             url={model.stl_file_path} 
+            prevUrl={previousModel?.stl_file_path || null}
             customOptions={effectiveOptions}
             modelRef={modelRef}
           />
@@ -276,6 +342,16 @@ interface ModelViewerProps {
 const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }) => {
   const { user } = useAuth();
   const [viewerError, setViewerError] = useState<string | null>(null);
+  const [previousModel, setPreviousModel] = useState<ThreeDModel | null>(null);
+  
+  useEffect(() => {
+    setPreviousModel(prevModel => {
+      if (prevModel && prevModel.id !== model.id) {
+        return prevModel;
+      }
+      return null;
+    });
+  }, [model]);
   
   const effectiveOptions = {
     ...model.default_options,
@@ -300,6 +376,7 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
       
       <ModelViewerContent 
         model={model} 
+        previousModel={previousModel}
         effectiveOptions={effectiveOptions} 
       />
     </div>

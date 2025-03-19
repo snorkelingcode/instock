@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Shell } from "@/components/layout/Shell";
 import { useMetaTags } from "@/hooks/use-meta-tags";
 import { useAuth } from "@/contexts/AuthContext";
@@ -37,6 +37,10 @@ const Forge = () => {
     material: 'plastic',
   });
   
+  // Track previous model state for morphing
+  const previousModelRef = useRef<ThreeDModel | null>(null);
+  const [modelChangeTriggered, setModelChangeTriggered] = useState(false);
+  
   const saveCustomization = useSaveCustomization();
 
   // Find the appropriate model based on customization options
@@ -45,6 +49,11 @@ const Forge = () => {
       const modelType = customizationOptions.modelType || 'Slab-Slider';
       const corners = customizationOptions.corners || 'rounded';
       const magnets = customizationOptions.magnets || 'no';
+      
+      // Store previous model before changing
+      if (selectedModel && modelChangeTriggered) {
+        previousModelRef.current = selectedModel;
+      }
       
       // Find model that matches the current customization options
       const matchingModel = models.find(model => {
@@ -58,12 +67,24 @@ const Forge = () => {
       
       if (matchingModel && matchingModel.id !== selectedModelId) {
         setSelectedModelId(matchingModel.id);
+        setModelChangeTriggered(true);
       } else if (!selectedModelId && models.length > 0) {
         // Fallback to first model if no match found
         setSelectedModelId(models[0].id);
+        setModelChangeTriggered(true);
       }
     }
-  }, [models, customizationOptions, selectedModelId]);
+  }, [models, customizationOptions, selectedModelId, selectedModel]);
+
+  // Reset the model change trigger after it's been processed
+  useEffect(() => {
+    if (modelChangeTriggered) {
+      const timer = setTimeout(() => {
+        setModelChangeTriggered(false);
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [modelChangeTriggered]);
 
   // Initialize customization options from saved customization or model defaults
   useEffect(() => {
