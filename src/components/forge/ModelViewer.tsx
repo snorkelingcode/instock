@@ -4,7 +4,6 @@ import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera } from '@react-three/drei';
 import * as THREE from 'three';
 import { STLLoader } from 'three/addons/loaders/STLLoader.js';
-import { useAuth } from '@/contexts/AuthContext';
 import { ThreeDModel } from '@/types/model';
 import { Loader2 } from 'lucide-react';
 
@@ -52,7 +51,7 @@ const ModelDisplay = ({ url, prevUrl, customOptions, modelRef, morphEnabled }: M
     // Check cache first
     if (geometryCache.current.has(url)) {
       const cachedGeometry = geometryCache.current.get(url);
-      if (cachedGeometry) return cachedGeometry;
+      if (cachedGeometry) return cachedGeometry.clone();
     }
     
     return new Promise((resolve, reject) => {
@@ -66,7 +65,7 @@ const ModelDisplay = ({ url, prevUrl, customOptions, modelRef, morphEnabled }: M
             loadedGeometry.computeVertexNormals();
           }
           // Add to cache
-          geometryCache.current.set(url, loadedGeometry);
+          geometryCache.current.set(url, loadedGeometry.clone());
           resolve(loadedGeometry);
         },
         (xhr) => {
@@ -80,6 +79,14 @@ const ModelDisplay = ({ url, prevUrl, customOptions, modelRef, morphEnabled }: M
       );
     });
   };
+  
+  // Preload the next model when morphEnabled changes
+  useEffect(() => {
+    if (morphEnabled && url && prevUrl && url !== prevUrl) {
+      // Preload the new model
+      loadGeometry(url).catch(console.error);
+    }
+  }, [morphEnabled, url, prevUrl]);
   
   useEffect(() => {
     let isMounted = true;
@@ -95,8 +102,24 @@ const ModelDisplay = ({ url, prevUrl, customOptions, modelRef, morphEnabled }: M
         
         if (!isMounted) return;
         
-        if (prevUrl && prevUrl !== url && currentGeometry && morphEnabled) {
-          setPreviousGeometry(currentGeometry);
+        if (prevUrl && prevUrl !== url && morphEnabled) {
+          // If we have a previous model and morphing is enabled
+          if (currentGeometry) {
+            setPreviousGeometry(currentGeometry);
+          }
+          
+          // If we don't already have the previous geometry loaded, load it
+          if (!previousGeometry && prevUrl) {
+            try {
+              const prevGeometry = await loadGeometry(prevUrl);
+              if (isMounted) {
+                setPreviousGeometry(prevGeometry);
+              }
+            } catch (err) {
+              console.error('Failed to load previous geometry:', err);
+            }
+          }
+          
           setCurrentGeometry(newGeometry);
           setMorphProgress(0);
           setIsTransitioning(true);
@@ -122,9 +145,9 @@ const ModelDisplay = ({ url, prevUrl, customOptions, modelRef, morphEnabled }: M
   }, [url, prevUrl, morphEnabled]);
   
   useFrame((_, delta) => {
-    if (isTransitioning && previousGeometry && currentGeometry) {
+    if (isTransitioning && (previousGeometry || currentGeometry)) {
       setMorphProgress((prev) => {
-        const newProgress = prev + delta * 2;
+        const newProgress = prev + delta * 2; // Adjust speed here (2 = 0.5 seconds)
         
         if (newProgress >= 1) {
           setIsTransitioning(false);
@@ -164,11 +187,11 @@ const ModelDisplay = ({ url, prevUrl, customOptions, modelRef, morphEnabled }: M
     }
   };
   
-  if (loading && !currentGeometry) {
+  if (loading && !currentGeometry && !previousGeometry) {
     return null;
   }
   
-  if (error || (!currentGeometry && !previousGeometry)) {
+  if (error && !currentGeometry && !previousGeometry) {
     return (
       <mesh>
         <boxGeometry args={[1, 16, 16]} />

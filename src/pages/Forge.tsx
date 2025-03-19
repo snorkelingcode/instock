@@ -46,7 +46,7 @@ const Forge = () => {
   
   // Track previous model for morphing
   const previousModelRef = useRef<ThreeDModel | null>(null);
-  const [modelChangeTriggered, setModelChangeTriggered] = useState(false);
+  const [morphEnabled, setMorphEnabled] = useState(false);
   
   // Prevent continuous model selection on option change
   const modelSelectTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -57,15 +57,15 @@ const Forge = () => {
   useEffect(() => {
     if (!models || models.length === 0) return;
     
+    // Store previous model before finding a new one
+    if (selectedModel) {
+      previousModelRef.current = selectedModel;
+    }
+
     const findMatchingModel = () => {
       const modelType = customizationOptions.modelType || 'Slab-Slider';
       const corners = customizationOptions.corners || 'rounded';
       const magnets = customizationOptions.magnets || 'no';
-      
-      // Store previous model before changing
-      if (selectedModel) {
-        previousModelRef.current = selectedModel;
-      }
       
       // Find model that matches current options
       const matchingModel = models.find(model => {
@@ -78,12 +78,11 @@ const Forge = () => {
       });
       
       if (matchingModel && matchingModel.id !== selectedModelId) {
+        setMorphEnabled(true);
         setSelectedModelId(matchingModel.id);
-        setModelChangeTriggered(true);
       } else if (!selectedModelId && models.length > 0) {
         // Fallback to first model if no match found
         setSelectedModelId(models[0].id);
-        setModelChangeTriggered(true);
       }
     };
     
@@ -93,7 +92,7 @@ const Forge = () => {
     }
     
     // Add a small delay to prevent multiple model changes in quick succession
-    modelSelectTimeout.current = setTimeout(findMatchingModel, 50);
+    modelSelectTimeout.current = setTimeout(findMatchingModel, 100);
     
     return () => {
       if (modelSelectTimeout.current) {
@@ -102,15 +101,15 @@ const Forge = () => {
     };
   }, [models, customizationOptions, selectedModelId, selectedModel]);
 
-  // Reset the model change trigger after it's been processed
+  // Reset the morph enabled flag after a delay to ensure transition completes
   useEffect(() => {
-    if (modelChangeTriggered) {
+    if (morphEnabled) {
       const timer = setTimeout(() => {
-        setModelChangeTriggered(false);
-      }, 100);
+        setMorphEnabled(false);
+      }, 1000);
       return () => clearTimeout(timer);
     }
-  }, [modelChangeTriggered]);
+  }, [morphEnabled, selectedModelId]);
 
   // Initialize customization options from saved customization or model defaults
   // Only do this once when model changes, not continuously
@@ -129,9 +128,10 @@ const Forge = () => {
         });
       } else if (selectedModel.default_options) {
         // Apply model defaults if no saved customization
+        // Only update options that aren't related to model selection
         Object.entries(selectedModel.default_options).forEach(([key, value]) => {
-          // Only update if the option isn't already set in customizationOptions
-          if (newOptions[key] === undefined) {
+          // Skip updating model type, corners, magnets as they are selection criteria
+          if (!['modelType', 'corners', 'magnets'].includes(key) && newOptions[key] === undefined) {
             newOptions[key] = value;
             shouldUpdate = true;
           }
@@ -139,15 +139,16 @@ const Forge = () => {
       }
       
       if (shouldUpdate) {
-        setCustomizationOptions(newOptions);
+        setCustomizationOptions(prev => ({...prev, ...newOptions}));
       }
     }
   }, [selectedModel, savedCustomization]);
 
   const handleCustomizationChange = (key: string, value: any) => {
-    setCustomizationOptions(prev => ({
-      ...prev,
-      [key]: value
+    // Update all customization options at once to prevent multiple renders
+    setCustomizationOptions(prev => ({ 
+      ...prev, 
+      [key]: value 
     }));
   };
 
@@ -212,7 +213,7 @@ const Forge = () => {
                   model={selectedModel}
                   previousModel={previousModelRef.current}
                   customizationOptions={customizationOptions}
-                  morphEnabled={modelChangeTriggered}
+                  morphEnabled={morphEnabled}
                 />
               )}
             </ResizablePanel>
