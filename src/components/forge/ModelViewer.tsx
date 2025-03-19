@@ -145,9 +145,9 @@ const ModelDisplay = ({ url, customOptions, modelRef }: ModelDisplayProps) => {
     );
   }
   
-  const scale = customOptions.scale || 1;
+  const scale = customOptions.scale || 0.01;
   
-  // Setting model to the specified position, rotation, and scale values
+  // Reverting model to previous position and rotation values
   return (
     <group 
       ref={modelRef}
@@ -159,7 +159,7 @@ const ModelDisplay = ({ url, customOptions, modelRef }: ModelDisplayProps) => {
         castShadow
         receiveShadow
         position={[0, 0, 0]}
-        rotation={[0, 0, 0]}
+        rotation={[Math.PI, Math.PI, Math.PI / 2]} // Reverted to 180°, 180°, 90°
       >
         <primitive object={geometry} attach="geometry" />
         <meshStandardMaterial 
@@ -240,7 +240,7 @@ const ModelViewerContent = ({ model, effectiveOptions, onDebugInfoUpdate }: Mode
         
         <gridHelper args={[1000, 100, "#888888", "#444444"]} position={[0, -50, 0]} />
         
-        <axesHelper args={[100]} />
+        {/* Removed the axes helper/gizmo */}
         
         <OrbitControls 
           enablePan={true}
@@ -277,8 +277,8 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
     },
     model: {
       position: new THREE.Vector3(0, 0, 0),
-      rotation: new THREE.Euler(0, 0, 0),
-      scale: new THREE.Vector3(1, 1, 1),
+      rotation: new THREE.Euler(Math.PI, Math.PI, Math.PI / 2), // Reverted to 180°, 180°, 90°
+      scale: new THREE.Vector3(0.01, 0.01, 0.01), // Reverted to 0.01
     }
   });
   
