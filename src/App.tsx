@@ -97,14 +97,7 @@ const App = () => {
                 } 
               />
               
-              <Route 
-                path="/forge" 
-                element={
-                  <RequireAuth>
-                    <Forge />
-                  </RequireAuth>
-                } 
-              />
+              <Route path="/forge" element={<Forge />} />
               
               <Route 
                 path="/admin/models" 

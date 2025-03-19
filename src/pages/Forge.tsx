@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Shell } from "@/components/layout/Shell";
 import { useMetaTags } from "@/hooks/use-meta-tags";
@@ -39,7 +38,7 @@ const PRELOAD_TIMEOUT = 30000; // 30 seconds max preload time
 
 const Forge = () => {
   useMetaTags({
-    title: "Forge - Customize 3D Models",
+    title: "3D Model Modifier",
     description: "Customize and personalize 3D models in our interactive forge."
   });
 
@@ -320,10 +319,10 @@ const Forge = () => {
   };
 
   const handleSaveCustomization = () => {
-    if (!user || !selectedModelId) {
+    if (!user) {
       toast({
-        title: "Error",
-        description: "You must be logged in to save customizations.",
+        title: "Sign in required",
+        description: "You must be logged in to save customizations. Your changes will not be saved.",
         variant: "destructive",
       });
       return;
@@ -353,7 +352,6 @@ const Forge = () => {
     ? [...new Set(models.map(model => model.default_options?.modelType).filter(Boolean))]
     : [];
 
-  // Change this to show the interface once initial load or forced showing is complete
   const isLoading = (modelsLoading || !models || models.length === 0) && 
                    !initialLoadComplete.current && 
                    !forceShowInterface.current;
@@ -397,7 +395,7 @@ const Forge = () => {
                   loadedModels={loadedModels}
                   onModelsLoaded={handleModelLoaded}
                   preloadComplete={initialLoadComplete.current || preloadComplete || forceShowInterface.current}
-                  preserveExistingModel={true} // Always preserve existing model to avoid blank screens
+                  preserveExistingModel={true}
                 />
               )}
             </ResizablePanel>
@@ -412,6 +410,7 @@ const Forge = () => {
                   options={customizationOptions}
                   onChange={handleCustomizationChange}
                   onSave={handleSaveCustomization}
+                  isAuthenticated={!!user}
                 />
               )}
             </ResizablePanel>

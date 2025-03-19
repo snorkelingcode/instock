@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -110,16 +109,14 @@ const Navigation = () => {
                   </Link>
                 </SheetClose>
                 
-                {user && (
-                  <SheetClose asChild>
-                    <Link
-                      to="/forge"
-                      className="py-3 px-6 text-red-600 font-medium border-b border-gray-200 hover:bg-red-50 transition-colors text-left"
-                    >
-                      Forge
-                    </Link>
-                  </SheetClose>
-                )}
+                <SheetClose asChild>
+                  <Link
+                    to="/forge"
+                    className="py-3 px-6 text-red-600 font-medium border-b border-gray-200 hover:bg-red-50 transition-colors text-left"
+                  >
+                    3D Model Modifier
+                  </Link>
+                </SheetClose>
                 
                 {user ? (
                   <>
@@ -216,14 +213,12 @@ const Navigation = () => {
             Contact
           </Link>
           
-          {user && (
-            <Link
-              to="/forge"
-              className="hover:text-red-200 transition-colors"
-            >
-              Forge
-            </Link>
-          )}
+          <Link
+            to="/forge"
+            className="hover:text-red-200 transition-colors"
+          >
+            3D Model Modifier
+          </Link>
           
           {user ? (
             <DropdownMenu>
