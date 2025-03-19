@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -21,9 +20,6 @@ import {
   Circle, 
   Square, 
   Triangle, 
-  BoltIcon, 
-  Hammer, 
-  Save,
   Download 
 } from 'lucide-react';
 import { ThreeDModel } from '@/types/model';
@@ -61,14 +57,13 @@ const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
     <Card className="w-full h-full overflow-auto">
       <CardContent className="p-4">
         <div className="text-center mb-6">
-          <h2 className="text-3xl font-bold relative inline-block">
-            <span className="relative z-10 text-red-600" style={{ 
-              WebkitTextStroke: '1px black',
-              textShadow: '0 0 1px #000'
-            }}>
-              FORGE
-            </span>
-          </h2>
+          <div className="inline-block">
+            <img 
+              src="/lovable-uploads/dccfe5de-716f-471c-b408-3ae8cfee4d5d.png" 
+              alt="FORGE" 
+              className="h-12 w-auto"
+            />
+          </div>
         </div>
         
         <div className="space-y-4">
