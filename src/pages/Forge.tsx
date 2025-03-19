@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Shell } from "@/components/layout/Shell";
 import { useMetaTags } from "@/hooks/use-meta-tags";
@@ -31,6 +32,7 @@ import {
   isCombinationPreloaded
 } from '@/utils/modelPreloader';
 import { cleanupInvalidModels } from '@/services/modelService';
+import LoadingSpinner from '@/components/ui/loading-spinner';
 
 const CACHE_KEY_MODELS = 'forgeModels';
 const CACHE_KEY_PRELOAD_STATUS = 'forgePreloadStatus';
@@ -38,7 +40,7 @@ const PRELOAD_TIMEOUT = 30000; // 30 seconds max preload time
 
 const Forge = () => {
   useMetaTags({
-    title: "3D Model Modifier",
+    title: "Forge - 3D Model Modifier",
     description: "Customize and personalize 3D models in our interactive forge."
   });
 
@@ -85,6 +87,19 @@ const Forge = () => {
   const forceShowInterface = useRef(false); // New ref to force show interface after initial preload
   
   const saveCustomization = useSaveCustomization();
+
+  // Force show interface after a certain period even if preload isn't complete
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!preloadComplete) {
+        console.log('Force showing interface after timeout');
+        forceShowInterface.current = true;
+        setPreloadComplete(true);
+      }
+    }, 10000); // Show interface after 10 seconds regardless of preload status
+    
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleModelLoaded = (url: string, geometry: THREE.BufferGeometry) => {
     setLoadedModels(prev => {
@@ -352,21 +367,32 @@ const Forge = () => {
     ? [...new Set(models.map(model => model.default_options?.modelType).filter(Boolean))]
     : [];
 
-  const isLoading = (modelsLoading || !models || models.length === 0) && 
-                   !initialLoadComplete.current && 
-                   !forceShowInterface.current;
+  // Modified loading condition to prevent getting stuck
+  const isLoading = modelsLoading && !models && preloadProgress.total === 0 && 
+                   !forceShowInterface.current && !preloadComplete;
+
+  // If we have models but selectedModelId is not set yet, find a default model
+  useEffect(() => {
+    if (models?.length > 0 && !selectedModelId && !modelsLoading) {
+      const defaultModel = models.find(model => model.stl_file_path && !didModelFail(model.stl_file_path));
+      if (defaultModel) {
+        console.log('Setting default model ID:', defaultModel.id);
+        setSelectedModelId(defaultModel.id);
+      }
+    }
+  }, [models, selectedModelId, modelsLoading]);
 
   return (
     <Shell>
       <div className="container mx-auto py-6 px-4">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold">3D Model Modifier</h1>
+          <h1 className="text-3xl font-bold">Forge</h1>
           <p className="text-gray-600">Customize and personalize 3D models to your liking</p>
         </div>
         
         {isLoading ? (
           <div className="flex flex-col justify-center items-center min-h-[500px]">
-            <Loader2 className="w-12 h-12 animate-spin text-red-600 mb-4" />
+            <LoadingSpinner size="lg" className="mb-4" />
             {preloadProgress.total > 0 && (
               <div className="w-64 text-center">
                 <p className="mb-2">Preloading models: {preloadProgress.loaded} of {preloadProgress.total}</p>
@@ -386,15 +412,15 @@ const Forge = () => {
             className="min-h-[600px] rounded-lg border"
           >
             <ResizablePanel defaultSize={70} minSize={30}>
-              {selectedModel && (
+              {models && (
                 <ModelViewer
-                  model={selectedModel}
+                  model={selectedModel || (models[0] || null)}
                   previousModel={previousModelRef.current}
                   customizationOptions={customizationOptions}
                   morphEnabled={morphEnabled}
                   loadedModels={loadedModels}
                   onModelsLoaded={handleModelLoaded}
-                  preloadComplete={initialLoadComplete.current || preloadComplete || forceShowInterface.current}
+                  preloadComplete={preloadComplete || forceShowInterface.current}
                   preserveExistingModel={true}
                 />
               )}
@@ -403,9 +429,9 @@ const Forge = () => {
             <ResizableHandle withHandle />
             
             <ResizablePanel defaultSize={30} minSize={20}>
-              {selectedModel && models && (
+              {models && (
                 <CustomizationPanel
-                  model={selectedModel}
+                  model={selectedModel || (models[0] || null)}
                   modelTypes={modelTypeOptions}
                   options={customizationOptions}
                   onChange={handleCustomizationChange}
@@ -418,7 +444,7 @@ const Forge = () => {
         )}
         
         <div className="mt-6">
-          <InstructionsPanel />
+          <InstructionsPanel isAuthenticated={!!user} />
         </div>
       </div>
     </Shell>

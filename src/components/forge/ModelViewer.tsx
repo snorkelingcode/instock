@@ -6,6 +6,7 @@ import { STLLoader } from 'three/addons/loaders/STLLoader.js';
 import { ThreeDModel } from '@/types/model';
 import { Loader2 } from 'lucide-react';
 import { getPreloadedGeometry, isModelPreloaded, preloadModelGeometry, didModelFail } from '@/utils/modelPreloader';
+import LoadingSpinner from '@/components/ui/loading-spinner';
 
 const globalGeometryCache = new Map<string, THREE.BufferGeometry>();
 
@@ -323,10 +324,8 @@ const ModelRotationControls = ({ modelRef }: { modelRef: React.RefObject<THREE.G
   const isTouchDevice = useRef(false);
   
   useEffect(() => {
-    // Check for touch support
     isTouchDevice.current = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
     
-    // Set initial cursor style
     if (gl.domElement && !isTouchDevice.current) {
       gl.domElement.style.cursor = 'grab';
     }
@@ -352,7 +351,6 @@ const ModelRotationControls = ({ modelRef }: { modelRef: React.RefObject<THREE.G
         }
         
         try {
-          // Capture pointer to ensure we get events even if the pointer moves outside the canvas
           (gl.domElement as HTMLElement).setPointerCapture(event.pointerId);
         } catch (err) {
           console.error('Error capturing pointer:', err);
@@ -368,12 +366,9 @@ const ModelRotationControls = ({ modelRef }: { modelRef: React.RefObject<THREE.G
       
       const sensitivity = 0.005;
       
-      // Apply rotation based on initial position plus delta
-      // Inverting the direction by using negative deltaX and deltaY
       modelRef.current.rotation.y = initialRotation.current.y - deltaX * sensitivity;
       modelRef.current.rotation.x = initialRotation.current.x - deltaY * sensitivity;
       
-      // Force render to ensure smooth rotation during interaction
       gl.render(scene, camera);
     };
     
@@ -386,7 +381,6 @@ const ModelRotationControls = ({ modelRef }: { modelRef: React.RefObject<THREE.G
         }
         
         try {
-          // Release pointer capture
           (gl.domElement as HTMLElement).releasePointerCapture(event.pointerId);
         } catch (err) {
           console.error('Error releasing pointer capture:', err);
@@ -408,7 +402,6 @@ const ModelRotationControls = ({ modelRef }: { modelRef: React.RefObject<THREE.G
       }
     };
     
-    // Add event listeners directly to the canvas for more reliable capture
     const canvas = gl.domElement;
     canvas.addEventListener('pointerdown', onPointerDown, { passive: false });
     window.addEventListener('pointermove', onPointerMove);
@@ -416,7 +409,6 @@ const ModelRotationControls = ({ modelRef }: { modelRef: React.RefObject<THREE.G
     window.addEventListener('pointercancel', onPointerCancel);
     window.addEventListener('blur', onBlur);
     
-    // Clean up event listeners on unmount
     return () => {
       canvas.removeEventListener('pointerdown', onPointerDown);
       window.removeEventListener('pointermove', onPointerMove);
@@ -434,7 +426,7 @@ const ModelRotationControls = ({ modelRef }: { modelRef: React.RefObject<THREE.G
 };
 
 interface ModelViewerContentProps {
-  model: ThreeDModel;
+  model: ThreeDModel | null;
   previousModel: ThreeDModel | null;
   effectiveOptions: Record<string, any>;
   morphEnabled: boolean;
@@ -541,17 +533,24 @@ const ModelViewerContent = ({
         />
         
         <Suspense fallback={null}>
-          <ModelDisplay 
-            url={model.stl_file_path} 
-            prevUrl={previousModel?.stl_file_path || null}
-            customOptions={effectiveOptions}
-            modelRef={modelRef}
-            morphEnabled={morphEnabled}
-            loadedModels={loadedModels}
-            onModelsLoaded={onModelsLoaded}
-            preloadComplete={preloadComplete}
-            preserveExistingModel={preserveExistingModel}
-          />
+          {model?.stl_file_path ? (
+            <ModelDisplay 
+              url={model.stl_file_path} 
+              prevUrl={previousModel?.stl_file_path || null}
+              customOptions={effectiveOptions}
+              modelRef={modelRef}
+              morphEnabled={morphEnabled}
+              loadedModels={loadedModels}
+              onModelsLoaded={onModelsLoaded}
+              preloadComplete={preloadComplete}
+              preserveExistingModel={preserveExistingModel}
+            />
+          ) : (
+            <mesh>
+              <boxGeometry args={[100, 100, 100]} />
+              <meshStandardMaterial color="#ff0000" />
+            </mesh>
+          )}
         </Suspense>
         
         <OrbitControls 
@@ -570,7 +569,7 @@ const ModelViewerContent = ({
 };
 
 interface ModelViewerProps {
-  model: ThreeDModel;
+  model: ThreeDModel | null;
   previousModel: ThreeDModel | null;
   customizationOptions: Record<string, any>;
   morphEnabled: boolean;
@@ -592,15 +591,17 @@ export const ModelViewer: React.FC<ModelViewerProps> = ({
 }) => {
   const [viewerError, setViewerError] = useState<string | null>(null);
   
-  const effectiveOptions = {
-    ...model.default_options,
-    ...customizationOptions
-  };
+  const effectiveOptions = model?.default_options 
+    ? { ...model.default_options, ...customizationOptions }
+    : customizationOptions;
   
-  if (!model || !model.stl_file_path) {
+  if (!model) {
     return (
       <div className="w-full h-full bg-gray-100 rounded-lg flex items-center justify-center">
-        <p className="text-gray-600">No model available</p>
+        <div className="flex flex-col items-center">
+          <LoadingSpinner size="lg" className="mb-4" />
+          <p className="text-gray-600">Loading models...</p>
+        </div>
       </div>
     );
   }

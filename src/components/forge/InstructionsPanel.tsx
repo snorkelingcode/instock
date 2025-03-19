@@ -1,58 +1,78 @@
 
 import React from 'react';
-import { Card, CardContent } from "@/components/ui/card";
-import { MousePointer, Sliders, Download, HelpCircle, LogIn, Save } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useAuth } from "@/contexts/AuthContext";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 
-const InstructionsPanel: React.FC = () => {
-  const { user } = useAuth();
+interface InstructionsPanelProps {
+  isAuthenticated?: boolean;
+}
 
+const InstructionsPanel: React.FC<InstructionsPanelProps> = ({ isAuthenticated = false }) => {
   return (
-    <Card className="w-full h-full">
-      <CardContent className="p-4">
-        <div className="flex items-center gap-2 mb-2">
-          <HelpCircle className="h-5 w-5 text-red-600" />
-          <h3 className="font-semibold text-lg">How to Use the Modifier</h3>
+    <Card>
+      <CardHeader>
+        <CardTitle>How to Use the Forge</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div>
+          <h3 className="text-lg font-medium mb-2">Getting Started</h3>
+          <p className="text-gray-600">
+            The Forge allows you to customize 3D models for various purposes including 
+            card displays, holders, and game accessories.
+          </p>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-          <div className="space-y-2">
-            <div className="flex items-start gap-2">
-              <MousePointer className="h-4 w-4 mt-0.5 text-gray-600" />
-              <p>Left-click and drag to rotate the model</p>
-            </div>
-            
-            <div className="flex items-start gap-2">
-              <Sliders className="h-4 w-4 mt-0.5 text-gray-600" />
-              <p>Use the options panel to customize your model</p>
-            </div>
-          </div>
-          
-          <div className="space-y-2">
-            <div className="flex items-start gap-2">
-              <Download className="h-4 w-4 mt-0.5 text-gray-600" />
-              <p>Click Download to save your customized model</p>
-            </div>
-            
-            {!user && (
-              <div className="flex items-start gap-2 pt-2 mt-2 border-t border-gray-200">
-                <LogIn className="h-4 w-4 mt-0.5 text-red-600" />
-                <p>
-                  <Link to="/auth" className="text-red-600 hover:underline">
-                    Sign in
-                  </Link> to save your customizations for future use
-                </p>
-              </div>
-            )}
-            
-            {user && (
-              <div className="flex items-start gap-2">
-                <Save className="h-4 w-4 mt-0.5 text-green-600" />
-                <p>Use the Save button to store your customization preferences</p>
-              </div>
-            )}
-          </div>
+        <Separator />
+        
+        <div>
+          <h3 className="text-lg font-medium mb-2">Customization Options</h3>
+          <ul className="list-disc pl-5 space-y-2 text-gray-600">
+            <li>
+              <span className="font-medium">Model Type:</span> Select from different base models.
+            </li>
+            <li>
+              <span className="font-medium">Corner Style:</span> Choose between rounded or sharp corners.
+            </li>
+            <li>
+              <span className="font-medium">Magnet Options:</span> Add magnetic closures or attachments.
+            </li>
+            <li>
+              <span className="font-medium">Color:</span> Personalize with your favorite color.
+            </li>
+            <li>
+              <span className="font-medium">Scale:</span> Adjust the overall size of the model.
+            </li>
+            <li>
+              <span className="font-medium">Material:</span> Select different material finishes.
+            </li>
+          </ul>
+        </div>
+        
+        <Separator />
+        
+        <div>
+          <h3 className="text-lg font-medium mb-2">Interact with the Model</h3>
+          <p className="text-gray-600">
+            Click and drag on the model to rotate it and view from different angles.
+          </p>
+        </div>
+        
+        <Separator />
+        
+        <div>
+          <h3 className="text-lg font-medium mb-2">Save Your Designs</h3>
+          {isAuthenticated ? (
+            <p className="text-gray-600">
+              Click the "Save Customization" button to store your current design. 
+              Your saved designs will be available whenever you return.
+            </p>
+          ) : (
+            <p className="text-gray-600">
+              <Link to="/auth" className="text-red-600 hover:underline">Sign in</Link> to save your customizations and access them later.
+              Without an account, your changes will be lost when you leave the page.
+            </p>
+          )}
         </div>
       </CardContent>
     </Card>
