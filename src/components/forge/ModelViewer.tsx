@@ -170,7 +170,8 @@ const ModelViewerContent = ({ model, effectiveOptions }: { model: ThreeDModel, e
           gl.shadowMap.type = THREE.PCFSoftShadowMap;
         }}
       >
-        <color attach="background" args={[["#1f2937"]]} />
+        {/* Fix: Change the array to a direct string value for color */}
+        <color attach="background" args={["#1f2937"]} />
         
         {/* Scene setup component to ensure proper camera positioning */}
         <SceneSetup />
