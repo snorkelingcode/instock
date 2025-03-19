@@ -141,7 +141,7 @@ const ModelDisplay = ({ url, customOptions, modelRef }: ModelDisplayProps) => {
         castShadow
         receiveShadow
         position={[0, 0, 0]}
-        rotation={[Math.PI * -1, Math.PI, Math.PI / 2]} // -180°, 180°, 90°
+        rotation={[Math.PI, Math.PI, Math.PI / 2]} // Updated to 180°, 180°, 90°
       >
         <primitive object={geometry} attach="geometry" />
         <meshStandardMaterial 

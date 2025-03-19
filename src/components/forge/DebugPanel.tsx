@@ -15,7 +15,7 @@ const DebugPanel: React.FC<DebugPanelProps> = ({
   cameraPosition = new THREE.Vector3(0, 200, 100),
   cameraRotation = new THREE.Euler(0, 0, 0),
   modelPosition = new THREE.Vector3(0, 0, 0),
-  modelRotation = new THREE.Euler(Math.PI * -1, Math.PI, Math.PI / 2),
+  modelRotation = new THREE.Euler(Math.PI, Math.PI, Math.PI / 2),
   modelScale = new THREE.Vector3(0.01, 0.01, 0.01)
 }) => {
   const formatVector = (vec: THREE.Vector3) => 
