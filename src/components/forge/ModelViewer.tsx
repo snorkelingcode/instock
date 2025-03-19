@@ -122,7 +122,8 @@ const ModelDisplay = ({ url, customOptions }: { url: string, customOptions: Reco
   if (error || !geometry) {
     return (
       <mesh>
-        <boxGeometry args={[[1, 16, 16]]} />
+        {/* Fix: Change args format to correct array structure */}
+        <boxGeometry args={[1, 16, 16]} />
         <meshStandardMaterial color="red" />
       </mesh>
     );
@@ -192,7 +193,8 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
           setViewerError("Error rendering 3D model");
         }}
       >
-        <color attach="background" args={[["#1f2937"]]} />
+        {/* Fix: Change args format for color to be a string, not an array */}
+        <color attach="background" args={["#1f2937"]} />
         
         {/* Scene setup component to ensure proper camera positioning */}
         <SceneSetup />
@@ -235,11 +237,11 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
           />
         </Suspense>
         
-        {/* Grid helper (Sketchfab-like grid) */}
-        <gridHelper args={[[1000, 100, "#888888", "#444444"]]} position={[0, -50, 0]} />
+        {/* Fix: Change args format for gridHelper */}
+        <gridHelper args={[1000, 100]} position={[0, -50, 0]} />
         
-        {/* Axes helper to visualize world axes */}
-        <axesHelper args={[[100]]} />
+        {/* Fix: Change args format for axesHelper */}
+        <axesHelper args={[100]} />
         
         <OrbitControls 
           enablePan={true}
