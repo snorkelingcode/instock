@@ -64,6 +64,7 @@ const ModelDisplay = ({
   const lastUrlRef = useRef<string | null>(null);
   const morphAttempted = useRef<boolean>(false);
   const initialLoadCompleted = useRef<boolean>(false);
+  const isMobile = useIsMobile();
   
   const loadGeometry = async (url: string): Promise<THREE.BufferGeometry> => {
     if (!url || url.trim() === '') {
@@ -100,6 +101,61 @@ const ModelDisplay = ({
     console.log(`No cached geometry found for ${url}, loading from server`);
     try {
       const geometry = await preloadModelGeometry(url);
+      
+      if (isMobile) {
+        const initialVertexCount = geometry.attributes.position.count;
+        console.log(`Mobile device detected. Initial vertex count: ${initialVertexCount}`);
+        
+        try {
+          const simplificationRatio = 0.25;
+          const stride = Math.max(1, Math.floor(1 / simplificationRatio));
+          
+          const positions = geometry.attributes.position.array;
+          const normals = geometry.attributes.normal?.array;
+          
+          const newPositions = new Float32Array(Math.ceil(positions.length / (stride * 3)) * 3);
+          let newNormals = null;
+          if (normals) {
+            newNormals = new Float32Array(Math.ceil(normals.length / (stride * 3)) * 3);
+          }
+          
+          let newIndex = 0;
+          for (let i = 0; i < positions.length; i += stride * 3) {
+            newPositions[newIndex] = positions[i];
+            newPositions[newIndex + 1] = positions[i + 1];
+            newPositions[newIndex + 2] = positions[i + 2];
+            
+            if (newNormals && normals) {
+              newNormals[newIndex] = normals[i];
+              newNormals[newIndex + 1] = normals[i + 1];
+              newNormals[newIndex + 2] = normals[i + 2];
+            }
+            
+            newIndex += 3;
+          }
+          
+          const newGeometry = new THREE.BufferGeometry();
+          newGeometry.setAttribute('position', new THREE.BufferAttribute(newPositions.slice(0, newIndex), 3));
+          
+          if (newNormals) {
+            newGeometry.setAttribute('normal', new THREE.BufferAttribute(newNormals.slice(0, newIndex), 3));
+          } else {
+            newGeometry.computeVertexNormals();
+          }
+          
+          newGeometry.center();
+          
+          console.log(`Simplified geometry for mobile. New vertex count: ${newGeometry.attributes.position.count}`);
+          console.log(`Reduction: ${((1 - newGeometry.attributes.position.count / initialVertexCount) * 100).toFixed(1)}%`);
+          
+          globalGeometryCache.set(url, newGeometry.clone());
+          return newGeometry;
+        } catch (simplifyError) {
+          console.error('Error simplifying geometry for mobile:', simplifyError);
+          console.log('Using original geometry as fallback');
+        }
+      }
+      
       globalGeometryCache.set(url, geometry.clone());
       return geometry;
     } catch (error) {
@@ -133,8 +189,9 @@ const ModelDisplay = ({
       
       setError(null);
       
+      const shouldMorph = prevUrl && prevUrl !== url && morphEnabled && preloadComplete && !isMobile;
+      
       try {
-        const shouldMorph = prevUrl && prevUrl !== url && morphEnabled && preloadComplete;
         let previousGeometryLoaded = null;
         
         if (shouldMorph && prevUrl) {
@@ -154,12 +211,18 @@ const ModelDisplay = ({
         let newGeometry;
         
         try {
-          if (isModelPreloaded(url) || globalGeometryCache.has(url) || loadedModels.has(url)) {
-            newGeometry = await loadGeometry(url);
-            console.log(`Fast path: Using cached/preloaded geometry for ${url}`);
-          } else {
-            newGeometry = await loadGeometry(url);
-          }
+          const loadingPromise = loadGeometry(url);
+          const timeoutPromise = new Promise((_, reject) => {
+            if (isMobile) {
+              setTimeout(() => {
+                reject(new Error('Loading timed out on mobile device'));
+              }, 15000);
+            }
+          });
+          
+          newGeometry = isMobile 
+            ? await Promise.race([loadingPromise, timeoutPromise]) 
+            : await loadingPromise;
           
           if (!isMounted) return;
           
@@ -178,7 +241,7 @@ const ModelDisplay = ({
             setMorphProgress(0);
             setIsTransitioning(true);
           } else {
-            if (preserveExistingModel && currentGeometry) {
+            if (preserveExistingModel && currentGeometry && !isMobile) {
               setPreviousGeometry(currentGeometry.clone());
               setCurrentGeometry(newGeometry);
               setMorphProgress(0);
@@ -194,7 +257,7 @@ const ModelDisplay = ({
           console.error(`Failed to load geometry for ${url}:`, geometryErr);
           setError(`Failed to load model geometry: ${geometryErr.message || 'Unknown error'}`);
           
-          if (preserveExistingModel && currentGeometry) {
+          if (preserveExistingModel && currentGeometry && !isMobile) {
             console.log(`Keeping existing model visible due to load error`);
           }
         }
@@ -215,7 +278,7 @@ const ModelDisplay = ({
     return () => {
       isMounted = false;
     };
-  }, [url, prevUrl, morphEnabled, loadedModels, onModelsLoaded, preloadComplete, preserveExistingModel]);
+  }, [url, prevUrl, morphEnabled, loadedModels, onModelsLoaded, preloadComplete, preserveExistingModel, isMobile]);
   
   useFrame((_, delta) => {
     if (isTransitioning && (previousGeometry || currentGeometry)) {
@@ -237,14 +300,11 @@ const ModelDisplay = ({
     const color = customOptions.color || '#ffffff';
     const material = customOptions.material || 'plastic';
     
-    const isMobile = window.innerWidth < 768;
-    
     if (isMobile) {
       return new THREE.MeshStandardMaterial({ 
         color, 
         roughness: 0.5, 
         metalness: 0.2,
-        flatShading: true
       });
     }
     
@@ -290,7 +350,7 @@ const ModelDisplay = ({
   
   return (
     <group ref={modelRef}>
-      {previousGeometry && isTransitioning && (
+      {previousGeometry && isTransitioning && !isMobile && (
         <mesh 
           scale={[scale, scale, scale]}
           castShadow
@@ -319,8 +379,8 @@ const ModelDisplay = ({
           <primitive object={currentGeometry} attach="geometry" />
           <meshStandardMaterial 
             {...getMaterial()}
-            transparent={isTransitioning}
-            opacity={isTransitioning ? morphProgress : 1}
+            transparent={isTransitioning && !isMobile}
+            opacity={isTransitioning && !isMobile ? morphProgress : 1}
           />
         </mesh>
       )}
@@ -460,6 +520,7 @@ const ModelViewerContent = ({
 }: ModelViewerContentProps) => {
   const modelRef = useRef<THREE.Group>(null);
   const [webGLError, setWebGLError] = useState<string | null>(null);
+  const isMobile = useIsMobile();
   
   useEffect(() => {
     const handleContextLost = () => {
@@ -494,20 +555,22 @@ const ModelViewerContent = ({
   return (
     <>
       <Canvas
-        shadows
-        dpr={[1, 2]}
+        shadows={!isMobile}
+        dpr={isMobile ? 1 : [1, 2]}
         onCreated={({ gl }) => {
           gl.localClippingEnabled = true;
-          gl.shadowMap.enabled = true;
-          gl.shadowMap.type = THREE.PCFSoftShadowMap;
+          if (!isMobile) {
+            gl.shadowMap.enabled = true;
+            gl.shadowMap.type = THREE.PCFSoftShadowMap;
+          }
         }}
         gl={{ 
-          antialias: true,
+          antialias: !isMobile,
           alpha: false,
           preserveDrawingBuffer: true,
-          powerPreference: 'high-performance'
+          powerPreference: isMobile ? 'low-power' : 'high-performance'
         }}
-        frameloop="always"
+        frameloop={isMobile ? "demand" : "always"}
       >
         <color attach="background" args={["#F8F9FA"]} />
         
@@ -523,26 +586,35 @@ const ModelViewerContent = ({
         />
         
         <ambientLight intensity={0.5} />
-        <spotLight 
-          position={[200, 200, 200]} 
-          angle={0.3} 
-          penumbra={1} 
-          intensity={0.8} 
-          castShadow 
-          shadow-mapSize-width={2048}
-          shadow-mapSize-height={2048}
-        />
-        <directionalLight 
-          position={[100, 200, 100]} 
-          intensity={0.8} 
-          castShadow
-          shadow-mapSize-width={2048}
-          shadow-mapSize-height={2048} 
-        />
-        <directionalLight 
-          position={[-100, -100, -100]} 
-          intensity={0.3}
-        />
+        {isMobile ? (
+          <directionalLight 
+            position={[0, 200, 200]} 
+            intensity={1.0} 
+          />
+        ) : (
+          <>
+            <spotLight 
+              position={[200, 200, 200]} 
+              angle={0.3} 
+              penumbra={1} 
+              intensity={0.8} 
+              castShadow 
+              shadow-mapSize-width={2048}
+              shadow-mapSize-height={2048}
+            />
+            <directionalLight 
+              position={[100, 200, 100]} 
+              intensity={0.8} 
+              castShadow
+              shadow-mapSize-width={2048}
+              shadow-mapSize-height={2048} 
+            />
+            <directionalLight 
+              position={[-100, -100, -100]} 
+              intensity={0.3}
+            />
+          </>
+        )}
         
         <Suspense fallback={null}>
           {model?.stl_file_path ? (
@@ -626,6 +698,12 @@ export const ModelViewer: React.FC<ModelViewerProps> = ({
       {viewerError && (
         <div className="absolute top-0 left-0 right-0 bg-red-500 text-white p-2 z-10 text-sm">
           {viewerError}
+        </div>
+      )}
+      
+      {isMobile && (
+        <div className="absolute top-3 right-3 z-10 bg-white/80 px-3 py-1.5 rounded-md text-xs font-medium">
+          Mobile Mode
         </div>
       )}
       

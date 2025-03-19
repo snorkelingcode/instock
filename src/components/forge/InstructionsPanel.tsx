@@ -61,6 +61,21 @@ const InstructionsPanel: React.FC<InstructionsPanelProps> = ({ isAuthenticated =
           </p>
         </div>
         
+        {isMobile && (
+          <>
+            <Separator />
+            <div>
+              <h3 className="text-base font-medium mb-2">Mobile Performance Tips</h3>
+              <ul className="list-disc pl-5 space-y-1 text-gray-600 text-sm">
+                <li>Only one model loads at a time to improve performance</li>
+                <li>Changing model types may take a moment to load</li>
+                <li>If a model fails to load, try refreshing the page</li>
+                <li>For best performance, use the latest version of your browser</li>
+              </ul>
+            </div>
+          </>
+        )}
+        
         <Separator />
         
         <div>

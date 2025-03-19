@@ -75,7 +75,7 @@ const Forge = () => {
   const [loadedModels, setLoadedModels] = useState<Map<string, THREE.BufferGeometry>>(new Map());
   
   const previousModelRef = useRef<ThreeDModel | null>(null);
-  const morphEnabled = true;
+  const morphEnabled = !isMobile; // Disable morphing on mobile
   
   const modelSelectTimeout = useRef<NodeJS.Timeout | null>(null);
   const lastSelectedId = useRef<string>('');
@@ -97,6 +97,7 @@ const Forge = () => {
   const saveCustomization = useSaveCustomization();
 
   // Force show interface after a certain period even if preload isn't complete
+  // Shorter timeout for mobile devices
   useEffect(() => {
     const timer = setTimeout(() => {
       if (!preloadComplete) {
@@ -104,10 +105,10 @@ const Forge = () => {
         forceShowInterface.current = true;
         setPreloadComplete(true);
       }
-    }, 10000); // Show interface after 10 seconds regardless of preload status
+    }, isMobile ? 5000 : 10000); // 5 seconds for mobile, 10 seconds for desktop
     
     return () => clearTimeout(timer);
-  }, []);
+  }, [isMobile]);
 
   const handleModelLoaded = (url: string, geometry: THREE.BufferGeometry) => {
     setLoadedModels(prev => {
@@ -151,7 +152,7 @@ const Forge = () => {
     if (!models || models.length === 0 || modelsLoading || preloadStarted) return;
     
     setPreloadStarted(true);
-    console.log("Starting preload process for all models");
+    console.log("Starting preload process for models");
     
     if (preloadTimeoutRef.current) {
       clearTimeout(preloadTimeoutRef.current);
@@ -170,7 +171,7 @@ const Forge = () => {
           variant: "destructive",
         });
       }
-    }, PRELOAD_TIMEOUT);
+    }, isMobile ? 15000 : PRELOAD_TIMEOUT); // 15 seconds timeout for mobile
     
     const cachedStatus = getCache<{ complete: boolean }>(CACHE_KEY_PRELOAD_STATUS);
     if (cachedStatus?.complete && initialLoadComplete.current) {
@@ -184,7 +185,7 @@ const Forge = () => {
     }
     
     const preloadAllModels = async () => {
-      console.log(`Starting preload of all ${models.length} models`);
+      console.log(`Starting preload of models (mobile: ${isMobile})`);
       
       try {
         const combinations = trackModelCombinations(models);
@@ -206,7 +207,7 @@ const Forge = () => {
             
             setCache(CACHE_KEY_PRELOAD_STATUS, { complete: true }, 30);
           }
-        });
+        }, isMobile);
         
         await handleCleanupInvalidModels();
         
@@ -232,7 +233,7 @@ const Forge = () => {
         clearTimeout(preloadTimeoutRef.current);
       }
     };
-  }, [models, modelsLoading, preloadStarted]);
+  }, [models, modelsLoading, preloadStarted, isMobile]);
 
   useEffect(() => {
     if (!models || models.length === 0) return;
@@ -305,7 +306,7 @@ const Forge = () => {
         clearTimeout(modelSelectTimeout.current);
       }
     };
-  }, [models, customizationOptions, selectedModelId, selectedModel, loadedModels, preloadComplete]);
+  }, [models, customizationOptions, selectedModelId, selectedModel, loadedModels, preloadComplete, morphEnabled]);
 
   useEffect(() => {
     if (selectedModel) {
@@ -401,6 +402,12 @@ const Forge = () => {
         <div className="mb-6">
           <h1 className="text-3xl font-bold">Forge</h1>
           <p className="text-gray-600">Customize and personalize 3D models to your liking</p>
+          
+          {isMobile && (
+            <p className="mt-2 text-sm text-orange-600 font-medium">
+              Mobile Mode: Loading one model at a time for better performance
+            </p>
+          )}
         </div>
         
         {isLoading ? (
@@ -408,13 +415,18 @@ const Forge = () => {
             <LoadingSpinner size="lg" className="mb-4" />
             {preloadProgress.total > 0 && (
               <div className="w-64 text-center">
-                <p className="mb-2">Preloading models: {preloadProgress.loaded} of {preloadProgress.total}</p>
+                <p className="mb-2">
+                  {isMobile ? "Loading base model" : "Preloading models"}: 
+                  {preloadProgress.loaded} of {preloadProgress.total}
+                </p>
                 <Progress 
                   value={(preloadProgress.loaded / preloadProgress.total) * 100} 
                   className="h-2 w-full"
                 />
                 <p className="mt-2 text-sm text-gray-500">
-                  This ensures smooth transitions between models
+                  {isMobile ? 
+                    "Optimized for mobile devices" : 
+                    "This ensures smooth transitions between models"}
                 </p>
               </div>
             )}
@@ -439,7 +451,7 @@ const Forge = () => {
                     loadedModels={loadedModels}
                     onModelsLoaded={handleModelLoaded}
                     preloadComplete={preloadComplete || forceShowInterface.current}
-                    preserveExistingModel={true}
+                    preserveExistingModel={false} // Don't preserve on mobile to save memory
                   />
                 )}
               </TabsContent>
