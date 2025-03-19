@@ -7,7 +7,6 @@ import { ThreeDModel } from '@/types/model';
 import { Loader2 } from 'lucide-react';
 import { getPreloadedGeometry, isModelPreloaded, preloadModelGeometry, didModelFail } from '@/utils/modelPreloader';
 
-// Shared geometry cache to prevent reloading same models
 const globalGeometryCache = new Map<string, THREE.BufferGeometry>();
 
 const SceneSetup = ({ 
@@ -370,11 +369,12 @@ const ModelRotationControls = ({ modelRef }: { modelRef: React.RefObject<THREE.G
       const sensitivity = 0.005;
       
       // Apply rotation based on initial position plus delta
-      modelRef.current.rotation.y = initialRotation.current.y + deltaX * sensitivity;
-      modelRef.current.rotation.x = initialRotation.current.x + deltaY * sensitivity;
+      // Inverting the direction by using negative deltaX and deltaY
+      modelRef.current.rotation.y = initialRotation.current.y - deltaX * sensitivity;
+      modelRef.current.rotation.x = initialRotation.current.x - deltaY * sensitivity;
       
       // Force render to ensure smooth rotation during interaction
-      gl.render();
+      gl.render(gl.scene, camera);
     };
     
     const onPointerUp = (event: PointerEvent) => {
