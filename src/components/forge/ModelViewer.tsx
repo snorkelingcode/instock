@@ -192,9 +192,10 @@ const ModelRotationControls = ({ modelRef }: { modelRef: React.RefObject<THREE.G
         // Adjust rotation speed
         const rotationSpeed = 0.01;
         
-        // Update model rotation
-        modelRef.current.rotation.y += deltaMove.x * rotationSpeed;
-        modelRef.current.rotation.x += deltaMove.y * rotationSpeed;
+        // Fix inverted controls by reversing the direction
+        // Move mouse right → rotate model right, move mouse down → rotate model down
+        modelRef.current.rotation.y -= deltaMove.x * rotationSpeed;
+        modelRef.current.rotation.x -= deltaMove.y * rotationSpeed;
         
         setPreviousMousePosition({ x: event.clientX, y: event.clientY });
       }
