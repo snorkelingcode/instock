@@ -31,6 +31,7 @@ interface CustomizationPanelProps {
   options: Record<string, any>;
   onChange: (key: string, value: any) => void;
   onSave: () => void;
+  isAuthenticated?: boolean; // Added this prop
 }
 
 const CustomizationPanel: React.FC<CustomizationPanelProps> = ({ 
@@ -38,7 +39,8 @@ const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
   modelTypes,
   options, 
   onChange, 
-  onSave 
+  onSave,
+  isAuthenticated
 }) => {
   // Get available options from the model's default_options
   const availableOptions = Object.keys(model.default_options || {});
@@ -248,6 +250,16 @@ const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
             <Download className="h-4 w-4" />
             Download Model
           </Button>
+          
+          {isAuthenticated && (
+            <Button 
+              className="w-full mt-4 gap-2" 
+              onClick={onSave}
+              variant="outline"
+            >
+              Save Customization
+            </Button>
+          )}
         </div>
       </CardContent>
     </Card>

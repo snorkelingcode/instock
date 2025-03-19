@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
-import { MousePointer, Sliders, Download, HelpCircle, LogIn } from 'lucide-react';
+import { MousePointer, Sliders, Download, HelpCircle, LogIn, Save } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -43,6 +43,13 @@ const InstructionsPanel: React.FC = () => {
                     Sign in
                   </Link> to save your customizations for future use
                 </p>
+              </div>
+            )}
+            
+            {user && (
+              <div className="flex items-start gap-2">
+                <Save className="h-4 w-4 mt-0.5 text-green-600" />
+                <p>Use the Save button to store your customization preferences</p>
               </div>
             )}
           </div>
