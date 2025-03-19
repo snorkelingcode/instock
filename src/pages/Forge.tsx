@@ -70,7 +70,7 @@ const Forge = () => {
   const [loadedModels, setLoadedModels] = useState<Map<string, THREE.BufferGeometry>>(new Map());
   
   const previousModelRef = useRef<ThreeDModel | null>(null);
-  const [morphEnabled, setMorphEnabled] = useState(true); // Always enable morphing by default
+  const [morphEnabled, setMorphEnabled] = useState(true); // Always keep morphing enabled
   
   const modelSelectTimeout = useRef<NodeJS.Timeout | null>(null);
   const lastSelectedId = useRef<string>('');
@@ -129,6 +129,7 @@ const Forge = () => {
     if (!models || models.length === 0 || modelsLoading || preloadStarted) return;
     
     setPreloadStarted(true);
+    console.log("Starting preload process for all models");
     
     // Set a safety timeout to avoid infinite loading
     if (preloadTimeoutRef.current) {
@@ -169,11 +170,14 @@ const Forge = () => {
         availableCombinations.current = combinations;
         console.log(`Tracked ${combinations.size} model combinations for morphing`);
         
-        // Preload all models
+        // Force preload all models before allowing interaction
         await preloadModels(models, (loaded, total) => {
           setPreloadProgress({ loaded, total });
+          console.log(`Preload progress: ${loaded}/${total} models loaded`);
+          
           // Only complete preload when all models are loaded or timeout
           if (loaded === total) {
+            console.log("✅ All models preloaded successfully!");
             setPreloadComplete(true);
             initialLoadComplete.current = true;
             if (preloadTimeoutRef.current) {
@@ -250,17 +254,16 @@ const Forge = () => {
       
       if (matchingModel) {
         if (matchingModel.id !== selectedModelId) {
-          const isModelInCache = isModelPreloaded(matchingModel.stl_file_path) || 
-                               loadedModels.has(matchingModel.stl_file_path) ||
-                               getPreloadedGeometry(matchingModel.stl_file_path) !== null;
+          // We need to maintain the previous model reference for morphing
+          // previousModelRef.current = selectedModel; - We're already setting this above
           
-          // Always enable morphing when all models are preloaded
+          // Always enable morphing
           setMorphEnabled(true);
           
           lastSelectedId.current = selectedModelId;
           setSelectedModelId(matchingModel.id);
           
-          console.log(`Switching to model ${matchingModel.id} (${combinationKey}), morphing: true`);
+          console.log(`Switching to model ${matchingModel.id} (${combinationKey}), morphing enabled: true`);
         }
       } else if (!selectedModelId && models.length > 0) {
         const firstValidModel = models.find(model => 

@@ -57,6 +57,7 @@ const ModelDisplay = ({
   const [error, setError] = useState<string | null>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const lastUrlRef = useRef<string | null>(null);
+  const morphAttempted = useRef<boolean>(false);
   
   // Enhanced geometry loading with multiple cache layers
   const loadGeometry = async (url: string): Promise<THREE.BufferGeometry> => {
@@ -131,8 +132,22 @@ const ModelDisplay = ({
       setError(null);
       
       try {
-        lastUrlRef.current = url;
+        // Always attempt to load the previous model first if it exists and morphing is enabled
+        const shouldMorph = prevUrl && prevUrl !== url && morphEnabled;
+        let previousGeometryLoaded = null;
         
+        if (shouldMorph && prevUrl) {
+          try {
+            previousGeometryLoaded = await loadGeometry(prevUrl);
+            // Keep track that we attempted morphing
+            morphAttempted.current = true;
+          } catch (err) {
+            console.error(`Failed to load previous model for morphing: ${prevUrl}`, err);
+            // Even if previous geometry fails, continue with current model
+          }
+        }
+        
+        // Load current model
         const newGeometry = await loadGeometry(url);
         
         if (!isMounted) return;
@@ -140,26 +155,23 @@ const ModelDisplay = ({
         // Store in caches
         globalGeometryCache.set(url, newGeometry.clone());
         onModelsLoaded(url, newGeometry.clone());
+        lastUrlRef.current = url;
         
-        // Check if we should morph (if previous model exists, urls are different, and morphing is enabled)
-        const shouldMorph = prevUrl && prevUrl !== url && morphEnabled && currentGeometry;
-        
-        if (shouldMorph && prevUrl) {
-          try {
-            // Setup morphing by storing previous geometry and setting new geometry
-            setPreviousGeometry(currentGeometry);
-            setCurrentGeometry(newGeometry);
-            setMorphProgress(0);
-            setIsTransitioning(true);
-            console.log(`Morphing from ${prevUrl} to ${url}`);
-          } catch (err) {
-            console.error('Failed to setup morphing:', err);
-            // Fallback to direct geometry change
-            setCurrentGeometry(newGeometry);
-            setIsTransitioning(false);
-          }
+        // Set up morphing if previous geometry was loaded
+        if (shouldMorph && previousGeometryLoaded) {
+          console.log(`Morphing from ${prevUrl} to ${url}`);
+          setPreviousGeometry(previousGeometryLoaded);
+          setCurrentGeometry(newGeometry);
+          setMorphProgress(0);
+          setIsTransitioning(true);
         } else {
-          console.log(`No morphing, directly setting geometry for ${url}`);
+          // Only log "No morphing" when it's really needed (first load or failure)
+          if (!morphAttempted.current || !shouldMorph) {
+            console.log(`Initial load or no morphing needed for ${url}`);
+          } else {
+            console.log(`Setting geometry for ${url} with previous morphing state preserved`);
+          }
+          
           setCurrentGeometry(newGeometry);
           setIsTransitioning(false);
         }
