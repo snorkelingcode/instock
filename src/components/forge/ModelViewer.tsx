@@ -1,5 +1,3 @@
-
-// src/components/forge/ModelViewer.tsx
 import React, { useRef, useState, useEffect, Suspense } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera } from '@react-three/drei';
@@ -319,12 +317,10 @@ const ModelDisplay = ({
 };
 
 const ModelRotationControls = ({ modelRef }: { modelRef: React.RefObject<THREE.Group> }) => {
-  const { gl } = useThree();
+  const { gl, camera } = useThree();
   const rotationActive = useRef(false);
   const lastPointerPosition = useRef({ x: 0, y: 0 });
   const initialRotation = useRef({ x: 0, y: 0 });
-  
-  // Add touch support detection
   const isTouchDevice = useRef(false);
   
   useEffect(() => {
@@ -336,9 +332,6 @@ const ModelRotationControls = ({ modelRef }: { modelRef: React.RefObject<THREE.G
       gl.domElement.style.cursor = 'grab';
     }
     
-    if (!modelRef.current) return;
-    
-    // Store initial model rotation for reference
     const saveStartRotation = () => {
       if (modelRef.current) {
         initialRotation.current = {
@@ -349,7 +342,7 @@ const ModelRotationControls = ({ modelRef }: { modelRef: React.RefObject<THREE.G
     };
     
     const onPointerDown = (event: PointerEvent) => {
-      if (event.target === gl.domElement && event.isPrimary && event.button === 0) {
+      if (event.target === gl.domElement && event.button === 0) {
         event.preventDefault();
         rotationActive.current = true;
         lastPointerPosition.current = { x: event.clientX, y: event.clientY };
@@ -359,16 +352,17 @@ const ModelRotationControls = ({ modelRef }: { modelRef: React.RefObject<THREE.G
           gl.domElement.style.cursor = 'grabbing';
         }
         
-        // Capture pointer to ensure we get events even if the pointer moves outside the canvas
-        (gl.domElement as HTMLElement).setPointerCapture(event.pointerId);
+        try {
+          // Capture pointer to ensure we get events even if the pointer moves outside the canvas
+          (gl.domElement as HTMLElement).setPointerCapture(event.pointerId);
+        } catch (err) {
+          console.error('Error capturing pointer:', err);
+        }
       }
     };
     
     const onPointerMove = (event: PointerEvent) => {
       if (!rotationActive.current || !modelRef.current) return;
-      if (!event.isPrimary) return;
-      
-      event.preventDefault();
       
       const deltaX = event.clientX - lastPointerPosition.current.x;
       const deltaY = event.clientY - lastPointerPosition.current.y;
@@ -378,11 +372,12 @@ const ModelRotationControls = ({ modelRef }: { modelRef: React.RefObject<THREE.G
       // Apply rotation based on initial position plus delta
       modelRef.current.rotation.y = initialRotation.current.y + deltaX * sensitivity;
       modelRef.current.rotation.x = initialRotation.current.x + deltaY * sensitivity;
+      
+      // Force render to ensure smooth rotation during interaction
+      gl.render(gl.scene, camera);
     };
     
     const onPointerUp = (event: PointerEvent) => {
-      if (!event.isPrimary) return;
-      
       if (rotationActive.current) {
         rotationActive.current = false;
         
@@ -390,33 +385,22 @@ const ModelRotationControls = ({ modelRef }: { modelRef: React.RefObject<THREE.G
           gl.domElement.style.cursor = 'grab';
         }
         
-        // Release pointer capture
         try {
+          // Release pointer capture
           (gl.domElement as HTMLElement).releasePointerCapture(event.pointerId);
         } catch (err) {
-          console.log('Error releasing pointer capture:', err);
+          console.error('Error releasing pointer capture:', err);
         }
       }
     };
     
-    // Handling for when pointer leaves the window
     const onPointerCancel = (event: PointerEvent) => {
-      if (!event.isPrimary) return;
-      
       rotationActive.current = false;
       if (!isTouchDevice.current) {
         gl.domElement.style.cursor = 'grab';
       }
     };
     
-    // Add event listeners
-    const canvas = gl.domElement;
-    canvas.addEventListener('pointerdown', onPointerDown);
-    window.addEventListener('pointermove', onPointerMove);
-    window.addEventListener('pointerup', onPointerUp);
-    window.addEventListener('pointercancel', onPointerCancel);
-    
-    // Handle canvas losing focus
     const onBlur = () => {
       rotationActive.current = false;
       if (!isTouchDevice.current) {
@@ -424,6 +408,12 @@ const ModelRotationControls = ({ modelRef }: { modelRef: React.RefObject<THREE.G
       }
     };
     
+    // Add event listeners directly to the canvas for more reliable capture
+    const canvas = gl.domElement;
+    canvas.addEventListener('pointerdown', onPointerDown, { passive: false });
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+    window.addEventListener('pointercancel', onPointerCancel);
     window.addEventListener('blur', onBlur);
     
     // Clean up event listeners on unmount
@@ -434,12 +424,11 @@ const ModelRotationControls = ({ modelRef }: { modelRef: React.RefObject<THREE.G
       window.removeEventListener('pointercancel', onPointerCancel);
       window.removeEventListener('blur', onBlur);
       
-      // Reset cursor
       if (!isTouchDevice.current) {
         gl.domElement.style.cursor = 'auto';
       }
     };
-  }, [gl, modelRef]);
+  }, [gl, modelRef, camera]);
   
   return null;
 };
@@ -514,7 +503,7 @@ const ModelViewerContent = ({
           preserveDrawingBuffer: true,
           powerPreference: 'high-performance'
         }}
-        frameloop="demand"
+        frameloop="always" // Change from "demand" to "always" to ensure continuous rendering
       >
         <color attach="background" args={["#F8F9FA"]} />
         
