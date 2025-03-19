@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Shell } from "@/components/layout/Shell";
 import { useMetaTags } from "@/hooks/use-meta-tags";
@@ -124,14 +123,12 @@ const Forge = () => {
     }
   };
 
-  // Start preloading immediately when models are available
   useEffect(() => {
     if (!models || models.length === 0 || modelsLoading || preloadStarted) return;
     
     setPreloadStarted(true);
     console.log("Starting preload process for all models");
     
-    // Set a safety timeout to avoid infinite loading
     if (preloadTimeoutRef.current) {
       clearTimeout(preloadTimeoutRef.current);
     }
@@ -150,7 +147,6 @@ const Forge = () => {
       }
     }, PRELOAD_TIMEOUT);
     
-    // Check if we have a cached preload status
     const cachedStatus = getCache<{ complete: boolean }>(CACHE_KEY_PRELOAD_STATUS);
     if (cachedStatus?.complete && initialLoadComplete.current) {
       console.log('Using cached preload status, skipping preload');
@@ -165,17 +161,14 @@ const Forge = () => {
       console.log(`Starting preload of all ${models.length} models`);
       
       try {
-        // Track all possible model combinations first
         const combinations = trackModelCombinations(models);
         availableCombinations.current = combinations;
         console.log(`Tracked ${combinations.size} model combinations for morphing`);
         
-        // Force preload all models before allowing interaction
         await preloadModels(models, (loaded, total) => {
           setPreloadProgress({ loaded, total });
           console.log(`Preload progress: ${loaded}/${total} models loaded`);
           
-          // Only complete preload when all models are loaded or timeout
           if (loaded === total) {
             console.log("✅ All models preloaded successfully!");
             setPreloadComplete(true);
@@ -184,8 +177,7 @@ const Forge = () => {
               clearTimeout(preloadTimeoutRef.current);
             }
             
-            // Cache preload status
-            setCache(CACHE_KEY_PRELOAD_STATUS, { complete: true }, 30); // Cache for 30 minutes
+            setCache(CACHE_KEY_PRELOAD_STATUS, { complete: true }, 30);
           }
         });
         
@@ -214,7 +206,6 @@ const Forge = () => {
     };
   }, [models, modelsLoading, preloadStarted]);
 
-  // Find and switch to the matching model based on customization options
   useEffect(() => {
     if (!models || models.length === 0) return;
     
@@ -225,13 +216,11 @@ const Forge = () => {
     const findMatchingModel = () => {
       const preloadStatus = getPreloadStatus();
       
-      // Get current model combination
       const modelType = customizationOptions.modelType || 'Slab-Slider';
       const corners = customizationOptions.corners || 'rounded';
       const magnets = customizationOptions.magnets || 'no';
       const combinationKey = `${modelType}-${corners}-${magnets}`;
       
-      // Allow proceed if preload is complete or we've already preloaded this specific combination
       const readyForMorphing = preloadComplete || isCombinationPreloaded(combinationKey);
       
       if (!readyForMorphing && preloadStatus.isBatchLoading) {
@@ -254,10 +243,6 @@ const Forge = () => {
       
       if (matchingModel) {
         if (matchingModel.id !== selectedModelId) {
-          // We need to maintain the previous model reference for morphing
-          // previousModelRef.current = selectedModel; - We're already setting this above
-          
-          // Always enable morphing
           setMorphEnabled(true);
           
           lastSelectedId.current = selectedModelId;
@@ -296,7 +281,6 @@ const Forge = () => {
     };
   }, [models, customizationOptions, selectedModelId, selectedModel, loadedModels, preloadComplete]);
 
-  // Apply saved customization or default options
   useEffect(() => {
     if (selectedModel) {
       const newOptions = { ...customizationOptions };

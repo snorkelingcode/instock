@@ -58,6 +58,7 @@ const ModelDisplay = ({
   const [isTransitioning, setIsTransitioning] = useState(false);
   const lastUrlRef = useRef<string | null>(null);
   const morphAttempted = useRef<boolean>(false);
+  const initialLoadCompleted = useRef<boolean>(false);
   
   // Enhanced geometry loading with multiple cache layers
   const loadGeometry = async (url: string): Promise<THREE.BufferGeometry> => {
@@ -165,11 +166,14 @@ const ModelDisplay = ({
           setMorphProgress(0);
           setIsTransitioning(true);
         } else {
-          // Only log "No morphing" when it's really needed (first load or failure)
-          if (!morphAttempted.current || !shouldMorph) {
-            console.log(`Initial load or no morphing needed for ${url}`);
+          // Check if this is truly an initial load or a model switch without morphing
+          if (!initialLoadCompleted.current) {
+            console.log(`Initial load for ${url}`);
+            initialLoadCompleted.current = true;
+          } else if (!shouldMorph) {
+            console.log(`Setting geometry for ${url} without morphing (morphing disabled or no previous model)`);
           } else {
-            console.log(`Setting geometry for ${url} with previous morphing state preserved`);
+            console.log(`Setting geometry for ${url} - morphing failed or previous geometry unavailable`);
           }
           
           setCurrentGeometry(newGeometry);
