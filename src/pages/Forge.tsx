@@ -1,9 +1,10 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Shell } from "@/components/layout/Shell";
 import { useMetaTags } from "@/hooks/use-meta-tags";
 import { useAuth } from "@/contexts/AuthContext";
 import { useModels, useModel, useSaveCustomization, useUserCustomization } from '@/hooks/use-model';
-import ModelViewer from '@/components/forge/ModelViewer';
+import { ModelViewer } from '@/components/forge/ModelViewer';
 import CustomizationPanel from '@/components/forge/CustomizationPanel';
 import InstructionsPanel from '@/components/forge/InstructionsPanel';
 import { 
