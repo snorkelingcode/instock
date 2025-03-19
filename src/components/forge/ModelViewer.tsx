@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect, Suspense } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
-import { OrbitControls, GizmoHelper, GizmoViewport, PerspectiveCamera } from '@react-three/drei';
+import { OrbitControls, PerspectiveCamera } from '@react-three/drei';
 import * as THREE from 'three';
 import { STLLoader } from 'three/addons/loaders/STLLoader.js';
 import { useAuth } from '@/contexts/AuthContext';
@@ -263,14 +263,6 @@ const ModelViewerContent = ({ model, effectiveOptions }: ModelViewerContentProps
           target={[0, 0, 0]}
           makeDefault
         />
-        <GizmoHelper
-          alignment="bottom-right"
-          margin={[80, 80]}
-        >
-          <GizmoViewport
-            labelColor="black"
-          />
-        </GizmoHelper>
       </Canvas>
     </>
   );
