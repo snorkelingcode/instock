@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/resizable";
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { ThreeDModel } from '@/types/model';
 
 const Forge = () => {
   useMetaTags({
@@ -28,6 +29,7 @@ const Forge = () => {
   const { data: selectedModel, isLoading: modelLoading } = useModel(selectedModelId);
   const { data: savedCustomization } = useUserCustomization(selectedModelId);
   const [customizationOptions, setCustomizationOptions] = useState<Record<string, any>>({
+    modelType: 'Slab-Slider',
     corners: 'rounded',
     magnets: 'no',
     color: '#ff0000',
@@ -37,12 +39,31 @@ const Forge = () => {
   
   const saveCustomization = useSaveCustomization();
 
-  // Select the first model when data loads
+  // Find the appropriate model based on customization options
   useEffect(() => {
-    if (models && models.length > 0 && !selectedModelId) {
-      setSelectedModelId(models[0].id);
+    if (models && models.length > 0) {
+      const modelType = customizationOptions.modelType || 'Slab-Slider';
+      const corners = customizationOptions.corners || 'rounded';
+      const magnets = customizationOptions.magnets || 'no';
+      
+      // Find model that matches the current customization options
+      const matchingModel = models.find(model => {
+        const defaultOptions = model.default_options || {};
+        return (
+          defaultOptions.modelType === modelType &&
+          defaultOptions.corners === corners &&
+          defaultOptions.magnets === magnets
+        );
+      });
+      
+      if (matchingModel && matchingModel.id !== selectedModelId) {
+        setSelectedModelId(matchingModel.id);
+      } else if (!selectedModelId && models.length > 0) {
+        // Fallback to first model if no match found
+        setSelectedModelId(models[0].id);
+      }
     }
-  }, [models, selectedModelId]);
+  }, [models, customizationOptions, selectedModelId]);
 
   // Initialize customization options from saved customization or model defaults
   useEffect(() => {
@@ -56,8 +77,6 @@ const Forge = () => {
         setCustomizationOptions(prev => ({
           ...prev,
           ...selectedModel.default_options,
-          corners: prev.corners || 'rounded',
-          magnets: prev.magnets || 'no'
         }));
       }
     }
@@ -100,6 +119,11 @@ const Forge = () => {
     });
   };
 
+  // Extract unique model types for dropdown
+  const modelTypeOptions = models 
+    ? [...new Set(models.map(model => model.default_options?.modelType).filter(Boolean))]
+    : [];
+
   const isLoading = modelsLoading || modelLoading || !selectedModel;
 
   return (
@@ -136,9 +160,7 @@ const Forge = () => {
               {selectedModel && models && (
                 <CustomizationPanel
                   model={selectedModel}
-                  models={models}
-                  selectedModelId={selectedModelId}
-                  onSelectModel={setSelectedModelId}
+                  modelTypes={modelTypeOptions}
                   options={customizationOptions}
                   onChange={handleCustomizationChange}
                   onSave={handleSaveCustomization}

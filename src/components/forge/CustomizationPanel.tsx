@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -23,13 +24,10 @@ import {
   Download 
 } from 'lucide-react';
 import { ThreeDModel } from '@/types/model';
-import ModelSelector from './ModelSelector';
 
 interface CustomizationPanelProps {
   model: ThreeDModel;
-  models: ThreeDModel[];
-  selectedModelId: string;
-  onSelectModel: (modelId: string) => void;
+  modelTypes: string[];
   options: Record<string, any>;
   onChange: (key: string, value: any) => void;
   onSave: () => void;
@@ -37,9 +35,7 @@ interface CustomizationPanelProps {
 
 const CustomizationPanel: React.FC<CustomizationPanelProps> = ({ 
   model, 
-  models,
-  selectedModelId,
-  onSelectModel,
+  modelTypes,
   options, 
   onChange, 
   onSave 
@@ -67,14 +63,24 @@ const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
         </div>
         
         <div className="space-y-4">
-          {/* Model Selector */}
+          {/* Model Type Selector */}
           <div className="space-y-2">
-            <Label>Select Model</Label>
-            <ModelSelector
-              models={models}
-              selectedModelId={selectedModelId}
-              onSelectModel={onSelectModel}
-            />
+            <Label htmlFor="modelType">Model Type</Label>
+            <Select 
+              value={options.modelType || 'Slab-Slider'} 
+              onValueChange={(value) => onChange('modelType', value)}
+            >
+              <SelectTrigger id="modelType">
+                <SelectValue placeholder="Select model type" />
+              </SelectTrigger>
+              <SelectContent>
+                {modelTypes.map(type => (
+                  <SelectItem key={type} value={type}>
+                    {type}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           
           {/* Corners Dropdown */}
