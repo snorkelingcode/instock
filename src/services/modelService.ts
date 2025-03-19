@@ -186,6 +186,56 @@ export const deleteModel = async (id: string): Promise<boolean> => {
   }
 };
 
+// New function to clean up invalid models (those returning 400/404 errors)
+export const cleanupInvalidModels = async (invalidUrls: string[]): Promise<boolean> => {
+  if (!invalidUrls || invalidUrls.length === 0) {
+    return true;
+  }
+
+  try {
+    // Find models with the invalid URLs
+    const { data, error } = await supabase
+      .from('threed_models')
+      .select('id, name, stl_file_path')
+      .in('stl_file_path', invalidUrls);
+
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      console.log('No invalid models found in database');
+      return true;
+    }
+
+    console.log(`Found ${data.length} invalid models to clean up:`, data);
+    
+    // Delete the invalid models
+    const modelIds = data.map(model => model.id);
+    const { error: deleteError } = await supabase
+      .from('threed_models')
+      .delete()
+      .in('id', modelIds);
+
+    if (deleteError) throw deleteError;
+    
+    console.log(`Successfully deleted ${modelIds.length} invalid models`);
+    
+    toast({
+      title: "Cleanup Completed",
+      description: `Cleaned up ${modelIds.length} deleted models from the database.`,
+    });
+    
+    return true;
+  } catch (error: any) {
+    console.error("Error cleaning up invalid models:", error.message);
+    toast({
+      title: "Error",
+      description: "Failed to clean up invalid models. Please try again later.",
+      variant: "destructive",
+    });
+    return false;
+  }
+};
+
 export const saveUserCustomization = async (
   userId: string,
   modelId: string,

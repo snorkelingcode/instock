@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Shell } from "@/components/layout/Shell";
 import { useMetaTags } from "@/hooks/use-meta-tags";
@@ -16,7 +17,16 @@ import { useToast } from '@/hooks/use-toast';
 import { ThreeDModel } from '@/types/model';
 import * as THREE from 'three';
 import { getCache, setCache } from '@/utils/cacheUtils';
-import { preloadModels, getPreloadStatus, isModelPreloaded, resetLoaderState, getFailedUrls, didModelFail } from '@/utils/modelPreloader';
+import { 
+  preloadModels, 
+  getPreloadStatus, 
+  isModelPreloaded, 
+  resetLoaderState, 
+  getFailedUrls, 
+  didModelFail,
+  getModelsNeedingCleanup
+} from '@/utils/modelPreloader';
+import { cleanupInvalidModels } from '@/services/modelService';
 
 const Forge = () => {
   useMetaTags({
@@ -26,7 +36,7 @@ const Forge = () => {
 
   const { user } = useAuth();
   const { toast } = useToast();
-  const { data: models, isLoading: modelsLoading } = useModels();
+  const { data: models, isLoading: modelsLoading, refetch: refetchModels } = useModels();
   const [selectedModelId, setSelectedModelId] = useState<string>('');
   const { data: selectedModel, isLoading: modelLoading } = useModel(selectedModelId);
   
@@ -57,6 +67,7 @@ const Forge = () => {
   
   const [preloadProgress, setPreloadProgress] = useState({ loaded: 0, total: 0 });
   const [preloadComplete, setPreloadComplete] = useState(false);
+  const [performedCleanup, setPerformedCleanup] = useState(false);
   
   const saveCustomization = useSaveCustomization();
 
@@ -66,6 +77,28 @@ const Forge = () => {
       newMap.set(url, geometry);
       return newMap;
     });
+  };
+
+  // New function to clean up invalid models
+  const handleCleanupInvalidModels = async () => {
+    if (performedCleanup) return;
+    
+    const invalidUrls = getModelsNeedingCleanup();
+    if (invalidUrls.length === 0) return;
+    
+    console.log(`Found ${invalidUrls.length} invalid models that need cleanup`);
+    
+    const success = await cleanupInvalidModels(invalidUrls);
+    if (success) {
+      setPerformedCleanup(true);
+      resetLoaderState();
+      refetchModels();
+      
+      toast({
+        title: "Models Cleanup",
+        description: `Removed ${invalidUrls.length} invalid model references from the database. Please re-upload these models.`,
+      });
+    }
   };
 
   useEffect(() => {
@@ -105,6 +138,9 @@ const Forge = () => {
       
       preloadedCombinations.current = allCombinations;
       setPreloadComplete(true);
+      
+      // Check for and clean up invalid models after preloading
+      await handleCleanupInvalidModels();
       
       console.log(`Preloading complete. All ${allCombinations.size} combinations tracked.`);
       console.log('Preload status:', getPreloadStatus());

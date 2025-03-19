@@ -13,6 +13,8 @@ const modelLoadStates = new Map<string, 'loading' | 'loaded' | 'error'>();
 let isBatchLoading = false;
 // Track failed URLs to prevent repeated attempts
 const failedUrls = new Set<string>();
+// Track models that need cleanup (deleted from storage but still in DB)
+const modelsNeedingCleanup = new Set<string>();
 
 /**
  * Preload a 3D model geometry
@@ -104,6 +106,10 @@ export const preloadModelGeometry = async (url: string): Promise<THREE.BufferGeo
         modelLoadStates.set(url, 'error');
         // Add to failed URLs to prevent future attempts
         failedUrls.add(url);
+        // Add to models needing cleanup if it's a 400/404 error
+        if (error.message && (error.message.includes('400') || error.message.includes('404'))) {
+          modelsNeedingCleanup.add(url);
+        }
         // Remove from loading promises on error
         loadingPromises.delete(url);
         reject(error);
@@ -117,6 +123,10 @@ export const preloadModelGeometry = async (url: string): Promise<THREE.BufferGeo
     modelLoadStates.set(url, 'error');
     failedUrls.add(url);
     loadingPromises.delete(url);
+    // Add to models needing cleanup if it's a 400/404 error
+    if (error.message && (error.message.includes('400') || error.message.includes('404'))) {
+      modelsNeedingCleanup.add(url);
+    }
     throw error; // Re-throw to propagate to caller
   });
   
@@ -158,9 +168,21 @@ export const preloadModels = async (
   // Set batch loading flag
   isBatchLoading = true;
   
-  const stlUrls = models
-    .filter(model => model.stl_file_path && isValidModelUrl(model.stl_file_path))
-    .map(model => model.stl_file_path);
+  // Filter out models that have previously failed
+  const validModels = models.filter(model => {
+    if (!model.stl_file_path || !isValidModelUrl(model.stl_file_path)) {
+      return false;
+    }
+    
+    if (didModelFail(model.stl_file_path)) {
+      console.warn(`Skipping previously failed model: ${model.id} (${model.stl_file_path})`);
+      return false;
+    }
+    
+    return true;
+  });
+  
+  const stlUrls = validModels.map(model => model.stl_file_path);
   
   const total = stlUrls.length;
   let loaded = 0;
@@ -219,6 +241,7 @@ export const preloadModels = async (
 export const resetLoaderState = (): void => {
   modelLoadStates.clear();
   failedUrls.clear();
+  modelsNeedingCleanup.clear();
   isBatchLoading = false;
 };
 
@@ -279,6 +302,7 @@ export const clearPreloadCache = (): void => {
   loadingPromises.clear();
   modelLoadStates.clear();
   failedUrls.clear();
+  modelsNeedingCleanup.clear();
   isBatchLoading = false;
 };
 
@@ -290,6 +314,7 @@ export const getPreloadStatus = (): {
   loaded: number; 
   pending: number;
   failed: number;
+  modelsNeedingCleanup: number;
   modelStates: { loading: number; loaded: number; error: number };
   isBatchLoading: boolean;
 } => {
@@ -308,6 +333,7 @@ export const getPreloadStatus = (): {
     loaded: preloadedGeometries.size,
     pending: loadingPromises.size,
     failed: failedUrls.size,
+    modelsNeedingCleanup: modelsNeedingCleanup.size,
     modelStates: {
       loading: loadingCount,
       loaded: loadedCount,
@@ -325,6 +351,14 @@ export const getFailedUrls = (): string[] => {
   return Array.from(failedUrls);
 };
 
+/**
+ * Get a list of models that need cleanup (404/400 errors)
+ * @returns Array of model URLs that need to be cleaned up
+ */
+export const getModelsNeedingCleanup = (): string[] => {
+  return Array.from(modelsNeedingCleanup);
+};
+
 export default {
   preloadModelGeometry,
   preloadModels,
@@ -335,5 +369,6 @@ export default {
   clearPreloadCache,
   getPreloadStatus,
   resetLoaderState,
-  getFailedUrls
+  getFailedUrls,
+  getModelsNeedingCleanup
 };
