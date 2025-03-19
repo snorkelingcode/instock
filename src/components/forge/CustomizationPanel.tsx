@@ -44,9 +44,22 @@ const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
   const availableOptions = Object.keys(model.default_options || {});
   
   const handleDownload = () => {
-    // For now, just trigger the same onSave function
-    // Later this could be replaced with actual download functionality
-    onSave();
+    // Create an anchor element and trigger download
+    if (model.stl_file_path) {
+      const link = document.createElement('a');
+      link.href = model.stl_file_path;
+      
+      // Generate a filename based on model type and options
+      const modelType = options.modelType || model.default_options?.modelType || 'model';
+      const fileExtension = model.stl_file_path.split('.').pop() || 'stl';
+      const timestamp = new Date().toISOString().replace(/[-:]/g, '').split('.')[0];
+      const filename = `${modelType}-${timestamp}.${fileExtension}`;
+      
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   };
   
   return (

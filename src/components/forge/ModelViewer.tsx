@@ -374,7 +374,7 @@ const ModelRotationControls = ({ modelRef }: { modelRef: React.RefObject<THREE.G
       modelRef.current.rotation.x = initialRotation.current.x + deltaY * sensitivity;
       
       // Force render to ensure smooth rotation during interaction
-      gl.render(gl.scene, camera);
+      gl.render();
     };
     
     const onPointerUp = (event: PointerEvent) => {
@@ -503,7 +503,7 @@ const ModelViewerContent = ({
           preserveDrawingBuffer: true,
           powerPreference: 'high-performance'
         }}
-        frameloop="always" // Change from "demand" to "always" to ensure continuous rendering
+        frameloop="always"
       >
         <color attach="background" args={["#F8F9FA"]} />
         
