@@ -1,3 +1,4 @@
+
 import React, { useRef, useState, useEffect, Suspense } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { OrbitControls, GizmoHelper, GizmoViewport, PerspectiveCamera } from '@react-three/drei';
@@ -278,7 +279,8 @@ const ModelViewerContent = ({ model, effectiveOptions, onDebugInfoUpdate }: Mode
           />
         </Suspense>
         
-        <gridHelper args={[1000, 100, "#ea384c", "#ea384c"]} position={[0, -50, 0]} />
+        {/* Shrinking the grid by 25% by reducing its size from 1000 to 750 */}
+        <gridHelper args={[750, 75, "#ea384c", "#ea384c"]} position={[0, -50, 0]} />
         
         <OrbitControls 
           enabled={false}
