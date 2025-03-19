@@ -1,3 +1,4 @@
+
 import React, { useRef, useState, useEffect, Suspense } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { OrbitControls, GizmoHelper, GizmoViewport, PerspectiveCamera } from '@react-three/drei';
@@ -169,6 +170,57 @@ const ModelDisplay = ({ url, customOptions, modelRef }: ModelDisplayProps) => {
   );
 };
 
+// Model rotation controls component
+const ModelRotationControls = ({ modelRef }: { modelRef: React.RefObject<THREE.Group> }) => {
+  const { gl, camera } = useThree();
+  const [isDragging, setIsDragging] = useState(false);
+  const [previousMousePosition, setPreviousMousePosition] = useState({ x: 0, y: 0 });
+  
+  useEffect(() => {
+    const handleMouseDown = (event: MouseEvent) => {
+      setIsDragging(true);
+      setPreviousMousePosition({ x: event.clientX, y: event.clientY });
+    };
+    
+    const handleMouseMove = (event: MouseEvent) => {
+      if (isDragging && modelRef.current) {
+        const deltaMove = {
+          x: event.clientX - previousMousePosition.x,
+          y: event.clientY - previousMousePosition.y
+        };
+        
+        // Adjust rotation speed
+        const rotationSpeed = 0.01;
+        
+        // Update model rotation
+        modelRef.current.rotation.y += deltaMove.x * rotationSpeed;
+        modelRef.current.rotation.x += deltaMove.y * rotationSpeed;
+        
+        setPreviousMousePosition({ x: event.clientX, y: event.clientY });
+      }
+    };
+    
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+    
+    // Add event listeners to the canvas
+    const canvas = gl.domElement;
+    canvas.addEventListener('mousedown', handleMouseDown);
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    
+    return () => {
+      // Clean up event listeners
+      canvas.removeEventListener('mousedown', handleMouseDown);
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [gl, modelRef, isDragging, previousMousePosition]);
+  
+  return null;
+};
+
 interface ModelViewerContentProps {
   model: ThreeDModel;
   effectiveOptions: Record<string, any>;
@@ -189,9 +241,10 @@ const ModelViewerContent = ({ model, effectiveOptions, onDebugInfoUpdate }: Mode
           gl.shadowMap.type = THREE.PCFSoftShadowMap;
         }}
       >
-        <color attach="background" args={["#1f2937"]} />
+        <color attach="background" args={["#FFFFFF"]} />
         
         <SceneSetup updateDebugInfo={onDebugInfoUpdate} modelRef={modelRef} />
+        <ModelRotationControls modelRef={modelRef} />
         
         <PerspectiveCamera 
           makeDefault 
@@ -231,7 +284,7 @@ const ModelViewerContent = ({ model, effectiveOptions, onDebugInfoUpdate }: Mode
           />
         </Suspense>
         
-        <gridHelper args={[1000, 100, "#888888", "#444444"]} position={[0, -50, 0]} />
+        <gridHelper args={[1000, 100, "#ea384c", "#ea384c"]} position={[0, -50, 0]} />
         
         <OrbitControls 
           enabled={false}
