@@ -69,7 +69,7 @@ const Forge = () => {
   const [loadedModels, setLoadedModels] = useState<Map<string, THREE.BufferGeometry>>(new Map());
   
   const previousModelRef = useRef<ThreeDModel | null>(null);
-  const [morphEnabled, setMorphEnabled] = useState(true); // Always keep morphing enabled
+  const morphEnabled = true;
   
   const modelSelectTimeout = useRef<NodeJS.Timeout | null>(null);
   const lastSelectedId = useRef<string>('');
@@ -243,8 +243,6 @@ const Forge = () => {
       
       if (matchingModel) {
         if (matchingModel.id !== selectedModelId) {
-          setMorphEnabled(true);
-          
           lastSelectedId.current = selectedModelId;
           setSelectedModelId(matchingModel.id);
           

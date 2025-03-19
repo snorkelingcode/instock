@@ -156,7 +156,6 @@ const ModelDisplay = ({
         // Store in caches
         globalGeometryCache.set(url, newGeometry.clone());
         onModelsLoaded(url, newGeometry.clone());
-        lastUrlRef.current = url;
         
         // Set up morphing if previous geometry was loaded
         if (shouldMorph && previousGeometryLoaded) {
@@ -166,7 +165,7 @@ const ModelDisplay = ({
           setMorphProgress(0);
           setIsTransitioning(true);
         } else {
-          // Check if this is truly an initial load or a model switch without morphing
+          // Check if this is truly an initial load
           if (!initialLoadCompleted.current) {
             console.log(`Initial load for ${url}`);
             initialLoadCompleted.current = true;
@@ -180,6 +179,8 @@ const ModelDisplay = ({
           setIsTransitioning(false);
         }
         
+        // Always update the lastUrlRef after a successful load
+        lastUrlRef.current = url;
         setLoading(false);
       } catch (err) {
         if (!isMounted) return;
@@ -405,15 +406,11 @@ const ModelViewerContent = ({
           gl.localClippingEnabled = true;
           gl.shadowMap.enabled = true;
           gl.shadowMap.type = THREE.PCFSoftShadowMap;
-          // Remove the powerPreference property as it's not recognized
-          // on the WebGLRenderer type in this version
         }}
         gl={{ 
           antialias: true,
           alpha: false,
           preserveDrawingBuffer: true,
-          // We can pass powerPreference here in the gl object properties
-          // where it is expected and typed correctly
           powerPreference: 'high-performance'
         }}
       >
