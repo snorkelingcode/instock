@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -114,7 +115,7 @@ const Navigation = () => {
                     to="/forge"
                     className="py-3 px-6 text-red-600 font-medium border-b border-gray-200 hover:bg-red-50 transition-colors text-left"
                   >
-                    3D Model Modifier
+                    Forge
                   </Link>
                 </SheetClose>
                 
@@ -217,7 +218,7 @@ const Navigation = () => {
             to="/forge"
             className="hover:text-red-200 transition-colors"
           >
-            3D Model Modifier
+            Forge
           </Link>
           
           {user ? (
