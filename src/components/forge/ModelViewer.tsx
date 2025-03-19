@@ -1,4 +1,3 @@
-
 import React, { useRef, useState, useEffect, Suspense } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera } from '@react-three/drei';
@@ -390,12 +389,16 @@ const ModelViewerContent = ({
           gl.localClippingEnabled = true;
           gl.shadowMap.enabled = true;
           gl.shadowMap.type = THREE.PCFSoftShadowMap;
-          gl.powerPreference = 'high-performance';
+          // Remove the powerPreference property as it's not recognized
+          // on the WebGLRenderer type in this version
         }}
         gl={{ 
           antialias: true,
           alpha: false,
-          preserveDrawingBuffer: true
+          preserveDrawingBuffer: true,
+          // We can pass powerPreference here in the gl object properties
+          // where it is expected and typed correctly
+          powerPreference: 'high-performance'
         }}
       >
         <color attach="background" args={["#FFFFFF"]} />
