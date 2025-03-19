@@ -1,6 +1,6 @@
 
 import React, { useRef, useState, useEffect, Suspense } from 'react';
-import { Canvas, useThree } from '@react-three/fiber';
+import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { OrbitControls, GizmoHelper, GizmoViewport, PerspectiveCamera } from '@react-three/drei';
 import * as THREE from 'three';
 import { STLLoader } from 'three/addons/loaders/STLLoader.js';
@@ -124,7 +124,7 @@ const ModelDisplay = ({ url, customOptions }: { url: string, customOptions: Reco
     return (
       <mesh>
         <boxGeometry args={[1, 16, 16]} />
-        <meshStandardMaterial color="red" />
+        <meshStandardMaterial color={new THREE.Color("red")} />
       </mesh>
     );
   }
@@ -143,7 +143,7 @@ const ModelDisplay = ({ url, customOptions }: { url: string, customOptions: Reco
     >
       <primitive object={geometry} attach="geometry" />
       <meshStandardMaterial 
-        color={customOptions.color || '#ffffff'}
+        color={new THREE.Color(customOptions.color || '#ffffff')}
         metalness={customOptions.material === 'metal' ? 0.8 : 0.1}
         roughness={
           customOptions.material === 'metal' ? 0.2 : 
@@ -162,7 +162,7 @@ const ModelViewerContent = ({ model, effectiveOptions }: { model: ThreeDModel, e
     <>
       <Canvas
         shadows
-        dpr={1}
+        dpr={[1, 2]}
         onCreated={({ gl }) => {
           gl.localClippingEnabled = true;
           gl.shadowMap.enabled = true;
@@ -234,7 +234,11 @@ const ModelViewerContent = ({ model, effectiveOptions }: { model: ThreeDModel, e
           />
         </GizmoHelper>
       </Canvas>
-      <DebugPanel modelRef={modelRef} />
+      
+      {/* Move DebugPanel inside Canvas to have access to Three.js context */}
+      <div className="absolute bottom-4 right-4 z-10">
+        <DebugPanel />
+      </div>
     </>
   );
 };
