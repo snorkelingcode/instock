@@ -259,7 +259,7 @@ export const saveUserCustomization = async (
       .select('*')
       .eq('user_id', userId)
       .eq('model_id', modelId)
-      .single();
+      .maybeSingle();
 
     if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 means no rows returned
       throw fetchError;
@@ -325,7 +325,7 @@ export const getUserCustomization = async (
       .select('*')
       .eq('user_id', userId)
       .eq('model_id', modelId)
-      .maybeSingle(); // Use maybeSingle instead of single to avoid errors when no data is found
+      .maybeSingle();
 
     if (error) {
       if (error.code === 'PGRST116') { // No rows returned

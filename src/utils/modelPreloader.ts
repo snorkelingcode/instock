@@ -220,7 +220,24 @@ export const preloadModels = async (
       }
     } catch (error) {
       errors++;
-      console.error(`Failed to preload model ${url}:`, error);
+      
+      // Safely extract error message to prevent TypeScript errors
+      let errorMessage = "Unknown error";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      } else if (error && typeof error === 'object' && 'message' in error) {
+        errorMessage = String((error as { message: unknown }).message);
+      }
+      
+      console.error(`Failed to preload model ${url}:`, errorMessage);
+      
+      // Check if it's a 400/404 error to mark for cleanup
+      if (errorMessage && (errorMessage.includes('400') || errorMessage.includes('404'))) {
+        modelsNeedingCleanup.add(url);
+      }
+      
       // Don't retry failed URLs
       failedUrls.add(url);
       modelLoadStates.set(url, 'error');

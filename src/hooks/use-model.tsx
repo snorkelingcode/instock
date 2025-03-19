@@ -15,7 +15,9 @@ import { useAuth } from '@/contexts/AuthContext';
 export const useModels = () => {
   return useQuery({
     queryKey: ['models'],
-    queryFn: fetchModels
+    queryFn: fetchModels,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    cacheTime: 1000 * 60 * 30, // 30 minutes
   });
 };
 
@@ -23,7 +25,9 @@ export const useModel = (id: string) => {
   return useQuery({
     queryKey: ['model', id],
     queryFn: () => fetchModelById(id),
-    enabled: !!id
+    enabled: !!id,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    cacheTime: 1000 * 60 * 30, // 30 minutes
   });
 };
 
@@ -71,6 +75,8 @@ export const useUserCustomization = (modelId: string, options = {}) => {
     queryFn: () => getUserCustomization(user?.id || '', modelId),
     enabled: !!user?.id && !!modelId,
     retry: false, // Don't retry on error to avoid console spam
+    staleTime: 1000 * 60 * 30, // 30 minutes
+    cacheTime: 1000 * 60 * 30, // 30 minutes
     ...options,
   });
 };

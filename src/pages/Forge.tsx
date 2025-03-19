@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Shell } from "@/components/layout/Shell";
 import { useMetaTags } from "@/hooks/use-meta-tags";
@@ -23,9 +24,14 @@ import {
   resetLoaderState, 
   getFailedUrls, 
   didModelFail,
-  getModelsNeedingCleanup
+  getModelsNeedingCleanup,
+  clearPreloadCache,
+  getPreloadedGeometry
 } from '@/utils/modelPreloader';
 import { cleanupInvalidModels } from '@/services/modelService';
+
+const CACHE_KEY_MODELS = 'forgeModels';
+const CACHE_KEY_PRELOAD_STATUS = 'forgePreloadStatus';
 
 const Forge = () => {
   useMetaTags({
@@ -61,7 +67,7 @@ const Forge = () => {
   const [loadedModels, setLoadedModels] = useState<Map<string, THREE.BufferGeometry>>(new Map());
   
   const previousModelRef = useRef<ThreeDModel | null>(null);
-  const [morphEnabled, setMorphEnabled] = useState(false);
+  const [morphEnabled, setMorphEnabled] = useState(true); // Always enable morphing by default
   
   const modelSelectTimeout = useRef<NodeJS.Timeout | null>(null);
   const lastSelectedId = useRef<string>('');
@@ -71,6 +77,7 @@ const Forge = () => {
   const [preloadProgress, setPreloadProgress] = useState({ loaded: 0, total: 0 });
   const [preloadComplete, setPreloadComplete] = useState(false);
   const [performedCleanup, setPerformedCleanup] = useState(false);
+  const initialLoadComplete = useRef(false);
   
   const saveCustomization = useSaveCustomization();
 
@@ -112,18 +119,37 @@ const Forge = () => {
     }
   };
 
+  // Initialize and preload models
   useEffect(() => {
     if (!models || models.length === 0 || modelsLoading) return;
+    
+    // Check if we have a cached preload status
+    const cachedStatus = getCache<{ complete: boolean }>(CACHE_KEY_PRELOAD_STATUS);
+    if (cachedStatus?.complete && initialLoadComplete.current) {
+      console.log('Using cached preload status, skipping preload');
+      setPreloadComplete(true);
+      return;
+    }
+    
+    // Clear preload cache on fresh load to ensure we don't have stale data
+    if (!initialLoadComplete.current) {
+      console.log('First load, clearing preload cache');
+      clearPreloadCache();
+    }
     
     const preloadAllModels = async () => {
       console.log(`Starting preload of all ${models.length} models`);
       
-      resetLoaderState();
+      if (!initialLoadComplete.current) {
+        resetLoaderState();
+      }
       
       try {
         await preloadModels(models, (loaded, total) => {
           setPreloadProgress({ loaded, total });
           if (loaded === total) {
+            // Cache preload status
+            setCache(CACHE_KEY_PRELOAD_STATUS, { complete: true }, 30); // Cache for 30 minutes
             setPreloadComplete(true);
           }
         });
@@ -150,6 +176,13 @@ const Forge = () => {
         
         preloadedCombinations.current = allCombinations;
         setPreloadComplete(true);
+        initialLoadComplete.current = true;
+        
+        // Cache models and combination keys
+        setCache(CACHE_KEY_MODELS, {
+          models: models,
+          combinations: Array.from(allCombinations)
+        }, 30); // Cache for 30 minutes
         
         await handleCleanupInvalidModels();
         
@@ -158,6 +191,7 @@ const Forge = () => {
       } catch (error) {
         console.error("Error during model preloading:", error);
         setPreloadComplete(true);
+        initialLoadComplete.current = true;
         toast({
           title: "Warning",
           description: "Some models failed to preload. You may experience issues when changing model types.",
@@ -169,6 +203,7 @@ const Forge = () => {
     preloadAllModels();
   }, [models, modelsLoading]);
 
+  // Find and switch to the matching model based on customization options
   useEffect(() => {
     if (!models || models.length === 0) return;
     
@@ -178,7 +213,7 @@ const Forge = () => {
 
     const findMatchingModel = () => {
       const preloadStatus = getPreloadStatus();
-      if (preloadStatus.isBatchLoading && preloadStatus.pending > 0) {
+      if (!preloadComplete || (preloadStatus.isBatchLoading && preloadStatus.pending > 0)) {
         console.log('Still preloading models, waiting before changing model...');
         setTimeout(findMatchingModel, 500);
         return;
@@ -204,10 +239,12 @@ const Forge = () => {
       
       if (matchingModel) {
         if (matchingModel.id !== selectedModelId) {
-          const shouldMorph = preloadedCombinations.current.has(combinationKey) || 
-                             isModelPreloaded(matchingModel.stl_file_path) ||
-                             loadedModels.has(matchingModel.stl_file_path) ||
-                             (lastSelectedId.current && lastSelectedId.current !== '');
+          const isModelInCache = isModelPreloaded(matchingModel.stl_file_path) || 
+                               loadedModels.has(matchingModel.stl_file_path) ||
+                               getPreloadedGeometry(matchingModel.stl_file_path) !== null;
+                               
+          // Should morph if model is in cache or if this isn't the first model selection
+          const shouldMorph = isModelInCache || initialLoadComplete.current;
           
           setMorphEnabled(shouldMorph);
           lastSelectedId.current = selectedModelId;
@@ -244,17 +281,19 @@ const Forge = () => {
         clearTimeout(modelSelectTimeout.current);
       }
     };
-  }, [models, customizationOptions, selectedModelId, selectedModel, loadedModels]);
+  }, [models, customizationOptions, selectedModelId, selectedModel, loadedModels, preloadComplete]);
 
+  // Reset morphing after transition
   useEffect(() => {
     if (morphEnabled) {
       const timer = setTimeout(() => {
-        setMorphEnabled(false);
+        setMorphEnabled(true); // Keep morphing enabled for future transitions
       }, 1000);
       return () => clearTimeout(timer);
     }
   }, [morphEnabled, selectedModelId]);
 
+  // Apply saved customization or default options
   useEffect(() => {
     if (selectedModel) {
       const newOptions = { ...customizationOptions };

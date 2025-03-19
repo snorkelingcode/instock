@@ -92,7 +92,9 @@ const ModelDisplay = ({
     
     console.log(`No cached geometry found for ${url}, loading from server`);
     try {
-      return await preloadModelGeometry(url);
+      const geometry = await preloadModelGeometry(url);
+      globalGeometryCache.set(url, geometry.clone());
+      return geometry;
     } catch (error) {
       console.error(`Error loading geometry for ${url}:`, error);
       throw error;
@@ -456,3 +458,4 @@ const ModelViewer: React.FC<ModelViewerProps> = ({
 };
 
 export default ModelViewer;
+
