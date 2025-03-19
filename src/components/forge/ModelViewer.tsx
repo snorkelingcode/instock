@@ -70,11 +70,11 @@ const ModelDisplay = ({
     if (isMobile) {
       const optimizedGeometry = geometry.clone();
       
-      if (optimizedGeometry.attributes.position.count > 1000) {
+      if (optimizedGeometry.attributes.position.count > 5000) {
         const positions = optimizedGeometry.attributes.position.array;
         const normals = optimizedGeometry.attributes.normal?.array;
         
-        const decimationFactor = 6;
+        const decimationFactor = isMobile ? 3 : 1;
         
         const newPositions = [];
         const newNormals = [];
@@ -282,6 +282,8 @@ const ModelDisplay = ({
     const color = customOptions.color || '#ffffff';
     const material = customOptions.material || 'plastic';
     
+    const isMobile = useIsMobile();
+    
     if (isMobile) {
       return new THREE.MeshBasicMaterial({ 
         color
@@ -368,11 +370,7 @@ const ModelDisplay = ({
   );
 };
 
-interface ModelRotationControlsProps {
-  modelRef: React.RefObject<THREE.Group>;
-}
-
-const ModelRotationControls = ({ modelRef }: ModelRotationControlsProps) => {
+const ModelRotationControls = ({ modelRef }: { modelRef: React.RefObject<THREE.Group> }) => {
   const { gl, camera, scene } = useThree();
   const rotationActive = useRef(false);
   const lastPointerPosition = useRef({ x: 0, y: 0 });
@@ -539,21 +537,24 @@ const ModelViewerContent = ({
   return (
     <>
       <Canvas
-        shadows={false}
-        dpr={[0.5, 1]}
-        frameloop="demand"
+        shadows={!isMobile}
+        dpr={isMobile ? [1, 1] : [1, 2]}
+        frameloop={isMobile ? "demand" : "always"}
         onCreated={({ gl }) => {
-          gl.localClippingEnabled = false;
-          gl.shadowMap.enabled = false;
+          gl.localClippingEnabled = !isMobile;
+          gl.shadowMap.enabled = !isMobile;
+          if (!isMobile) {
+            gl.shadowMap.type = THREE.PCFSoftShadowMap;
+          }
           
           gl.outputColorSpace = THREE.SRGBColorSpace;
-          gl.pixelRatio = Math.min(window.devicePixelRatio, 0.75);
+          gl.pixelRatio = Math.min(window.devicePixelRatio, 1);
         }}
         gl={{ 
-          antialias: false,
+          antialias: !isMobile,
           alpha: false,
           preserveDrawingBuffer: false,
-          powerPreference: 'low-power'
+          powerPreference: isMobile ? 'low-power' : 'high-performance'
         }}
       >
         <color attach="background" args={["#F8F9FA"]} />
@@ -565,11 +566,37 @@ const ModelViewerContent = ({
           makeDefault 
           position={[0, 500, 0]} 
           fov={45}
-          far={500}
+          far={isMobile ? 1000 : 2000}
           near={0.1}
         />
         
-        <ambientLight intensity={1.0} />
+        {isMobile ? (
+          <ambientLight intensity={1.0} />
+        ) : (
+          <>
+            <ambientLight intensity={0.5} />
+            <spotLight 
+              position={[200, 200, 200]} 
+              angle={0.3} 
+              penumbra={1} 
+              intensity={0.8} 
+              castShadow 
+              shadow-mapSize-width={2048}
+              shadow-mapSize-height={2048}
+            />
+            <directionalLight 
+              position={[100, 200, 100]} 
+              intensity={0.8} 
+              castShadow
+              shadow-mapSize-width={2048}
+              shadow-mapSize-height={2048} 
+            />
+            <directionalLight 
+              position={[-100, -100, -100]} 
+              intensity={0.3}
+            />
+          </>
+        )}
         
         <Suspense fallback={null}>
           {model?.stl_file_path ? (
@@ -578,7 +605,7 @@ const ModelViewerContent = ({
               prevUrl={previousModel?.stl_file_path || null}
               customOptions={effectiveOptions}
               modelRef={modelRef}
-              morphEnabled={false}
+              morphEnabled={morphEnabled && !isMobile}
               loadedModels={loadedModels}
               onModelsLoaded={onModelsLoaded}
               preloadComplete={preloadComplete}
@@ -587,7 +614,7 @@ const ModelViewerContent = ({
           ) : (
             <mesh>
               <boxGeometry args={[100, 100, 100]} />
-              <meshBasicMaterial color="#ff0000" />
+              <meshStandardMaterial color="#ff0000" />
             </mesh>
           )}
         </Suspense>

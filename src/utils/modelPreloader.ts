@@ -36,82 +36,29 @@ export const preloadModelGeometry = async (url: string): Promise<THREE.BufferGeo
   const loadPromise = new Promise<THREE.BufferGeometry>((resolve, reject) => {
     const loader = new STLLoader();
     
-    // Check if we're on a mobile device
+    // Check if we're on a mobile device for conditional loading parameters
     const isMobile = window.innerWidth < 768;
-    
-    const loadTimeoutMs = 15000; // 15 seconds timeout
-    const loadTimeout = setTimeout(() => {
-      console.error(`Loading timeout for ${url}`);
-      failedModels.add(url);
-      loadingModels.delete(url);
-      reject(new Error('Loading timeout exceeded'));
-    }, loadTimeoutMs);
     
     loader.load(
       url,
       (geometry) => {
-        clearTimeout(loadTimeout);
-        
         // Clean up geometry
         geometry.center();
         if (!geometry.attributes.normal) {
           geometry.computeVertexNormals();
         }
         
-        // On mobile, do aggressive decimation
-        if (isMobile && geometry.attributes.position.count > 2000) {
-          console.log(`Mobile detected: Decimating model from ${geometry.attributes.position.count} vertices`);
-          
-          const decimationFactor = 10; // Very aggressive decimation for initial load
-          const positions = geometry.attributes.position.array;
-          const normals = geometry.attributes.normal?.array;
-          
-          const newPositions = [];
-          const newNormals = [];
-          
-          for (let i = 0; i < positions.length; i += 9 * decimationFactor) {
-            for (let j = 0; j < 9; j++) {
-              if (i + j < positions.length) {
-                newPositions.push(positions[i + j]);
-                if (normals && i + j < normals.length) {
-                  newNormals.push(normals[i + j]);
-                }
-              }
-            }
-          }
-          
-          const reducedGeometry = new THREE.BufferGeometry();
-          reducedGeometry.setAttribute('position', 
-            new THREE.Float32BufferAttribute(newPositions, 3));
-          
-          if (newNormals.length > 0) {
-            reducedGeometry.setAttribute('normal', 
-              new THREE.Float32BufferAttribute(newNormals, 3));
-          } else {
-            reducedGeometry.computeVertexNormals();
-          }
-          
-          console.log(`Decimated to ${reducedGeometry.attributes.position.count} vertices`);
-          
-          // Store in cache
-          preloadedGeometries.set(url, reducedGeometry.clone());
-          loadingModels.delete(url);
-          
-          resolve(reducedGeometry);
-        } else {
-          // Store in cache
-          preloadedGeometries.set(url, geometry.clone());
-          loadingModels.delete(url);
-          
-          resolve(geometry);
-        }
+        // Store in cache
+        preloadedGeometries.set(url, geometry.clone());
+        loadingModels.delete(url);
+        
+        resolve(geometry);
       },
       (xhr) => {
         const progressPercent = Math.round(xhr.loaded / xhr.total * 100);
         console.log(`${progressPercent}% loaded for ${url}`);
       },
       (error) => {
-        clearTimeout(loadTimeout);
         console.error(`Error loading model: ${url}`, error);
         failedModels.add(url);
         loadingModels.delete(url);
@@ -137,20 +84,21 @@ export const preloadModelGeometry = async (url: string): Promise<THREE.BufferGeo
  * Get a mobile-optimized subset of models to preload
  */
 export const getMobileFilteredModels = (models: ThreeDModel[]): ThreeDModel[] => {
-  // On mobile, only preload 1 model per model type to save memory
-  const uniqueModelTypes = new Map<string, ThreeDModel>();
-  
-  models.forEach(model => {
+  // On mobile, only preload essential models to reduce memory usage
+  const uniqueModelTypes = new Set<string>();
+  return models.filter(model => {
     const modelType = model.default_options?.modelType;
-    if (!modelType) return;
+    if (!modelType) return false;
     
-    // Only keep one model per type
+    // If we haven't seen this model type yet, include it
     if (!uniqueModelTypes.has(modelType)) {
-      uniqueModelTypes.set(modelType, model);
+      uniqueModelTypes.add(modelType);
+      return true;
     }
+    
+    // Otherwise skip it for mobile
+    return false;
   });
-  
-  return Array.from(uniqueModelTypes.values());
 };
 
 /**
@@ -163,8 +111,8 @@ export const preloadModels = async (
   // Check if we're on a mobile device
   const isMobile = window.innerWidth < 768;
   
-  // For mobile, only preload a very minimal subset of models
-  const modelsToLoad = isMobile ? getMobileFilteredModels(models).slice(0, 2) : models;
+  // For mobile, only preload a subset of models
+  const modelsToLoad = isMobile ? getMobileFilteredModels(models) : models;
   
   // Filter out models that have previously failed or have no valid STL path
   const validModels = modelsToLoad.filter(model => {
@@ -179,11 +127,11 @@ export const preloadModels = async (
     return;
   }
   
-  console.log(`Starting preload of ${total} models${isMobile ? ' (extreme mobile optimization)' : ''}`);
+  console.log(`Starting preload of ${total} models${isMobile ? ' (mobile-optimized)' : ''}`);
   let loaded = 0;
   
-  // Process models one at a time on mobile to prevent memory issues
-  const batchSize = isMobile ? 1 : 5;
+  // Process models in smaller batches on mobile to prevent memory issues
+  const batchSize = isMobile ? 2 : 10;
   const modelBatches = [];
   
   for (let i = 0; i < validModels.length; i += batchSize) {
@@ -210,9 +158,9 @@ export const preloadModels = async (
     // Wait for all preloads in this batch to complete
     await Promise.allSettled(loadPromises);
     
-    // On mobile, add a larger delay between batches to prevent freezing
+    // On mobile, add a small delay between batches to prevent freezing
     if (isMobile && modelBatches.indexOf(batch) < modelBatches.length - 1) {
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 500));
     }
   }
   
