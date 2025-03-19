@@ -318,77 +318,68 @@ const ModelDisplay = ({
 };
 
 const ModelRotationControls = ({ modelRef }: { modelRef: React.RefObject<THREE.Group> }) => {
-  const { gl } = useThree();
+  const { gl, camera } = useThree();
   const [isDragging, setIsDragging] = useState(false);
-  const [previousMousePosition, setPreviousMousePosition] = useState({ x: 0, y: 0 });
+  const previousPosition = useRef({ x: 0, y: 0 });
+  const startRotation = useRef({ x: 0, y: 0 });
   
-  useEffect(() => {
-    if (!modelRef.current) return;
-    
-    const handlePointerDown = (event: PointerEvent) => {
-      if (!modelRef.current) return;
-      
-      if (event.target === gl.domElement) {
-        setIsDragging(true);
-        setPreviousMousePosition({ 
-          x: event.clientX, 
-          y: event.clientY 
-        });
-        gl.domElement.style.cursor = 'grabbing';
-        event.preventDefault();
-      }
-    };
-    
-    const handlePointerMove = (event: PointerEvent) => {
-      if (!isDragging || !modelRef.current) return;
-      
-      const deltaMove = {
-        x: event.clientX - previousMousePosition.x,
-        y: event.clientY - previousMousePosition.y
+  const saveInitialRotation = () => {
+    if (modelRef.current) {
+      startRotation.current = {
+        x: modelRef.current.rotation.x,
+        y: modelRef.current.rotation.y
       };
-      
-      const rotationSpeed = 0.005;
-      
-      modelRef.current.rotation.y += deltaMove.x * rotationSpeed;
-      modelRef.current.rotation.x += deltaMove.y * rotationSpeed;
-      
-      setPreviousMousePosition({ 
+    }
+  };
+  
+  const handlePointerDown = (event: PointerEvent) => {
+    if (event.target === gl.domElement) {
+      setIsDragging(true);
+      previousPosition.current = { 
         x: event.clientX, 
         y: event.clientY 
-      });
-    };
+      };
+      saveInitialRotation();
+      gl.domElement.style.cursor = 'grabbing';
+    }
+  };
+  
+  const handlePointerMove = (event: PointerEvent) => {
+    if (!isDragging || !modelRef.current) return;
     
-    const handlePointerUp = () => {
-      if (isDragging) {
-        setIsDragging(false);
-        gl.domElement.style.cursor = 'grab';
-      }
-    };
+    const deltaX = event.clientX - previousPosition.current.x;
+    const deltaY = event.clientY - previousPosition.current.y;
     
-    const handlePointerLeave = () => {
-      if (isDragging) {
-        setIsDragging(false);
-        gl.domElement.style.cursor = 'grab';
-      }
-    };
+    const rotationSpeed = 0.005;
+    modelRef.current.rotation.y = startRotation.current.y + deltaX * rotationSpeed;
+    modelRef.current.rotation.x = startRotation.current.x + deltaY * rotationSpeed;
+  };
+  
+  const handlePointerUp = () => {
+    if (isDragging) {
+      setIsDragging(false);
+      gl.domElement.style.cursor = 'grab';
+    }
+  };
+  
+  useEffect(() => {
+    if (!modelRef.current || !gl.domElement) return;
     
     gl.domElement.style.cursor = 'grab';
     
-    const canvas = gl.domElement;
-    canvas.addEventListener('pointerdown', handlePointerDown);
+    gl.domElement.addEventListener('pointerdown', handlePointerDown);
     document.addEventListener('pointermove', handlePointerMove);
     document.addEventListener('pointerup', handlePointerUp);
-    document.addEventListener('pointerleave', handlePointerLeave);
+    document.addEventListener('pointerleave', handlePointerUp);
     
     return () => {
-      canvas.removeEventListener('pointerdown', handlePointerDown);
+      gl.domElement.removeEventListener('pointerdown', handlePointerDown);
       document.removeEventListener('pointermove', handlePointerMove);
       document.removeEventListener('pointerup', handlePointerUp);
-      document.removeEventListener('pointerleave', handlePointerLeave);
-      
+      document.removeEventListener('pointerleave', handlePointerUp);
       gl.domElement.style.cursor = 'auto';
     };
-  }, [gl, modelRef, isDragging, previousMousePosition]);
+  }, [gl, modelRef, isDragging]);
   
   return null;
 };
