@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Shell } from "@/components/layout/Shell";
 import { useMetaTags } from "@/hooks/use-meta-tags";
@@ -222,7 +221,7 @@ const Forge = () => {
       const magnets = customizationOptions.magnets || 'no';
       const combinationKey = `${modelType}-${corners}-${magnets}`;
       
-      const readyForMorphing = preloadComplete || isCombinationPreloaded(combinationKey);
+      const readyForMorphing = initialLoadComplete.current || preloadComplete;
       
       if (!readyForMorphing && preloadStatus.isBatchLoading) {
         console.log('Still preloading models, waiting before changing model...');
@@ -246,8 +245,7 @@ const Forge = () => {
         if (matchingModel.id !== selectedModelId) {
           lastSelectedId.current = selectedModelId;
           setSelectedModelId(matchingModel.id);
-          
-          console.log(`Switching to model ${matchingModel.id} (${combinationKey}), morphing enabled: true`);
+          console.log(`Switching to model ${matchingModel.id} (${combinationKey}), morphing enabled: ${morphEnabled}`);
         }
       } else if (!selectedModelId && models.length > 0) {
         const firstValidModel = models.find(model => 
@@ -348,7 +346,7 @@ const Forge = () => {
     ? [...new Set(models.map(model => model.default_options?.modelType).filter(Boolean))]
     : [];
 
-  const isLoading = modelsLoading || modelLoading || !selectedModel || !preloadComplete;
+  const isLoading = (modelsLoading || !models || models.length === 0) && !initialLoadComplete.current;
 
   return (
     <Shell>
@@ -388,6 +386,7 @@ const Forge = () => {
                   morphEnabled={morphEnabled}
                   loadedModels={loadedModels}
                   onModelsLoaded={handleModelLoaded}
+                  preloadComplete={initialLoadComplete.current || preloadComplete}
                 />
               )}
             </ResizablePanel>

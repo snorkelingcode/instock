@@ -40,6 +40,7 @@ interface ModelDisplayProps {
   morphEnabled: boolean;
   loadedModels: Map<string, THREE.BufferGeometry>;
   onModelsLoaded: (url: string, geometry: THREE.BufferGeometry) => void;
+  preloadComplete: boolean;
 }
 
 const ModelDisplay = ({ 
@@ -49,12 +50,13 @@ const ModelDisplay = ({
   modelRef, 
   morphEnabled,
   loadedModels,
-  onModelsLoaded
+  onModelsLoaded,
+  preloadComplete
 }: ModelDisplayProps) => {
   const [currentGeometry, setCurrentGeometry] = useState<THREE.BufferGeometry | null>(null);
   const [previousGeometry, setPreviousGeometry] = useState<THREE.BufferGeometry | null>(null);
   const [morphProgress, setMorphProgress] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const lastUrlRef = useRef<string | null>(null);
@@ -115,13 +117,19 @@ const ModelDisplay = ({
   useEffect(() => {
     let isMounted = true;
     
+    // FIXED: Skip loading if both URLs are the same
+    if (lastUrlRef.current === url && currentGeometry) {
+      console.log(`Model ${url} is already loaded, skipping reload`);
+      return;
+    }
+    
+    // FIXED: Don't show loading state if we have preloaded models
+    if (!preloadComplete) {
+      setLoading(true);
+    }
+    
     const loadCurrentModel = async () => {
       if (!url) return;
-      
-      if (lastUrlRef.current === url && currentGeometry) {
-        console.log(`Model ${url} is already loaded, skipping reload`);
-        return;
-      }
       
       if (didModelFail(url)) {
         console.warn(`Not loading previously failed URL: ${url}`);
@@ -130,12 +138,11 @@ const ModelDisplay = ({
         return;
       }
       
-      setLoading(true);
       setError(null);
       
       try {
         // Always attempt to load the previous model first if it exists and morphing is enabled
-        const shouldMorph = prevUrl && prevUrl !== url && morphEnabled;
+        const shouldMorph = prevUrl && prevUrl !== url && morphEnabled && preloadComplete;
         let previousGeometryLoaded = null;
         
         if (shouldMorph && prevUrl) {
@@ -159,12 +166,12 @@ const ModelDisplay = ({
         let newGeometry;
         
         try {
-          // First try to get preloaded geometry
-          if (isModelPreloaded(url)) {
-            newGeometry = getPreloadedGeometry(url)!.clone();
-            console.log(`Using preloaded geometry for ${url}`);
+          // FIXED: Use a faster path for preloaded models to avoid loading indicators
+          if (isModelPreloaded(url) || globalGeometryCache.has(url) || loadedModels.has(url)) {
+            newGeometry = await loadGeometry(url);
+            console.log(`Fast path: Using cached/preloaded geometry for ${url}`);
           } else {
-            // Otherwise load it
+            // This is a slower path that will trigger loading indicators if needed
             newGeometry = await loadGeometry(url);
           }
           
@@ -173,6 +180,12 @@ const ModelDisplay = ({
           // Store in caches
           globalGeometryCache.set(url, newGeometry.clone());
           onModelsLoaded(url, newGeometry.clone());
+          
+          // FIXED: Track initial load properly
+          if (!initialLoadCompleted.current) {
+            console.log(`Initial load complete for ${url}`);
+            initialLoadCompleted.current = true;
+          }
           
           // Set up morphing if previous geometry was loaded
           if (shouldMorph && previousGeometryLoaded) {
@@ -189,27 +202,29 @@ const ModelDisplay = ({
             } else if (initialLoadCompleted.current) {
               console.log(`Direct swap to ${url} (no previous geometry available)`);
             } else {
-              console.log(`Initial load for ${url}`);
-              initialLoadCompleted.current = true;
+              console.log(`First load for ${url}`);
             }
             
             setCurrentGeometry(newGeometry);
             setIsTransitioning(false);
           }
           
+          // FIXED: Only update lastUrlRef after successful load
           lastUrlRef.current = url;
-          setLoading(false);
         } catch (geometryErr) {
           console.error(`Failed to load geometry for ${url}:`, geometryErr);
           setError(`Failed to load model geometry: ${geometryErr.message || 'Unknown error'}`);
-          setLoading(false);
         }
       } catch (err) {
         if (!isMounted) return;
         const errorMessage = err instanceof Error ? err.message : 'Unknown error';
         console.error(`Failed to load model ${url}:`, errorMessage);
         setError(`Failed to load model: ${errorMessage}`);
-        setLoading(false);
+      } finally {
+        // Always turn off loading state when done
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
     
@@ -218,7 +233,7 @@ const ModelDisplay = ({
     return () => {
       isMounted = false;
     };
-  }, [url, prevUrl, morphEnabled, loadedModels, onModelsLoaded]);
+  }, [url, prevUrl, morphEnabled, loadedModels, onModelsLoaded, preloadComplete]);
   
   // Handle morphing animation
   useFrame((_, delta) => {
@@ -265,7 +280,10 @@ const ModelDisplay = ({
     }
   };
   
-  if (loading && !currentGeometry && !previousGeometry) {
+  // FIXED: Show model while loading if we already have a previous geometry
+  const shouldShowLoadingIndicator = loading && !currentGeometry && !previousGeometry;
+  
+  if (shouldShowLoadingIndicator) {
     return null;
   }
   
@@ -375,6 +393,7 @@ interface ModelViewerContentProps {
   morphEnabled: boolean;
   loadedModels: Map<string, THREE.BufferGeometry>;
   onModelsLoaded: (url: string, geometry: THREE.BufferGeometry) => void;
+  preloadComplete: boolean;
 }
 
 const ModelViewerContent = ({ 
@@ -383,7 +402,8 @@ const ModelViewerContent = ({
   effectiveOptions, 
   morphEnabled,
   loadedModels,
-  onModelsLoaded 
+  onModelsLoaded,
+  preloadComplete
 }: ModelViewerContentProps) => {
   const modelRef = useRef<THREE.Group>(null);
   const [webGLError, setWebGLError] = useState<string | null>(null);
@@ -480,6 +500,7 @@ const ModelViewerContent = ({
             morphEnabled={morphEnabled}
             loadedModels={loadedModels}
             onModelsLoaded={onModelsLoaded}
+            preloadComplete={preloadComplete}
           />
         </Suspense>
         
@@ -505,6 +526,7 @@ interface ModelViewerProps {
   morphEnabled: boolean;
   loadedModels: Map<string, THREE.BufferGeometry>;
   onModelsLoaded: (url: string, geometry: THREE.BufferGeometry) => void;
+  preloadComplete: boolean;
 }
 
 export const ModelViewer: React.FC<ModelViewerProps> = ({ 
@@ -513,7 +535,8 @@ export const ModelViewer: React.FC<ModelViewerProps> = ({
   customizationOptions,
   morphEnabled,
   loadedModels,
-  onModelsLoaded
+  onModelsLoaded,
+  preloadComplete
 }) => {
   const [viewerError, setViewerError] = useState<string | null>(null);
   
@@ -546,6 +569,7 @@ export const ModelViewer: React.FC<ModelViewerProps> = ({
         morphEnabled={morphEnabled}
         loadedModels={loadedModels}
         onModelsLoaded={onModelsLoaded}
+        preloadComplete={preloadComplete}
       />
     </div>
   );
