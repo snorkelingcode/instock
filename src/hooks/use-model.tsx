@@ -63,13 +63,14 @@ export const useDeleteModel = () => {
   });
 };
 
-export const useUserCustomization = (modelId: string) => {
+export const useUserCustomization = (modelId: string, options = {}) => {
   const { user } = useAuth();
   
   return useQuery({
     queryKey: ['customization', user?.id, modelId],
     queryFn: () => getUserCustomization(user?.id || '', modelId),
-    enabled: !!user?.id && !!modelId
+    enabled: !!user?.id && !!modelId,
+    ...options,
   });
 };
 

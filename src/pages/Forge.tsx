@@ -27,7 +27,14 @@ const Forge = () => {
   const { data: models, isLoading: modelsLoading } = useModels();
   const [selectedModelId, setSelectedModelId] = useState<string>('');
   const { data: selectedModel, isLoading: modelLoading } = useModel(selectedModelId);
-  const { data: savedCustomization } = useUserCustomization(selectedModelId);
+  
+  // We won't fetch user customization on every option change to avoid refreshes
+  const { data: savedCustomization } = useUserCustomization(selectedModelId, { 
+    enabled: !!user?.id && !!selectedModelId,
+    staleTime: Infinity,  // Only fetch once
+    cacheTime: Infinity   // Keep in cache
+  });
+  
   const [customizationOptions, setCustomizationOptions] = useState<Record<string, any>>({
     modelType: 'Slab-Slider',
     corners: 'rounded',
@@ -37,25 +44,30 @@ const Forge = () => {
     material: 'plastic',
   });
   
-  // Track previous model state for morphing
+  // Track previous model for morphing
   const previousModelRef = useRef<ThreeDModel | null>(null);
   const [modelChangeTriggered, setModelChangeTriggered] = useState(false);
+  
+  // Prevent continuous model selection on option change
+  const modelSelectTimeout = useRef<NodeJS.Timeout | null>(null);
   
   const saveCustomization = useSaveCustomization();
 
   // Find the appropriate model based on customization options
   useEffect(() => {
-    if (models && models.length > 0) {
+    if (!models || models.length === 0) return;
+    
+    const findMatchingModel = () => {
       const modelType = customizationOptions.modelType || 'Slab-Slider';
       const corners = customizationOptions.corners || 'rounded';
       const magnets = customizationOptions.magnets || 'no';
       
       // Store previous model before changing
-      if (selectedModel && modelChangeTriggered) {
+      if (selectedModel) {
         previousModelRef.current = selectedModel;
       }
       
-      // Find model that matches the current customization options
+      // Find model that matches current options
       const matchingModel = models.find(model => {
         const defaultOptions = model.default_options || {};
         return (
@@ -73,7 +85,21 @@ const Forge = () => {
         setSelectedModelId(models[0].id);
         setModelChangeTriggered(true);
       }
+    };
+    
+    // Clear any existing timeout
+    if (modelSelectTimeout.current) {
+      clearTimeout(modelSelectTimeout.current);
     }
+    
+    // Add a small delay to prevent multiple model changes in quick succession
+    modelSelectTimeout.current = setTimeout(findMatchingModel, 50);
+    
+    return () => {
+      if (modelSelectTimeout.current) {
+        clearTimeout(modelSelectTimeout.current);
+      }
+    };
   }, [models, customizationOptions, selectedModelId, selectedModel]);
 
   // Reset the model change trigger after it's been processed
@@ -87,18 +113,33 @@ const Forge = () => {
   }, [modelChangeTriggered]);
 
   // Initialize customization options from saved customization or model defaults
+  // Only do this once when model changes, not continuously
   useEffect(() => {
     if (selectedModel) {
+      const newOptions = { ...customizationOptions };
+      let shouldUpdate = false;
+      
+      // Apply saved customization if available
       if (savedCustomization) {
-        setCustomizationOptions(prev => ({
-          ...prev,
-          ...savedCustomization.customization_options
-        }));
-      } else {
-        setCustomizationOptions(prev => ({
-          ...prev,
-          ...selectedModel.default_options,
-        }));
+        Object.entries(savedCustomization.customization_options).forEach(([key, value]) => {
+          if (newOptions[key] !== value) {
+            newOptions[key] = value;
+            shouldUpdate = true;
+          }
+        });
+      } else if (selectedModel.default_options) {
+        // Apply model defaults if no saved customization
+        Object.entries(selectedModel.default_options).forEach(([key, value]) => {
+          // Only update if the option isn't already set in customizationOptions
+          if (newOptions[key] === undefined) {
+            newOptions[key] = value;
+            shouldUpdate = true;
+          }
+        });
+      }
+      
+      if (shouldUpdate) {
+        setCustomizationOptions(newOptions);
       }
     }
   }, [selectedModel, savedCustomization]);
@@ -169,7 +210,9 @@ const Forge = () => {
               {selectedModel && (
                 <ModelViewer
                   model={selectedModel}
+                  previousModel={previousModelRef.current}
                   customizationOptions={customizationOptions}
+                  morphEnabled={modelChangeTriggered}
                 />
               )}
             </ResizablePanel>

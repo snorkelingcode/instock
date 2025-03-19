@@ -1,3 +1,4 @@
+
 import React, { useRef, useState, useEffect, Suspense } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera } from '@react-three/drei';
@@ -5,7 +6,6 @@ import * as THREE from 'three';
 import { STLLoader } from 'three/addons/loaders/STLLoader.js';
 import { useAuth } from '@/contexts/AuthContext';
 import { ThreeDModel } from '@/types/model';
-import { useUserCustomization } from '@/hooks/use-model';
 import { Loader2 } from 'lucide-react';
 
 const SceneSetup = ({ 
@@ -34,9 +34,10 @@ interface ModelDisplayProps {
   prevUrl: string | null;
   customOptions: Record<string, any>;
   modelRef: React.RefObject<THREE.Group>;
+  morphEnabled: boolean;
 }
 
-const ModelDisplay = ({ url, prevUrl, customOptions, modelRef }: ModelDisplayProps) => {
+const ModelDisplay = ({ url, prevUrl, customOptions, modelRef, morphEnabled }: ModelDisplayProps) => {
   const [currentGeometry, setCurrentGeometry] = useState<THREE.BufferGeometry | null>(null);
   const [previousGeometry, setPreviousGeometry] = useState<THREE.BufferGeometry | null>(null);
   const [morphProgress, setMorphProgress] = useState(0);
@@ -44,7 +45,16 @@ const ModelDisplay = ({ url, prevUrl, customOptions, modelRef }: ModelDisplayPro
   const [error, setError] = useState<string | null>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
   
-  const loadGeometry = (url: string): Promise<THREE.BufferGeometry> => {
+  // Create a cache for geometries to avoid reloading the same models
+  const geometryCache = useRef<Map<string, THREE.BufferGeometry>>(new Map());
+  
+  const loadGeometry = async (url: string): Promise<THREE.BufferGeometry> => {
+    // Check cache first
+    if (geometryCache.current.has(url)) {
+      const cachedGeometry = geometryCache.current.get(url);
+      if (cachedGeometry) return cachedGeometry;
+    }
+    
     return new Promise((resolve, reject) => {
       const loader = new STLLoader();
       
@@ -55,6 +65,8 @@ const ModelDisplay = ({ url, prevUrl, customOptions, modelRef }: ModelDisplayPro
           if (!loadedGeometry.attributes.normal) {
             loadedGeometry.computeVertexNormals();
           }
+          // Add to cache
+          geometryCache.current.set(url, loadedGeometry);
           resolve(loadedGeometry);
         },
         (xhr) => {
@@ -71,25 +83,25 @@ const ModelDisplay = ({ url, prevUrl, customOptions, modelRef }: ModelDisplayPro
   
   useEffect(() => {
     let isMounted = true;
-    setLoading(true);
-    setError(null);
     
-    const isModelChange = prevUrl && prevUrl !== url;
-    
-    const loadModels = async () => {
+    const loadCurrentModel = async () => {
+      if (!url) return;
+      
+      setLoading(true);
+      setError(null);
+      
       try {
         const newGeometry = await loadGeometry(url);
         
         if (!isMounted) return;
         
-        if (isModelChange && currentGeometry) {
+        if (prevUrl && prevUrl !== url && currentGeometry && morphEnabled) {
           setPreviousGeometry(currentGeometry);
           setCurrentGeometry(newGeometry);
           setMorphProgress(0);
           setIsTransitioning(true);
         } else {
           setCurrentGeometry(newGeometry);
-          setPreviousGeometry(null);
           setIsTransitioning(false);
         }
         
@@ -102,12 +114,12 @@ const ModelDisplay = ({ url, prevUrl, customOptions, modelRef }: ModelDisplayPro
       }
     };
     
-    loadModels();
+    loadCurrentModel();
     
     return () => {
       isMounted = false;
     };
-  }, [url, prevUrl]);
+  }, [url, prevUrl, morphEnabled]);
   
   useFrame((_, delta) => {
     if (isTransitioning && previousGeometry && currentGeometry) {
@@ -177,7 +189,6 @@ const ModelDisplay = ({ url, prevUrl, customOptions, modelRef }: ModelDisplayPro
           position={[0, 0, 0]}
           rotation={[Math.PI, Math.PI, Math.PI / 2]}
           visible={morphProgress < 1}
-          material={getMaterial()}
         >
           <primitive object={previousGeometry} attach="geometry" />
           <meshStandardMaterial 
@@ -195,7 +206,6 @@ const ModelDisplay = ({ url, prevUrl, customOptions, modelRef }: ModelDisplayPro
           receiveShadow
           position={[0, 0, 0]}
           rotation={[Math.PI, Math.PI, Math.PI / 2]}
-          material={getMaterial()}
         >
           <primitive object={currentGeometry} attach="geometry" />
           <meshStandardMaterial 
@@ -259,9 +269,10 @@ interface ModelViewerContentProps {
   model: ThreeDModel;
   previousModel: ThreeDModel | null;
   effectiveOptions: Record<string, any>;
+  morphEnabled: boolean;
 }
 
-const ModelViewerContent = ({ model, previousModel, effectiveOptions }: ModelViewerContentProps) => {
+const ModelViewerContent = ({ model, previousModel, effectiveOptions, morphEnabled }: ModelViewerContentProps) => {
   const modelRef = useRef<THREE.Group>(null);
   
   return (
@@ -316,6 +327,7 @@ const ModelViewerContent = ({ model, previousModel, effectiveOptions }: ModelVie
             prevUrl={previousModel?.stl_file_path || null}
             customOptions={effectiveOptions}
             modelRef={modelRef}
+            morphEnabled={morphEnabled}
           />
         </Suspense>
         
@@ -336,22 +348,18 @@ const ModelViewerContent = ({ model, previousModel, effectiveOptions }: ModelVie
 
 interface ModelViewerProps {
   model: ThreeDModel;
+  previousModel: ThreeDModel | null;
   customizationOptions: Record<string, any>;
+  morphEnabled: boolean;
 }
 
-const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }) => {
-  const { user } = useAuth();
+const ModelViewer: React.FC<ModelViewerProps> = ({ 
+  model, 
+  previousModel, 
+  customizationOptions,
+  morphEnabled
+}) => {
   const [viewerError, setViewerError] = useState<string | null>(null);
-  const [previousModel, setPreviousModel] = useState<ThreeDModel | null>(null);
-  
-  useEffect(() => {
-    setPreviousModel(prevModel => {
-      if (prevModel && prevModel.id !== model.id) {
-        return prevModel;
-      }
-      return null;
-    });
-  }, [model]);
   
   const effectiveOptions = {
     ...model.default_options,
@@ -378,6 +386,7 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
         model={model} 
         previousModel={previousModel}
         effectiveOptions={effectiveOptions} 
+        morphEnabled={morphEnabled}
       />
     </div>
   );
