@@ -1,4 +1,3 @@
-
 import React, { useRef, useState, useEffect, Suspense } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { OrbitControls, GizmoHelper, GizmoViewport, PerspectiveCamera } from '@react-three/drei';
@@ -21,8 +20,18 @@ const SceneSetup = ({
   const { camera } = useThree();
   
   useEffect(() => {
-    camera.position.set(0, 200, 100);
-    camera.lookAt(0, 0, 0);
+    // Lock camera in the specified position and rotation
+    camera.position.set(0.31, 409.70, 0.02);
+    
+    // Convert degrees to radians for setting rotation
+    const degToRad = (deg: number) => deg * (Math.PI / 180);
+    camera.rotation.set(
+      degToRad(-90), // x: -90 degrees
+      degToRad(-0.00), // y: -0.00 degrees
+      degToRad(-179.88) // z: -179.88 degrees
+    );
+    
+    camera.updateProjectionMatrix();
   }, [camera]);
   
   useFrame(() => {
@@ -186,7 +195,7 @@ const ModelViewerContent = ({ model, effectiveOptions, onDebugInfoUpdate }: Mode
         
         <PerspectiveCamera 
           makeDefault 
-          position={[0, 200, 100]} 
+          position={[0.31, 409.70, 0.02]} 
           fov={45}
           far={2000}
           near={0.1}
@@ -224,10 +233,11 @@ const ModelViewerContent = ({ model, effectiveOptions, onDebugInfoUpdate }: Mode
         
         <gridHelper args={[1000, 100, "#888888", "#444444"]} position={[0, -50, 0]} />
         
-        <axesHelper args={[100]} />
-        
         <OrbitControls 
-          enablePan={true}
+          enabled={false}
+          enablePan={false}
+          enableRotate={false}
+          enableZoom={false}
           minDistance={50}
           maxDistance={500}
           target={[0, 0, 0]}
