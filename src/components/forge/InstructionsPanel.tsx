@@ -59,6 +59,15 @@ const InstructionsPanel: React.FC<InstructionsPanelProps> = ({ isAuthenticated =
           <p className="text-gray-600 text-sm">
             {isMobile ? "Tap and drag" : "Click and drag"} on the model to rotate it and view from different angles.
           </p>
+          
+          {isMobile && (
+            <div className="mt-2 p-2 bg-blue-50 rounded-md border border-blue-100">
+              <p className="text-xs text-blue-700">
+                <strong>Mobile Tips:</strong> If the 3D model loads slowly or appears laggy, try using the Performance Settings 
+                in the Customize tab. Lowering the detail level can significantly improve performance on older devices.
+              </p>
+            </div>
+          )}
         </div>
         
         <Separator />

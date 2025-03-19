@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { ThreeDModel } from '@/types/model';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,6 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { useIsMobile } from '@/hooks/use-mobile';
+import { Switch } from "@/components/ui/switch";
+import { InfoCircle } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface CustomizationPanelProps {
   model: ThreeDModel;
@@ -27,6 +30,7 @@ const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
   isAuthenticated = false
 }) => {
   const isMobile = useIsMobile();
+  const [showPerformanceSettings, setShowPerformanceSettings] = useState(false);
   
   // Get available corner and magnet options
   const cornerOptions = ['rounded', 'square', 'flat'];
@@ -40,6 +44,14 @@ const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
   const handleScaleChange = (value: number[]) => {
     onChange('scale', value[0]);
   };
+
+  const handlePerformanceModeChange = (checked: boolean) => {
+    onChange('performanceMode', checked);
+  };
+
+  const handleDetailLevelChange = (value: number[]) => {
+    onChange('detailLevel', value[0]);
+  };
   
   return (
     <Card className="h-full border-0 rounded-none lg:border lg:rounded-lg">
@@ -49,6 +61,59 @@ const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
         </CardTitle>
       </CardHeader>
       <CardContent className={`space-y-4 ${isMobile ? "px-4 pb-4" : "px-6 pb-6"}`}>
+        {isMobile && (
+          <Collapsible open={showPerformanceSettings} onOpenChange={setShowPerformanceSettings}>
+            <CollapsibleTrigger className="flex w-full items-center justify-between p-2 bg-amber-50 rounded-md border border-amber-200">
+              <div className="flex items-center">
+                <InfoCircle size={16} className="mr-2 text-amber-600" />
+                <span className="text-sm font-medium text-amber-800">Performance Settings</span>
+              </div>
+              <span className="text-xs text-amber-600">
+                {showPerformanceSettings ? "Hide" : "Show"}
+              </span>
+            </CollapsibleTrigger>
+            
+            <CollapsibleContent className="pt-3 pb-1 px-2 mt-2 bg-gray-50 rounded-md">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="performance-mode" className="text-sm">
+                    Low Performance Mode
+                  </Label>
+                  <Switch
+                    id="performance-mode"
+                    checked={options.performanceMode || false}
+                    onCheckedChange={handlePerformanceModeChange}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <Label htmlFor="detail-level" className="text-sm">Detail Level</Label>
+                    <span className="text-xs text-gray-500">
+                      {options.detailLevel ? 
+                        options.detailLevel === 0 ? "Low" : 
+                        options.detailLevel === 0.5 ? "Medium" : "High" 
+                        : "Medium"}
+                    </span>
+                  </div>
+                  <Slider
+                    id="detail-level"
+                    defaultValue={[options.detailLevel || 0.5]}
+                    max={1}
+                    min={0}
+                    step={0.5}
+                    onValueChange={handleDetailLevelChange}
+                  />
+                </div>
+                
+                <p className="text-xs text-gray-500 italic">
+                  Lower settings improve performance but reduce model quality.
+                </p>
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+        )}
+        
         <div className="space-y-2">
           <Label htmlFor="modelType">Model Type</Label>
           <Select 

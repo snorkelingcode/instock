@@ -1,7 +1,7 @@
-
 import * as THREE from 'three';
 import { STLLoader } from 'three/addons/loaders/STLLoader.js';
 import { ThreeDModel } from '@/types/model';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 // Store preloaded geometries
 const preloadedGeometries = new Map<string, THREE.BufferGeometry>();
@@ -35,6 +35,9 @@ export const preloadModelGeometry = async (url: string): Promise<THREE.BufferGeo
   console.log(`Loading model: ${url}`);
   const loadPromise = new Promise<THREE.BufferGeometry>((resolve, reject) => {
     const loader = new STLLoader();
+    
+    // Check if we're on a mobile device for conditional loading parameters
+    const isMobile = window.innerWidth < 768;
     
     loader.load(
       url,
@@ -78,14 +81,41 @@ export const preloadModelGeometry = async (url: string): Promise<THREE.BufferGeo
 };
 
 /**
+ * Get a mobile-optimized subset of models to preload
+ */
+export const getMobileFilteredModels = (models: ThreeDModel[]): ThreeDModel[] => {
+  // On mobile, only preload essential models to reduce memory usage
+  const uniqueModelTypes = new Set<string>();
+  return models.filter(model => {
+    const modelType = model.default_options?.modelType;
+    if (!modelType) return false;
+    
+    // If we haven't seen this model type yet, include it
+    if (!uniqueModelTypes.has(modelType)) {
+      uniqueModelTypes.add(modelType);
+      return true;
+    }
+    
+    // Otherwise skip it for mobile
+    return false;
+  });
+};
+
+/**
  * Preload a collection of models at once
  */
 export const preloadModels = async (
   models: ThreeDModel[],
   onProgress?: (loaded: number, total: number) => void
 ): Promise<void> => {
+  // Check if we're on a mobile device
+  const isMobile = window.innerWidth < 768;
+  
+  // For mobile, only preload a subset of models
+  const modelsToLoad = isMobile ? getMobileFilteredModels(models) : models;
+  
   // Filter out models that have previously failed or have no valid STL path
-  const validModels = models.filter(model => {
+  const validModels = modelsToLoad.filter(model => {
     return model.stl_file_path && 
            !failedModels.has(model.stl_file_path);
   });
@@ -97,27 +127,43 @@ export const preloadModels = async (
     return;
   }
   
-  console.log(`Starting preload of ${total} models`);
+  console.log(`Starting preload of ${total} models${isMobile ? ' (mobile-optimized)' : ''}`);
   let loaded = 0;
   
-  // Create an array of promises for each model
-  const loadPromises = validModels.map(model => {
-    return preloadModelGeometry(model.stl_file_path)
-      .then(() => {
-        loaded++;
-        if (onProgress) onProgress(loaded, total);
-        return null;
-      })
-      .catch(err => {
-        console.warn(`Failed to preload model ${model.stl_file_path}:`, err);
-        loaded++;
-        if (onProgress) onProgress(loaded, total);
-        return null;
-      });
-  });
+  // Process models in smaller batches on mobile to prevent memory issues
+  const batchSize = isMobile ? 2 : 10;
+  const modelBatches = [];
   
-  // Wait for all preloads to complete, but don't fail if individual ones fail
-  await Promise.allSettled(loadPromises);
+  for (let i = 0; i < validModels.length; i += batchSize) {
+    modelBatches.push(validModels.slice(i, i + batchSize));
+  }
+  
+  for (const batch of modelBatches) {
+    // Create an array of promises for each model in the current batch
+    const loadPromises = batch.map(model => {
+      return preloadModelGeometry(model.stl_file_path)
+        .then(() => {
+          loaded++;
+          if (onProgress) onProgress(loaded, total);
+          return null;
+        })
+        .catch(err => {
+          console.warn(`Failed to preload model ${model.stl_file_path}:`, err);
+          loaded++;
+          if (onProgress) onProgress(loaded, total);
+          return null;
+        });
+    });
+    
+    // Wait for all preloads in this batch to complete
+    await Promise.allSettled(loadPromises);
+    
+    // On mobile, add a small delay between batches to prevent freezing
+    if (isMobile && modelBatches.indexOf(batch) < modelBatches.length - 1) {
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+  }
+  
   console.log(`Preloaded ${preloadedGeometries.size} models successfully`);
 };
 
@@ -220,6 +266,7 @@ export const getModelsNeedingCleanup = (): string[] => {
 export default {
   preloadModelGeometry,
   preloadModels,
+  getMobileFilteredModels,
   trackModelCombinations,
   isCombinationPreloaded,
   isModelPreloaded,
