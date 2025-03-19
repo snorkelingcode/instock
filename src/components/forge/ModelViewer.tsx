@@ -1,4 +1,3 @@
-
 import React, { useRef, useState, useEffect, Suspense } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { OrbitControls, GizmoHelper, GizmoViewport, PerspectiveCamera } from '@react-three/drei';
@@ -10,19 +9,15 @@ import { useUserCustomization } from '@/hooks/use-model';
 import { Loader2 } from 'lucide-react';
 import DebugPanel from './DebugPanel';
 
-// Add a helper component to automatically set up scene
 const SceneSetup = () => {
   const { scene, camera, invalidate } = useThree();
   
   useEffect(() => {
-    // Update camera position to center on X-axis and maintain good Y and Z values
-    camera.position.set(0, 100, 200);
+    camera.position.set(0, 100, 100);
     camera.lookAt(0, 0, 0);
     
-    // Force a render update
     invalidate();
     
-    // Force a scene update
     return () => {};
   }, [scene, camera, invalidate]);
   
@@ -49,14 +44,11 @@ const ModelDisplay = ({ url, customOptions }: { url: string, customOptions: Reco
     loader.load(
       url,
       (loadedGeometry) => {
-        // Center the model
         loadedGeometry.center();
-        // Compute vertex normals if they don't exist
         if (!loadedGeometry.attributes.normal) {
           loadedGeometry.computeVertexNormals();
         }
         
-        // Get the bounding box of the geometry to check its size
         const boundingBox = new THREE.Box3().setFromBufferAttribute(
           loadedGeometry.attributes.position as THREE.BufferAttribute
         );
@@ -68,27 +60,21 @@ const ModelDisplay = ({ url, customOptions }: { url: string, customOptions: Reco
         setLoading(false);
       },
       (xhr) => {
-        // Progress callback
         console.log(`${Math.round(xhr.loaded / xhr.total * 100)}% loaded`);
       },
       (err) => {
-        // Error callback
         console.error('Error loading STL:', err);
-        // Fix: Handle the unknown type properly
         const errorMessage = err instanceof Error ? err.message : 'Unknown error';
         setError(`Failed to load model: ${errorMessage}`);
         setLoading(false);
       }
     );
     
-    // Cleanup
     return () => {
-      // STLLoader doesn't have an abort method, but we can clean up state
       setGeometry(null);
     };
   }, [url]);
   
-  // Apply material based on customization options
   const getMaterial = () => {
     const color = customOptions.color || '#ffffff';
     const material = customOptions.material || 'plastic';
@@ -129,18 +115,16 @@ const ModelDisplay = ({ url, customOptions }: { url: string, customOptions: Reco
     );
   }
   
-  // Apply customization options with a much smaller default scale for large models
-  const scale = customOptions.scale || 0.01; // Scale down to 1% of original size
+  const scale = customOptions.scale || 0.01;
   
-  // Change from negative scale on X-axis to positive scale to reverse the mirroring
   return (
     <mesh 
       ref={modelRef}
-      scale={[scale, scale, scale]} // Changed from [-scale, scale, scale] to [scale, scale, scale]
+      scale={[scale, scale, scale]}
       castShadow
       receiveShadow
-      position={[0, 0, 0]} // Position at origin
-      rotation={[0, 0, Math.PI / 2]} // Maintain 90 degrees (π/2 radians) rotation on Z-axis
+      position={[0, 0, 0]}
+      rotation={[0, 0, Math.PI]}
     >
       <primitive object={geometry} attach="geometry" />
       <meshStandardMaterial 
@@ -155,7 +139,6 @@ const ModelDisplay = ({ url, customOptions }: { url: string, customOptions: Reco
   );
 };
 
-// Create a container component to connect the 3D canvas with the debug panel
 const ModelViewerContent = ({ model, effectiveOptions }: { model: ThreeDModel, effectiveOptions: Record<string, any> }) => {
   const modelRef = useRef<THREE.Mesh>(null);
   
@@ -170,16 +153,13 @@ const ModelViewerContent = ({ model, effectiveOptions }: { model: ThreeDModel, e
           gl.shadowMap.type = THREE.PCFSoftShadowMap;
         }}
       >
-        {/* Fix: Change the array to a direct string value for color */}
         <color attach="background" args={["#1f2937"]} />
         
-        {/* Scene setup component to ensure proper camera positioning */}
         <SceneSetup />
         
-        {/* Updated camera position to center on X-axis */}
         <PerspectiveCamera 
           makeDefault 
-          position={[0, 100, 200]} 
+          position={[0, 100, 100]} 
           fov={45}
           far={2000}
           near={0.1}
@@ -214,17 +194,15 @@ const ModelViewerContent = ({ model, effectiveOptions }: { model: ThreeDModel, e
           />
         </Suspense>
         
-        {/* Fixed: Ensure gridHelper args is an array of (size, divisions, colorCenterLine, colorGrid) */}
         <gridHelper args={[1000, 100, "#888888", "#444444"]} position={[0, -50, 0]} />
         
-        {/* Fixed: Ensure axesHelper args is an array with just the size */}
         <axesHelper args={[100]} />
         
         <OrbitControls 
           enablePan={true}
           minDistance={50}
           maxDistance={500}
-          target={[0, 0, 0]} // Target the center of the scene
+          target={[0, 0, 0]}
           makeDefault
         />
         <GizmoHelper
@@ -237,7 +215,6 @@ const ModelViewerContent = ({ model, effectiveOptions }: { model: ThreeDModel, e
         </GizmoHelper>
       </Canvas>
       
-      {/* Move DebugPanel inside Canvas to have access to Three.js context */}
       <div className="absolute bottom-4 right-4 z-10">
         <DebugPanel />
       </div>
@@ -249,7 +226,6 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
   const { user } = useAuth();
   const [viewerError, setViewerError] = useState<string | null>(null);
   
-  // Combine default options with user customizations
   const effectiveOptions = {
     ...model.default_options,
     ...customizationOptions
