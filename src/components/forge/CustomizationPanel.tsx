@@ -88,30 +88,26 @@ const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                 <SelectValue placeholder="Select corner style" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="square">Square</SelectItem>
                 <SelectItem value="rounded">Rounded</SelectItem>
-                <SelectItem value="squared">Squared</SelectItem>
+                <SelectItem value="flat">Flat</SelectItem>
               </SelectContent>
             </Select>
           </div>
           
-          {/* Centering Dropdown */}
+          {/* Magnets Dropdown */}
           <div className="space-y-2">
-            <Label htmlFor="centering">Centering</Label>
+            <Label htmlFor="magnets">Magnets</Label>
             <Select 
-              value={options.centering || 'off-top-left'} 
-              onValueChange={(value) => onChange('centering', value)}
+              value={options.magnets || 'no'} 
+              onValueChange={(value) => onChange('magnets', value)}
             >
-              <SelectTrigger id="centering">
-                <SelectValue placeholder="Select centering style" />
+              <SelectTrigger id="magnets">
+                <SelectValue placeholder="Include magnets?" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="off-top-left">Off-Top-Left (Default)</SelectItem>
-                <SelectItem value="off-top-right">Off-Top-Right</SelectItem>
-                <SelectItem value="top-centered">Top-Centered</SelectItem>
-                <SelectItem value="centered">Centered</SelectItem>
-                <SelectItem value="off-left">Off-Left</SelectItem>
-                <SelectItem value="off-right">Off-Right</SelectItem>
-                <SelectItem value="bottom-centered">Bottom-Centered</SelectItem>
+                <SelectItem value="yes">Yes</SelectItem>
+                <SelectItem value="no">No</SelectItem>
               </SelectContent>
             </Select>
           </div>

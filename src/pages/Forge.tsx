@@ -29,7 +29,7 @@ const Forge = () => {
   const { data: savedCustomization } = useUserCustomization(selectedModelId);
   const [customizationOptions, setCustomizationOptions] = useState<Record<string, any>>({
     corners: 'rounded',
-    centering: 'off-top-left',
+    magnets: 'no',
     color: '#ff0000',
     scale: 1,
     material: 'plastic',
@@ -57,7 +57,7 @@ const Forge = () => {
           ...prev,
           ...selectedModel.default_options,
           corners: prev.corners || 'rounded',
-          centering: prev.centering || 'off-top-left'
+          magnets: prev.magnets || 'no'
         }));
       }
     }
