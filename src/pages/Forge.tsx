@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Shell } from "@/components/layout/Shell";
 import { useMetaTags } from "@/hooks/use-meta-tags";
@@ -7,12 +6,13 @@ import { useModels, useModel, useSaveCustomization, useUserCustomization } from 
 import { ModelViewer } from '@/components/forge/ModelViewer';
 import CustomizationPanel from '@/components/forge/CustomizationPanel';
 import InstructionsPanel from '@/components/forge/InstructionsPanel';
+import ModelPreviewGrid from '@/components/forge/ModelPreviewGrid';
 import { 
   ResizablePanelGroup,
   ResizablePanel,
   ResizableHandle 
 } from "@/components/ui/resizable";
-import { Loader2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Loader2, ChevronDown, ChevronUp, Computer } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
 import { useToast } from '@/hooks/use-toast';
 import { ThreeDModel } from '@/types/model';
@@ -36,6 +36,7 @@ import LoadingSpinner from '@/components/ui/loading-spinner';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const CACHE_KEY_MODELS = 'forgeModels';
 const CACHE_KEY_PRELOAD_STATUS = 'forgePreloadStatus';
@@ -90,63 +91,45 @@ const Forge = () => {
   const initialLoadComplete = useRef(false);
   const forceShowInterface = useRef(false); // Ref to force show interface after initial preload
   
-  // Mobile-specific states
   const [activeTab, setActiveTab] = useState<string>("model");
   const [showInstructions, setShowInstructions] = useState(false);
   
-  const saveCustomization = useSaveCustomization();
-
-  // Force show interface after a certain period even if preload isn't complete
-  // Shorter timeout for mobile devices
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (!preloadComplete) {
-        console.log('Force showing interface after timeout');
-        forceShowInterface.current = true;
-        setPreloadComplete(true);
-      }
-    }, isMobile ? 5000 : 10000); // 5 seconds for mobile, 10 seconds for desktop
-    
-    return () => clearTimeout(timer);
-  }, [isMobile]);
-
-  const handleModelLoaded = (url: string, geometry: THREE.BufferGeometry) => {
-    setLoadedModels(prev => {
-      const newMap = new Map(prev);
-      newMap.set(url, geometry);
-      return newMap;
-    });
-  };
-
-  const handleCleanupInvalidModels = async () => {
-    if (performedCleanup) return;
-    
-    const invalidUrls = getModelsNeedingCleanup();
-    if (invalidUrls.length === 0) return;
-    
-    console.log(`Found ${invalidUrls.length} invalid models that need cleanup`);
-    
-    try {
-      const success = await cleanupInvalidModels(invalidUrls);
-      if (success) {
-        setPerformedCleanup(true);
-        resetLoaderState();
-        await refetchModels();
-        
-        toast({
-          title: "Models Cleanup",
-          description: `Removed ${invalidUrls.length} invalid model references from the database.`,
-        });
-      }
-    } catch (error) {
-      console.error("Failed to clean up invalid models:", error);
-      toast({
-        title: "Error",
-        description: "There was an error cleaning up invalid models. Please try again.",
-        variant: "destructive",
-      });
+  const [modelPreviews, setModelPreviews] = useState([
+    {
+      id: '1',
+      title: 'Slab Slider (Rounded)',
+      description: 'A rounded corner slab slider case without magnets.',
+      imageUrl: '/placeholder-slab-slider-rounded.jpg',
+      downloadUrl: '#',
+      type: 'slab-slider' as const
+    },
+    {
+      id: '2',
+      title: 'Slab Slider (Square)',
+      description: 'A square corner slab slider case without magnets.',
+      imageUrl: '/placeholder-slab-slider-square.jpg',
+      downloadUrl: '#',
+      type: 'slab-slider' as const
+    },
+    {
+      id: '3',
+      title: 'Slab Loader (Rounded)',
+      description: 'A rounded corner slab loader case without magnets.',
+      imageUrl: '/placeholder-slab-loader-rounded.jpg',
+      downloadUrl: '#',
+      type: 'slab-loader' as const
+    },
+    {
+      id: '4',
+      title: 'Slab Loader (Square)',
+      description: 'A square corner slab loader case without magnets.',
+      imageUrl: '/placeholder-slab-loader-square.jpg',
+      downloadUrl: '#',
+      type: 'slab-loader' as const
     }
-  };
+  ]);
+  
+  const saveCustomization = useSaveCustomization();
 
   useEffect(() => {
     if (!models || models.length === 0 || modelsLoading || preloadStarted) return;
@@ -250,7 +233,6 @@ const Forge = () => {
       const magnets = customizationOptions.magnets || 'no';
       const combinationKey = `${modelType}-${corners}-${magnets}`;
       
-      // Only wait for preloading if it's the initial load - after that, allow immediate changing
       const readyForMorphing = initialLoadComplete.current || preloadComplete || forceShowInterface.current;
       
       if (!readyForMorphing && preloadStatus.isBatchLoading) {
@@ -376,11 +358,9 @@ const Forge = () => {
     ? [...new Set(models.map(model => model.default_options?.modelType).filter(Boolean))]
     : [];
 
-  // Modified loading condition to prevent getting stuck
   const isLoading = modelsLoading && !models && preloadProgress.total === 0 && 
                    !forceShowInterface.current && !preloadComplete;
 
-  // If we have models but selectedModelId is not set yet, find a default model
   useEffect(() => {
     if (models?.length > 0 && !selectedModelId && !modelsLoading) {
       const defaultModel = models.find(model => model.stl_file_path && !didModelFail(model.stl_file_path));
@@ -391,7 +371,6 @@ const Forge = () => {
     }
   }, [models, selectedModelId, modelsLoading]);
 
-  // Toggle instructions visibility for mobile
   const toggleInstructions = () => {
     setShowInstructions(prev => !prev);
   };
@@ -405,7 +384,7 @@ const Forge = () => {
           
           {isMobile && (
             <p className="mt-2 text-sm text-orange-600 font-medium">
-              Mobile Mode: Loading one model at a time for better performance
+              Mobile Mode: Preview and download models
             </p>
           )}
         </div>
@@ -416,7 +395,7 @@ const Forge = () => {
             {preloadProgress.total > 0 && (
               <div className="w-64 text-center">
                 <p className="mb-2">
-                  {isMobile ? "Loading base model" : "Preloading models"}: 
+                  {isMobile ? "Loading model previews" : "Preloading models"}: 
                   {preloadProgress.loaded} of {preloadProgress.total}
                 </p>
                 <Progress 
@@ -432,48 +411,21 @@ const Forge = () => {
             )}
           </div>
         ) : isMobile ? (
-          // Mobile Layout
           <div className="flex flex-col space-y-4">
-            {/* Tabs for Mobile */}
-            <Tabs defaultValue="model" value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="model">Model</TabsTrigger>
-                <TabsTrigger value="customize">Customize</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="model" className="min-h-[400px] border rounded-lg">
-                {models && (
-                  <ModelViewer
-                    model={selectedModel || (models[0] || null)}
-                    previousModel={previousModelRef.current}
-                    customizationOptions={customizationOptions}
-                    morphEnabled={morphEnabled}
-                    loadedModels={loadedModels}
-                    onModelsLoaded={handleModelLoaded}
-                    preloadComplete={preloadComplete || forceShowInterface.current}
-                    preserveExistingModel={false} // Don't preserve on mobile to save memory
-                  />
-                )}
-              </TabsContent>
-              
-              <TabsContent value="customize" className="border rounded-lg p-4">
-                {models && (
-                  <CustomizationPanel
-                    model={selectedModel || (models[0] || null)}
-                    modelTypes={modelTypeOptions}
-                    options={customizationOptions}
-                    onChange={handleCustomizationChange}
-                    onSave={handleSaveCustomization}
-                    isAuthenticated={!!user}
-                  />
-                )}
-              </TabsContent>
-            </Tabs>
+            <Alert className="bg-blue-50 border-blue-200">
+              <Computer className="h-4 w-4 text-blue-600" />
+              <AlertTitle className="text-blue-800">Desktop Required for Full Features</AlertTitle>
+              <AlertDescription className="text-blue-700 text-sm">
+                The interactive 3D customization is only available on desktop computers. 
+                You can preview and download models below.
+              </AlertDescription>
+            </Alert>
             
-            {/* Collapsible Instructions Panel for Mobile */}
+            <ModelPreviewGrid previews={modelPreviews} />
+            
             <div className="border rounded-lg overflow-hidden">
               <button 
-                onClick={toggleInstructions}
+                onClick={() => setShowInstructions(prev => !prev)}
                 className="w-full flex justify-between items-center p-4 bg-gray-50 hover:bg-gray-100 transition-colors"
               >
                 <span className="font-medium">Instructions</span>
@@ -488,7 +440,6 @@ const Forge = () => {
             </div>
           </div>
         ) : (
-          // Desktop Layout
           <div>
             <ResizablePanelGroup
               direction="horizontal"

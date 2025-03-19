@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ModelCard from "@/components/admin/ModelCard";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Trash2 } from "lucide-react";
+import { Trash2, Image } from "lucide-react";
 import { getModelsNeedingCleanup, resetLoaderState } from "@/utils/modelPreloader";
 import {
   AlertDialog,
@@ -24,6 +24,10 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 // Define the 12 model types
 const modelTypes = [
@@ -57,7 +61,12 @@ const ManageModels = () => {
   const [uploadedModels, setUploadedModels] = useState<Record<string, boolean>>({});
   const [invalidModelCount, setInvalidModelCount] = useState(0);
   const [showCleanupDialog, setShowCleanupDialog] = useState(false);
-  
+  const [showPreviewDialog, setShowPreviewDialog] = useState(false);
+  const [currentModelId, setCurrentModelId] = useState("");
+  const [previewImage, setPreviewImage] = useState("");
+  const [previewDescription, setPreviewDescription] = useState("");
+  const [previewTitle, setPreviewTitle] = useState("");
+
   // Initialize uploaded models status
   useEffect(() => {
     if (models) {
@@ -240,6 +249,65 @@ const ManageModels = () => {
     }
   };
 
+  const openPreviewDialog = (modelId: string) => {
+    setCurrentModelId(modelId);
+    const modelType = modelTypes.find(type => type.id === modelId);
+    if (modelType) {
+      setPreviewTitle(modelType.title);
+      
+      // Find if model already exists to get existing preview data
+      const existingModel = models?.find(model => model.name === modelType.title);
+      if (existingModel) {
+        setPreviewDescription(existingModel.description || "");
+        setPreviewImage(existingModel.thumbnail_path || "");
+      } else {
+        setPreviewDescription("");
+        setPreviewImage("");
+      }
+    }
+    setShowPreviewDialog(true);
+  };
+
+  const saveModelPreview = async () => {
+    try {
+      const modelType = modelTypes.find(type => type.id === currentModelId);
+      if (!modelType) throw new Error("Invalid model type");
+      
+      const existingModel = models?.find(model => model.name === modelType.title);
+      
+      if (existingModel) {
+        // Update existing model
+        await updateModel.mutateAsync({
+          id: existingModel.id,
+          modelData: {
+            description: previewDescription,
+            thumbnail_path: previewImage
+          }
+        });
+        
+        toast({
+          title: "Success",
+          description: `${modelType.title} preview updated successfully.`,
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Model must be uploaded before adding preview information.",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      console.error("Error updating model preview:", error);
+      toast({
+        title: "Error",
+        description: `Failed to update preview: ${error.message}`,
+        variant: "destructive",
+      });
+    } finally {
+      setShowPreviewDialog(false);
+    }
+  };
+
   return (
     <Shell>
       <div className="container mx-auto py-8 px-4">
@@ -298,14 +366,25 @@ const ManageModels = () => {
                   {modelTypes
                     .filter(model => model.id.includes("slab-slider"))
                     .map(model => (
-                      <ModelCard
-                        key={model.id}
-                        id={model.id}
-                        title={model.title}
-                        onFileUpload={handleModelUpload}
-                        isUploaded={!!uploadedModels[model.id]}
-                        onDeleteModel={handleDeleteModel}
-                      />
+                      <div key={model.id} className="space-y-2">
+                        <ModelCard
+                          id={model.id}
+                          title={model.title}
+                          onFileUpload={handleModelUpload}
+                          isUploaded={!!uploadedModels[model.id]}
+                          onDeleteModel={handleDeleteModel}
+                        />
+                        {uploadedModels[model.id] && (
+                          <Button 
+                            variant="outline" 
+                            className="w-full" 
+                            onClick={() => openPreviewDialog(model.id)}
+                          >
+                            <Image className="mr-2 h-4 w-4" />
+                            Manage Preview
+                          </Button>
+                        )}
+                      </div>
                     ))
                   }
                 </div>
@@ -326,14 +405,25 @@ const ManageModels = () => {
                   {modelTypes
                     .filter(model => model.id.includes("slab-loader"))
                     .map(model => (
-                      <ModelCard
-                        key={model.id}
-                        id={model.id}
-                        title={model.title}
-                        onFileUpload={handleModelUpload}
-                        isUploaded={!!uploadedModels[model.id]}
-                        onDeleteModel={handleDeleteModel}
-                      />
+                      <div key={model.id} className="space-y-2">
+                        <ModelCard
+                          id={model.id}
+                          title={model.title}
+                          onFileUpload={handleModelUpload}
+                          isUploaded={!!uploadedModels[model.id]}
+                          onDeleteModel={handleDeleteModel}
+                        />
+                        {uploadedModels[model.id] && (
+                          <Button 
+                            variant="outline" 
+                            className="w-full" 
+                            onClick={() => openPreviewDialog(model.id)}
+                          >
+                            <Image className="mr-2 h-4 w-4" />
+                            Manage Preview
+                          </Button>
+                        )}
+                      </div>
                     ))
                   }
                 </div>
@@ -341,6 +431,56 @@ const ManageModels = () => {
             </Card>
           </TabsContent>
         </Tabs>
+        
+        {/* Model Preview Dialog */}
+        <Dialog open={showPreviewDialog} onOpenChange={setShowPreviewDialog}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Update Model Preview</DialogTitle>
+              <DialogDescription>
+                Add a preview image and description for {previewTitle}. This will be shown on mobile devices.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="title">Title</Label>
+                <Input id="title" value={previewTitle} disabled />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="description">Description</Label>
+                <Textarea 
+                  id="description" 
+                  placeholder="Describe the model features..."
+                  value={previewDescription}
+                  onChange={(e) => setPreviewDescription(e.target.value)}
+                  rows={3}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="image">Preview Image URL</Label>
+                <Input 
+                  id="image" 
+                  placeholder="https://example.com/image.jpg"
+                  value={previewImage}
+                  onChange={(e) => setPreviewImage(e.target.value)}
+                />
+                <p className="text-xs text-gray-500">
+                  Enter a full URL to an image. For best results, use a square image of at least 300×300 pixels.
+                </p>
+              </div>
+            </div>
+            
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button variant="outline">Cancel</Button>
+              </DialogClose>
+              <Button onClick={saveModelPreview}>Save Changes</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </Shell>
   );
