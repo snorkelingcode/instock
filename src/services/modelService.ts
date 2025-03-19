@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { ThreeDModel, UserCustomization } from "@/types/model";
 import { toast } from "@/hooks/use-toast";
@@ -186,7 +185,6 @@ export const deleteModel = async (id: string): Promise<boolean> => {
   }
 };
 
-// New function to clean up invalid models (those returning 400/404 errors)
 export const cleanupInvalidModels = async (invalidUrls: string[]): Promise<boolean> => {
   if (!invalidUrls || invalidUrls.length === 0) {
     return true;
@@ -208,8 +206,21 @@ export const cleanupInvalidModels = async (invalidUrls: string[]): Promise<boole
 
     console.log(`Found ${data.length} invalid models to clean up:`, data);
     
-    // Delete the invalid models
+    // Get model IDs to delete
     const modelIds = data.map(model => model.id);
+    
+    // First, delete related user customizations to avoid foreign key constraint errors
+    const { error: deleteCustomizationsError } = await supabase
+      .from('user_customizations')
+      .delete()
+      .in('model_id', modelIds);
+      
+    if (deleteCustomizationsError) {
+      console.error("Error deleting related customizations:", deleteCustomizationsError);
+      throw deleteCustomizationsError;
+    }
+    
+    // Now we can safely delete the models
     const { error: deleteError } = await supabase
       .from('threed_models')
       .delete()
@@ -221,7 +232,7 @@ export const cleanupInvalidModels = async (invalidUrls: string[]): Promise<boole
     
     toast({
       title: "Cleanup Completed",
-      description: `Cleaned up ${modelIds.length} deleted models from the database.`,
+      description: `Cleaned up ${modelIds.length} invalid models from the database.`,
     });
     
     return true;
@@ -305,18 +316,23 @@ export const getUserCustomization = async (
   modelId: string
 ): Promise<UserCustomization | null> => {
   try {
+    if (!userId || !modelId) {
+      return null;
+    }
+    
     const { data, error } = await supabase
       .from('user_customizations')
       .select('*')
       .eq('user_id', userId)
       .eq('model_id', modelId)
-      .single();
+      .maybeSingle(); // Use maybeSingle instead of single to avoid errors when no data is found
 
     if (error) {
       if (error.code === 'PGRST116') { // No rows returned
         return null;
       }
-      throw error;
+      console.error("Error fetching user customization:", error);
+      return null;
     }
     
     return data as UserCustomization;

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Shell } from "@/components/layout/Shell";
 import { useMetaTags } from "@/hooks/use-meta-tags";
@@ -42,8 +41,12 @@ const Forge = () => {
   
   const { data: savedCustomization } = useUserCustomization(selectedModelId, { 
     enabled: !!user?.id && !!selectedModelId,
-    staleTime: Infinity,  // Only fetch once
-    cacheTime: Infinity   // Keep in cache
+    staleTime: Infinity,
+    cacheTime: Infinity,
+    retry: false,
+    onError: (error: any) => {
+      console.error("Error fetching user customization:", error);
+    }
   });
   
   const [customizationOptions, setCustomizationOptions] = useState<Record<string, any>>({
@@ -79,7 +82,6 @@ const Forge = () => {
     });
   };
 
-  // New function to clean up invalid models
   const handleCleanupInvalidModels = async () => {
     if (performedCleanup) return;
     
@@ -88,15 +90,24 @@ const Forge = () => {
     
     console.log(`Found ${invalidUrls.length} invalid models that need cleanup`);
     
-    const success = await cleanupInvalidModels(invalidUrls);
-    if (success) {
-      setPerformedCleanup(true);
-      resetLoaderState();
-      refetchModels();
-      
+    try {
+      const success = await cleanupInvalidModels(invalidUrls);
+      if (success) {
+        setPerformedCleanup(true);
+        resetLoaderState();
+        await refetchModels();
+        
+        toast({
+          title: "Models Cleanup",
+          description: `Removed ${invalidUrls.length} invalid model references from the database. Please re-upload these models.`,
+        });
+      }
+    } catch (error) {
+      console.error("Failed to clean up invalid models:", error);
       toast({
-        title: "Models Cleanup",
-        description: `Removed ${invalidUrls.length} invalid model references from the database. Please re-upload these models.`,
+        title: "Error",
+        description: "There was an error cleaning up invalid models. Please try again or use the admin page.",
+        variant: "destructive",
       });
     }
   };
@@ -109,41 +120,50 @@ const Forge = () => {
       
       resetLoaderState();
       
-      await preloadModels(models, (loaded, total) => {
-        setPreloadProgress({ loaded, total });
-        if (loaded === total) {
-          setPreloadComplete(true);
-        }
-      });
-      
-      const modelTypes = new Set<string>();
-      const cornerStyles = new Set<string>();
-      const magnetsOptions = new Set<string>();
-      
-      models.forEach(model => {
-        const defaultOptions = model.default_options || {};
-        if (defaultOptions.modelType) modelTypes.add(defaultOptions.modelType);
-        if (defaultOptions.corners) cornerStyles.add(defaultOptions.corners);
-        if (defaultOptions.magnets) magnetsOptions.add(defaultOptions.magnets);
-      });
-      
-      const allCombinations = new Set<string>();
-      modelTypes.forEach(modelType => {
-        cornerStyles.forEach(corners => {
-          magnetsOptions.forEach(magnets => {
-            allCombinations.add(`${modelType}-${corners}-${magnets}`);
+      try {
+        await preloadModels(models, (loaded, total) => {
+          setPreloadProgress({ loaded, total });
+          if (loaded === total) {
+            setPreloadComplete(true);
+          }
+        });
+        
+        const modelTypes = new Set<string>();
+        const cornerStyles = new Set<string>();
+        const magnetsOptions = new Set<string>();
+        
+        models.forEach(model => {
+          const defaultOptions = model.default_options || {};
+          if (defaultOptions.modelType) modelTypes.add(defaultOptions.modelType);
+          if (defaultOptions.corners) cornerStyles.add(defaultOptions.corners);
+          if (defaultOptions.magnets) magnetsOptions.add(defaultOptions.magnets);
+        });
+        
+        const allCombinations = new Set<string>();
+        modelTypes.forEach(modelType => {
+          cornerStyles.forEach(corners => {
+            magnetsOptions.forEach(magnets => {
+              allCombinations.add(`${modelType}-${corners}-${magnets}`);
+            });
           });
         });
-      });
-      
-      preloadedCombinations.current = allCombinations;
-      setPreloadComplete(true);
-      
-      // Check for and clean up invalid models after preloading
-      await handleCleanupInvalidModels();
-      
-      console.log(`Preloading complete. All ${allCombinations.size} combinations tracked.`);
-      console.log('Preload status:', getPreloadStatus());
+        
+        preloadedCombinations.current = allCombinations;
+        setPreloadComplete(true);
+        
+        await handleCleanupInvalidModels();
+        
+        console.log(`Preloading complete. All ${allCombinations.size} combinations tracked.`);
+        console.log('Preload status:', getPreloadStatus());
+      } catch (error) {
+        console.error("Error during model preloading:", error);
+        setPreloadComplete(true);
+        toast({
+          title: "Warning",
+          description: "Some models failed to preload. You may experience issues when changing model types.",
+          variant: "destructive",
+        });
+      }
     };
     
     preloadAllModels();

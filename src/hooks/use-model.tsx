@@ -70,6 +70,7 @@ export const useUserCustomization = (modelId: string, options = {}) => {
     queryKey: ['customization', user?.id, modelId],
     queryFn: () => getUserCustomization(user?.id || '', modelId),
     enabled: !!user?.id && !!modelId,
+    retry: false, // Don't retry on error to avoid console spam
     ...options,
   });
 };
