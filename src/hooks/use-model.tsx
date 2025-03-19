@@ -17,7 +17,7 @@ export const useModels = () => {
     queryKey: ['models'],
     queryFn: fetchModels,
     staleTime: 1000 * 60 * 5, // 5 minutes
-    cacheTime: 1000 * 60 * 30, // 30 minutes
+    gcTime: 1000 * 60 * 30, // 30 minutes
   });
 };
 
@@ -27,7 +27,7 @@ export const useModel = (id: string) => {
     queryFn: () => fetchModelById(id),
     enabled: !!id,
     staleTime: 1000 * 60 * 5, // 5 minutes
-    cacheTime: 1000 * 60 * 30, // 30 minutes
+    gcTime: 1000 * 60 * 30, // 30 minutes
   });
 };
 
@@ -76,7 +76,7 @@ export const useUserCustomization = (modelId: string, options = {}) => {
     enabled: !!user?.id && !!modelId,
     retry: false, // Don't retry on error to avoid console spam
     staleTime: 1000 * 60 * 30, // 30 minutes
-    cacheTime: 1000 * 60 * 30, // 30 minutes
+    gcTime: 1000 * 60 * 30, // 30 minutes
     ...options,
   });
 };
