@@ -273,7 +273,7 @@ const ModelViewerContent = ({ model, effectiveOptions, onDebugInfoUpdate }: Mode
           />
         </Suspense>
         
-        <gridHelper args={[250, 25, "#ea384c", "#ea384c"]} position={[0, -50, 0]} />
+        <gridHelper args={[350, 35, "#ea384c", "#ea384c"]} position={[0, -50, 0]} />
         
         <OrbitControls 
           enabled={false}
