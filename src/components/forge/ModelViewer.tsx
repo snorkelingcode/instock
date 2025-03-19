@@ -21,7 +21,17 @@ const SceneSetup = ({
   const { camera } = useThree();
   
   useEffect(() => {
-    camera.position.set(0, 200, 100);
+    // Setting the camera to the specified values
+    camera.position.set(6.52, 472.46, 0.58);
+    
+    // Convert degrees to radians for rotation
+    const degToRad = (deg: number) => deg * (Math.PI/180);
+    camera.rotation.set(
+      degToRad(-90), // x rotation
+      degToRad(0),   // y rotation
+      degToRad(-179.64) // z rotation
+    );
+    
     camera.lookAt(0, 0, 0);
   }, [camera]);
   
@@ -135,16 +145,21 @@ const ModelDisplay = ({ url, customOptions, modelRef }: ModelDisplayProps) => {
     );
   }
   
-  const scale = customOptions.scale || 0.01;
+  const scale = customOptions.scale || 1;
   
+  // Setting model to the specified position, rotation, and scale values
   return (
-    <group ref={modelRef}>
+    <group 
+      ref={modelRef}
+      position={[0, 0, 0]}
+      rotation={[0, 0, 0]}
+      scale={[scale, scale, scale]}
+    >
       <mesh 
-        scale={[scale, scale, scale]}
         castShadow
         receiveShadow
         position={[0, 0, 0]}
-        rotation={[Math.PI, Math.PI, Math.PI / 2]} // 180°, 180°, 90°
+        rotation={[0, 0, 0]}
       >
         <primitive object={geometry} attach="geometry" />
         <meshStandardMaterial 
@@ -186,7 +201,8 @@ const ModelViewerContent = ({ model, effectiveOptions, onDebugInfoUpdate }: Mode
         
         <PerspectiveCamera 
           makeDefault 
-          position={[0, 200, 100]} 
+          position={[6.52, 472.46, 0.58]} 
+          rotation={[-Math.PI/2, 0, -Math.PI * (179.64/180)]}
           fov={45}
           far={2000}
           near={0.1}
@@ -256,13 +272,13 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
   const [viewerError, setViewerError] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState({
     camera: {
-      position: new THREE.Vector3(0, 200, 100),
-      rotation: new THREE.Euler(0, 0, 0),
+      position: new THREE.Vector3(6.52, 472.46, 0.58),
+      rotation: new THREE.Euler(-Math.PI/2, 0, -Math.PI * (179.64/180)),
     },
     model: {
       position: new THREE.Vector3(0, 0, 0),
-      rotation: new THREE.Euler(Math.PI, Math.PI, Math.PI / 2),
-      scale: new THREE.Vector3(0.01, 0.01, 0.01),
+      rotation: new THREE.Euler(0, 0, 0),
+      scale: new THREE.Vector3(1, 1, 1),
     }
   });
   

@@ -20,13 +20,13 @@ const DebugPanel: React.FC<DebugPanelProps> = ({
 }) => {
   const [displayData, setDisplayData] = useState({
     camera: {
-      position: cameraPosition,
-      rotation: cameraRotation
+      position: new THREE.Vector3(6.52, 472.46, 0.58),
+      rotation: new THREE.Euler(-Math.PI/2, 0, -Math.PI * (179.64/180))
     },
     model: {
-      position: modelPosition,
-      rotation: modelRotation,
-      scale: modelScale
+      position: new THREE.Vector3(0, 0, 0),
+      rotation: new THREE.Euler(0, 0, 0),
+      scale: new THREE.Vector3(1, 1, 1)
     }
   });
 
