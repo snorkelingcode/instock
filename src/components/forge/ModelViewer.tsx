@@ -1,4 +1,3 @@
-
 import React, { useRef, useState, useEffect, Suspense } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { OrbitControls, GizmoHelper, GizmoViewport, PerspectiveCamera } from '@react-three/drei';
@@ -147,7 +146,7 @@ const ModelDisplay = ({ url, customOptions, modelRef }: ModelDisplayProps) => {
 };
 
 const ModelRotationControls = ({ modelRef }: { modelRef: React.RefObject<THREE.Group> }) => {
-  const { gl } = useThree();
+  const { gl, camera } = useThree();
   const [isDragging, setIsDragging] = useState(false);
   const [previousMousePosition, setPreviousMousePosition] = useState({ x: 0, y: 0 });
   
@@ -166,7 +165,6 @@ const ModelRotationControls = ({ modelRef }: { modelRef: React.RefObject<THREE.G
         
         const rotationSpeed = 0.01;
         
-        // Always use consistent rotation direction regardless of where the user clicks
         modelRef.current.rotation.y -= deltaMove.x * rotationSpeed;
         modelRef.current.rotation.x -= deltaMove.y * rotationSpeed;
         
@@ -178,62 +176,15 @@ const ModelRotationControls = ({ modelRef }: { modelRef: React.RefObject<THREE.G
       setIsDragging(false);
     };
     
-    // Get the canvas element
     const canvas = gl.domElement;
-    
-    // Add event listeners to the canvas directly
     canvas.addEventListener('mousedown', handleMouseDown);
     window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('mouseup', handleMouseUp);
-    
-    // Add touch support for mobile devices
-    const handleTouchStart = (event: TouchEvent) => {
-      if (event.touches.length === 1) {
-        setIsDragging(true);
-        setPreviousMousePosition({ 
-          x: event.touches[0].clientX, 
-          y: event.touches[0].clientY 
-        });
-        event.preventDefault();
-      }
-    };
-    
-    const handleTouchMove = (event: TouchEvent) => {
-      if (isDragging && event.touches.length === 1 && modelRef.current) {
-        const deltaMove = {
-          x: event.touches[0].clientX - previousMousePosition.x,
-          y: event.touches[0].clientY - previousMousePosition.y
-        };
-        
-        const rotationSpeed = 0.01;
-        
-        // Same consistent rotation for touch events
-        modelRef.current.rotation.y -= deltaMove.x * rotationSpeed;
-        modelRef.current.rotation.x -= deltaMove.y * rotationSpeed;
-        
-        setPreviousMousePosition({ 
-          x: event.touches[0].clientX, 
-          y: event.touches[0].clientY 
-        });
-        event.preventDefault();
-      }
-    };
-    
-    const handleTouchEnd = (event: TouchEvent) => {
-      setIsDragging(false);
-    };
-    
-    canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
-    canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
-    window.addEventListener('touchend', handleTouchEnd);
     
     return () => {
       canvas.removeEventListener('mousedown', handleMouseDown);
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
-      canvas.removeEventListener('touchstart', handleTouchStart);
-      canvas.removeEventListener('touchmove', handleTouchMove);
-      window.removeEventListener('touchend', handleTouchEnd);
     };
   }, [gl, modelRef, isDragging, previousMousePosition]);
   
