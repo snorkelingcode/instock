@@ -1,4 +1,3 @@
-
 import React, { useRef, useState, useEffect, Suspense } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { OrbitControls, GizmoHelper, GizmoViewport, PerspectiveCamera } from '@react-three/drei';
@@ -22,14 +21,14 @@ const SceneSetup = ({
   
   useEffect(() => {
     // Lock camera in the specified position and rotation
-    camera.position.set(0.31, 409.70, 0.02);
+    camera.position.set(0, 500, 0);
     
     // Convert degrees to radians for setting rotation
     const degToRad = (deg: number) => deg * (Math.PI / 180);
     camera.rotation.set(
       degToRad(-90), // x: -90 degrees
       degToRad(-0.00), // y: -0.00 degrees
-      degToRad(-179.88) // z: -179.88 degrees
+      degToRad(-180) // z: -180 degrees
     );
     
     camera.updateProjectionMatrix();
@@ -170,7 +169,6 @@ const ModelDisplay = ({ url, customOptions, modelRef }: ModelDisplayProps) => {
   );
 };
 
-// Model rotation controls component
 const ModelRotationControls = ({ modelRef }: { modelRef: React.RefObject<THREE.Group> }) => {
   const { gl, camera } = useThree();
   const [isDragging, setIsDragging] = useState(false);
@@ -189,11 +187,8 @@ const ModelRotationControls = ({ modelRef }: { modelRef: React.RefObject<THREE.G
           y: event.clientY - previousMousePosition.y
         };
         
-        // Adjust rotation speed
         const rotationSpeed = 0.01;
         
-        // Fix inverted controls by reversing the direction
-        // Move mouse right → rotate model right, move mouse down → rotate model down
         modelRef.current.rotation.y -= deltaMove.x * rotationSpeed;
         modelRef.current.rotation.x -= deltaMove.y * rotationSpeed;
         
@@ -205,14 +200,12 @@ const ModelRotationControls = ({ modelRef }: { modelRef: React.RefObject<THREE.G
       setIsDragging(false);
     };
     
-    // Add event listeners to the canvas
     const canvas = gl.domElement;
     canvas.addEventListener('mousedown', handleMouseDown);
     window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('mouseup', handleMouseUp);
     
     return () => {
-      // Clean up event listeners
       canvas.removeEventListener('mousedown', handleMouseDown);
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
@@ -249,7 +242,7 @@ const ModelViewerContent = ({ model, effectiveOptions, onDebugInfoUpdate }: Mode
         
         <PerspectiveCamera 
           makeDefault 
-          position={[0.31, 409.70, 0.02]} 
+          position={[0, 500, 0]} 
           fov={45}
           far={2000}
           near={0.1}
