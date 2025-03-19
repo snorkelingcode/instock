@@ -125,7 +125,7 @@ const ModelDisplay = ({ url, customOptions }: { url: string, customOptions: Reco
       castShadow
       receiveShadow
       position={[0, 0, 0]}
-      rotation={[0, Math.PI, Math.PI / 2]} // 0°, 180°, 90°
+      rotation={[Math.PI * -1, Math.PI, Math.PI / 2]} // -180°, 180°, 90°
     >
       <primitive object={geometry} attach="geometry" />
       <meshStandardMaterial 

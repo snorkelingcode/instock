@@ -19,7 +19,7 @@ const DebugPanel: React.FC<DebugPanelProps> = () => {
   
   const [modelData] = useState({
     position: new THREE.Vector3(0, 0, 0),
-    rotation: new THREE.Euler(0, Math.PI, Math.PI / 2), // 180 degrees on Y, 90 degrees on Z
+    rotation: new THREE.Euler(Math.PI * -1, Math.PI, Math.PI / 2), // -180 degrees on X, 180 degrees on Y, 90 degrees on Z
     scale: new THREE.Vector3(0.01, 0.01, 0.01)
   });
 
