@@ -53,10 +53,17 @@ const ModelDisplay = ({ url, customOptions }: { url: string, customOptions: Reco
         }
         
         // Get the bounding box of the geometry to check its size
-        const boundingBox = new THREE.Box3().setFromBufferAttribute(loadedGeometry.attributes.position);
-        const size = new THREE.Vector3();
-        boundingBox.getSize(size);
-        console.log('Model dimensions:', size);
+        // Use a safe type check before using setFromBufferAttribute
+        if (loadedGeometry.attributes.position) {
+          const boundingBox = new THREE.Box3();
+          // Use proper typing for Box3.setFromBufferAttribute
+          boundingBox.setFromBufferAttribute(
+            loadedGeometry.attributes.position as THREE.BufferAttribute
+          );
+          const size = new THREE.Vector3();
+          boundingBox.getSize(size);
+          console.log('Model dimensions:', size);
+        }
         
         setGeometry(loadedGeometry);
         setLoading(false);
@@ -68,7 +75,6 @@ const ModelDisplay = ({ url, customOptions }: { url: string, customOptions: Reco
       (err) => {
         // Error callback
         console.error('Error loading STL:', err);
-        // Fix: Handle the unknown type properly
         const errorMessage = err instanceof Error ? err.message : 'Unknown error';
         setError(`Failed to load model: ${errorMessage}`);
         setLoading(false);
@@ -118,7 +124,7 @@ const ModelDisplay = ({ url, customOptions }: { url: string, customOptions: Reco
     return (
       <mesh>
         {/* Fixed: Ensure args is an array */}
-        <boxGeometry args={[1, 16, 16]} />
+        <boxGeometry args={[1, 1, 1]} />
         <meshStandardMaterial color="red" />
       </mesh>
     );
