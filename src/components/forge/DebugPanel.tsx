@@ -13,13 +13,13 @@ const DebugPanel: React.FC<DebugPanelProps> = () => {
   // Since we can't use useThree/useFrame outside Canvas,
   // we'll use simplified static state for demonstration
   const [cameraData] = useState({
-    position: new THREE.Vector3(0, 100, 100),
+    position: new THREE.Vector3(0, 200, 100),
     rotation: new THREE.Euler(0, 0, 0),
   });
   
   const [modelData] = useState({
     position: new THREE.Vector3(0, 0, 0),
-    rotation: new THREE.Euler(0, 0, Math.PI), // 180 degrees on Z-axis
+    rotation: new THREE.Euler(0, Math.PI, Math.PI / 2), // 180 degrees on Y, 90 degrees on Z
     scale: new THREE.Vector3(0.01, 0.01, 0.01)
   });
 

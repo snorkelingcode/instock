@@ -1,3 +1,4 @@
+
 import React, { useRef, useState, useEffect, Suspense } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { OrbitControls, GizmoHelper, GizmoViewport, PerspectiveCamera } from '@react-three/drei';
@@ -13,7 +14,7 @@ const SceneSetup = () => {
   const { scene, camera, invalidate } = useThree();
   
   useEffect(() => {
-    camera.position.set(0, 100, 100);
+    camera.position.set(0, 200, 100);
     camera.lookAt(0, 0, 0);
     
     invalidate();
@@ -124,11 +125,11 @@ const ModelDisplay = ({ url, customOptions }: { url: string, customOptions: Reco
       castShadow
       receiveShadow
       position={[0, 0, 0]}
-      rotation={[0, 0, Math.PI]}
+      rotation={[0, Math.PI, Math.PI / 2]} // 0°, 180°, 90°
     >
       <primitive object={geometry} attach="geometry" />
       <meshStandardMaterial 
-        color={new THREE.Color(customOptions.color || '#ffffff')}
+        color={customOptions.color || '#ffffff'}
         metalness={customOptions.material === 'metal' ? 0.8 : 0.1}
         roughness={
           customOptions.material === 'metal' ? 0.2 : 
@@ -159,7 +160,7 @@ const ModelViewerContent = ({ model, effectiveOptions }: { model: ThreeDModel, e
         
         <PerspectiveCamera 
           makeDefault 
-          position={[0, 100, 100]} 
+          position={[0, 200, 100]} 
           fov={45}
           far={2000}
           near={0.1}
