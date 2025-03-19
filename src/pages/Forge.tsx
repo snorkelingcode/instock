@@ -192,7 +192,11 @@ const Forge = () => {
           }
         }, isMobile);
         
-        await handleCleanupInvalidModels();
+        const failedUrls = getFailedUrls();
+        if (failedUrls.length > 0) {
+          await cleanupInvalidModels(failedUrls);
+          setPerformedCleanup(true);
+        }
         
         console.log('Preload status:', getPreloadStatus());
       } catch (error) {
@@ -216,7 +220,7 @@ const Forge = () => {
         clearTimeout(preloadTimeoutRef.current);
       }
     };
-  }, [models, modelsLoading, preloadStarted, isMobile]);
+  }, [models, modelsLoading, preloadStarted, isMobile, toast]);
 
   useEffect(() => {
     if (!models || models.length === 0) return;
@@ -373,6 +377,14 @@ const Forge = () => {
 
   const toggleInstructions = () => {
     setShowInstructions(prev => !prev);
+  };
+
+  const handleModelLoaded = (url: string, geometry: THREE.BufferGeometry) => {
+    setLoadedModels(prev => {
+      const newMap = new Map(prev);
+      newMap.set(url, geometry);
+      return newMap;
+    });
   };
 
   return (
