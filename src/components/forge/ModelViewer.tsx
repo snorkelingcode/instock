@@ -316,7 +316,7 @@ const ModelDisplay = ({
 };
 
 const ModelRotationControls = ({ modelRef }: { modelRef: React.RefObject<THREE.Group> }) => {
-  const { gl, camera } = useThree();
+  const { gl, camera, scene } = useThree();
   const rotationActive = useRef(false);
   const lastPointerPosition = useRef({ x: 0, y: 0 });
   const initialRotation = useRef({ x: 0, y: 0 });
@@ -374,7 +374,7 @@ const ModelRotationControls = ({ modelRef }: { modelRef: React.RefObject<THREE.G
       modelRef.current.rotation.x = initialRotation.current.x - deltaY * sensitivity;
       
       // Force render to ensure smooth rotation during interaction
-      gl.render(gl.scene, camera);
+      gl.render(scene, camera);
     };
     
     const onPointerUp = (event: PointerEvent) => {
@@ -428,7 +428,7 @@ const ModelRotationControls = ({ modelRef }: { modelRef: React.RefObject<THREE.G
         gl.domElement.style.cursor = 'auto';
       }
     };
-  }, [gl, modelRef, camera]);
+  }, [gl, modelRef, camera, scene]);
   
   return null;
 };
