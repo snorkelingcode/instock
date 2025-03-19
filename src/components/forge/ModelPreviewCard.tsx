@@ -22,11 +22,11 @@ const ModelPreviewCard: React.FC<ModelPreviewCardProps> = ({
   };
 
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden h-full flex flex-col">
       <CardHeader className="p-4 pb-2">
         <CardTitle className="text-lg">{title}</CardTitle>
       </CardHeader>
-      <div className="px-4">
+      <div className="px-4 flex-grow">
         <div className="h-48 overflow-hidden rounded-md bg-gray-100">
           <img 
             src={imageUrl} 
@@ -42,7 +42,7 @@ const ModelPreviewCard: React.FC<ModelPreviewCardProps> = ({
       <CardContent className="p-4 pt-3">
         <p className="text-sm text-gray-600">{description}</p>
       </CardContent>
-      <CardFooter className="p-4 pt-0">
+      <CardFooter className="p-4 pt-0 mt-auto">
         <Button 
           variant="outline" 
           className="w-full flex items-center justify-center" 

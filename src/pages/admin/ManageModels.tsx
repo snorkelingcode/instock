@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Shell } from "@/components/layout/Shell";
 import { useMetaTags } from "@/hooks/use-meta-tags";
@@ -29,7 +28,6 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
-// Define the 12 model types
 const modelTypes = [
   { id: "slab-slider-rounded", title: "Slab Slider (Rounded)" },
   { id: "slab-slider-square", title: "Slab Slider (Square)" },
@@ -44,6 +42,24 @@ const modelTypes = [
   { id: "slab-loader-square-magnets", title: "Slab Loader (Square + Magnets)" },
   { id: "slab-loader-flat-magnets", title: "Slab Loader (Flat + Magnets)" }
 ];
+
+const defaultModelImages = {
+  "slab-slider-rounded": "/lovable-uploads/05e57c85-5441-4fff-b945-4a5e864300ce.png",
+  "slab-slider-square": "/lovable-uploads/125a6be9-26e0-4a93-bdba-b6e59987210a.png",
+  "slab-slider-rounded-magnets": "/lovable-uploads/eec1c627-b940-4257-b4dc-18d6a1210fc7.png",
+  "slab-loader-rounded": "/lovable-uploads/6f9cfca6-a0a1-4651-856a-ae5b1b8b372d.png",
+  "slab-loader-square": "/lovable-uploads/8be85c80-3a73-44ab-b4a4-e3ceb269fb17.png",
+  "slab-loader-rounded-magnets": "/lovable-uploads/5222a634-7636-44dc-b5c9-f1f8ff45b6b8.png"
+};
+
+const defaultDescriptions = {
+  "slab-slider-rounded": "A rounded corner slab slider case without magnets. Perfect for showcasing your favorite cards.",
+  "slab-slider-square": "A square corner slab slider case without magnets. Clean, modern design for your collection.",
+  "slab-slider-rounded-magnets": "A rounded corner slab slider case with magnets for secure closure and display.",
+  "slab-loader-rounded": "A rounded corner slab loader case without magnets. Easy access to your cards.",
+  "slab-loader-square": "A square corner slab loader case without magnets. Sleek design for your collection.",
+  "slab-loader-rounded-magnets": "A rounded corner slab loader case with magnets for secure storage and display."
+};
 
 const ManageModels = () => {
   useMetaTags({
@@ -67,7 +83,6 @@ const ManageModels = () => {
   const [previewDescription, setPreviewDescription] = useState("");
   const [previewTitle, setPreviewTitle] = useState("");
 
-  // Initialize uploaded models status
   useEffect(() => {
     if (models) {
       const uploaded: Record<string, boolean> = {};
@@ -81,7 +96,6 @@ const ManageModels = () => {
       
       setUploadedModels(uploaded);
       
-      // Check for invalid models
       const invalidModels = getModelsNeedingCleanup();
       setInvalidModelCount(invalidModels.length);
     }
@@ -98,29 +112,23 @@ const ManageModels = () => {
     }
     
     try {
-      // Upload model file
       const modelFilePath = await uploadModelFile(file, user.id);
       if (!modelFilePath) throw new Error("Failed to upload model file");
       
       const modelType = modelTypes.find(type => type.id === modelId);
       if (!modelType) throw new Error("Invalid model type");
       
-      // Determine model type (Slab Slider or Slab Loader)
       const modelBase = modelId.includes("slab-slider") ? "Slab-Slider" : "Slab-Loader";
       
-      // Determine corners type
       let corners = "rounded";
       if (modelId.includes("square")) corners = "square";
       if (modelId.includes("flat")) corners = "flat";
       
-      // Determine if it has magnets
       const hasMagnets = modelId.includes("magnets");
       
-      // Find if model already exists to update it
       const existingModel = models?.find(model => model.name === modelType.title);
       
       if (existingModel) {
-        // Update existing model
         await updateModel.mutateAsync({
           id: existingModel.id,
           modelData: {
@@ -134,7 +142,6 @@ const ManageModels = () => {
           }
         });
       } else {
-        // Create new model
         await createModel.mutateAsync({
           name: modelType.title,
           description: `3D model for ${modelType.title}`,
@@ -153,10 +160,8 @@ const ManageModels = () => {
         });
       }
       
-      // Reset cache for model preloader
       resetLoaderState();
       
-      // Update uploaded status
       setUploadedModels(prev => ({
         ...prev,
         [modelId]: true
@@ -181,20 +186,16 @@ const ManageModels = () => {
       const modelType = modelTypes.find(type => type.id === modelId);
       if (!modelType) throw new Error("Invalid model type");
       
-      // Find the model to delete
       const modelToDelete = models?.find(model => model.name === modelType.title);
       
       if (!modelToDelete) {
         throw new Error("Model not found");
       }
       
-      // Delete the model
       await deleteModel.mutateAsync(modelToDelete.id);
       
-      // Reset cache for model preloader
       resetLoaderState();
       
-      // Update uploaded status
       setUploadedModels(prev => ({
         ...prev,
         [modelId]: false
@@ -216,26 +217,29 @@ const ManageModels = () => {
   
   const handleCleanupInvalidModels = async () => {
     try {
-      const invalidModels = getModelsNeedingCleanup();
-      if (invalidModels.length === 0) {
-        toast({
-          title: "Info",
-          description: "No invalid models to clean up.",
-        });
-        return;
-      }
-      
-      const success = await cleanupInvalidModels(invalidModels);
-      if (success) {
-        resetLoaderState();
-        await refetchModels();
-        
-        toast({
-          title: "Success",
-          description: `${invalidModels.length} invalid models cleaned up successfully.`,
-        });
-        
-        setInvalidModelCount(0);
+      const failedUrls = getModelsNeedingCleanup();
+      if (failedUrls.length > 0) {
+        await cleanupInvalidModels(failedUrls)
+          .then(() => {
+            resetLoaderState();
+            refetchModels();
+            setInvalidModelCount(0);
+            toast({
+              title: "Success",
+              description: `${failedUrls.length} invalid models cleaned up successfully.`,
+            });
+          })
+          .catch(error => {
+            console.error("Error cleaning up invalid models:", error);
+            toast({
+              title: "Error",
+              description: `Failed to clean up invalid models: ${error.message}`,
+              variant: "destructive",
+            });
+          })
+          .finally(() => {
+            setShowCleanupDialog(false);
+          });
       }
     } catch (error: any) {
       console.error("Error cleaning up invalid models:", error);
@@ -244,8 +248,6 @@ const ManageModels = () => {
         description: `Failed to clean up invalid models: ${error.message}`,
         variant: "destructive",
       });
-    } finally {
-      setShowCleanupDialog(false);
     }
   };
 
@@ -255,14 +257,13 @@ const ManageModels = () => {
     if (modelType) {
       setPreviewTitle(modelType.title);
       
-      // Find if model already exists to get existing preview data
       const existingModel = models?.find(model => model.name === modelType.title);
       if (existingModel) {
-        setPreviewDescription(existingModel.description || "");
-        setPreviewImage(existingModel.thumbnail_path || "");
+        setPreviewDescription(existingModel.description || defaultDescriptions[modelId] || "");
+        setPreviewImage(existingModel.thumbnail_path || defaultModelImages[modelId] || "");
       } else {
-        setPreviewDescription("");
-        setPreviewImage("");
+        setPreviewDescription(defaultDescriptions[modelId] || "");
+        setPreviewImage(defaultModelImages[modelId] || "");
       }
     }
     setShowPreviewDialog(true);
@@ -276,7 +277,6 @@ const ManageModels = () => {
       const existingModel = models?.find(model => model.name === modelType.title);
       
       if (existingModel) {
-        // Update existing model
         await updateModel.mutateAsync({
           id: existingModel.id,
           modelData: {
@@ -336,7 +336,32 @@ const ManageModels = () => {
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
                   <AlertDialogAction 
-                    onClick={handleCleanupInvalidModels} 
+                    onClick={() => {
+                      const failedUrls = getModelsNeedingCleanup();
+                      if (failedUrls.length > 0) {
+                        cleanupInvalidModels(failedUrls)
+                          .then(() => {
+                            resetLoaderState();
+                            refetchModels();
+                            setInvalidModelCount(0);
+                            toast({
+                              title: "Success",
+                              description: `${failedUrls.length} invalid models cleaned up successfully.`,
+                            });
+                          })
+                          .catch(error => {
+                            console.error("Error cleaning up invalid models:", error);
+                            toast({
+                              title: "Error",
+                              description: `Failed to clean up invalid models: ${error.message}`,
+                              variant: "destructive",
+                            });
+                          })
+                          .finally(() => {
+                            setShowCleanupDialog(false);
+                          });
+                      }
+                    }} 
                     className="bg-red-600 hover:bg-red-700"
                   >
                     Clean Up
@@ -374,16 +399,14 @@ const ManageModels = () => {
                           isUploaded={!!uploadedModels[model.id]}
                           onDeleteModel={handleDeleteModel}
                         />
-                        {uploadedModels[model.id] && (
-                          <Button 
-                            variant="outline" 
-                            className="w-full" 
-                            onClick={() => openPreviewDialog(model.id)}
-                          >
-                            <Image className="mr-2 h-4 w-4" />
-                            Manage Preview
-                          </Button>
-                        )}
+                        <Button 
+                          variant="outline" 
+                          className="w-full" 
+                          onClick={() => openPreviewDialog(model.id)}
+                        >
+                          <Image className="mr-2 h-4 w-4" />
+                          Manage Preview
+                        </Button>
                       </div>
                     ))
                   }
@@ -413,16 +436,14 @@ const ManageModels = () => {
                           isUploaded={!!uploadedModels[model.id]}
                           onDeleteModel={handleDeleteModel}
                         />
-                        {uploadedModels[model.id] && (
-                          <Button 
-                            variant="outline" 
-                            className="w-full" 
-                            onClick={() => openPreviewDialog(model.id)}
-                          >
-                            <Image className="mr-2 h-4 w-4" />
-                            Manage Preview
-                          </Button>
-                        )}
+                        <Button 
+                          variant="outline" 
+                          className="w-full" 
+                          onClick={() => openPreviewDialog(model.id)}
+                        >
+                          <Image className="mr-2 h-4 w-4" />
+                          Manage Preview
+                        </Button>
                       </div>
                     ))
                   }
@@ -432,7 +453,6 @@ const ManageModels = () => {
           </TabsContent>
         </Tabs>
         
-        {/* Model Preview Dialog */}
         <Dialog open={showPreviewDialog} onOpenChange={setShowPreviewDialog}>
           <DialogContent className="sm:max-w-[500px]">
             <DialogHeader>
@@ -471,6 +491,22 @@ const ManageModels = () => {
                   Enter a full URL to an image. For best results, use a square image of at least 300×300 pixels.
                 </p>
               </div>
+              
+              {previewImage && (
+                <div className="space-y-2">
+                  <Label>Image Preview</Label>
+                  <div className="border rounded-md overflow-hidden h-40">
+                    <img 
+                      src={previewImage} 
+                      alt="Preview" 
+                      className="w-full h-full object-contain"
+                      onError={(e) => {
+                        e.currentTarget.src = 'https://via.placeholder.com/300x200?text=Invalid+Image';
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
             
             <DialogFooter>

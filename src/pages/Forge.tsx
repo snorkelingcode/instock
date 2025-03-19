@@ -98,32 +98,48 @@ const Forge = () => {
     {
       id: '1',
       title: 'Slab Slider (Rounded)',
-      description: 'A rounded corner slab slider case without magnets.',
-      imageUrl: '/placeholder-slab-slider-rounded.jpg',
+      description: 'A rounded corner slab slider case without magnets. Perfect for showcasing your favorite cards.',
+      imageUrl: '/lovable-uploads/05e57c85-5441-4fff-b945-4a5e864300ce.png',
       downloadUrl: '#',
       type: 'slab-slider' as const
     },
     {
       id: '2',
       title: 'Slab Slider (Square)',
-      description: 'A square corner slab slider case without magnets.',
-      imageUrl: '/placeholder-slab-slider-square.jpg',
+      description: 'A square corner slab slider case without magnets. Clean, modern design for your collection.',
+      imageUrl: '/lovable-uploads/125a6be9-26e0-4a93-bdba-b6e59987210a.png',
       downloadUrl: '#',
       type: 'slab-slider' as const
     },
     {
       id: '3',
+      title: 'Slab Slider (Rounded + Magnets)',
+      description: 'A rounded corner slab slider case with magnets for secure closure and display.',
+      imageUrl: '/lovable-uploads/eec1c627-b940-4257-b4dc-18d6a1210fc7.png',
+      downloadUrl: '#',
+      type: 'slab-slider' as const
+    },
+    {
+      id: '4',
       title: 'Slab Loader (Rounded)',
-      description: 'A rounded corner slab loader case without magnets.',
-      imageUrl: '/placeholder-slab-loader-rounded.jpg',
+      description: 'A rounded corner slab loader case without magnets. Easy access to your cards.',
+      imageUrl: '/lovable-uploads/6f9cfca6-a0a1-4651-856a-ae5b1b8b372d.png',
       downloadUrl: '#',
       type: 'slab-loader' as const
     },
     {
-      id: '4',
+      id: '5',
       title: 'Slab Loader (Square)',
-      description: 'A square corner slab loader case without magnets.',
-      imageUrl: '/placeholder-slab-loader-square.jpg',
+      description: 'A square corner slab loader case without magnets. Sleek design for your collection.',
+      imageUrl: '/lovable-uploads/8be85c80-3a73-44ab-b4a4-e3ceb269fb17.png',
+      downloadUrl: '#',
+      type: 'slab-loader' as const
+    },
+    {
+      id: '6',
+      title: 'Slab Loader (Rounded + Magnets)',
+      description: 'A rounded corner slab loader case with magnets for secure storage and display.',
+      imageUrl: '/lovable-uploads/5222a634-7636-44dc-b5c9-f1f8ff45b6b8.png',
       downloadUrl: '#',
       type: 'slab-loader' as const
     }
@@ -378,6 +394,36 @@ const Forge = () => {
   const toggleInstructions = () => {
     setShowInstructions(prev => !prev);
   };
+
+  useEffect(() => {
+    if (models?.length > 0) {
+      const updatedPreviews = modelPreviews.map(preview => {
+        const isSlabSlider = preview.type === 'slab-slider';
+        const hasRoundedCorners = preview.title.includes('Rounded');
+        const hasMagnets = preview.title.includes('Magnets');
+        
+        const matchingModel = models.find(model => {
+          const options = model.default_options || {};
+          return (
+            options.modelType === (isSlabSlider ? 'Slab-Slider' : 'Slab-Loader') &&
+            options.corners === (hasRoundedCorners ? 'rounded' : 'square') &&
+            options.magnets === (hasMagnets ? 'yes' : 'no')
+          );
+        });
+        
+        if (matchingModel?.stl_file_path) {
+          return {
+            ...preview,
+            downloadUrl: matchingModel.stl_file_path
+          };
+        }
+        
+        return preview;
+      });
+      
+      setModelPreviews(updatedPreviews);
+    }
+  }, [models]);
 
   const handleModelLoaded = (url: string, geometry: THREE.BufferGeometry) => {
     setLoadedModels(prev => {
