@@ -1,4 +1,3 @@
-
 import React, { useRef, useState, useEffect, Suspense } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera } from '@react-three/drei';
@@ -69,23 +68,18 @@ const ModelDisplay = ({
   
   const optimizeGeometry = (geometry: THREE.BufferGeometry): THREE.BufferGeometry => {
     if (isMobile) {
-      // Deep clone the geometry to avoid modifying the original
       const optimizedGeometry = geometry.clone();
       
-      // For mobile, simplify geometry if it has a lot of vertices
       if (optimizedGeometry.attributes.position.count > 5000) {
-        // Create a simplified version by skipping vertices (basic decimation)
         const positions = optimizedGeometry.attributes.position.array;
         const normals = optimizedGeometry.attributes.normal?.array;
         
-        const decimationFactor = isMobile ? 3 : 1; // Higher means more reduction
+        const decimationFactor = isMobile ? 3 : 1;
         
         const newPositions = [];
         const newNormals = [];
         
-        // Sample only every nth vertex for mobile devices
         for (let i = 0; i < positions.length; i += 9 * decimationFactor) {
-          // Include one full triangle for every decimationFactor triangles
           for (let j = 0; j < 9; j++) {
             if (i + j < positions.length) {
               newPositions.push(positions[i + j]);
@@ -96,7 +90,6 @@ const ModelDisplay = ({
           }
         }
         
-        // Create a new geometry with reduced vertex count
         const reducedGeometry = new THREE.BufferGeometry();
         reducedGeometry.setAttribute('position', 
           new THREE.Float32BufferAttribute(newPositions, 3));
@@ -292,10 +285,8 @@ const ModelDisplay = ({
     const isMobile = useIsMobile();
     
     if (isMobile) {
-      // Simplified material for mobile
       return new THREE.MeshBasicMaterial({ 
-        color, 
-        flatShading: true 
+        color
       });
     }
     
@@ -363,7 +354,7 @@ const ModelDisplay = ({
         <mesh 
           scale={[scale, scale, scale]}
           castShadow
-          receiveShadow={!isMobile} // Disable shadow receiving on mobile
+          receiveShadow={!isMobile}
           position={[0, 0, 0]}
           rotation={[Math.PI, Math.PI, Math.PI / 2]}
         >
@@ -546,26 +537,23 @@ const ModelViewerContent = ({
   return (
     <>
       <Canvas
-        shadows={!isMobile} // Disable shadows on mobile
-        dpr={isMobile ? [1, 1] : [1, 2]} // Lower pixel ratio for mobile
-        frameloop={isMobile ? "demand" : "always"} // Use demand frame loop for mobile
+        shadows={!isMobile}
+        dpr={isMobile ? [1, 1] : [1, 2]}
+        frameloop={isMobile ? "demand" : "always"}
         onCreated={({ gl }) => {
-          gl.localClippingEnabled = !isMobile; // Disable clipping on mobile
-          gl.shadowMap.enabled = !isMobile; // Disable shadow maps on mobile
+          gl.localClippingEnabled = !isMobile;
+          gl.shadowMap.enabled = !isMobile;
           if (!isMobile) {
             gl.shadowMap.type = THREE.PCFSoftShadowMap;
           }
           
-          // Set low precision on mobile
-          if (isMobile) {
-            gl.outputColorSpace = THREE.SRGBColorSpace;
-            gl.pixelRatio = Math.min(window.devicePixelRatio, 1);
-          }
+          gl.outputColorSpace = THREE.SRGBColorSpace;
+          gl.pixelRatio = Math.min(window.devicePixelRatio, 1);
         }}
         gl={{ 
-          antialias: !isMobile, // Disable antialiasing on mobile
+          antialias: !isMobile,
           alpha: false,
-          preserveDrawingBuffer: false, // Don't preserve drawing buffer on mobile
+          preserveDrawingBuffer: false,
           powerPreference: isMobile ? 'low-power' : 'high-performance'
         }}
       >
@@ -578,15 +566,13 @@ const ModelViewerContent = ({
           makeDefault 
           position={[0, 500, 0]} 
           fov={45}
-          far={isMobile ? 1000 : 2000} // Reduce far plane on mobile
+          far={isMobile ? 1000 : 2000}
           near={0.1}
         />
         
         {isMobile ? (
-          // Simple lighting for mobile
           <ambientLight intensity={1.0} />
         ) : (
-          // Full lighting for desktop
           <>
             <ambientLight intensity={0.5} />
             <spotLight 
@@ -619,7 +605,7 @@ const ModelViewerContent = ({
               prevUrl={previousModel?.stl_file_path || null}
               customOptions={effectiveOptions}
               modelRef={modelRef}
-              morphEnabled={morphEnabled && !isMobile} // Disable morphing on mobile
+              morphEnabled={morphEnabled && !isMobile}
               loadedModels={loadedModels}
               onModelsLoaded={onModelsLoaded}
               preloadComplete={preloadComplete}

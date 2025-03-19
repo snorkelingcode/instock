@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Switch } from "@/components/ui/switch";
-import { InfoCircle } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface CustomizationPanelProps {
@@ -65,7 +65,7 @@ const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
           <Collapsible open={showPerformanceSettings} onOpenChange={setShowPerformanceSettings}>
             <CollapsibleTrigger className="flex w-full items-center justify-between p-2 bg-amber-50 rounded-md border border-amber-200">
               <div className="flex items-center">
-                <InfoCircle size={16} className="mr-2 text-amber-600" />
+                <AlertCircle size={16} className="mr-2 text-amber-600" />
                 <span className="text-sm font-medium text-amber-800">Performance Settings</span>
               </div>
               <span className="text-xs text-amber-600">
