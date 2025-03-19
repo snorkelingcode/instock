@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { useIsMobile } from '@/hooks/use-mobile';
+import { Download } from 'lucide-react';
 
 interface CustomizationPanelProps {
   model: ThreeDModel;
@@ -162,17 +163,11 @@ const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
         
         <Button 
           onClick={onSave} 
-          className="w-full mt-4"
-          disabled={!isAuthenticated}
+          className="w-full mt-4 flex items-center justify-center"
         >
-          {isAuthenticated ? "Save Customization" : "Sign In to Save"}
+          <Download className="mr-2 h-4 w-4" />
+          Download STL
         </Button>
-        
-        {!isAuthenticated && (
-          <p className="text-xs text-gray-500 mt-2 text-center">
-            You must be signed in to save your customizations
-          </p>
-        )}
       </CardContent>
     </Card>
   );

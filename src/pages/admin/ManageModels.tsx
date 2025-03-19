@@ -336,32 +336,7 @@ const ManageModels = () => {
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
                   <AlertDialogAction 
-                    onClick={() => {
-                      const failedUrls = getModelsNeedingCleanup();
-                      if (failedUrls.length > 0) {
-                        cleanupInvalidModels(failedUrls)
-                          .then(() => {
-                            resetLoaderState();
-                            refetchModels();
-                            setInvalidModelCount(0);
-                            toast({
-                              title: "Success",
-                              description: `${failedUrls.length} invalid models cleaned up successfully.`,
-                            });
-                          })
-                          .catch(error => {
-                            console.error("Error cleaning up invalid models:", error);
-                            toast({
-                              title: "Error",
-                              description: `Failed to clean up invalid models: ${error.message}`,
-                              variant: "destructive",
-                            });
-                          })
-                          .finally(() => {
-                            setShowCleanupDialog(false);
-                          });
-                      }
-                    }} 
+                    onClick={handleCleanupInvalidModels} 
                     className="bg-red-600 hover:bg-red-700"
                   >
                     Clean Up
@@ -401,7 +376,7 @@ const ManageModels = () => {
                         />
                         <Button 
                           variant="outline" 
-                          className="w-full" 
+                          className="w-full mt-2" 
                           onClick={() => openPreviewDialog(model.id)}
                         >
                           <Image className="mr-2 h-4 w-4" />
@@ -438,7 +413,7 @@ const ManageModels = () => {
                         />
                         <Button 
                           variant="outline" 
-                          className="w-full" 
+                          className="w-full mt-2" 
                           onClick={() => openPreviewDialog(model.id)}
                         >
                           <Image className="mr-2 h-4 w-4" />

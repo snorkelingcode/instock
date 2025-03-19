@@ -12,7 +12,7 @@ import {
   ResizablePanel,
   ResizableHandle 
 } from "@/components/ui/resizable";
-import { Loader2, ChevronDown, ChevronUp, Computer } from 'lucide-react';
+import { Loader2, ChevronDown, ChevronUp, Computer, Download } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
 import { useToast } from '@/hooks/use-toast';
 import { ThreeDModel } from '@/types/model';
@@ -113,6 +113,14 @@ const Forge = () => {
     },
     {
       id: '3',
+      title: 'Slab Slider (Flat)',
+      description: 'A flat corner slab slider case without magnets. Sleek, minimalist design for your collection.',
+      imageUrl: '/lovable-uploads/125a6be9-26e0-4a93-bdba-b6e59987210a.png',
+      downloadUrl: '#',
+      type: 'slab-slider' as const
+    },
+    {
+      id: '4',
       title: 'Slab Slider (Rounded + Magnets)',
       description: 'A rounded corner slab slider case with magnets for secure closure and display.',
       imageUrl: '/lovable-uploads/eec1c627-b940-4257-b4dc-18d6a1210fc7.png',
@@ -120,7 +128,23 @@ const Forge = () => {
       type: 'slab-slider' as const
     },
     {
-      id: '4',
+      id: '5',
+      title: 'Slab Slider (Square + Magnets)',
+      description: 'A square corner slab slider case with magnets for secure closure and display.',
+      imageUrl: '/lovable-uploads/eec1c627-b940-4257-b4dc-18d6a1210fc7.png',
+      downloadUrl: '#',
+      type: 'slab-slider' as const
+    },
+    {
+      id: '6',
+      title: 'Slab Slider (Flat + Magnets)',
+      description: 'A flat corner slab slider case with magnets for secure closure and display.',
+      imageUrl: '/lovable-uploads/eec1c627-b940-4257-b4dc-18d6a1210fc7.png',
+      downloadUrl: '#',
+      type: 'slab-slider' as const
+    },
+    {
+      id: '7',
       title: 'Slab Loader (Rounded)',
       description: 'A rounded corner slab loader case without magnets. Easy access to your cards.',
       imageUrl: '/lovable-uploads/6f9cfca6-a0a1-4651-856a-ae5b1b8b372d.png',
@@ -128,7 +152,7 @@ const Forge = () => {
       type: 'slab-loader' as const
     },
     {
-      id: '5',
+      id: '8',
       title: 'Slab Loader (Square)',
       description: 'A square corner slab loader case without magnets. Sleek design for your collection.',
       imageUrl: '/lovable-uploads/8be85c80-3a73-44ab-b4a4-e3ceb269fb17.png',
@@ -136,9 +160,33 @@ const Forge = () => {
       type: 'slab-loader' as const
     },
     {
-      id: '6',
+      id: '9',
+      title: 'Slab Loader (Flat)',
+      description: 'A flat corner slab loader case without magnets. Modern, minimalist design for your collection.',
+      imageUrl: '/lovable-uploads/8be85c80-3a73-44ab-b4a4-e3ceb269fb17.png',
+      downloadUrl: '#',
+      type: 'slab-loader' as const
+    },
+    {
+      id: '10',
       title: 'Slab Loader (Rounded + Magnets)',
       description: 'A rounded corner slab loader case with magnets for secure storage and display.',
+      imageUrl: '/lovable-uploads/5222a634-7636-44dc-b5c9-f1f8ff45b6b8.png',
+      downloadUrl: '#',
+      type: 'slab-loader' as const
+    },
+    {
+      id: '11',
+      title: 'Slab Loader (Square + Magnets)',
+      description: 'A square corner slab loader case with magnets for secure storage and display.',
+      imageUrl: '/lovable-uploads/5222a634-7636-44dc-b5c9-f1f8ff45b6b8.png',
+      downloadUrl: '#',
+      type: 'slab-loader' as const
+    },
+    {
+      id: '12',
+      title: 'Slab Loader (Flat + Magnets)',
+      description: 'A flat corner slab loader case with magnets for secure storage and display.',
       imageUrl: '/lovable-uploads/5222a634-7636-44dc-b5c9-f1f8ff45b6b8.png',
       downloadUrl: '#',
       type: 'slab-loader' as const
@@ -433,6 +481,18 @@ const Forge = () => {
     });
   };
 
+  const handleDownloadModel = () => {
+    if (selectedModel?.stl_file_path) {
+      window.open(selectedModel.stl_file_path, '_blank');
+    } else {
+      toast({
+        title: "Error",
+        description: "No STL file available for download",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <Shell>
       <div className="container mx-auto py-6 px-4">
@@ -498,44 +558,69 @@ const Forge = () => {
             </div>
           </div>
         ) : (
-          <div>
-            <ResizablePanelGroup
-              direction="horizontal"
-              className="min-h-[600px] rounded-lg border"
-            >
-              <ResizablePanel defaultSize={70} minSize={30}>
-                {models && (
-                  <ModelViewer
-                    model={selectedModel || (models[0] || null)}
-                    previousModel={previousModelRef.current}
-                    customizationOptions={customizationOptions}
-                    morphEnabled={morphEnabled}
-                    loadedModels={loadedModels}
-                    onModelsLoaded={handleModelLoaded}
-                    preloadComplete={preloadComplete || forceShowInterface.current}
-                    preserveExistingModel={true}
-                  />
-                )}
-              </ResizablePanel>
+          <div className="space-y-6">
+            <Tabs defaultValue="interactive" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="interactive">Interactive Customizer</TabsTrigger>
+                <TabsTrigger value="gallery">Model Gallery</TabsTrigger>
+              </TabsList>
               
-              <ResizableHandle withHandle />
+              <TabsContent value="interactive" className="mt-4">
+                <ResizablePanelGroup
+                  direction="horizontal"
+                  className="min-h-[600px] rounded-lg border"
+                >
+                  <ResizablePanel defaultSize={70} minSize={30}>
+                    {models && (
+                      <ModelViewer
+                        model={selectedModel || (models[0] || null)}
+                        previousModel={previousModelRef.current}
+                        customizationOptions={customizationOptions}
+                        morphEnabled={morphEnabled}
+                        loadedModels={loadedModels}
+                        onModelsLoaded={handleModelLoaded}
+                        preloadComplete={preloadComplete || forceShowInterface.current}
+                        preserveExistingModel={true}
+                      />
+                    )}
+                  </ResizablePanel>
+                  
+                  <ResizableHandle withHandle />
+                  
+                  <ResizablePanel defaultSize={30} minSize={20}>
+                    {models && (
+                      <CustomizationPanel
+                        model={selectedModel || (models[0] || null)}
+                        modelTypes={modelTypeOptions}
+                        options={customizationOptions}
+                        onChange={handleCustomizationChange}
+                        onSave={handleDownloadModel}
+                        isAuthenticated={true}
+                      />
+                    )}
+                  </ResizablePanel>
+                </ResizablePanelGroup>
+              </TabsContent>
               
-              <ResizablePanel defaultSize={30} minSize={20}>
-                {models && (
-                  <CustomizationPanel
-                    model={selectedModel || (models[0] || null)}
-                    modelTypes={modelTypeOptions}
-                    options={customizationOptions}
-                    onChange={handleCustomizationChange}
-                    onSave={handleSaveCustomization}
-                    isAuthenticated={!!user}
-                  />
-                )}
-              </ResizablePanel>
-            </ResizablePanelGroup>
+              <TabsContent value="gallery" className="mt-4">
+                <ModelPreviewGrid previews={modelPreviews} />
+              </TabsContent>
+            </Tabs>
             
-            <div className="mt-6">
-              <InstructionsPanel isAuthenticated={!!user} />
+            <div className="border rounded-lg overflow-hidden">
+              <button 
+                onClick={toggleInstructions}
+                className="w-full flex justify-between items-center p-4 bg-gray-50 hover:bg-gray-100 transition-colors"
+              >
+                <span className="font-medium">Instructions</span>
+                {showInstructions ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+              </button>
+              
+              {showInstructions && (
+                <div className="p-4">
+                  <InstructionsPanel isAuthenticated={!!user} />
+                </div>
+              )}
             </div>
           </div>
         )}
