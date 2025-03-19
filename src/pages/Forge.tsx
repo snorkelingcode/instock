@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Shell } from "@/components/layout/Shell";
 import { useMetaTags } from "@/hooks/use-meta-tags";
@@ -16,6 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ThreeDModel } from '@/types/model';
 import * as THREE from 'three';
 import { getCache, setCache } from '@/utils/cacheUtils';
+import { preloadModels, getPreloadStatus, isModelPreloaded } from '@/utils/modelPreloader';
 
 const Forge = () => {
   useMetaTags({
@@ -59,6 +61,10 @@ const Forge = () => {
   // Track which model combinations have been preloaded
   const preloadedCombinations = useRef<Set<string>>(new Set());
   
+  // Track preloading progress
+  const [preloadProgress, setPreloadProgress] = useState({ loaded: 0, total: 0 });
+  const [preloadComplete, setPreloadComplete] = useState(false);
+  
   const saveCustomization = useSaveCustomization();
 
   // Handle when models load to keep track of them
@@ -69,6 +75,56 @@ const Forge = () => {
       return newMap;
     });
   };
+
+  // Preload all model combinations when models are available
+  useEffect(() => {
+    if (!models || models.length === 0 || modelsLoading) return;
+    
+    const preloadAllModels = async () => {
+      console.log(`Starting preload of all ${models.length} models`);
+      
+      // Preload all models at once
+      await preloadModels(models, (loaded, total) => {
+        setPreloadProgress({ loaded, total });
+        if (loaded === total) {
+          setPreloadComplete(true);
+        }
+      });
+      
+      // Mark all combinations as preloaded
+      const allCombinations = new Set<string>();
+      
+      // Get all unique values for each option
+      const modelTypes = new Set<string>();
+      const cornerStyles = new Set<string>();
+      const magnetsOptions = new Set<string>();
+      
+      models.forEach(model => {
+        const defaultOptions = model.default_options || {};
+        if (defaultOptions.modelType) modelTypes.add(defaultOptions.modelType);
+        if (defaultOptions.corners) cornerStyles.add(defaultOptions.corners);
+        if (defaultOptions.magnets) magnetsOptions.add(defaultOptions.magnets);
+      });
+      
+      // Generate all possible combinations
+      modelTypes.forEach(modelType => {
+        cornerStyles.forEach(corners => {
+          magnetsOptions.forEach(magnets => {
+            const combinationKey = `${modelType}-${corners}-${magnets}`;
+            allCombinations.add(combinationKey);
+          });
+        });
+      });
+      
+      preloadedCombinations.current = allCombinations;
+      setPreloadComplete(true);
+      
+      console.log(`Preloading complete. All ${allCombinations.size} combinations tracked.`);
+      console.log('Preload status:', getPreloadStatus());
+    };
+    
+    preloadAllModels();
+  }, [models, modelsLoading]);
 
   // Find the appropriate model based on customization options
   useEffect(() => {
@@ -98,15 +154,19 @@ const Forge = () => {
       });
       
       if (matchingModel) {
-        // Only set morphEnabled and update model if it's different
+        // Only set model if it's different
         if (matchingModel.id !== selectedModelId) {
-          // We can morph if we've seen this model before
-          const shouldMorph = loadedModels.has(matchingModel.stl_file_path) || 
+          // Enable morphing if this combination has been preloaded or previously loaded
+          const shouldMorph = preloadedCombinations.current.has(combinationKey) || 
+                             isModelPreloaded(matchingModel.stl_file_path) ||
+                             loadedModels.has(matchingModel.stl_file_path) ||
                              (lastSelectedId.current && lastSelectedId.current !== '');
           
           setMorphEnabled(shouldMorph);
           lastSelectedId.current = selectedModelId;
           setSelectedModelId(matchingModel.id);
+          
+          console.log(`Switching to model ${matchingModel.id} (${combinationKey}), morphing: ${shouldMorph}`);
         }
       } else if (!selectedModelId && models.length > 0) {
         // Fallback to first model if no match found
@@ -140,7 +200,6 @@ const Forge = () => {
   }, [morphEnabled, selectedModelId]);
 
   // Initialize customization options from saved customization or model defaults
-  // Only do this once when model changes, not continuously
   useEffect(() => {
     if (selectedModel) {
       const newOptions = { ...customizationOptions };
@@ -171,73 +230,6 @@ const Forge = () => {
       }
     }
   }, [selectedModel, savedCustomization]);
-
-  // Preload all model combinations when models are available
-  useEffect(() => {
-    if (!models || models.length === 0 || modelsLoading) return;
-    
-    const preloadModels = async () => {
-      // Create a set to track all possible combinations
-      const allCombinations = new Set<string>();
-      
-      // Get all unique values for each option
-      const modelTypes = new Set<string>();
-      const cornerStyles = new Set<string>();
-      const magnetsOptions = new Set<string>();
-      
-      models.forEach(model => {
-        const defaultOptions = model.default_options || {};
-        if (defaultOptions.modelType) modelTypes.add(defaultOptions.modelType);
-        if (defaultOptions.corners) cornerStyles.add(defaultOptions.corners);
-        if (defaultOptions.magnets) magnetsOptions.add(defaultOptions.magnets);
-      });
-      
-      // Generate all possible combinations
-      modelTypes.forEach(modelType => {
-        cornerStyles.forEach(corners => {
-          magnetsOptions.forEach(magnets => {
-            const combinationKey = `${modelType}-${corners}-${magnets}`;
-            allCombinations.add(combinationKey);
-          });
-        });
-      });
-      
-      // Check which combinations we've already preloaded
-      const combinationsToPreload = Array.from(allCombinations)
-        .filter(combo => !preloadedCombinations.current.has(combo));
-      
-      // Log preloading information
-      console.log(`Preloading ${combinationsToPreload.length} model combinations`);
-      
-      // Add each combination to preloaded set
-      combinationsToPreload.forEach(combo => {
-        preloadedCombinations.current.add(combo);
-      });
-      
-      // Preload each model
-      for (const combo of combinationsToPreload) {
-        const [modelType, corners, magnets] = combo.split('-');
-        
-        // Find matching model
-        const matchingModel = models.find(model => {
-          const defaultOptions = model.default_options || {};
-          return (
-            defaultOptions.modelType === modelType &&
-            defaultOptions.corners === corners &&
-            defaultOptions.magnets === magnets
-          );
-        });
-        
-        if (matchingModel && matchingModel.stl_file_path) {
-          // We don't need to actually load it here since it will be loaded
-          // when needed by the ModelViewer component
-          console.log(`Identified model for preloading: ${combo} - ${matchingModel.stl_file_path}`);
-        }
-      }
-    };
-    
-    preloadModels();
-  }, [models, modelsLoading]);
 
   const handleCustomizationChange = (key: string, value: any) => {
     // Update all customization options at once to prevent multiple renders
@@ -282,7 +274,7 @@ const Forge = () => {
     ? [...new Set(models.map(model => model.default_options?.modelType).filter(Boolean))]
     : [];
 
-  const isLoading = modelsLoading || modelLoading || !selectedModel;
+  const isLoading = modelsLoading || modelLoading || !selectedModel || (models && models.length > 0 && !preloadComplete);
 
   return (
     <Shell>
@@ -293,8 +285,19 @@ const Forge = () => {
         </div>
         
         {isLoading ? (
-          <div className="flex justify-center items-center min-h-[500px]">
-            <Loader2 className="w-12 h-12 animate-spin text-red-600" />
+          <div className="flex flex-col justify-center items-center min-h-[500px]">
+            <Loader2 className="w-12 h-12 animate-spin text-red-600 mb-4" />
+            {preloadProgress.total > 0 && (
+              <div className="w-64 text-center">
+                <p>Preloading models: {preloadProgress.loaded} of {preloadProgress.total}</p>
+                <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2">
+                  <div 
+                    className="bg-blue-600 h-2.5 rounded-full" 
+                    style={{ width: `${Math.round((preloadProgress.loaded / preloadProgress.total) * 100)}%` }}
+                  />
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <ResizablePanelGroup

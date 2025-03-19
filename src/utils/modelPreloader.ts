@@ -5,6 +5,8 @@ import { ThreeDModel } from '@/types/model';
 
 // Global cache for preloaded geometries
 const preloadedGeometries = new Map<string, THREE.BufferGeometry>();
+// Track ongoing load operations to prevent duplicate loads
+const loadingPromises = new Map<string, Promise<THREE.BufferGeometry>>();
 
 /**
  * Preload a 3D model geometry
@@ -20,8 +22,13 @@ export const preloadModelGeometry = async (url: string): Promise<THREE.BufferGeo
     }
   }
   
-  // Load the model
-  return new Promise((resolve, reject) => {
+  // If this URL is already being loaded, return that promise instead of starting a new load
+  if (loadingPromises.has(url)) {
+    return loadingPromises.get(url) as Promise<THREE.BufferGeometry>;
+  }
+  
+  // Create a new load promise
+  const loadPromise = new Promise<THREE.BufferGeometry>((resolve, reject) => {
     const loader = new STLLoader();
     
     loader.load(
@@ -33,6 +40,8 @@ export const preloadModelGeometry = async (url: string): Promise<THREE.BufferGeo
         }
         // Store in cache
         preloadedGeometries.set(url, geometry.clone());
+        // Remove from loading promises once done
+        loadingPromises.delete(url);
         // Return the geometry
         resolve(geometry);
       },
@@ -41,10 +50,17 @@ export const preloadModelGeometry = async (url: string): Promise<THREE.BufferGeo
       },
       (error) => {
         console.error('Error preloading model:', error);
+        // Remove from loading promises on error
+        loadingPromises.delete(url);
         reject(error);
       }
     );
   });
+  
+  // Store the promise so we don't start duplicate loads
+  loadingPromises.set(url, loadPromise);
+  
+  return loadPromise;
 };
 
 /**
@@ -64,6 +80,8 @@ export const preloadModels = async (
   const total = stlUrls.length;
   let loaded = 0;
   
+  // Use Promise.all to load all models in parallel
+  // We'll create an array of promises, wait for them all to complete
   const loadPromises = stlUrls.map(async (url) => {
     try {
       await preloadModelGeometry(url);
@@ -77,6 +95,7 @@ export const preloadModels = async (
   });
   
   await Promise.all(loadPromises);
+  console.log(`Successfully preloaded ${loaded} of ${total} models`);
 };
 
 /**
@@ -86,6 +105,15 @@ export const preloadModels = async (
  */
 export const isModelPreloaded = (url: string): boolean => {
   return preloadedGeometries.has(url);
+};
+
+/**
+ * Check if a model is currently being loaded
+ * @param url The URL to check
+ * @returns True if the model is being loaded
+ */
+export const isModelLoading = (url: string): boolean => {
+  return loadingPromises.has(url);
 };
 
 /**
@@ -103,12 +131,26 @@ export const getPreloadedGeometry = (url: string): THREE.BufferGeometry | null =
  */
 export const clearPreloadCache = (): void => {
   preloadedGeometries.clear();
+  loadingPromises.clear();
+};
+
+/**
+ * Get preload status 
+ * @returns The number of loaded and pending models
+ */
+export const getPreloadStatus = (): { loaded: number; pending: number } => {
+  return {
+    loaded: preloadedGeometries.size,
+    pending: loadingPromises.size
+  };
 };
 
 export default {
   preloadModelGeometry,
   preloadModels,
   isModelPreloaded,
+  isModelLoading,
   getPreloadedGeometry,
   clearPreloadCache,
+  getPreloadStatus
 };
