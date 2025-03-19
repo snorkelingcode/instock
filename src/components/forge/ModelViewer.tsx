@@ -1,3 +1,4 @@
+
 // src/components/forge/ModelViewer.tsx
 import React, { useRef, useState, useEffect, Suspense } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
@@ -318,68 +319,127 @@ const ModelDisplay = ({
 };
 
 const ModelRotationControls = ({ modelRef }: { modelRef: React.RefObject<THREE.Group> }) => {
-  const { gl, camera } = useThree();
-  const [isDragging, setIsDragging] = useState(false);
-  const previousPosition = useRef({ x: 0, y: 0 });
-  const startRotation = useRef({ x: 0, y: 0 });
+  const { gl } = useThree();
+  const rotationActive = useRef(false);
+  const lastPointerPosition = useRef({ x: 0, y: 0 });
+  const initialRotation = useRef({ x: 0, y: 0 });
   
-  const saveInitialRotation = () => {
-    if (modelRef.current) {
-      startRotation.current = {
-        x: modelRef.current.rotation.x,
-        y: modelRef.current.rotation.y
-      };
-    }
-  };
-  
-  const handlePointerDown = (event: PointerEvent) => {
-    if (event.target === gl.domElement) {
-      setIsDragging(true);
-      previousPosition.current = { 
-        x: event.clientX, 
-        y: event.clientY 
-      };
-      saveInitialRotation();
-      gl.domElement.style.cursor = 'grabbing';
-    }
-  };
-  
-  const handlePointerMove = (event: PointerEvent) => {
-    if (!isDragging || !modelRef.current) return;
-    
-    const deltaX = event.clientX - previousPosition.current.x;
-    const deltaY = event.clientY - previousPosition.current.y;
-    
-    const rotationSpeed = 0.005;
-    modelRef.current.rotation.y = startRotation.current.y + deltaX * rotationSpeed;
-    modelRef.current.rotation.x = startRotation.current.x + deltaY * rotationSpeed;
-  };
-  
-  const handlePointerUp = () => {
-    if (isDragging) {
-      setIsDragging(false);
-      gl.domElement.style.cursor = 'grab';
-    }
-  };
+  // Add touch support detection
+  const isTouchDevice = useRef(false);
   
   useEffect(() => {
-    if (!modelRef.current || !gl.domElement) return;
+    // Check for touch support
+    isTouchDevice.current = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
     
-    gl.domElement.style.cursor = 'grab';
+    // Set initial cursor style
+    if (gl.domElement && !isTouchDevice.current) {
+      gl.domElement.style.cursor = 'grab';
+    }
     
-    gl.domElement.addEventListener('pointerdown', handlePointerDown);
-    document.addEventListener('pointermove', handlePointerMove);
-    document.addEventListener('pointerup', handlePointerUp);
-    document.addEventListener('pointerleave', handlePointerUp);
+    if (!modelRef.current) return;
     
-    return () => {
-      gl.domElement.removeEventListener('pointerdown', handlePointerDown);
-      document.removeEventListener('pointermove', handlePointerMove);
-      document.removeEventListener('pointerup', handlePointerUp);
-      document.removeEventListener('pointerleave', handlePointerUp);
-      gl.domElement.style.cursor = 'auto';
+    // Store initial model rotation for reference
+    const saveStartRotation = () => {
+      if (modelRef.current) {
+        initialRotation.current = {
+          x: modelRef.current.rotation.x,
+          y: modelRef.current.rotation.y
+        };
+      }
     };
-  }, [gl, modelRef, isDragging]);
+    
+    const onPointerDown = (event: PointerEvent) => {
+      if (event.target === gl.domElement && event.isPrimary && event.button === 0) {
+        event.preventDefault();
+        rotationActive.current = true;
+        lastPointerPosition.current = { x: event.clientX, y: event.clientY };
+        saveStartRotation();
+        
+        if (!isTouchDevice.current) {
+          gl.domElement.style.cursor = 'grabbing';
+        }
+        
+        // Capture pointer to ensure we get events even if the pointer moves outside the canvas
+        (gl.domElement as HTMLElement).setPointerCapture(event.pointerId);
+      }
+    };
+    
+    const onPointerMove = (event: PointerEvent) => {
+      if (!rotationActive.current || !modelRef.current) return;
+      if (!event.isPrimary) return;
+      
+      event.preventDefault();
+      
+      const deltaX = event.clientX - lastPointerPosition.current.x;
+      const deltaY = event.clientY - lastPointerPosition.current.y;
+      
+      const sensitivity = 0.005;
+      
+      // Apply rotation based on initial position plus delta
+      modelRef.current.rotation.y = initialRotation.current.y + deltaX * sensitivity;
+      modelRef.current.rotation.x = initialRotation.current.x + deltaY * sensitivity;
+    };
+    
+    const onPointerUp = (event: PointerEvent) => {
+      if (!event.isPrimary) return;
+      
+      if (rotationActive.current) {
+        rotationActive.current = false;
+        
+        if (!isTouchDevice.current) {
+          gl.domElement.style.cursor = 'grab';
+        }
+        
+        // Release pointer capture
+        try {
+          (gl.domElement as HTMLElement).releasePointerCapture(event.pointerId);
+        } catch (err) {
+          console.log('Error releasing pointer capture:', err);
+        }
+      }
+    };
+    
+    // Handling for when pointer leaves the window
+    const onPointerCancel = (event: PointerEvent) => {
+      if (!event.isPrimary) return;
+      
+      rotationActive.current = false;
+      if (!isTouchDevice.current) {
+        gl.domElement.style.cursor = 'grab';
+      }
+    };
+    
+    // Add event listeners
+    const canvas = gl.domElement;
+    canvas.addEventListener('pointerdown', onPointerDown);
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+    window.addEventListener('pointercancel', onPointerCancel);
+    
+    // Handle canvas losing focus
+    const onBlur = () => {
+      rotationActive.current = false;
+      if (!isTouchDevice.current) {
+        gl.domElement.style.cursor = 'grab';
+      }
+    };
+    
+    window.addEventListener('blur', onBlur);
+    
+    // Clean up event listeners on unmount
+    return () => {
+      canvas.removeEventListener('pointerdown', onPointerDown);
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('pointercancel', onPointerCancel);
+      window.removeEventListener('blur', onBlur);
+      
+      // Reset cursor
+      if (!isTouchDevice.current) {
+        gl.domElement.style.cursor = 'auto';
+      }
+    };
+  }, [gl, modelRef]);
   
   return null;
 };
