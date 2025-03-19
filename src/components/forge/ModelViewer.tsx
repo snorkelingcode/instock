@@ -1,3 +1,4 @@
+// src/components/forge/ModelViewer.tsx
 import React, { useRef, useState, useEffect, Suspense } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera } from '@react-three/drei';
@@ -76,7 +77,7 @@ const ModelDisplay = ({
     const preloadedGeometry = getPreloadedGeometry(url);
     if (preloadedGeometry) {
       console.log(`Using preloaded geometry for ${url}`);
-      return preloadedGeometry;
+      return preloadedGeometry.clone(); // Use clone() to prevent modifying the cached original
     }
     
     // Priority 2: Check component-level cache
@@ -110,7 +111,7 @@ const ModelDisplay = ({
     }
   };
   
-  // Load geometries when URL changes
+  // Load geometries when URL changes - with improved morphing
   useEffect(() => {
     let isMounted = true;
     
@@ -139,7 +140,13 @@ const ModelDisplay = ({
         
         if (shouldMorph && prevUrl) {
           try {
-            previousGeometryLoaded = await loadGeometry(prevUrl);
+            // Check if previous model was already loaded in current scene first
+            if (currentGeometry && lastUrlRef.current === prevUrl) {
+              console.log(`Using current geometry as previous for morphing from ${prevUrl}`);
+              previousGeometryLoaded = currentGeometry.clone();
+            } else {
+              previousGeometryLoaded = await loadGeometry(prevUrl);
+            }
             // Keep track that we attempted morphing
             morphAttempted.current = true;
           } catch (err) {
@@ -148,40 +155,55 @@ const ModelDisplay = ({
           }
         }
         
-        // Load current model
-        const newGeometry = await loadGeometry(url);
+        // Load current model - first check if it's preloaded
+        let newGeometry;
         
-        if (!isMounted) return;
-        
-        // Store in caches
-        globalGeometryCache.set(url, newGeometry.clone());
-        onModelsLoaded(url, newGeometry.clone());
-        
-        // Set up morphing if previous geometry was loaded
-        if (shouldMorph && previousGeometryLoaded) {
-          console.log(`Morphing from ${prevUrl} to ${url}`);
-          setPreviousGeometry(previousGeometryLoaded);
-          setCurrentGeometry(newGeometry);
-          setMorphProgress(0);
-          setIsTransitioning(true);
-        } else {
-          // Check if this is truly an initial load
-          if (!initialLoadCompleted.current) {
-            console.log(`Initial load for ${url}`);
-            initialLoadCompleted.current = true;
-          } else if (!shouldMorph) {
-            console.log(`Setting geometry for ${url} without morphing (morphing disabled or no previous model)`);
+        try {
+          // First try to get preloaded geometry
+          if (isModelPreloaded(url)) {
+            newGeometry = getPreloadedGeometry(url)!.clone();
+            console.log(`Using preloaded geometry for ${url}`);
           } else {
-            console.log(`Setting geometry for ${url} - morphing failed or previous geometry unavailable`);
+            // Otherwise load it
+            newGeometry = await loadGeometry(url);
           }
           
-          setCurrentGeometry(newGeometry);
-          setIsTransitioning(false);
+          if (!isMounted) return;
+          
+          // Store in caches
+          globalGeometryCache.set(url, newGeometry.clone());
+          onModelsLoaded(url, newGeometry.clone());
+          
+          // Set up morphing if previous geometry was loaded
+          if (shouldMorph && previousGeometryLoaded) {
+            console.log(`Morphing from ${prevUrl} to ${url}`);
+            setPreviousGeometry(previousGeometryLoaded);
+            setCurrentGeometry(newGeometry);
+            setMorphProgress(0);
+            setIsTransitioning(true);
+          } else {
+            // Direct swap without morphing
+            if (previousGeometryLoaded) {
+              // We have previous geometry but morphing is disabled
+              console.log(`Direct swap from ${prevUrl} to ${url} (morphing disabled)`);
+            } else if (initialLoadCompleted.current) {
+              console.log(`Direct swap to ${url} (no previous geometry available)`);
+            } else {
+              console.log(`Initial load for ${url}`);
+              initialLoadCompleted.current = true;
+            }
+            
+            setCurrentGeometry(newGeometry);
+            setIsTransitioning(false);
+          }
+          
+          lastUrlRef.current = url;
+          setLoading(false);
+        } catch (geometryErr) {
+          console.error(`Failed to load geometry for ${url}:`, geometryErr);
+          setError(`Failed to load model geometry: ${geometryErr.message || 'Unknown error'}`);
+          setLoading(false);
         }
-        
-        // Always update the lastUrlRef after a successful load
-        lastUrlRef.current = url;
-        setLoading(false);
       } catch (err) {
         if (!isMounted) return;
         const errorMessage = err instanceof Error ? err.message : 'Unknown error';
@@ -202,7 +224,7 @@ const ModelDisplay = ({
   useFrame((_, delta) => {
     if (isTransitioning && (previousGeometry || currentGeometry)) {
       setMorphProgress((prev) => {
-        const newProgress = prev + delta * 2; // Adjust speed as needed
+        const newProgress = prev + delta * 2; // Adjust speed as needed (higher = faster)
         
         if (newProgress >= 1) {
           setIsTransitioning(false);
@@ -485,7 +507,7 @@ interface ModelViewerProps {
   onModelsLoaded: (url: string, geometry: THREE.BufferGeometry) => void;
 }
 
-const ModelViewer: React.FC<ModelViewerProps> = ({ 
+export const ModelViewer: React.FC<ModelViewerProps> = ({ 
   model, 
   previousModel, 
   customizationOptions,
@@ -528,5 +550,3 @@ const ModelViewer: React.FC<ModelViewerProps> = ({
     </div>
   );
 };
-
-export default ModelViewer;
