@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ThreeDModel } from '@/types/model';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,7 +30,19 @@ const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
   isAuthenticated = false
 }) => {
   const isMobile = useIsMobile();
-  const [showPerformanceSettings, setShowPerformanceSettings] = useState(false);
+  const [showPerformanceSettings, setShowPerformanceSettings] = useState(isMobile);
+  
+  useEffect(() => {
+    // Set performance mode by default on mobile
+    if (isMobile && options.performanceMode === undefined) {
+      onChange('performanceMode', true);
+    }
+    
+    // Set lower detail level by default on mobile
+    if (isMobile && options.detailLevel === undefined) {
+      onChange('detailLevel', 0);
+    }
+  }, [isMobile, options, onChange]);
   
   // Get available corner and magnet options
   const cornerOptions = ['rounded', 'square', 'flat'];
@@ -61,58 +73,56 @@ const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
         </CardTitle>
       </CardHeader>
       <CardContent className={`space-y-4 ${isMobile ? "px-4 pb-4" : "px-6 pb-6"}`}>
-        {isMobile && (
-          <Collapsible open={showPerformanceSettings} onOpenChange={setShowPerformanceSettings}>
-            <CollapsibleTrigger className="flex w-full items-center justify-between p-2 bg-amber-50 rounded-md border border-amber-200">
-              <div className="flex items-center">
-                <AlertCircle size={16} className="mr-2 text-amber-600" />
-                <span className="text-sm font-medium text-amber-800">Performance Settings</span>
+        <Collapsible open={showPerformanceSettings} onOpenChange={setShowPerformanceSettings}>
+          <CollapsibleTrigger className="flex w-full items-center justify-between p-2 bg-amber-50 rounded-md border border-amber-200">
+            <div className="flex items-center">
+              <AlertCircle size={16} className="mr-2 text-amber-600" />
+              <span className="text-sm font-medium text-amber-800">Performance Settings</span>
+            </div>
+            <span className="text-xs text-amber-600">
+              {showPerformanceSettings ? "Hide" : "Show"}
+            </span>
+          </CollapsibleTrigger>
+          
+          <CollapsibleContent className="pt-3 pb-1 px-2 mt-2 bg-gray-50 rounded-md">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="performance-mode" className="text-sm">
+                  Low Performance Mode
+                </Label>
+                <Switch
+                  id="performance-mode"
+                  checked={options.performanceMode || false}
+                  onCheckedChange={handlePerformanceModeChange}
+                />
               </div>
-              <span className="text-xs text-amber-600">
-                {showPerformanceSettings ? "Hide" : "Show"}
-              </span>
-            </CollapsibleTrigger>
-            
-            <CollapsibleContent className="pt-3 pb-1 px-2 mt-2 bg-gray-50 rounded-md">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="performance-mode" className="text-sm">
-                    Low Performance Mode
-                  </Label>
-                  <Switch
-                    id="performance-mode"
-                    checked={options.performanceMode || false}
-                    onCheckedChange={handlePerformanceModeChange}
-                  />
+              
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <Label htmlFor="detail-level" className="text-sm">Detail Level</Label>
+                  <span className="text-xs text-gray-500">
+                    {options.detailLevel !== undefined ? 
+                      options.detailLevel === 0 ? "Low" : 
+                      options.detailLevel === 0.5 ? "Medium" : "High" 
+                      : "Medium"}
+                  </span>
                 </div>
-                
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <Label htmlFor="detail-level" className="text-sm">Detail Level</Label>
-                    <span className="text-xs text-gray-500">
-                      {options.detailLevel ? 
-                        options.detailLevel === 0 ? "Low" : 
-                        options.detailLevel === 0.5 ? "Medium" : "High" 
-                        : "Medium"}
-                    </span>
-                  </div>
-                  <Slider
-                    id="detail-level"
-                    defaultValue={[options.detailLevel || 0.5]}
-                    max={1}
-                    min={0}
-                    step={0.5}
-                    onValueChange={handleDetailLevelChange}
-                  />
-                </div>
-                
-                <p className="text-xs text-gray-500 italic">
-                  Lower settings improve performance but reduce model quality.
-                </p>
+                <Slider
+                  id="detail-level"
+                  defaultValue={[options.detailLevel !== undefined ? options.detailLevel : 0.5]}
+                  max={1}
+                  min={0}
+                  step={0.5}
+                  onValueChange={handleDetailLevelChange}
+                />
               </div>
-            </CollapsibleContent>
-          </Collapsible>
-        )}
+              
+              <p className="text-xs text-gray-500 italic">
+                Lower settings improve performance but reduce model quality.
+              </p>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
         
         <div className="space-y-2">
           <Label htmlFor="modelType">Model Type</Label>
