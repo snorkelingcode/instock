@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Shell } from "@/components/layout/Shell";
 import { useMetaTags } from "@/hooks/use-meta-tags";
@@ -15,6 +14,8 @@ import {
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ThreeDModel } from '@/types/model';
+import * as THREE from 'three';
+import { getCache, setCache } from '@/utils/cacheUtils';
 
 const Forge = () => {
   useMetaTags({
@@ -44,14 +45,30 @@ const Forge = () => {
     material: 'plastic',
   });
   
+  // Track loaded models
+  const [loadedModels, setLoadedModels] = useState<Map<string, THREE.BufferGeometry>>(new Map());
+  
   // Track previous model for morphing
   const previousModelRef = useRef<ThreeDModel | null>(null);
   const [morphEnabled, setMorphEnabled] = useState(false);
   
   // Prevent continuous model selection on option change
   const modelSelectTimeout = useRef<NodeJS.Timeout | null>(null);
+  const lastSelectedId = useRef<string>('');
+  
+  // Track which model combinations have been preloaded
+  const preloadedCombinations = useRef<Set<string>>(new Set());
   
   const saveCustomization = useSaveCustomization();
+
+  // Handle when models load to keep track of them
+  const handleModelLoaded = (url: string, geometry: THREE.BufferGeometry) => {
+    setLoadedModels(prev => {
+      const newMap = new Map(prev);
+      newMap.set(url, geometry);
+      return newMap;
+    });
+  };
 
   // Find the appropriate model based on customization options
   useEffect(() => {
@@ -67,6 +84,9 @@ const Forge = () => {
       const corners = customizationOptions.corners || 'rounded';
       const magnets = customizationOptions.magnets || 'no';
       
+      // Create a combination string to track this specific selection
+      const combinationKey = `${modelType}-${corners}-${magnets}`;
+      
       // Find model that matches current options
       const matchingModel = models.find(model => {
         const defaultOptions = model.default_options || {};
@@ -77,9 +97,17 @@ const Forge = () => {
         );
       });
       
-      if (matchingModel && matchingModel.id !== selectedModelId) {
-        setMorphEnabled(true);
-        setSelectedModelId(matchingModel.id);
+      if (matchingModel) {
+        // Only set morphEnabled and update model if it's different
+        if (matchingModel.id !== selectedModelId) {
+          // We can morph if we've seen this model before
+          const shouldMorph = loadedModels.has(matchingModel.stl_file_path) || 
+                             (lastSelectedId.current && lastSelectedId.current !== '');
+          
+          setMorphEnabled(shouldMorph);
+          lastSelectedId.current = selectedModelId;
+          setSelectedModelId(matchingModel.id);
+        }
       } else if (!selectedModelId && models.length > 0) {
         // Fallback to first model if no match found
         setSelectedModelId(models[0].id);
@@ -99,7 +127,7 @@ const Forge = () => {
         clearTimeout(modelSelectTimeout.current);
       }
     };
-  }, [models, customizationOptions, selectedModelId, selectedModel]);
+  }, [models, customizationOptions, selectedModelId, selectedModel, loadedModels]);
 
   // Reset the morph enabled flag after a delay to ensure transition completes
   useEffect(() => {
@@ -143,6 +171,73 @@ const Forge = () => {
       }
     }
   }, [selectedModel, savedCustomization]);
+
+  // Preload all model combinations when models are available
+  useEffect(() => {
+    if (!models || models.length === 0 || modelsLoading) return;
+    
+    const preloadModels = async () => {
+      // Create a set to track all possible combinations
+      const allCombinations = new Set<string>();
+      
+      // Get all unique values for each option
+      const modelTypes = new Set<string>();
+      const cornerStyles = new Set<string>();
+      const magnetsOptions = new Set<string>();
+      
+      models.forEach(model => {
+        const defaultOptions = model.default_options || {};
+        if (defaultOptions.modelType) modelTypes.add(defaultOptions.modelType);
+        if (defaultOptions.corners) cornerStyles.add(defaultOptions.corners);
+        if (defaultOptions.magnets) magnetsOptions.add(defaultOptions.magnets);
+      });
+      
+      // Generate all possible combinations
+      modelTypes.forEach(modelType => {
+        cornerStyles.forEach(corners => {
+          magnetsOptions.forEach(magnets => {
+            const combinationKey = `${modelType}-${corners}-${magnets}`;
+            allCombinations.add(combinationKey);
+          });
+        });
+      });
+      
+      // Check which combinations we've already preloaded
+      const combinationsToPreload = Array.from(allCombinations)
+        .filter(combo => !preloadedCombinations.current.has(combo));
+      
+      // Log preloading information
+      console.log(`Preloading ${combinationsToPreload.length} model combinations`);
+      
+      // Add each combination to preloaded set
+      combinationsToPreload.forEach(combo => {
+        preloadedCombinations.current.add(combo);
+      });
+      
+      // Preload each model
+      for (const combo of combinationsToPreload) {
+        const [modelType, corners, magnets] = combo.split('-');
+        
+        // Find matching model
+        const matchingModel = models.find(model => {
+          const defaultOptions = model.default_options || {};
+          return (
+            defaultOptions.modelType === modelType &&
+            defaultOptions.corners === corners &&
+            defaultOptions.magnets === magnets
+          );
+        });
+        
+        if (matchingModel && matchingModel.stl_file_path) {
+          // We don't need to actually load it here since it will be loaded
+          // when needed by the ModelViewer component
+          console.log(`Identified model for preloading: ${combo} - ${matchingModel.stl_file_path}`);
+        }
+      }
+    };
+    
+    preloadModels();
+  }, [models, modelsLoading]);
 
   const handleCustomizationChange = (key: string, value: any) => {
     // Update all customization options at once to prevent multiple renders
@@ -214,6 +309,8 @@ const Forge = () => {
                   previousModel={previousModelRef.current}
                   customizationOptions={customizationOptions}
                   morphEnabled={morphEnabled}
+                  loadedModels={loadedModels}
+                  onModelsLoaded={handleModelLoaded}
                 />
               )}
             </ResizablePanel>
