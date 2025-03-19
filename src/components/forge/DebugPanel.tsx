@@ -20,7 +20,7 @@ const DebugPanel: React.FC<DebugPanelProps> = () => {
   const [modelData] = useState({
     position: new THREE.Vector3(0, 0, 0),
     rotation: new THREE.Euler(0, 0, Math.PI / 2), // 90 degrees on Z-axis
-    scale: new THREE.Vector3(-0.01, 0.01, 0.01) // Mirrored on X-axis
+    scale: new THREE.Vector3(0.01, 0.01, 0.01) // Changed from negative to positive X scale
   });
 
   const formatVector = (vec: THREE.Vector3) => 

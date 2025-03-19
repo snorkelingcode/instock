@@ -132,15 +132,15 @@ const ModelDisplay = ({ url, customOptions }: { url: string, customOptions: Reco
   // Apply customization options with a much smaller default scale for large models
   const scale = customOptions.scale || 0.01; // Scale down to 1% of original size
   
-  // Apply the mirror on X-axis by using negative scale and rotate 90 degrees on Z-axis
+  // Change from negative scale on X-axis to positive scale to reverse the mirroring
   return (
     <mesh 
       ref={modelRef}
-      scale={[-scale, scale, scale]} // Mirror on X-axis by using negative scale
+      scale={[scale, scale, scale]} // Changed from [-scale, scale, scale] to [scale, scale, scale]
       castShadow
       receiveShadow
       position={[0, 0, 0]} // Position at origin
-      rotation={[0, 0, Math.PI / 2]} // Rotate 90 degrees (π/2 radians) on Z-axis
+      rotation={[0, 0, Math.PI / 2]} // Maintain 90 degrees (π/2 radians) rotation on Z-axis
     >
       <primitive object={geometry} attach="geometry" />
       <meshStandardMaterial 
