@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Shell } from "@/components/layout/Shell";
 import { useMetaTags } from "@/hooks/use-meta-tags";
@@ -28,8 +29,7 @@ import {
   clearPreloadCache,
   getPreloadedGeometry,
   trackModelCombinations,
-  isCombinationPreloaded,
-  getMobileFilteredModels
+  isCombinationPreloaded
 } from '@/utils/modelPreloader';
 import { cleanupInvalidModels } from '@/services/modelService';
 import LoadingSpinner from '@/components/ui/loading-spinner';
@@ -40,7 +40,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 const CACHE_KEY_MODELS = 'forgeModels';
 const CACHE_KEY_PRELOAD_STATUS = 'forgePreloadStatus';
 const PRELOAD_TIMEOUT = 30000; // 30 seconds max preload time
-const MOBILE_PRELOAD_TIMEOUT = 15000; // 15 seconds on mobile
 
 const Forge = () => {
   useMetaTags({
@@ -71,14 +70,12 @@ const Forge = () => {
     color: '#ff0000',
     scale: 1,
     material: 'plastic',
-    performanceMode: isMobile, // Default to performance mode on mobile
-    detailLevel: isMobile ? 0 : 1, // Low detail on mobile by default
   });
   
   const [loadedModels, setLoadedModels] = useState<Map<string, THREE.BufferGeometry>>(new Map());
   
   const previousModelRef = useRef<ThreeDModel | null>(null);
-  const morphEnabled = !isMobile; // Disable morphing on mobile devices
+  const morphEnabled = true;
   
   const modelSelectTimeout = useRef<NodeJS.Timeout | null>(null);
   const lastSelectedId = useRef<string>('');
@@ -101,18 +98,16 @@ const Forge = () => {
 
   // Force show interface after a certain period even if preload isn't complete
   useEffect(() => {
-    const timeoutDuration = isMobile ? 5000 : 10000; // Shorter timeout for mobile
-    
     const timer = setTimeout(() => {
       if (!preloadComplete) {
         console.log('Force showing interface after timeout');
         forceShowInterface.current = true;
         setPreloadComplete(true);
       }
-    }, timeoutDuration);
+    }, 10000); // Show interface after 10 seconds regardless of preload status
     
     return () => clearTimeout(timer);
-  }, [isMobile]);
+  }, []);
 
   const handleModelLoaded = (url: string, geometry: THREE.BufferGeometry) => {
     setLoadedModels(prev => {
@@ -162,8 +157,6 @@ const Forge = () => {
       clearTimeout(preloadTimeoutRef.current);
     }
     
-    const timeout = isMobile ? MOBILE_PRELOAD_TIMEOUT : PRELOAD_TIMEOUT;
-    
     preloadTimeoutRef.current = setTimeout(() => {
       if (!preloadComplete) {
         console.warn('Preload timeout reached, showing UI anyway');
@@ -172,18 +165,16 @@ const Forge = () => {
         forceShowInterface.current = true;
         
         toast({
-          title: "Loading complete",
-          description: isMobile ? 
-            "Models will load on demand for better performance." : 
-            "Some models may load slower than expected.",
-          variant: isMobile ? "default" : "destructive",
+          title: "Warning",
+          description: "Model preloading timed out. Some models may load slower than expected.",
+          variant: "destructive",
         });
       }
-    }, timeout);
+    }, PRELOAD_TIMEOUT);
     
     const cachedStatus = getCache<{ complete: boolean }>(CACHE_KEY_PRELOAD_STATUS);
-    if ((cachedStatus?.complete && initialLoadComplete.current) || isMobile) {
-      console.log('Using cached preload status or on mobile, skipping full preload');
+    if (cachedStatus?.complete && initialLoadComplete.current) {
+      console.log('Using cached preload status, skipping preload');
       setPreloadComplete(true);
       forceShowInterface.current = true;
       if (preloadTimeoutRef.current) {
@@ -193,7 +184,7 @@ const Forge = () => {
     }
     
     const preloadAllModels = async () => {
-      console.log(`Starting preload of models - mobile: ${isMobile}`);
+      console.log(`Starting preload of all ${models.length} models`);
       
       try {
         const combinations = trackModelCombinations(models);
@@ -227,11 +218,9 @@ const Forge = () => {
         forceShowInterface.current = true;
         
         toast({
-          title: "Loading complete",
-          description: isMobile ? 
-            "Models will load on demand for better performance." : 
-            "Some models may load slower than expected.",
-          variant: isMobile ? "default" : "destructive",
+          title: "Warning",
+          description: "Some models failed to preload. You may experience issues when changing model types.",
+          variant: "destructive",
         });
       }
     };
@@ -243,7 +232,7 @@ const Forge = () => {
         clearTimeout(preloadTimeoutRef.current);
       }
     };
-  }, [models, modelsLoading, preloadStarted, isMobile]);
+  }, [models, modelsLoading, preloadStarted]);
 
   useEffect(() => {
     if (!models || models.length === 0) return;
@@ -339,17 +328,11 @@ const Forge = () => {
         });
       }
       
-      // Ensure mobile performance settings remain
-      if (isMobile) {
-        newOptions.performanceMode = newOptions.performanceMode ?? true;
-        newOptions.detailLevel = newOptions.detailLevel ?? 0;
-      }
-      
       if (shouldUpdate) {
         setCustomizationOptions(prev => ({...prev, ...newOptions}));
       }
     }
-  }, [selectedModel, savedCustomization, isMobile]);
+  }, [selectedModel, savedCustomization]);
 
   const handleCustomizationChange = (key: string, value: any) => {
     setCustomizationOptions(prev => ({ 
@@ -425,15 +408,13 @@ const Forge = () => {
             <LoadingSpinner size="lg" className="mb-4" />
             {preloadProgress.total > 0 && (
               <div className="w-64 text-center">
-                <p className="mb-2">Preparing models: {preloadProgress.loaded} of {preloadProgress.total}</p>
+                <p className="mb-2">Preloading models: {preloadProgress.loaded} of {preloadProgress.total}</p>
                 <Progress 
                   value={(preloadProgress.loaded / preloadProgress.total) * 100} 
                   className="h-2 w-full"
                 />
                 <p className="mt-2 text-sm text-gray-500">
-                  {isMobile ? 
-                    "Loading essential models for mobile" : 
-                    "This ensures smooth transitions between models"}
+                  This ensures smooth transitions between models
                 </p>
               </div>
             )}
