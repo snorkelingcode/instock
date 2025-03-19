@@ -107,7 +107,8 @@ export const preloadModelGeometry = async (url: string): Promise<THREE.BufferGeo
         // Add to failed URLs to prevent future attempts
         failedUrls.add(url);
         // Add to models needing cleanup if it's a 400/404 error
-        if (error.message && (error.message.includes('400') || error.message.includes('404'))) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        if (errorMessage && (errorMessage.includes('400') || errorMessage.includes('404'))) {
           modelsNeedingCleanup.add(url);
         }
         // Remove from loading promises on error
@@ -124,7 +125,8 @@ export const preloadModelGeometry = async (url: string): Promise<THREE.BufferGeo
     failedUrls.add(url);
     loadingPromises.delete(url);
     // Add to models needing cleanup if it's a 400/404 error
-    if (error.message && (error.message.includes('400') || error.message.includes('404'))) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (errorMessage && (errorMessage.includes('400') || errorMessage.includes('404'))) {
       modelsNeedingCleanup.add(url);
     }
     throw error; // Re-throw to propagate to caller
