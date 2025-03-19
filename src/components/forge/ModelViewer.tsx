@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { STLLoader } from 'three/addons/loaders/STLLoader.js';
 import { ThreeDModel } from '@/types/model';
 import { Loader2 } from 'lucide-react';
-import { getPreloadedGeometry, isModelPreloaded, preloadModelGeometry } from '@/utils/modelPreloader';
+import { getPreloadedGeometry, isModelPreloaded, preloadModelGeometry, didModelFail } from '@/utils/modelPreloader';
 
 const globalGeometryCache = new Map<string, THREE.BufferGeometry>();
 
@@ -58,14 +58,22 @@ const ModelDisplay = ({
   const lastUrlRef = useRef<string | null>(null);
   
   const loadGeometry = async (url: string): Promise<THREE.BufferGeometry> => {
-    // First check preloaded geometries from our utility
+    if (!url || url.trim() === '') {
+      console.error('Invalid URL provided to loadGeometry');
+      return Promise.reject(new Error('Invalid URL'));
+    }
+    
+    if (didModelFail(url)) {
+      console.warn(`Skipping previously failed URL: ${url}`);
+      return Promise.reject(new Error(`URL previously failed: ${url}`));
+    }
+    
     const preloadedGeometry = getPreloadedGeometry(url);
     if (preloadedGeometry) {
       console.log(`Using preloaded geometry for ${url}`);
       return preloadedGeometry;
     }
     
-    // Then check global cache
     if (globalGeometryCache.has(url)) {
       const cachedGeometry = globalGeometryCache.get(url);
       if (cachedGeometry) {
@@ -74,7 +82,6 @@ const ModelDisplay = ({
       }
     }
     
-    // Then check component cache
     if (loadedModels.has(url)) {
       const cachedGeometry = loadedModels.get(url);
       if (cachedGeometry) {
@@ -83,7 +90,6 @@ const ModelDisplay = ({
       }
     }
     
-    // If not available anywhere, load it using the preloader
     console.log(`No cached geometry found for ${url}, loading from server`);
     try {
       return await preloadModelGeometry(url);
@@ -99,9 +105,15 @@ const ModelDisplay = ({
     const loadCurrentModel = async () => {
       if (!url) return;
       
-      // Avoid reloading the same model
       if (lastUrlRef.current === url && currentGeometry) {
         console.log(`Model ${url} is already loaded, skipping reload`);
+        return;
+      }
+      
+      if (didModelFail(url)) {
+        console.warn(`Not loading previously failed URL: ${url}`);
+        setError(`Failed to load model: URL previously failed`);
+        setLoading(false);
         return;
       }
       
@@ -109,24 +121,19 @@ const ModelDisplay = ({
       setError(null);
       
       try {
-        // Store the last URL we processed
         lastUrlRef.current = url;
         
         const newGeometry = await loadGeometry(url);
         
         if (!isMounted) return;
         
-        // Always add to both caches
         globalGeometryCache.set(url, newGeometry.clone());
         onModelsLoaded(url, newGeometry.clone());
         
-        // Determine if we should morph
         const shouldMorph = prevUrl && prevUrl !== url && morphEnabled && currentGeometry;
         
         if (shouldMorph && prevUrl) {
-          // Always set previous geometry if morphing is enabled
           try {
-            // Use current geometry as previous for morphing
             setPreviousGeometry(currentGeometry);
             setCurrentGeometry(newGeometry);
             setMorphProgress(0);
@@ -134,7 +141,6 @@ const ModelDisplay = ({
             console.log(`Morphing from ${prevUrl} to ${url}`);
           } catch (err) {
             console.error('Failed to setup morphing:', err);
-            // Fall back to no transition if previous model can't be used
             setCurrentGeometry(newGeometry);
             setIsTransitioning(false);
           }
@@ -148,6 +154,7 @@ const ModelDisplay = ({
       } catch (err) {
         if (!isMounted) return;
         const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+        console.error(`Failed to load model ${url}:`, errorMessage);
         setError(`Failed to load model: ${errorMessage}`);
         setLoading(false);
       }
@@ -163,7 +170,7 @@ const ModelDisplay = ({
   useFrame((_, delta) => {
     if (isTransitioning && (previousGeometry || currentGeometry)) {
       setMorphProgress((prev) => {
-        const newProgress = prev + delta * 2; // Adjust speed here (2 = 0.5 seconds)
+        const newProgress = prev + delta * 2;
         
         if (newProgress >= 1) {
           setIsTransitioning(false);

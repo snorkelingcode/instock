@@ -11,6 +11,8 @@ const loadingPromises = new Map<string, Promise<THREE.BufferGeometry>>();
 const modelLoadStates = new Map<string, 'loading' | 'loaded' | 'error'>();
 // Flag to indicate if we're in a batch loading operation
 let isBatchLoading = false;
+// Track failed URLs to prevent repeated attempts
+const failedUrls = new Set<string>();
 
 /**
  * Preload a 3D model geometry
@@ -18,6 +20,18 @@ let isBatchLoading = false;
  * @returns A promise that resolves when the model is loaded
  */
 export const preloadModelGeometry = async (url: string): Promise<THREE.BufferGeometry> => {
+  // Skip invalid URLs
+  if (!url || url.trim() === '') {
+    console.error('Invalid URL provided to preloadModelGeometry');
+    return Promise.reject(new Error('Invalid URL'));
+  }
+  
+  // Check if URL previously failed with a 400/404 error
+  if (failedUrls.has(url)) {
+    console.warn(`Skipping previously failed URL: ${url}`);
+    return Promise.reject(new Error(`URL previously failed: ${url}`));
+  }
+  
   // Return from cache if already loaded
   if (preloadedGeometries.has(url)) {
     const cachedGeometry = preloadedGeometries.get(url);
@@ -54,23 +68,31 @@ export const preloadModelGeometry = async (url: string): Promise<THREE.BufferGeo
     loader.load(
       url,
       (geometry) => {
-        // Clean up geometry
-        geometry.center();
-        if (!geometry.attributes.normal) {
-          geometry.computeVertexNormals();
+        try {
+          // Clean up geometry
+          geometry.center();
+          if (!geometry.attributes.normal) {
+            geometry.computeVertexNormals();
+          }
+          
+          // Store in cache
+          preloadedGeometries.set(url, geometry.clone());
+          
+          // Update state
+          modelLoadStates.set(url, 'loaded');
+          
+          // Remove from loading promises once done
+          loadingPromises.delete(url);
+          
+          // Return the geometry
+          resolve(geometry);
+        } catch (error) {
+          console.error(`Error processing geometry for ${url}:`, error);
+          modelLoadStates.set(url, 'error');
+          failedUrls.add(url);
+          loadingPromises.delete(url);
+          reject(error);
         }
-        
-        // Store in cache
-        preloadedGeometries.set(url, geometry.clone());
-        
-        // Update state
-        modelLoadStates.set(url, 'loaded');
-        
-        // Remove from loading promises once done
-        loadingPromises.delete(url);
-        
-        // Return the geometry
-        resolve(geometry);
       },
       (xhr) => {
         const progressPercent = Math.round(xhr.loaded / xhr.total * 100);
@@ -80,6 +102,8 @@ export const preloadModelGeometry = async (url: string): Promise<THREE.BufferGeo
         console.error('Error preloading model:', error);
         // Mark as error in state
         modelLoadStates.set(url, 'error');
+        // Add to failed URLs to prevent future attempts
+        failedUrls.add(url);
         // Remove from loading promises on error
         loadingPromises.delete(url);
         reject(error);
@@ -87,10 +111,38 @@ export const preloadModelGeometry = async (url: string): Promise<THREE.BufferGeo
     );
   });
   
-  // Store the promise so we don't start duplicate loads
-  loadingPromises.set(url, loadPromise);
+  // Add error handling wrapper around the load promise
+  const safeLoadPromise = loadPromise.catch(error => {
+    console.error(`Failed to load model ${url}:`, error);
+    modelLoadStates.set(url, 'error');
+    failedUrls.add(url);
+    loadingPromises.delete(url);
+    throw error; // Re-throw to propagate to caller
+  });
   
-  return loadPromise;
+  // Store the promise so we don't start duplicate loads
+  loadingPromises.set(url, safeLoadPromise);
+  
+  return safeLoadPromise;
+};
+
+/**
+ * Validate a model URL before attempting to load it
+ * @param url The URL to validate
+ * @returns True if the URL is valid and hasn't failed before
+ */
+const isValidModelUrl = (url: string): boolean => {
+  if (!url || url.trim() === '') {
+    console.warn('Empty or invalid URL skipped');
+    return false;
+  }
+  
+  if (failedUrls.has(url)) {
+    console.warn(`Skipping previously failed URL: ${url}`);
+    return false;
+  }
+  
+  return true;
 };
 
 /**
@@ -107,18 +159,30 @@ export const preloadModels = async (
   isBatchLoading = true;
   
   const stlUrls = models
-    .filter(model => model.stl_file_path)
+    .filter(model => model.stl_file_path && isValidModelUrl(model.stl_file_path))
     .map(model => model.stl_file_path);
   
   const total = stlUrls.length;
   let loaded = 0;
+  let errors = 0;
   
-  // Use Promise.all to load all models in parallel
+  console.log(`Starting batch load of ${total} valid models`);
+  
+  // Use Promise.allSettled to continue even if some models fail
   const loadPromises = stlUrls.map(async (url) => {
     try {
       // Skip if we've already loaded or are loading this model
       if (modelLoadStates.get(url) === 'loaded' && preloadedGeometries.has(url)) {
         loaded++;
+        if (onProgress) {
+          onProgress(loaded, total);
+        }
+        return;
+      }
+      
+      // Skip if previously failed
+      if (modelLoadStates.get(url) === 'error' || failedUrls.has(url)) {
+        errors++;
         if (onProgress) {
           onProgress(loaded, total);
         }
@@ -131,12 +195,19 @@ export const preloadModels = async (
         onProgress(loaded, total);
       }
     } catch (error) {
+      errors++;
       console.error(`Failed to preload model ${url}:`, error);
+      // Don't retry failed URLs
+      failedUrls.add(url);
+      modelLoadStates.set(url, 'error');
+      if (onProgress) {
+        onProgress(loaded, total); // Still update progress even on error
+      }
     }
   });
   
-  await Promise.all(loadPromises);
-  console.log(`Successfully preloaded ${loaded} of ${total} models`);
+  await Promise.allSettled(loadPromises);
+  console.log(`Batch load complete: ${loaded} loaded, ${errors} failed, ${total} total`);
   
   // Reset batch loading flag
   isBatchLoading = false;
@@ -147,6 +218,7 @@ export const preloadModels = async (
  */
 export const resetLoaderState = (): void => {
   modelLoadStates.clear();
+  failedUrls.clear();
   isBatchLoading = false;
 };
 
@@ -169,11 +241,26 @@ export const isModelLoading = (url: string): boolean => {
 };
 
 /**
+ * Check if a model loading previously failed
+ * @param url The URL to check
+ * @returns True if the model failed to load
+ */
+export const didModelFail = (url: string): boolean => {
+  return failedUrls.has(url) || modelLoadStates.get(url) === 'error';
+};
+
+/**
  * Get a preloaded geometry if available
  * @param url The URL of the geometry to get
  * @returns The geometry or null if not loaded
  */
 export const getPreloadedGeometry = (url: string): THREE.BufferGeometry | null => {
+  // Skip failed URLs immediately
+  if (failedUrls.has(url)) {
+    console.warn(`Attempting to get previously failed URL: ${url}`);
+    return null;
+  }
+  
   if (modelLoadStates.get(url) === 'loaded' && preloadedGeometries.has(url)) {
     const geometry = preloadedGeometries.get(url);
     if (geometry) {
@@ -191,6 +278,7 @@ export const clearPreloadCache = (): void => {
   preloadedGeometries.clear();
   loadingPromises.clear();
   modelLoadStates.clear();
+  failedUrls.clear();
   isBatchLoading = false;
 };
 
@@ -201,7 +289,7 @@ export const clearPreloadCache = (): void => {
 export const getPreloadStatus = (): { 
   loaded: number; 
   pending: number;
-
+  failed: number;
   modelStates: { loading: number; loaded: number; error: number };
   isBatchLoading: boolean;
 } => {
@@ -219,6 +307,7 @@ export const getPreloadStatus = (): {
   return {
     loaded: preloadedGeometries.size,
     pending: loadingPromises.size,
+    failed: failedUrls.size,
     modelStates: {
       loading: loadingCount,
       loaded: loadedCount,
@@ -228,13 +317,23 @@ export const getPreloadStatus = (): {
   };
 };
 
+/**
+ * Get a list of failed URLs for debugging
+ * @returns Array of failed URLs
+ */
+export const getFailedUrls = (): string[] => {
+  return Array.from(failedUrls);
+};
+
 export default {
   preloadModelGeometry,
   preloadModels,
   isModelPreloaded,
   isModelLoading,
+  didModelFail,
   getPreloadedGeometry,
   clearPreloadCache,
   getPreloadStatus,
-  resetLoaderState
+  resetLoaderState,
+  getFailedUrls
 };
