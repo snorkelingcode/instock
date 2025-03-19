@@ -11,16 +11,19 @@ import { Loader2 } from 'lucide-react';
 import DebugPanel from './DebugPanel';
 
 // Create a scene component that will track camera and model data
-const SceneSetup = ({ updateDebugInfo }: { updateDebugInfo: (data: any) => void }) => {
-  const { scene, camera } = useThree();
-  const modelRef = useRef<THREE.Group>(null);
+const SceneSetup = ({ 
+  updateDebugInfo, 
+  modelRef 
+}: { 
+  updateDebugInfo: (data: any) => void, 
+  modelRef: React.RefObject<THREE.Group> 
+}) => {
+  const { camera } = useThree();
   
   useEffect(() => {
     camera.position.set(0, 200, 100);
     camera.lookAt(0, 0, 0);
-    
-    return () => {};
-  }, [scene, camera]);
+  }, [camera]);
   
   useFrame(() => {
     if (camera && modelRef.current) {
@@ -29,11 +32,11 @@ const SceneSetup = ({ updateDebugInfo }: { updateDebugInfo: (data: any) => void 
           position: camera.position.clone(),
           rotation: camera.rotation.clone(),
         },
-        model: modelRef.current ? {
+        model: {
           position: modelRef.current.position.clone(),
           rotation: modelRef.current.rotation.clone(),
           scale: modelRef.current.scale.clone(),
-        } : null
+        }
       });
     }
   });
@@ -141,7 +144,7 @@ const ModelDisplay = ({ url, customOptions, modelRef }: ModelDisplayProps) => {
         castShadow
         receiveShadow
         position={[0, 0, 0]}
-        rotation={[Math.PI, Math.PI, Math.PI / 2]} // Updated to 180°, 180°, 90°
+        rotation={[Math.PI, Math.PI, Math.PI / 2]} // 180°, 180°, 90°
       >
         <primitive object={geometry} attach="geometry" />
         <meshStandardMaterial 
@@ -179,7 +182,7 @@ const ModelViewerContent = ({ model, effectiveOptions, onDebugInfoUpdate }: Mode
       >
         <color attach="background" args={["#1f2937"]} />
         
-        <SceneSetup updateDebugInfo={onDebugInfoUpdate} />
+        <SceneSetup updateDebugInfo={onDebugInfoUpdate} modelRef={modelRef} />
         
         <PerspectiveCamera 
           makeDefault 
@@ -258,7 +261,7 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
     },
     model: {
       position: new THREE.Vector3(0, 0, 0),
-      rotation: new THREE.Euler(Math.PI * -1, Math.PI, Math.PI / 2),
+      rotation: new THREE.Euler(Math.PI, Math.PI, Math.PI / 2),
       scale: new THREE.Vector3(0.01, 0.01, 0.01),
     }
   });
@@ -277,10 +280,7 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ model, customizationOptions }
   }
 
   const handleDebugInfoUpdate = (data: any) => {
-    setDebugInfo({
-      camera: data.camera,
-      model: data.model || debugInfo.model
-    });
+    setDebugInfo(data);
   };
 
   return (

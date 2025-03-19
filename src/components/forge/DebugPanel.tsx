@@ -1,23 +1,49 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import * as THREE from 'three';
 
 interface DebugPanelProps {
-  cameraPosition?: THREE.Vector3;
-  cameraRotation?: THREE.Euler;
-  modelPosition?: THREE.Vector3;
-  modelRotation?: THREE.Euler;
-  modelScale?: THREE.Vector3;
+  cameraPosition: THREE.Vector3;
+  cameraRotation: THREE.Euler;
+  modelPosition: THREE.Vector3;
+  modelRotation: THREE.Euler;
+  modelScale: THREE.Vector3;
 }
 
 const DebugPanel: React.FC<DebugPanelProps> = ({
-  cameraPosition = new THREE.Vector3(0, 200, 100),
-  cameraRotation = new THREE.Euler(0, 0, 0),
-  modelPosition = new THREE.Vector3(0, 0, 0),
-  modelRotation = new THREE.Euler(Math.PI, Math.PI, Math.PI / 2),
-  modelScale = new THREE.Vector3(0.01, 0.01, 0.01)
+  cameraPosition,
+  cameraRotation,
+  modelPosition,
+  modelRotation,
+  modelScale
 }) => {
+  const [displayData, setDisplayData] = useState({
+    camera: {
+      position: cameraPosition,
+      rotation: cameraRotation
+    },
+    model: {
+      position: modelPosition,
+      rotation: modelRotation,
+      scale: modelScale
+    }
+  });
+
+  useEffect(() => {
+    setDisplayData({
+      camera: {
+        position: cameraPosition,
+        rotation: cameraRotation
+      },
+      model: {
+        position: modelPosition,
+        rotation: modelRotation,
+        scale: modelScale
+      }
+    });
+  }, [cameraPosition, cameraRotation, modelPosition, modelRotation, modelScale]);
+
   const formatVector = (vec: THREE.Vector3) => 
     `x: ${vec.x.toFixed(2)}, y: ${vec.y.toFixed(2)}, z: ${vec.z.toFixed(2)}`;
   
@@ -34,9 +60,9 @@ const DebugPanel: React.FC<DebugPanelProps> = ({
           <h3 className="font-bold mb-1">Camera</h3>
           <div className="grid grid-cols-[80px_1fr] gap-1">
             <span className="text-muted-foreground">Position:</span>
-            <span>{formatVector(cameraPosition)}</span>
+            <span>{formatVector(displayData.camera.position)}</span>
             <span className="text-muted-foreground">Rotation:</span>
-            <span>{formatEuler(cameraRotation)}</span>
+            <span>{formatEuler(displayData.camera.rotation)}</span>
           </div>
         </div>
         
@@ -44,11 +70,11 @@ const DebugPanel: React.FC<DebugPanelProps> = ({
           <h3 className="font-bold mb-1">Model</h3>
           <div className="grid grid-cols-[80px_1fr] gap-1">
             <span className="text-muted-foreground">Position:</span>
-            <span>{formatVector(modelPosition)}</span>
+            <span>{formatVector(displayData.model.position)}</span>
             <span className="text-muted-foreground">Rotation:</span>
-            <span>{formatEuler(modelRotation)}</span>
+            <span>{formatEuler(displayData.model.rotation)}</span>
             <span className="text-muted-foreground">Scale:</span>
-            <span>{formatVector(modelScale)}</span>
+            <span>{formatVector(displayData.model.scale)}</span>
           </div>
         </div>
       </CardContent>
