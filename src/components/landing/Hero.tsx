@@ -70,13 +70,13 @@ export const Hero: React.FC = () => {
         className="text-[64px] text-[#1E1E1E] font-normal max-md:text-5xl max-sm:text-4xl"
         style={textStyle}
       >
-        Find everything in stock.
+        News. Products. DIY.
       </h1>
       <h2 
         className="text-[64px] text-[#1E1E1E] font-normal max-md:text-5xl max-sm:text-4xl"
         style={textStyle}
       >
-        In one place.
+        All things TCG.
       </h2>
     </header>
   );

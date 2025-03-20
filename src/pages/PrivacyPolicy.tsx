@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Link } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -13,7 +14,7 @@ const PrivacyPolicy = () => {
           <section className="mb-8">
             <h2 className="text-2xl font-semibold mb-4">Introduction</h2>
             <p className="mb-4">
-              At TCG In-Stock Tracker ("we," "our," or "us"), we respect your privacy and are committed to protecting your personal information. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website at pokemoninstocktracker.com (the "Site").
+              At TCG Updates ("we," "our," or "us"), we respect your privacy and are committed to protecting your personal information. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website at tcgupdates.com (the "Site").
             </p>
             <p className="mb-4">
               Please read this Privacy Policy carefully. By accessing or using our Site, you acknowledge that you have read, understood, and agreed to be bound by all the terms of this Privacy Policy. If you do not agree with our policies and practices, please do not use our Site.
@@ -180,9 +181,9 @@ const PrivacyPolicy = () => {
               If you have any questions or concerns about this Privacy Policy or our privacy practices, please contact us at:
             </p>
             <div className="bg-gray-50 p-6 rounded-lg border border-gray-100 mb-4">
-              <p>TCG In-Stock Tracker</p>
-              <p>Email: privacy@tcginstocktracker.com</p>
-              <p>Contact Form: <Link to="/contact" className="text-blue-600 hover:underline">www.tcginstocktracker.com/contact</Link></p>
+              <p>TCG Updates</p>
+              <p>Email: privacy@tcgupdates.com</p>
+              <p>Contact Form: <Link to="/contact" className="text-blue-600 hover:underline">www.tcgupdates.com/contact</Link></p>
             </div>
           </section>
         </div>

@@ -10,11 +10,11 @@ import EmptyStateHandler from "@/components/ui/empty-state-handler";
 const AboutPage = () => {
   // Add meta tags for SEO and AdSense compliance
   useMetaTags({
-    title: "About TCG In-Stock Tracker | Our Mission & Story",
-    description: "Learn about TCG In-Stock Tracker's mission to help Pokemon fans find products at retail prices without the frustration of constant sellouts and scalping.",
-    keywords: "TCG tracker, Pokemon cards, trading card games, in-stock alerts, retail prices, card collecting",
-    ogTitle: "About TCG In-Stock Tracker | Finding Cards at Retail",
-    ogDescription: "Discover how TCG In-Stock Tracker helps level the playing field for collectors by providing daily stock updates from major retailers."
+    title: "About TCG Updates | Our Mission & Story",
+    description: "Learn about TCG Updates' mission to keep the trading card game community informed with the latest news, inventory tracking, and creative DIY accessories.",
+    keywords: "TCG news, Pokemon cards, MTG, Yu-Gi-Oh, trading card games, in-stock alerts, DIY accessories, card collecting",
+    ogTitle: "About TCG Updates | News, Inventory & Accessories",
+    ogDescription: "Discover how TCG Updates helps trading card game enthusiasts stay informed, find products, and enhance their collections with creative solutions."
   });
 
   const [contentLoaded, setContentLoaded] = React.useState(false);
@@ -37,18 +37,18 @@ const AboutPage = () => {
         emptyComponent={<div className="p-8 text-center">Content currently unavailable.</div>}
       >
         <div className="bg-white p-8 rounded-lg shadow-md mb-12">
-          <h1 className="text-3xl font-bold mb-6">About TCG In-Stock Tracker</h1>
+          <h1 className="text-3xl font-bold mb-6">About TCG Updates</h1>
           
           <section className="mb-12">
             <h2 className="text-2xl font-semibold mb-4">Our Mission</h2>
             <p className="text-gray-700 mb-4">
-              TCG In-Stock Tracker was created with a simple mission: to help Pokemon fans find the products they love without the frustration of constant sellouts and scalping.
+              TCG Updates was created with a mission to serve the trading card game community in three key ways: providing breaking news and updates, helping collectors find products at retail prices, and inspiring creativity through DIY accessories and collection solutions.
             </p>
             <p className="text-gray-700 mb-4">
-              In today's TCG market, finding products at retail prices can be challenging. Popular sets sell out quickly, and many collectors miss out on new releases. We believe everyone should have a fair chance to enjoy this hobby without paying inflated prices on the secondary market.
+              In today's dynamic TCG market, staying informed is crucial. We believe everyone should have access to timely news, fair product availability, and innovative ways to enhance their collecting experience.
             </p>
             <p className="text-gray-700 mb-4">
-              By providing daily stock updates from major retailers, we help level the playing field and make the hobby more accessible to all fans, whether you're a competitive player, collector, or parent looking for a gift.
+              By delivering daily updates across news, inventory tracking, and creative projects, we help create a more connected and resourceful community for all TCG enthusiasts.
             </p>
           </section>
           
@@ -63,37 +63,37 @@ const AboutPage = () => {
           <section className="mb-12">
             <h2 className="text-2xl font-semibold mb-4">Our Story</h2>
             <p className="text-gray-700 mb-4">
-             TCG In-Stock Tracker began in early 2024 during a period of unprecedented demand for Pokemon cards. As lifelong Pokemon fans ourselves, we experienced firsthand the frustration of missing out on new releases and seeing prices skyrocket on the secondary market.
+              TCG Updates began in early 2024 during a period of unprecedented growth in the trading card game market. As lifelong TCG enthusiasts ourselves, we recognized the need for a comprehensive platform that went beyond just tracking inventory.
             </p>
             <p className="text-gray-700 mb-4">
-              What started as a simple idea quickly grew into a comprehensive website serving hundreds of Pokemon enthusiasts daily. Our community has grown through word of mouth as collectors share their success stories of finally finding products at MSRP thanks to our alerts.
+              What started as a simple product tracker quickly evolved into a hub for news, market trends, and DIY projects. Our community has grown through word of mouth as collectors, players, and hobbyists share their success stories of finding products, staying informed, and creating unique accessories for their collections.
             </p>
             <p className="text-gray-700 mb-4">
-              Today, we track inventory across dozens of retailers including Pokemon Center, Target, Walmart, Best Buy, GameStop, and many local game stores that have partnered with us. We manually check for restocks daily, ensuring you never miss an opportunity to add to your collection.
+              Today, we cover dozens of retailers and multiple card games including Pokémon, Magic: The Gathering, Yu-Gi-Oh!, and Disney Lorcana. We bring you breaking news, monitor inventory daily, and showcase creative ways to store, display, and transport your valuable collections.
             </p>
           </section>
           
           <section className="mb-12">
-            <h2 className="text-2xl font-semibold mb-4">How It Works</h2>
+            <h2 className="text-2xl font-semibold mb-4">What We Offer</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <div className="bg-gray-50 p-6 rounded-lg border border-gray-100">
-                <h3 className="text-xl font-medium mb-3">1. Daily Tracking</h3>
+                <h3 className="text-xl font-medium mb-3">1. Breaking News & Updates</h3>
                 <p className="text-gray-700">
-                  We manually monitor inventory across major retailers, due to many sites having privacy policies that makes webscraping unethical. We check for restocks multiple times per day on high-demand items.
+                  Stay informed with the latest announcements, set releases, tournament results, and market trends across all major trading card games.
                 </p>
               </div>
               
               <div className="bg-gray-50 p-6 rounded-lg border border-gray-100">
-                <h3 className="text-xl font-medium mb-3">2. Real-Time Updates</h3>
+                <h3 className="text-xl font-medium mb-3">2. Inventory Tracking</h3>
                 <p className="text-gray-700">
-                  When a product comes back in stock, we display it on our website. For subscribed users, we send instant notifications via email, SMS, or push notifications based on your preferences.
+                  We manually monitor stock levels at major retailers, providing real-time updates and notifications when products become available at retail prices.
                 </p>
               </div>
               
               <div className="bg-gray-50 p-6 rounded-lg border border-gray-100">
-                <h3 className="text-xl font-medium mb-3">3. Direct Links</h3>
+                <h3 className="text-xl font-medium mb-3">3. DIY Accessories & Guides</h3>
                 <p className="text-gray-700">
-                  We provide direct links to product pages, allowing you to skip the search process and checkout quickly before items sell out again. All services on this site are 100% free, as this site was built to help people, not take from them.
+                  Explore our guides for creating custom card storage, display cases, and accessories to enhance your collection. From beginner-friendly projects to advanced builds.
                 </p>
               </div>
             </div>
@@ -114,7 +114,7 @@ const AboutPage = () => {
             </p>
             
             <div className="bg-gray-50 p-6 rounded-lg border border-gray-100">
-              <p className="mb-2"><strong>Email:</strong> <a href="mailto:info@pokemoninstocktracker.com" className="text-blue-600 hover:underline">info@pokemoninstocktracker.com</a></p>
+              <p className="mb-2"><strong>Email:</strong> <a href="mailto:info@tcgupdates.com" className="text-blue-600 hover:underline">info@tcgupdates.com</a></p>
               <p className="mb-2"><strong>Contact Form:</strong> <Link to="/contact" className="text-blue-600 hover:underline">Fill out our contact form</Link></p>
             </div>
             

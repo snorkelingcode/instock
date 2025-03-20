@@ -11,14 +11,14 @@ const WelcomeCard = () => {
   return (
     <Card className="bg-gradient-to-r from-red-50 to-white border-red-200 shadow-md">
       <CardHeader>
-        <CardTitle className="text-2xl text-red-800">Welcome to TCG In-Stock Tracker</CardTitle>
-        <CardDescription>Your one-stop resource for Trading Card Game availability</CardDescription>
+        <CardTitle className="text-2xl text-red-800">Welcome to TCG Updates</CardTitle>
+        <CardDescription>Your comprehensive resource for Trading Card Game news, inventory tracking, and DIY accessories</CardDescription>
       </CardHeader>
       <CardContent>
         <p className="text-gray-700">
-          Track in-stock status for Pokémon, Magic: The Gathering, Yu-Gi-Oh!, and Disney Lorcana cards 
-          across major retailers. Get notified when hard-to-find products become available and stay 
-          updated with the latest TCG news and releases.
+          Get the latest news about Pokémon, Magic: The Gathering, Yu-Gi-Oh!, and Disney Lorcana. 
+          Track in-stock status across major retailers, learn about upcoming releases, and discover 
+          creative ways to enhance your collection with custom accessories and storage solutions.
         </p>
       </CardContent>
       <CardFooter className="flex flex-col gap-4">
