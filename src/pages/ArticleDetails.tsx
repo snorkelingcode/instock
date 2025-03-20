@@ -7,10 +7,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Layout from "@/components/layout/Layout";
 import ReadAloud from "@/components/articles/ReadAloud";
+import CommentSection from "@/components/articles/CommentSection";
 import { useToast } from "@/hooks/use-toast";
 import { useMetaTags } from "@/hooks/use-meta-tags";
 import { supabase } from "@/integrations/supabase/client";
 import { Article } from "@/types/article";
+import LoadingSpinner from "@/components/ui/loading-spinner";
 import {
   Carousel,
   CarouselContent,
@@ -199,6 +201,11 @@ const ArticleDetails = () => {
                 </Carousel>
               </div>
             )}
+            
+            {/* Comment Section */}
+            <div className="mt-10 border-t pt-8">
+              {id && <CommentSection articleId={id} />}
+            </div>
           </div>
         </div>
       </div>

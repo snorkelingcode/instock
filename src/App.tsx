@@ -17,6 +17,7 @@ import TermsOfService from "./pages/TermsOfService";
 import CookiePolicy from "./pages/CookiePolicy";
 import Sets from "./pages/Sets";
 import Auth from "./pages/Auth";
+import Dashboard from "./pages/Dashboard";
 import AdminArticles from "./pages/admin/AdminArticles";
 import ArticleEditor from "./components/admin/ArticleEditor";
 import RequireAuth from "./components/auth/RequireAuth";
@@ -49,6 +50,14 @@ const App = () => {
               <Route path="/terms" element={<TermsOfService />} />
               <Route path="/cookies" element={<CookiePolicy />} />
               <Route path="/auth" element={<Auth />} />
+              <Route 
+                path="/dashboard" 
+                element={
+                  <RequireAuth>
+                    <Dashboard />
+                  </RequireAuth>
+                } 
+              />
               
               <Route path="/sets" element={<Sets />} />
               <Route path="/sets/pokemon" element={<PokemonSets />} />
