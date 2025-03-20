@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -57,16 +56,11 @@ const PokemonCardComponent: React.FC<PokemonCardComponentProps> = ({
   const getSetName = (): string => {
     if (!card.set) return 'Unknown';
     
-    // First verify card.set is not null (TypeScript needs this reassurance)
-    const setInfo = card.set;
-    
-    // Now check the type and safely extract the name
-    if (typeof setInfo === 'object' && setInfo !== null && 'name' in setInfo) {
-      return setInfo.name;
+    if (typeof card.set === 'object' && 'name' in card.set) {
+      return card.set.name;
     }
     
-    // If it's not an object with name property, convert to string
-    return String(setInfo);
+    return String(card.set);
   };
   
   return (
