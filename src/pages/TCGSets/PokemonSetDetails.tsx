@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -289,8 +290,7 @@ const PokemonSetDetails = () => {
 
   const fetchingContent = (
     <div className="p-8 flex flex-col items-center justify-center">
-      <LoadingSpinner size="lg" color="red" showText text="Fetching cards..." />
-      <div className="w-full max-w-md mt-4">
+      <div className="w-full max-w-md">
         <Progress value={loadProgress} className="h-2 bg-gray-200">
           <div 
             className="h-full bg-red-500 transition-all" 
