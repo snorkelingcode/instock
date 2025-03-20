@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Search, Filter, Gamepad } from "lucide-react";
+import { ArrowLeft, Search, Filter, Gamepad, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -37,7 +37,6 @@ const PokemonSetDetails = () => {
   
   const [set, setSet] = useState<PokemonSet | null>(null);
   const [cards, setCards] = useState<PokemonCard[]>([]);
-  const [displayedCards, setDisplayedCards] = useState<PokemonCard[]>([]);
   const [filteredCards, setFilteredCards] = useState<PokemonCard[]>([]);
   const [loadingSet, setLoadingSet] = useState(true);
   const [loadingCards, setLoadingCards] = useState(true);
@@ -53,8 +52,6 @@ const PokemonSetDetails = () => {
   const [cardsPerRow, setCardsPerRow] = useState(5);
   const [metadataLoaded, setMetadataLoaded] = useState(false);
   const [isPrefetched, setIsPrefetched] = useState(false);
-  const [cardDisplayCount, setCardDisplayCount] = useState(0);
-  const [isLoadingAnimation, setIsLoadingAnimation] = useState(false);
   const [isSetVisited, setIsSetVisited] = useState(false);
   const [batchAnimation, setBatchAnimation] = useState(false);
   const [loadProgress, setLoadProgress] = useState(0);
@@ -159,8 +156,6 @@ const PokemonSetDetails = () => {
       
       setLoadingCards(true);
       setIsLoadingError(false);
-      setCardDisplayCount(0);
-      setDisplayedCards([]);
       setLoadProgress(0);
       
       try {
@@ -186,8 +181,6 @@ const PokemonSetDetails = () => {
         preloadCardImages(sortedCards, isSetVisited ? 100 : 50);
         
         setCards(sortedCards);
-        
-        setIsLoadingAnimation(true);
         
         if (set) {
           const printedTotal = set.printed_total || set.total || 0;
@@ -230,77 +223,39 @@ const PokemonSetDetails = () => {
     
     fetchAllCards();
   }, [setId, toast, set, isSetVisited]);
-
-  useEffect(() => {
-    if (!isLoadingAnimation || cardListToDisplay.length === 0 || cardDisplayCount >= cardListToDisplay.length) {
-      setIsLoadingAnimation(false);
-      return;
-    }
-
-    const batchSize = batchAnimation ? 
-      Math.min(20, cardListToDisplay.length - cardDisplayCount) : 
-      Math.min(5, cardListToDisplay.length - cardDisplayCount);
-    
-    const timer = setTimeout(() => {
-      setCardDisplayCount(prevCount => prevCount + batchSize);
-    }, batchAnimation ? 50 : 100);
-
-    return () => clearTimeout(timer);
-  }, [isLoadingAnimation, cardDisplayCount, cardListToDisplay.length, batchAnimation]);
-
-  useEffect(() => {
-    if (batchAnimation && cardListToDisplay.length > 0) {
-      setDisplayedCards(cardListToDisplay);
-      setIsLoadingAnimation(false);
-    } else {
-      setDisplayedCards(cardListToDisplay.slice(0, cardDisplayCount));
-    }
-  }, [cardDisplayCount, cardListToDisplay, batchAnimation]);
   
   useEffect(() => {
-    if (cardListToDisplay.length > 0) {
-      if (batchAnimation) {
-        setDisplayedCards(cardListToDisplay);
-      } else {
-        setCardDisplayCount(0);
-        setDisplayedCards([]);
-        setIsLoadingAnimation(true);
+    const applyFilters = useCallback(() => {
+      if (rarityFilter === "all" && typeFilter === "all" && !searchQuery) {
+        setIsFiltering(false);
+        return;
       }
-    }
-  }, [filteredCards, isFiltering, batchAnimation, cardListToDisplay]);
-  
-  const applyFilters = useCallback(() => {
-    if (rarityFilter === "all" && typeFilter === "all" && !searchQuery) {
-      setIsFiltering(false);
-      return;
-    }
-    
-    setIsFiltering(true);
-    
-    let filtered = [...cards];
-    
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(card => 
-        card.name.toLowerCase().includes(query) || 
-        card.number.toLowerCase().includes(query)
-      );
-    }
-    
-    if (rarityFilter !== "all") {
-      filtered = filtered.filter(card => card.rarity === rarityFilter);
-    }
-    
-    if (typeFilter !== "all") {
-      filtered = filtered.filter(card => 
-        card.types && card.types.includes(typeFilter)
-      );
-    }
-    
-    setFilteredCards(filtered);
-  }, [searchQuery, rarityFilter, typeFilter, cards]);
+      
+      setIsFiltering(true);
+      
+      let filtered = [...cards];
+      
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        filtered = filtered.filter(card => 
+          card.name.toLowerCase().includes(query) || 
+          card.number.toLowerCase().includes(query)
+        );
+      }
+      
+      if (rarityFilter !== "all") {
+        filtered = filtered.filter(card => card.rarity === rarityFilter);
+      }
+      
+      if (typeFilter !== "all") {
+        filtered = filtered.filter(card => 
+          card.types && card.types.includes(typeFilter)
+        );
+      }
+      
+      setFilteredCards(filtered);
+    }, [searchQuery, rarityFilter, typeFilter, cards]);
 
-  useEffect(() => {
     applyFilters();
   }, [applyFilters]);
 
@@ -338,8 +293,8 @@ const PokemonSetDetails = () => {
   };
 
   const cardsWithPlaceholders = useMemo(() => {
-    return addPlaceholderCards(displayedCards);
-  }, [displayedCards, cardsPerRow]);
+    return addPlaceholderCards(cardListToDisplay);
+  }, [cardListToDisplay, cardsPerRow]);
 
   const loadingContent = (
     <div className="p-8 flex flex-col items-center justify-center">
@@ -555,30 +510,24 @@ const PokemonSetDetails = () => {
               </Button>
             </div>
           ) : (
-            <>
-              {isLoadingAnimation && !batchAnimation && cardDisplayCount < cardListToDisplay.length && (
-                loadingProgressContent
-              )}
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-                {cardsWithPlaceholders.map((card, index) => (
-                  'isPlaceholder' in card ? (
-                    <div key={card.id} className="invisible"> </div>
-                  ) : (
-                    <PokemonCardComponent 
-                      key={card.id} 
-                      card={card} 
-                      isSecretRare={
-                        hasSecretRares && secretRares.some(sr => sr.id === card.id)
-                      }
-                      priority={index < 15}
-                      index={index}
-                      batchAnimation={batchAnimation}
-                    />
-                  )
-                ))}
-              </div>
-            </>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+              {cardsWithPlaceholders.map((card, index) => (
+                'isPlaceholder' in card ? (
+                  <div key={card.id} className="invisible"> </div>
+                ) : (
+                  <PokemonCardComponent 
+                    key={card.id} 
+                    card={card} 
+                    isSecretRare={
+                      hasSecretRares && secretRares.some(sr => sr.id === card.id)
+                    }
+                    priority={index < 15}
+                    index={index}
+                    batchAnimation={batchAnimation}
+                  />
+                )
+              ))}
+            </div>
           )}
         </EmptyStateHandler>
       </div>

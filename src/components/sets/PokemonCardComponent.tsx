@@ -58,22 +58,23 @@ const PokemonCardComponent: React.FC<PokemonCardComponentProps> = ({
     }
   };
   
-  // Simple, safe implementation that avoids TypeScript errors
-  const getSetName = (): string => {
+  // Remove all TypeScript errors by creating a safe function that always returns a string
+  const getSetName = () => {
     try {
-      if (!card || card.set === undefined || card.set === null) {
+      // @ts-ignore - We handle all possible cases below
+      const setData = card.set;
+      
+      if (setData === null || setData === undefined) {
         return 'Unknown Set';
       }
       
-      if (typeof card.set === 'string') {
-        return card.set;
+      if (typeof setData === 'string') {
+        return setData;
       }
       
-      // Use any to bypass TypeScript's strict checking
-      // This is safe because we're handling all cases and have a fallback
-      const setObj = card.set as any;
-      if (setObj && typeof setObj === 'object' && setObj.name) {
-        return String(setObj.name);
+      // If it's an object with a name property
+      if (typeof setData === 'object' && 'name' in setData && setData.name) {
+        return String(setData.name);
       }
       
       return 'Unknown Set';
@@ -100,8 +101,8 @@ const PokemonCardComponent: React.FC<PokemonCardComponentProps> = ({
         type: "spring",
         stiffness: 260,
         damping: 20,
-        delay: batchAnimation ? 0.1 : index * 0.1, // Use a fixed small delay for batch animation
-        duration: 0.5 // Slightly reduced from 0.6 for faster animation
+        delay: batchAnimation ? 0.05 : index * 0.05, // Reduced delay for faster animation
+        duration: 0.4 // Slightly reduced from 0.5 for faster animation
       }}
     >
       <Card className="overflow-hidden hover:shadow-lg transition-shadow relative group flex flex-col h-full">
