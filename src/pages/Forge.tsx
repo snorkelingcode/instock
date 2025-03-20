@@ -559,53 +559,42 @@ const Forge = () => {
           </div>
         ) : (
           <div className="space-y-6">
-            <Tabs defaultValue="interactive" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="interactive">Interactive Customizer</TabsTrigger>
-                <TabsTrigger value="gallery">Model Gallery</TabsTrigger>
-              </TabsList>
+            
+            <ResizablePanelGroup
+              direction="horizontal"
+              className="min-h-[600px] rounded-lg border"
+            >
+              <ResizablePanel defaultSize={70} minSize={30}>
+                {models && (
+                  <ModelViewer
+                    model={selectedModel || (models[0] || null)}
+                    previousModel={previousModelRef.current}
+                    customizationOptions={customizationOptions}
+                    morphEnabled={morphEnabled}
+                    loadedModels={loadedModels}
+                    onModelsLoaded={handleModelLoaded}
+                    preloadComplete={preloadComplete || forceShowInterface.current}
+                    preserveExistingModel={true}
+                  />
+                )}
+              </ResizablePanel>
               
-              <TabsContent value="interactive" className="mt-4">
-                <ResizablePanelGroup
-                  direction="horizontal"
-                  className="min-h-[600px] rounded-lg border"
-                >
-                  <ResizablePanel defaultSize={70} minSize={30}>
-                    {models && (
-                      <ModelViewer
-                        model={selectedModel || (models[0] || null)}
-                        previousModel={previousModelRef.current}
-                        customizationOptions={customizationOptions}
-                        morphEnabled={morphEnabled}
-                        loadedModels={loadedModels}
-                        onModelsLoaded={handleModelLoaded}
-                        preloadComplete={preloadComplete || forceShowInterface.current}
-                        preserveExistingModel={true}
-                      />
-                    )}
-                  </ResizablePanel>
-                  
-                  <ResizableHandle withHandle />
-                  
-                  <ResizablePanel defaultSize={30} minSize={20}>
-                    {models && (
-                      <CustomizationPanel
-                        model={selectedModel || (models[0] || null)}
-                        modelTypes={modelTypeOptions}
-                        options={customizationOptions}
-                        onChange={handleCustomizationChange}
-                        onSave={handleDownloadModel}
-                        isAuthenticated={true}
-                      />
-                    )}
-                  </ResizablePanel>
-                </ResizablePanelGroup>
-              </TabsContent>
+              <ResizableHandle withHandle />
               
-              <TabsContent value="gallery" className="mt-4">
-                <ModelPreviewGrid previews={modelPreviews} />
-              </TabsContent>
-            </Tabs>
+              <ResizablePanel defaultSize={30} minSize={20}>
+                {models && (
+                  <CustomizationPanel
+                    model={selectedModel || (models[0] || null)}
+                    modelTypes={modelTypeOptions}
+                    options={customizationOptions}
+                    onChange={handleCustomizationChange}
+                    onSave={handleDownloadModel}
+                    isAuthenticated={true}
+                  />
+                )}
+              </ResizablePanel>
+            </ResizablePanelGroup>
+            
             
             <div className="border rounded-lg overflow-hidden">
               <button 
@@ -621,6 +610,12 @@ const Forge = () => {
                   <InstructionsPanel isAuthenticated={!!user} />
                 </div>
               )}
+            </div>
+            
+            
+            <div className="mt-6">
+              <h2 className="text-2xl font-semibold mb-4">Model Gallery</h2>
+              <ModelPreviewGrid previews={modelPreviews} />
             </div>
           </div>
         )}
