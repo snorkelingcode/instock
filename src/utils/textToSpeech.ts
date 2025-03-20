@@ -45,17 +45,33 @@ class TextToSpeech {
 
     this.utterance = new SpeechSynthesisUtterance(this.textChunks[this.currentIndex]);
     
-    // Set preferred voice (system default)
+    // Set preferred voice (prioritizing American English voices)
     const voices = this.speechSynthesis.getVoices();
     if (voices.length > 0) {
-      // Try to find a good quality voice - preference for natural sounding ones
-      const preferredVoice = voices.find(voice => 
-        voice.name.includes('Google') || voice.name.includes('Natural') || 
-        voice.name.includes('Premium') || voice.name.includes('Enhanced')
+      // First try to find American English voices
+      const americanVoice = voices.find(voice => 
+        (voice.lang === 'en-US' || voice.name.includes('US English') || voice.name.includes('American')) &&
+        (voice.name.includes('Google') || voice.name.includes('Natural') || 
+        voice.name.includes('Premium') || voice.name.includes('Enhanced'))
       );
       
-      if (preferredVoice) {
-        this.utterance.voice = preferredVoice;
+      // If American voice found, use it
+      if (americanVoice) {
+        this.utterance.voice = americanVoice;
+        console.log('Using American voice:', americanVoice.name);
+      } 
+      // Fallback to other English voices if American not found
+      else {
+        const englishVoice = voices.find(voice => 
+          voice.lang.startsWith('en') &&
+          (voice.name.includes('Google') || voice.name.includes('Natural') || 
+          voice.name.includes('Premium') || voice.name.includes('Enhanced'))
+        );
+        
+        if (englishVoice) {
+          this.utterance.voice = englishVoice;
+          console.log('Using English voice:', englishVoice.name);
+        }
       }
     }
 
@@ -63,6 +79,7 @@ class TextToSpeech {
     this.utterance.rate = 1.0; // Speed: 1.0 is normal
     this.utterance.pitch = 1.0; // Pitch: 1.0 is normal
     this.utterance.volume = 1.0; // Volume: 1.0 is maximum
+    this.utterance.lang = 'en-US'; // Set language to US English
 
     // Handle chunk completion
     this.utterance.onend = () => {
