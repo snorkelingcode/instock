@@ -56,13 +56,17 @@ const PokemonCardComponent: React.FC<PokemonCardComponentProps> = ({
   };
   
   const getSetName = (): string => {
-    if (!card.set) return 'Unknown';
-    
-    if (typeof card.set === 'object' && card.set !== null && 'name' in card.set) {
-      return card.set.name;
+    if (!card.set) {
+      return 'Unknown';
     }
     
-    return String(card.set);
+    const cardSet = card.set;
+    
+    if (typeof cardSet === 'object' && cardSet !== null && 'name' in cardSet) {
+      return cardSet.name as string;
+    }
+    
+    return String(cardSet);
   };
   
   return (
