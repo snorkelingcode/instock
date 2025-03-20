@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -27,6 +28,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import EmptyStateHandler from "@/components/ui/empty-state-handler";
 import { getCache, setCache } from "@/utils/cacheUtils";
+import { Progress } from "@/components/ui/progress";
 
 const VISITED_SETS_CACHE_KEY = "pokemon_visited_sets";
 
@@ -53,8 +55,6 @@ const PokemonSetDetails = () => {
   const [cardsPerRow, setCardsPerRow] = useState(5);
   const [metadataLoaded, setMetadataLoaded] = useState(false);
   const [isPrefetched, setIsPrefetched] = useState(false);
-  const [cardDisplayCount, setCardDisplayCount] = useState(0);
-  const [isLoadingAnimation, setIsLoadingAnimation] = useState(false);
   const [isSetVisited, setIsSetVisited] = useState(false);
   const [batchAnimation, setBatchAnimation] = useState(false);
   const [loadProgress, setLoadProgress] = useState(0);
@@ -159,7 +159,6 @@ const PokemonSetDetails = () => {
       
       setLoadingCards(true);
       setIsLoadingError(false);
-      setCardDisplayCount(0);
       setDisplayedCards([]);
       setLoadProgress(0);
       
@@ -186,8 +185,7 @@ const PokemonSetDetails = () => {
         preloadCardImages(sortedCards, isSetVisited ? 100 : 50);
         
         setCards(sortedCards);
-        
-        setIsLoadingAnimation(true);
+        setDisplayedCards(sortedCards);
         
         if (set) {
           const printedTotal = set.printed_total || set.total || 0;
@@ -231,44 +229,7 @@ const PokemonSetDetails = () => {
     fetchAllCards();
   }, [setId, toast, set, isSetVisited]);
 
-  useEffect(() => {
-    if (!isLoadingAnimation || cardListToDisplay.length === 0 || cardDisplayCount >= cardListToDisplay.length) {
-      setIsLoadingAnimation(false);
-      return;
-    }
-
-    const batchSize = batchAnimation ? 
-      Math.min(20, cardListToDisplay.length - cardDisplayCount) : 
-      Math.min(5, cardListToDisplay.length - cardDisplayCount);
-    
-    const timer = setTimeout(() => {
-      setCardDisplayCount(prevCount => prevCount + batchSize);
-    }, batchAnimation ? 50 : 100);
-
-    return () => clearTimeout(timer);
-  }, [isLoadingAnimation, cardDisplayCount, cardListToDisplay.length, batchAnimation]);
-
-  useEffect(() => {
-    if (batchAnimation && cardListToDisplay.length > 0) {
-      setDisplayedCards(cardListToDisplay);
-      setIsLoadingAnimation(false);
-    } else {
-      setDisplayedCards(cardListToDisplay.slice(0, cardDisplayCount));
-    }
-  }, [cardDisplayCount, cardListToDisplay, batchAnimation]);
-  
-  useEffect(() => {
-    if (cardListToDisplay.length > 0) {
-      if (batchAnimation) {
-        setDisplayedCards(cardListToDisplay);
-      } else {
-        setCardDisplayCount(0);
-        setDisplayedCards([]);
-        setIsLoadingAnimation(true);
-      }
-    }
-  }, [filteredCards, isFiltering, batchAnimation, cardListToDisplay]);
-  
+  // Update filtered cards based on search and filters
   const applyFilters = useCallback(() => {
     if (rarityFilter === "all" && typeFilter === "all" && !searchQuery) {
       setIsFiltering(false);
@@ -298,6 +259,7 @@ const PokemonSetDetails = () => {
     }
     
     setFilteredCards(filtered);
+    setDisplayedCards(filtered);
   }, [searchQuery, rarityFilter, typeFilter, cards]);
 
   useEffect(() => {
@@ -309,6 +271,7 @@ const PokemonSetDetails = () => {
     setRarityFilter("all");
     setTypeFilter("all");
     setIsFiltering(false);
+    setDisplayedCards(cards);
   };
 
   const renderCardSkeletons = () => {
@@ -345,29 +308,11 @@ const PokemonSetDetails = () => {
     <div className="p-8 flex flex-col items-center justify-center">
       <LoadingSpinner size="lg" color="red" showText text="Loading cards..." />
       <div className="w-full max-w-md mt-4">
-        <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
-          <div 
-            className="h-full bg-red-500 transition-all duration-300 ease-out"
-            style={{ width: `${loadProgress}%` }}
-          ></div>
-        </div>
+        <Progress value={loadProgress} className="h-2" />
         <p className="text-gray-500 mt-2 text-center">
           {loadProgress < 100 ? "Fetching cards..." : "Processing cards..."}
         </p>
       </div>
-    </div>
-  );
-
-  const loadingProgressContent = (
-    <div className="text-center py-4">
-      <div className="flex justify-center items-center mb-2">
-        <LoadingSpinner size="sm" color="red" />
-      </div>
-      {cardListToDisplay.length > 0 && (
-        <p className="text-gray-500 text-sm">
-          Loaded {displayedCards.length} of {cardListToDisplay.length} cards
-        </p>
-      )}
     </div>
   );
 
@@ -555,30 +500,24 @@ const PokemonSetDetails = () => {
               </Button>
             </div>
           ) : (
-            <>
-              {isLoadingAnimation && !batchAnimation && cardDisplayCount < cardListToDisplay.length && (
-                loadingProgressContent
-              )}
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-                {cardsWithPlaceholders.map((card, index) => (
-                  'isPlaceholder' in card ? (
-                    <div key={card.id} className="invisible"> </div>
-                  ) : (
-                    <PokemonCardComponent 
-                      key={card.id} 
-                      card={card} 
-                      isSecretRare={
-                        hasSecretRares && secretRares.some(sr => sr.id === card.id)
-                      }
-                      priority={index < 15}
-                      index={index}
-                      batchAnimation={batchAnimation}
-                    />
-                  )
-                ))}
-              </div>
-            </>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+              {cardsWithPlaceholders.map((card, index) => (
+                'isPlaceholder' in card ? (
+                  <div key={card.id} className="invisible"> </div>
+                ) : (
+                  <PokemonCardComponent 
+                    key={card.id} 
+                    card={card} 
+                    isSecretRare={
+                      hasSecretRares && secretRares.some(sr => sr.id === card.id)
+                    }
+                    priority={index < 15}
+                    index={index}
+                    batchAnimation={batchAnimation}
+                  />
+                )
+              ))}
+            </div>
           )}
         </EmptyStateHandler>
       </div>

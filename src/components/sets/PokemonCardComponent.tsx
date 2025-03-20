@@ -58,22 +58,26 @@ const PokemonCardComponent: React.FC<PokemonCardComponentProps> = ({
     }
   };
   
-  // Simple, safe implementation that avoids TypeScript errors
+  // Safe implementation of getSetName that handles different data structures
   const getSetName = (): string => {
     try {
+      // If card.set is undefined or null
       if (!card || card.set === undefined || card.set === null) {
         return 'Unknown Set';
       }
       
+      // If card.set is a string
       if (typeof card.set === 'string') {
         return card.set;
       }
       
-      // Use any to bypass TypeScript's strict checking
-      // This is safe because we're handling all cases and have a fallback
-      const setObj = card.set as any;
-      if (setObj && typeof setObj === 'object' && setObj.name) {
-        return String(setObj.name);
+      // If card.set is an object
+      if (typeof card.set === 'object') {
+        // Type assertion to any to avoid TypeScript errors
+        const setObj = card.set as any;
+        if (setObj && typeof setObj === 'object' && setObj.name) {
+          return String(setObj.name);
+        }
       }
       
       return 'Unknown Set';
