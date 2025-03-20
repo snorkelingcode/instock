@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -56,18 +55,14 @@ const PokemonCardComponent: React.FC<PokemonCardComponentProps> = ({
     }
   };
   
-  // Helper function to safely get set name
   const getSetName = (): string => {
     if (!card.set) return 'Unknown';
     
-    // First store the set in a non-null variable after the check
-    const setVal = card.set;
-    
-    if (typeof setVal === 'object' && 'name' in setVal) {
-      return setVal.name;
+    if (typeof card.set === 'object' && card.set !== null && 'name' in card.set) {
+      return card.set.name;
     }
     
-    return String(setVal);
+    return String(card.set);
   };
   
   return (
@@ -88,7 +83,7 @@ const PokemonCardComponent: React.FC<PokemonCardComponentProps> = ({
         type: "spring",
         stiffness: 260,
         damping: 20,
-        delay: index * 0.1, // Staggered delay based on index
+        delay: index * 0.1,
         duration: 0.6
       }}
     >
