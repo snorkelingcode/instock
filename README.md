@@ -1,4 +1,7 @@
-This project is built with .
+
+# TCG Updates
+
+This project is built with:
 
 - Vite
 - TypeScript
@@ -6,3 +9,4 @@ This project is built with .
 - shadcn-ui
 - Tailwind CSS
 
+TCG Updates is a platform for tracking trading card game product availability, news, and releases.

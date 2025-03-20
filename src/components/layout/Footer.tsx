@@ -5,11 +5,11 @@ const Footer = () => (
   <footer className="bg-white p-8 rounded-lg shadow-md mt-16">
     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
       <div>
-        <h3 className="font-semibold mb-4">Trading Card In-Stock Tracker</h3>
+        <h3 className="font-semibold mb-4">TCG Updates</h3>
         <p className="text-gray-600 mb-4">
-          Helping degens find products in stock since 2024.
+          Helping collectors find products in stock since 2024.
         </p>
-        <p className="text-gray-600">© 2025 In-Stock Tracker. All rights reserved.</p>
+        <p className="text-gray-600">© 2025 TCG-Updates. All rights reserved.</p>
       </div>
       
       <div>

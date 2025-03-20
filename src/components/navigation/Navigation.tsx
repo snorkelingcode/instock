@@ -28,8 +28,8 @@ const Navigation = () => {
         {/* Logo only */}
         <Link to="/" className="flex items-center">
           <img 
-            src="/lovable-uploads/9955d37d-dda9-41f4-99af-f7307dddce93.png" 
-            alt="TCG In-Stock Tracker" 
+            src="/lovable-uploads/e80612ce-107e-4ece-b958-7fce24da2647.png" 
+            alt="TCG Updates" 
             className="h-10"
           />
         </Link>
@@ -47,8 +47,8 @@ const Navigation = () => {
               {/* Logo centered at the top - keeping this full logo with image for the mobile menu */}
               <div className="flex justify-center py-6 border-b border-gray-200">
                 <img 
-                  src="/lovable-uploads/9955d37d-dda9-41f4-99af-f7307dddce93.png" 
-                  alt="TCG In-Stock Tracker" 
+                  src="/lovable-uploads/e80612ce-107e-4ece-b958-7fce24da2647.png" 
+                  alt="TCG Updates" 
                   className="h-16"
                 />
               </div>

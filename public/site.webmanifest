@@ -1,6 +1,7 @@
+
 {
-  "name": "TCG In-Stock Tracker",
-  "short_name": "TCG Tracker",
+  "name": "TCG Updates",
+  "short_name": "TCG Updates",
   "icons": [
     {
       "src": "/favicon.ico",

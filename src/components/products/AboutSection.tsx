@@ -8,7 +8,7 @@ const AboutSection = () => (
       The Pokemon Trading Card Game continues to be one of the most popular collectible card games worldwide. Due to high demand, many products quickly sell out at major retailers, making it difficult for collectors and players to find items at retail prices.
     </p>
     <p className="text-gray-700 mb-4">
-      We continuously monitor stock levels manually at Pokemon Center, Target, Walmart, Best Buy, GameStop, and dozens of other retailers to provide you with the most up-to-date information on product availability.
+      At TCG Updates, we continuously monitor stock levels manually at Pokemon Center, Target, Walmart, Best Buy, GameStop, and dozens of other retailers to provide you with the most up-to-date information on product availability.
     </p>
     <p className="text-gray-700 mb-4">
       We check inventory multiple times per day for high-demand products, ensuring you're among the first to know when restocks happen. For users who create a free account, we offer customizable alerts via email, text message, or push notification when specific products come back in stock.

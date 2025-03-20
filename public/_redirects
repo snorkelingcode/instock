@@ -3,7 +3,8 @@
 /*    /index.html   200
 
 # Redirect www to non-www
-https://www.fixthesupplyissue.com/*  https://fixthesupplyissue.com/:splat  301!
+https://www.tcgupdates.com/*  https://tcgupdates.com/:splat  301!
 
-# Redirect old domain if applicable
-https://old-domain.com/*  https://fixthesupplyissue.com/:splat  301!
+# Redirect old domain to the new one
+https://fixthesupplyissue.com/*  https://tcgupdates.com/:splat  301!
+https://www.fixthesupplyissue.com/*  https://tcgupdates.com/:splat  301!
