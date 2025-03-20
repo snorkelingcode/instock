@@ -26,7 +26,12 @@ const FeaturedNews = ({ id, title, date, category, excerpt, image, onClick }: Fe
     <div className="bg-white rounded-lg shadow-md border border-red-200 overflow-hidden">
       <div className="md:flex">
         {image && (
-          <div className="md:w-2/5 h-48 md:h-auto relative overflow-hidden bg-red-50">
+          <div 
+            className="md:w-2/5 h-48 md:h-auto relative overflow-hidden bg-red-50 cursor-pointer"
+            onClick={handleReadClick}
+            role="button"
+            aria-label={`View featured article: ${title}`}
+          >
             <img 
               src={image} 
               alt={title} 

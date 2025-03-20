@@ -36,7 +36,12 @@ const NewsPreview = ({
   return (
     <Card className={`transition-all h-full flex flex-col ${featured ? 'border-red-300 shadow-md' : ''}`}>
       {image && (
-        <div className="w-full h-48 overflow-hidden rounded-t-lg">
+        <div 
+          className="w-full h-48 overflow-hidden rounded-t-lg cursor-pointer"
+          onClick={handleReadClick}
+          role="button"
+          aria-label={`View article: ${title}`}
+        >
           <img 
             src={image} 
             alt={title} 
