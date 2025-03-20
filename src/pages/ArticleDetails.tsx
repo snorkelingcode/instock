@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
 import { format } from 'date-fns';
@@ -137,7 +136,7 @@ const ArticleDetails = () => {
                   Updated on {formatDate(article.updated_at)}
                 </div>
               </div>
-              <ReadAloud title={article.title} content={article.content} autoplay={false} />
+              <ReadAloud title={article.title} content={article.content} autoplay={autoplay} />
             </div>
             
             <div className="relative">

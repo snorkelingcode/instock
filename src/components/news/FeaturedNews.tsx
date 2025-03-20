@@ -24,7 +24,7 @@ const FeaturedNews = ({ id, title, date, category, excerpt, image, onClick }: Fe
   
   const handleReadAloudClick = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent triggering the card click
-    navigate(`/article/${id}`);
+    navigate(`/article/${id}?autoplay=true`);
   };
   
   return (
