@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { format } from 'date-fns';
@@ -10,6 +11,13 @@ import { useToast } from '@/hooks/use-toast';
 import ReadAloud from '@/components/articles/ReadAloud';
 import CommentSection from '@/components/articles/CommentSection';
 import { Card } from '@/components/ui/card';
+import { 
+  Carousel, 
+  CarouselContent, 
+  CarouselItem, 
+  CarouselNext, 
+  CarouselPrevious 
+} from '@/components/ui/carousel';
 
 interface Article {
   id: string;
@@ -24,6 +32,7 @@ interface Article {
   updated_at: string;
   published_at: string;
   featured_image: string;
+  additional_images?: string[];
 }
 
 const ArticleDetails = () => {
@@ -96,6 +105,8 @@ const ArticleDetails = () => {
     return paragraphs.map(paragraph => `<p class="mb-6">${paragraph}</p>`).join('');
   };
 
+  const hasAdditionalImages = article?.additional_images && article.additional_images.length > 0;
+
   return (
     <Layout>
       <div className="container max-w-4xl py-8">
@@ -140,6 +151,33 @@ const ArticleDetails = () => {
                 }} 
               />
             </div>
+
+            {hasAdditionalImages && (
+              <div className="my-12">
+                <h2 className="text-xl font-bold mb-6">Gallery</h2>
+                <Carousel className="w-full">
+                  <CarouselContent>
+                    {article.additional_images?.map((image, index) => (
+                      <CarouselItem key={index} className="md:basis-1/2 lg:basis-1/3">
+                        <div className="p-1">
+                          <div className="overflow-hidden rounded-md">
+                            <img 
+                              src={image} 
+                              alt={`Gallery image ${index + 1}`}
+                              className="h-60 w-full object-cover transition-all hover:scale-105"
+                            />
+                          </div>
+                        </div>
+                      </CarouselItem>
+                    ))}
+                  </CarouselContent>
+                  <div className="flex justify-end gap-2 mt-4">
+                    <CarouselPrevious className="relative static h-8 w-8 -translate-y-0 translate-x-0 left-0" />
+                    <CarouselNext className="relative static h-8 w-8 -translate-y-0 translate-x-0 right-0" />
+                  </div>
+                </Carousel>
+              </div>
+            )}
             
             <Card className="mt-12 bg-white p-6 rounded-lg shadow-sm">
               <div className="flex justify-between items-center mb-6">
