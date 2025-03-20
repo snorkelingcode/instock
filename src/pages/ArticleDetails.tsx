@@ -111,12 +111,12 @@ const ArticleDetails = () => {
               <img
                 src={article.featured_image}
                 alt={article.title}
-                className="w-full rounded-md mb-6"
+                className="w-full h-auto rounded-lg mb-6 shadow-md object-cover"
               />
             )}
             
             {/* Metadata */}
-            <div className="flex flex-wrap items-center gap-4 mb-8 text-sm text-gray-500">
+            <div className="flex flex-wrap items-center gap-4 mb-8 text-sm text-gray-500 bg-gray-50 p-3 rounded-md">
               <div className="flex items-center">
                 <CalendarDays className="mr-2 h-4 w-4" />
                 Published on {formatDate(article.published_at || article.created_at)}
@@ -125,7 +125,7 @@ const ArticleDetails = () => {
                 <Clock className="mr-2 h-4 w-4" />
                 Updated on {formatDate(article.updated_at)}
               </div>
-              <button onClick={shareArticle} className="flex items-center hover:text-blue-500">
+              <button onClick={shareArticle} className="flex items-center hover:text-blue-500 ml-auto">
                 <Share2 className="mr-2 h-4 w-4" />
                 Share
               </button>
@@ -134,16 +134,18 @@ const ArticleDetails = () => {
             {/* Content with optional text-to-speech */}
             <div className="relative">
               <ReadAloud title={article.title} content={article.content} />
-              <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: article.content }} />
+              <div className="prose prose-lg max-w-none bg-white p-5 rounded-lg shadow-sm" dangerouslySetInnerHTML={{ __html: article.content }} />
             </div>
             
             {/* Comments Section */}
-            <CommentSection articleId={article.id} />
+            <div className="mt-12 bg-white p-6 rounded-lg shadow-sm">
+              <CommentSection articleId={article.id} />
+            </div>
           </>
         ) : (
-          <div className="text-center py-10">
+          <div className="text-center py-10 bg-white rounded-lg shadow-sm">
             <h2 className="text-2xl font-bold mb-4">Article Not Found</h2>
-            <p className="text-gray-500">Sorry, the article you are looking for could not be found.</p>
+            <p className="text-gray-500 mb-4">Sorry, the article you are looking for could not be found.</p>
             <Link to="/news" className="text-blue-500 hover:underline">
               Back to News
             </Link>
