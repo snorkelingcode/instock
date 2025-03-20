@@ -91,6 +91,11 @@ const ArticleDetails = () => {
     }
   };
 
+  const formatContent = (content: string) => {
+    const paragraphs = content.split('\n').filter(paragraph => paragraph.trim() !== '');
+    return paragraphs.map(paragraph => `<p>${paragraph}</p>`).join('');
+  };
+
   return (
     <Layout>
       <div className="container max-w-4xl py-8">
@@ -131,9 +136,7 @@ const ArticleDetails = () => {
               <div 
                 className="prose prose-lg max-w-none bg-white p-5 rounded-lg shadow-sm" 
                 dangerouslySetInnerHTML={{ 
-                  __html: article.content
-                    .replace(/<p>/g, '<p class="mb-4">')
-                    .replace(/<br\s*\/?>/g, '</p><p class="mb-4">') 
+                  __html: formatContent(article.content)
                 }} 
               />
             </div>
