@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -21,12 +20,10 @@ const PokemonCardComponent: React.FC<PokemonCardComponentProps> = ({
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   
-  // Initialize image source on component mount
   useEffect(() => {
     setImageSrc(card.images.small || card.images.large);
   }, [card.images.small, card.images.large]);
   
-  // Determine rarity color
   const getRarityColor = () => {
     if (!card.rarity) return "bg-gray-500";
     
@@ -45,12 +42,10 @@ const PokemonCardComponent: React.FC<PokemonCardComponentProps> = ({
     return "bg-blue-500";
   };
   
-  // Function to handle image loading
   const handleImageLoad = () => {
     setImageLoaded(true);
   };
 
-  // Open TCGPlayer buy page
   const handleBuyClick = () => {
     if (card.tcgplayer?.url) {
       window.open(card.tcgplayer.url, '_blank', 'noopener,noreferrer');
@@ -137,7 +132,7 @@ const PokemonCardComponent: React.FC<PokemonCardComponentProps> = ({
                 <div className="sm:w-1/2 space-y-4">
                   <div>
                     <h3 className="text-sm font-semibold">Card Information</h3>
-                    <p className="text-sm">Set: {typeof card.set === 'object' ? card.set?.name : card.set}</p>
+                    <p className="text-sm">Set: {card.set ? (typeof card.set === 'object' ? card.set.name : card.set) : 'Unknown'}</p>
                     <p className="text-sm">Number: {card.number}</p>
                     {card.types && <p className="text-sm">Type: {card.types.join(', ')}</p>}
                   </div>
