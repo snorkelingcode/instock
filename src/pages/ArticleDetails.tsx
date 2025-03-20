@@ -93,7 +93,7 @@ const ArticleDetails = () => {
 
   const formatContent = (content: string) => {
     const paragraphs = content.split('\n').filter(paragraph => paragraph.trim() !== '');
-    return paragraphs.map(paragraph => `<p>${paragraph}</p>`).join('');
+    return paragraphs.map(paragraph => `<p class="mb-6">${paragraph}</p>`).join('');
   };
 
   return (
