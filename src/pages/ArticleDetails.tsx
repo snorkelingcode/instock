@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useLocation } from 'react-router-dom';
 import { format } from 'date-fns';
 import Layout from '@/components/layout/Layout';
 import { supabase } from '@/integrations/supabase/client';
@@ -33,6 +34,9 @@ const ArticleDetails = () => {
   const [article, setArticle] = useState<Article | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const autoplay = searchParams.get('autoplay') === 'true';
 
   useEffect(() => {
     if (id) {
@@ -133,7 +137,7 @@ const ArticleDetails = () => {
                   Updated on {formatDate(article.updated_at)}
                 </div>
               </div>
-              <ReadAloud title={article.title} content={article.content} />
+              <ReadAloud title={article.title} content={article.content} autoplay={false} />
             </div>
             
             <div className="relative">
