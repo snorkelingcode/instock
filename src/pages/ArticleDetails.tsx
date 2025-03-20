@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { format } from "date-fns";
 import { ArrowLeft, CalendarIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +25,11 @@ const ArticleDetails = () => {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Check if autoplay parameter is in the URL
+  const searchParams = new URLSearchParams(location.search);
+  const autoplay = searchParams.get('autoplay') === 'true';
   
   useMetaTags({
     title: article?.title || "Article",
@@ -158,6 +163,7 @@ const ArticleDetails = () => {
               <ReadAloud 
                 content={article.content} 
                 title={article.title}
+                autoplay={autoplay}
               />
             </div>
             

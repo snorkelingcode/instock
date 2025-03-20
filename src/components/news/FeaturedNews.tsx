@@ -22,6 +22,10 @@ const FeaturedNews = ({ id, title, date, category, excerpt, image, onClick }: Fe
     else navigate(`/article/${id}`);
   };
   
+  const handleReadAloudClick = () => {
+    navigate(`/article/${id}?autoplay=true`);
+  };
+  
   return (
     <div className="bg-white rounded-lg shadow-md border border-red-200 overflow-hidden">
       <div className="md:flex">
@@ -60,8 +64,8 @@ const FeaturedNews = ({ id, title, date, category, excerpt, image, onClick }: Fe
               variant="ghost" 
               size="sm" 
               className="text-gray-600" 
-              onClick={handleReadClick}
-              aria-label="Go to article to use read aloud feature"
+              onClick={handleReadAloudClick}
+              aria-label="Read article aloud"
             >
               <Volume2 className="h-4 w-4 mr-1" />
               <span className="text-xs">Read Aloud</span>

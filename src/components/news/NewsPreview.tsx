@@ -33,6 +33,10 @@ const NewsPreview = ({
     else navigate(`/article/${id}`);
   };
 
+  const handleReadAloudClick = () => {
+    navigate(`/article/${id}?autoplay=true`);
+  };
+
   return (
     <Card className={`transition-all h-full flex flex-col ${featured ? 'border-red-300 shadow-md' : ''}`}>
       {image && (
@@ -70,8 +74,8 @@ const NewsPreview = ({
           variant="ghost" 
           size="sm" 
           className="text-gray-600" 
-          onClick={handleReadClick}
-          aria-label="Go to article to use read aloud feature"
+          onClick={handleReadAloudClick}
+          aria-label="Read article aloud"
         >
           <Volume2 className="h-4 w-4 mr-1" />
           <span className="text-xs">Read Aloud</span>

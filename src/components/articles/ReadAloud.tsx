@@ -14,20 +14,27 @@ interface ReadAloudProps {
   content: string;
   title: string;
   className?: string;
+  autoplay?: boolean;
 }
 
-const ReadAloud = ({ content, title, className = "" }: ReadAloudProps) => {
+const ReadAloud = ({ content, title, className = "", autoplay = false }: ReadAloudProps) => {
   const [speechState, setSpeechState] = useState<SpeechState>(textToSpeech.getState());
   
   useEffect(() => {
     // Register for state changes
     textToSpeech.registerStateChangeCallback(setSpeechState);
     
+    // Start reading automatically if autoplay is true
+    if (autoplay && speechState === 'idle') {
+      const fullText = `${title}. ${content}`;
+      textToSpeech.speak(fullText);
+    }
+    
     // Clean up when component unmounts
     return () => {
       textToSpeech.stop();
     };
-  }, []);
+  }, [autoplay, content, title]);
   
   const handleStartReading = () => {
     const fullText = `${title}. ${content}`;
