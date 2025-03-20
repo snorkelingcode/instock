@@ -13,13 +13,15 @@ interface PokemonCardComponentProps {
   isSecretRare?: boolean;
   priority?: boolean; // For prioritizing initial images
   index?: number; // Card index for staggered animation
+  batchAnimation?: boolean; // New prop for controlling animation timing
 }
 
 const PokemonCardComponent: React.FC<PokemonCardComponentProps> = ({ 
   card, 
   isSecretRare = false,
   priority = false,
-  index = 0
+  index = 0,
+  batchAnimation = false
 }) => {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageSrc, setImageSrc] = useState<string | null>(null);
@@ -56,31 +58,26 @@ const PokemonCardComponent: React.FC<PokemonCardComponentProps> = ({
     }
   };
   
-  // Completely rewritten to avoid any TypeScript errors
+  // Simple, safe implementation that avoids TypeScript errors
   const getSetName = (): string => {
     try {
-      // Safely extract the set name using optional chaining and type guards
-      if (!card) return 'Unknown Set';
+      if (!card || card.set === undefined || card.set === null) {
+        return 'Unknown Set';
+      }
       
-      // Handle string case
       if (typeof card.set === 'string') {
         return card.set;
       }
       
-      // Handle object case
-      if (card.set && typeof card.set === 'object') {
-        // @ts-ignore - we'll handle this safely
-        const name = card.set.name;
-        if (typeof name === 'string') {
-          return name;
-        }
+      // Use any to bypass TypeScript's strict checking
+      // This is safe because we're handling all cases and have a fallback
+      const setObj = card.set as any;
+      if (setObj && typeof setObj === 'object' && setObj.name) {
+        return String(setObj.name);
       }
       
-      // If we reach here, use a fallback
       return 'Unknown Set';
-    } catch (error) {
-      // Ultimate fallback in case anything goes wrong
-      console.error('Error getting set name:', error);
+    } catch {
       return 'Unknown Set';
     }
   };
@@ -103,8 +100,8 @@ const PokemonCardComponent: React.FC<PokemonCardComponentProps> = ({
         type: "spring",
         stiffness: 260,
         damping: 20,
-        delay: index * 0.1,
-        duration: 0.6
+        delay: batchAnimation ? 0.1 : index * 0.1, // Use a fixed small delay for batch animation
+        duration: 0.5 // Slightly reduced from 0.6 for faster animation
       }}
     >
       <Card className="overflow-hidden hover:shadow-lg transition-shadow relative group flex flex-col h-full">

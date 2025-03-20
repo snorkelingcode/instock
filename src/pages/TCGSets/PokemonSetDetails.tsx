@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -27,6 +26,9 @@ import {
 } from "@/utils/pokemon-cards";
 import { Skeleton } from "@/components/ui/skeleton";
 import EmptyStateHandler from "@/components/ui/empty-state-handler";
+import { getCache, setCache } from "@/utils/cacheUtils";
+
+const VISITED_SETS_CACHE_KEY = "pokemon_visited_sets";
 
 const PokemonSetDetails = () => {
   const { setId } = useParams<{ setId: string }>();
@@ -51,11 +53,28 @@ const PokemonSetDetails = () => {
   const [cardsPerRow, setCardsPerRow] = useState(5);
   const [metadataLoaded, setMetadataLoaded] = useState(false);
   const [isPrefetched, setIsPrefetched] = useState(false);
-  // New state for controlling incremental loading
   const [cardDisplayCount, setCardDisplayCount] = useState(0);
   const [isLoadingAnimation, setIsLoadingAnimation] = useState(false);
+  const [isSetVisited, setIsSetVisited] = useState(false);
+  const [batchAnimation, setBatchAnimation] = useState(false);
+  const [loadProgress, setLoadProgress] = useState(0);
 
   const cardListToDisplay = isFiltering ? filteredCards : cards;
+
+  useEffect(() => {
+    if (!setId) return;
+    
+    const visitedSets = getCache<string[]>(VISITED_SETS_CACHE_KEY) || [];
+    const hasVisited = visitedSets.includes(setId);
+    
+    setIsSetVisited(hasVisited);
+    setBatchAnimation(hasVisited);
+    
+    if (!hasVisited) {
+      const updatedVisits = [...visitedSets, setId];
+      setCache(VISITED_SETS_CACHE_KEY, updatedVisits, 60 * 24);
+    }
+  }, [setId]);
 
   useEffect(() => {
     const updateCardsPerRow = () => {
@@ -142,21 +161,32 @@ const PokemonSetDetails = () => {
       setIsLoadingError(false);
       setCardDisplayCount(0);
       setDisplayedCards([]);
+      setLoadProgress(0);
       
       try {
         console.log(`Fetching all cards for set: ${setId}`);
+        
+        const progressTimer = setInterval(() => {
+          setLoadProgress(prev => {
+            const newProgress = prev + (90 - prev) * 0.1;
+            return Math.min(newProgress, 90);
+          });
+        }, 300);
+        
         const result = await fetchPokemonCards(setId, { loadAll: true });
+        
+        clearInterval(progressTimer);
+        setLoadProgress(100);
         
         const fetchedCards = result.cards;
         console.log(`Received ${fetchedCards.length} cards for set ${setId}`);
         
         const sortedCards = sortCardsByNumber(fetchedCards);
         
-        preloadCardImages(sortedCards, 50);
+        preloadCardImages(sortedCards, isSetVisited ? 100 : 50);
         
         setCards(sortedCards);
         
-        // Start the card loading animation
         setIsLoadingAnimation(true);
         
         if (set) {
@@ -199,37 +229,45 @@ const PokemonSetDetails = () => {
     };
     
     fetchAllCards();
-  }, [setId, toast, set]);
+  }, [setId, toast, set, isSetVisited]);
 
-  // New effect for incrementally adding cards with animation
   useEffect(() => {
     if (!isLoadingAnimation || cardListToDisplay.length === 0 || cardDisplayCount >= cardListToDisplay.length) {
       setIsLoadingAnimation(false);
       return;
     }
 
+    const batchSize = batchAnimation ? 
+      Math.min(20, cardListToDisplay.length - cardDisplayCount) : 
+      Math.min(5, cardListToDisplay.length - cardDisplayCount);
+    
     const timer = setTimeout(() => {
-      // Add the next batch of cards (add 1-3 cards at a time for smoother animation)
-      const batchSize = Math.min(3, cardListToDisplay.length - cardDisplayCount);
       setCardDisplayCount(prevCount => prevCount + batchSize);
-    }, 150); // Speed of adding new cards
+    }, batchAnimation ? 50 : 100);
 
     return () => clearTimeout(timer);
-  }, [isLoadingAnimation, cardDisplayCount, cardListToDisplay.length]);
+  }, [isLoadingAnimation, cardDisplayCount, cardListToDisplay.length, batchAnimation]);
 
-  // Update displayed cards when count changes
   useEffect(() => {
-    setDisplayedCards(cardListToDisplay.slice(0, cardDisplayCount));
-  }, [cardDisplayCount, cardListToDisplay]);
+    if (batchAnimation && cardListToDisplay.length > 0) {
+      setDisplayedCards(cardListToDisplay);
+      setIsLoadingAnimation(false);
+    } else {
+      setDisplayedCards(cardListToDisplay.slice(0, cardDisplayCount));
+    }
+  }, [cardDisplayCount, cardListToDisplay, batchAnimation]);
   
-  // Reset card animation when filters change
   useEffect(() => {
     if (cardListToDisplay.length > 0) {
-      setCardDisplayCount(0);
-      setDisplayedCards([]);
-      setIsLoadingAnimation(true);
+      if (batchAnimation) {
+        setDisplayedCards(cardListToDisplay);
+      } else {
+        setCardDisplayCount(0);
+        setDisplayedCards([]);
+        setIsLoadingAnimation(true);
+      }
     }
-  }, [filteredCards, isFiltering]);
+  }, [filteredCards, isFiltering, batchAnimation, cardListToDisplay]);
   
   const applyFilters = useCallback(() => {
     if (rarityFilter === "all" && typeFilter === "all" && !searchQuery) {
@@ -303,18 +341,47 @@ const PokemonSetDetails = () => {
     return addPlaceholderCards(displayedCards);
   }, [displayedCards, cardsPerRow]);
 
-  // Show loading animation while incrementally loading cards
+  const loadingContent = (
+    <div className="p-8 flex flex-col items-center justify-center">
+      <LoadingSpinner size="lg" color="red" showText text="Loading cards..." />
+      <div className="w-full max-w-md mt-4">
+        <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
+          <div 
+            className="h-full bg-red-500 transition-all duration-300 ease-out"
+            style={{ width: `${loadProgress}%` }}
+          ></div>
+        </div>
+        <p className="text-gray-500 mt-2 text-center">
+          {loadProgress < 100 ? "Fetching cards..." : "Processing cards..."}
+        </p>
+      </div>
+    </div>
+  );
+
   const loadingProgressContent = (
-    <div className="text-center py-8">
-      <p className="text-lg font-medium mb-4">Loading cards...</p>
-      <div className="flex justify-center items-center mb-4">
-        <LoadingSpinner size="lg" color="red" />
+    <div className="text-center py-4">
+      <div className="flex justify-center items-center mb-2">
+        <LoadingSpinner size="sm" color="red" />
       </div>
       {cardListToDisplay.length > 0 && (
-        <p className="text-gray-500">
+        <p className="text-gray-500 text-sm">
           Loaded {displayedCards.length} of {cardListToDisplay.length} cards
         </p>
       )}
+    </div>
+  );
+
+  const emptyContent = (
+    <div className="text-center py-16">
+      <p className="text-lg font-medium">No cards matching your filters</p>
+      <p className="text-gray-500 mt-2">Try adjusting your search or filter criteria</p>
+      <Button 
+        variant="outline" 
+        className="mt-4"
+        onClick={resetFilters}
+      >
+        Clear Filters
+      </Button>
     </div>
   );
 
@@ -346,29 +413,6 @@ const PokemonSetDetails = () => {
     
     setTimeout(prefetchRelatedSets, 10000);
   }, [set, setId]);
-
-  const loadingContent = (
-    <div className="p-8 flex flex-col items-center justify-center">
-      <LoadingSpinner size="lg" color="red" showText text="Loading cards..." />
-      <p className="text-gray-500 mt-4 text-center">
-        We're retrieving all cards for this set. This might take a moment for larger sets.
-      </p>
-    </div>
-  );
-
-  const emptyContent = (
-    <div className="text-center py-16">
-      <p className="text-lg font-medium">No cards matching your filters</p>
-      <p className="text-gray-500 mt-2">Try adjusting your search or filter criteria</p>
-      <Button 
-        variant="outline" 
-        className="mt-4"
-        onClick={resetFilters}
-      >
-        Clear Filters
-      </Button>
-    </div>
-  );
 
   return (
     <Layout>
@@ -512,8 +556,7 @@ const PokemonSetDetails = () => {
             </div>
           ) : (
             <>
-              {/* Show incremental loading progress only while the animation is running */}
-              {isLoadingAnimation && cardDisplayCount < cardListToDisplay.length && (
+              {isLoadingAnimation && !batchAnimation && cardDisplayCount < cardListToDisplay.length && (
                 loadingProgressContent
               )}
               
@@ -530,6 +573,7 @@ const PokemonSetDetails = () => {
                       }
                       priority={index < 15}
                       index={index}
+                      batchAnimation={batchAnimation}
                     />
                   )
                 ))}
