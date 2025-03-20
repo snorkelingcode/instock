@@ -53,6 +53,12 @@ const PokemonCardComponent: React.FC<PokemonCardComponentProps> = ({
     }
   };
   
+  // Helper function to safely get set name
+  const getSetName = () => {
+    if (!card.set) return 'Unknown';
+    return typeof card.set === 'object' ? card.set.name : card.set;
+  };
+  
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-shadow relative group flex flex-col">
       {isSecretRare && (
@@ -133,13 +139,7 @@ const PokemonCardComponent: React.FC<PokemonCardComponentProps> = ({
                 <div className="sm:w-1/2 space-y-4">
                   <div>
                     <h3 className="text-sm font-semibold">Card Information</h3>
-                    <p className="text-sm">Set: {
-                      card.set === null || card.set === undefined 
-                        ? 'Unknown' 
-                        : (typeof card.set === 'object' && card.set !== null 
-                            ? card.set.name 
-                            : card.set)
-                    }</p>
+                    <p className="text-sm">Set: {getSetName()}</p>
                     <p className="text-sm">Number: {card.number}</p>
                     {card.types && <p className="text-sm">Type: {card.types.join(', ')}</p>}
                     {card.artist && <p className="text-sm">Artist: {card.artist}</p>}
