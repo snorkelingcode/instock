@@ -6,6 +6,7 @@ import { ArrowLeft, CalendarIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Layout from "@/components/layout/Layout";
+import ReadAloud from "@/components/articles/ReadAloud";
 import { useToast } from "@/hooks/use-toast";
 import { useMetaTags } from "@/hooks/use-meta-tags";
 import { supabase } from "@/integrations/supabase/client";
@@ -148,9 +149,16 @@ const ArticleDetails = () => {
             
             <h1 className="text-3xl font-bold mb-3">{article.title}</h1>
             
-            <div className="flex items-center text-gray-500 mb-6">
-              <CalendarIcon className="h-4 w-4 mr-2" />
-              <span>{formatDate(article.published_at || article.created_at)}</span>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center text-gray-500">
+                <CalendarIcon className="h-4 w-4 mr-2" />
+                <span>{formatDate(article.published_at || article.created_at)}</span>
+              </div>
+              
+              <ReadAloud 
+                content={article.content} 
+                title={article.title}
+              />
             </div>
             
             <div className="prose max-w-none">
