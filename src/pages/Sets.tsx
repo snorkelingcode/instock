@@ -3,6 +3,7 @@ import React from "react";
 import Layout from "@/components/layout/Layout";
 import { TCGCategoryCard } from "@/components/sets/TCGCategoryCard";
 import { Layers, Sparkles, Zap, ScrollText } from "lucide-react";
+import LoadingSpinner from "@/components/ui/loading-spinner";
 
 const SetsPage = () => {
   return (

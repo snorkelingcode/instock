@@ -25,6 +25,7 @@ import {
   sortCardsByNumber
 } from "@/utils/pokemon-cards";
 import { Skeleton } from "@/components/ui/skeleton";
+import EmptyStateHandler from "@/components/ui/empty-state-handler";
 
 const PokemonSetDetails = () => {
   const { setId } = useParams<{ setId: string }>();
@@ -45,21 +46,21 @@ const PokemonSetDetails = () => {
   const [isFiltering, setIsFiltering] = useState(false);
   const [secretRares, setSecretRares] = useState<PokemonCard[]>([]);
   const [hasSecretRares, setHasSecretRares] = useState(false);
-  const [cardsPerRow, setCardsPerRow] = useState(5); // Default value for xl screens
-  const [metadataLoaded, setMetadataLoaded] = useState(false); // Track if we've loaded metadata
-  const [isPrefetched, setIsPrefetched] = useState(false); // Track if set is prefetched
-  
+  const [cardsPerRow, setCardsPerRow] = useState(5);
+  const [metadataLoaded, setMetadataLoaded] = useState(false);
+  const [isPrefetched, setIsPrefetched] = useState(false);
+
   const displayedCards = isFiltering ? filteredCards : cards;
-  
+
   useEffect(() => {
     const updateCardsPerRow = () => {
-      if (window.innerWidth >= 1280) { // xl
+      if (window.innerWidth >= 1280) {
         setCardsPerRow(5);
-      } else if (window.innerWidth >= 1024) { // lg
+      } else if (window.innerWidth >= 1024) {
         setCardsPerRow(4);
-      } else if (window.innerWidth >= 768) { // md
+      } else if (window.innerWidth >= 768) {
         setCardsPerRow(3);
-      } else if (window.innerWidth >= 640) { // sm
+      } else if (window.innerWidth >= 640) {
         setCardsPerRow(2);
       } else {
         setCardsPerRow(1);
@@ -291,6 +292,29 @@ const PokemonSetDetails = () => {
     setTimeout(prefetchRelatedSets, 10000);
   }, [set, setId]);
 
+  const loadingContent = (
+    <div className="p-8 flex flex-col items-center justify-center">
+      <LoadingSpinner size="lg" color="red" showText text="Loading cards..." />
+      <p className="text-gray-500 mt-4 text-center">
+        We're retrieving all cards for this set. This might take a moment for larger sets.
+      </p>
+    </div>
+  );
+
+  const emptyContent = (
+    <div className="text-center py-16">
+      <p className="text-lg font-medium">No cards matching your filters</p>
+      <p className="text-gray-500 mt-2">Try adjusting your search or filter criteria</p>
+      <Button 
+        variant="outline" 
+        className="mt-4"
+        onClick={resetFilters}
+      >
+        Clear Filters
+      </Button>
+    </div>
+  );
+
   return (
     <Layout>
       <div className="bg-white p-6 rounded-lg shadow-md mb-8">
@@ -412,54 +436,45 @@ const PokemonSetDetails = () => {
           </div>
         )}
         
-        {loadingCards ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-            {renderCardSkeletons()}
-          </div>
-        ) : isLoadingError ? (
-          <div className="text-center py-16">
-            <p className="text-lg font-medium text-red-600">Error loading cards</p>
-            <p className="text-gray-500 mt-2">There was a problem fetching the card data</p>
-            <Button 
-              variant="default" 
-              className="mt-4"
-              onClick={() => {
-                setIsLoadingError(false);
-              }}
-            >
-              Try Again
-            </Button>
-          </div>
-        ) : displayedCards.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-            {cardsWithPlaceholders.map((card, index) => (
-              'isPlaceholder' in card ? (
-                <div key={card.id} className="invisible"> </div>
-              ) : (
-                <PokemonCardComponent 
-                  key={card.id} 
-                  card={card} 
-                  isSecretRare={
-                    hasSecretRares && secretRares.some(sr => sr.id === card.id)
-                  }
-                  priority={index < 15}
-                />
-              )
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-16">
-            <p className="text-lg font-medium">No cards matching your filters</p>
-            <p className="text-gray-500 mt-2">Try adjusting your search or filter criteria</p>
-            <Button 
-              variant="outline" 
-              className="mt-4"
-              onClick={resetFilters}
-            >
-              Clear Filters
-            </Button>
-          </div>
-        )}
+        <EmptyStateHandler
+          isLoading={loadingCards}
+          hasItems={displayedCards.length > 0}
+          loadingComponent={loadingContent}
+          emptyComponent={emptyContent}
+        >
+          {isLoadingError ? (
+            <div className="text-center py-16">
+              <p className="text-lg font-medium text-red-600">Error loading cards</p>
+              <p className="text-gray-500 mt-2">There was a problem fetching the card data</p>
+              <Button 
+                variant="default" 
+                className="mt-4"
+                onClick={() => {
+                  setIsLoadingError(false);
+                }}
+              >
+                Try Again
+              </Button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+              {cardsWithPlaceholders.map((card, index) => (
+                'isPlaceholder' in card ? (
+                  <div key={card.id} className="invisible"> </div>
+                ) : (
+                  <PokemonCardComponent 
+                    key={card.id} 
+                    card={card} 
+                    isSecretRare={
+                      hasSecretRares && secretRares.some(sr => sr.id === card.id)
+                    }
+                    priority={index < 15}
+                  />
+                )
+              ))}
+            </div>
+          )}
+        </EmptyStateHandler>
       </div>
     </Layout>
   );
