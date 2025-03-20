@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { format } from 'date-fns';
@@ -132,7 +133,7 @@ const ArticleDetails = () => {
             
             {/* Content with optional text-to-speech */}
             <div className="relative">
-              <ReadAloud content={article.content} />
+              <ReadAloud title={article.title} content={article.content} />
               <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: article.content }} />
             </div>
             

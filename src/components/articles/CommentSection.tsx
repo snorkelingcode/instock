@@ -37,30 +37,48 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
   const fetchComments = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
+      // First fetch the comments
+      const { data: commentsData, error: commentsError } = await supabase
         .from('article_comments')
         .select(`
           id,
           content,
           created_at,
-          user_id,
-          profiles:user_id(email)
+          user_id
         `)
         .eq("article_id", articleId)
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (commentsError) throw commentsError;
 
-      if (data) {
-        const formattedComments = data.map(item => ({
-          id: item.id,
-          content: item.content,
-          created_at: item.created_at,
-          user_id: item.user_id,
-          user_email: item.profiles?.email || "Anonymous User"
+      // If we have comments, fetch user emails separately
+      if (commentsData && commentsData.length > 0) {
+        const userIds = [...new Set(commentsData.map(comment => comment.user_id))];
+        
+        // Get user data from auth.users
+        const { data: userData, error: userError } = await supabase.auth.admin.listUsers();
+        
+        // If we can't get the users, fallback to anonymous users
+        const userEmailMap = new Map();
+        
+        if (!userError && userData) {
+          userData.users.forEach(user => {
+            userEmailMap.set(user.id, user.email || "Anonymous User");
+          });
+        }
+        
+        // Map the comments with user emails
+        const formattedComments = commentsData.map(comment => ({
+          id: comment.id,
+          content: comment.content,
+          created_at: comment.created_at,
+          user_id: comment.user_id,
+          user_email: userEmailMap.get(comment.user_id) || "Anonymous User"
         }));
         
         setComments(formattedComments);
+      } else {
+        setComments([]);
       }
     } catch (error) {
       console.error("Error fetching comments:", error);
