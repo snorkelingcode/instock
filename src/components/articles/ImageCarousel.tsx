@@ -65,7 +65,7 @@ const ImageCarousel: React.FC<ImageCarouselProps> = ({ images, title }) => {
           <DialogClose className="absolute right-4 top-4 z-10 bg-black/50 p-2 rounded-full">
             <X className="h-6 w-6 text-white" />
           </DialogClose>
-          <Carousel className="w-full" defaultIndex={selectedImageIndex}>
+          <Carousel className="w-full" opts={{ startIndex: selectedImageIndex }}>
             <CarouselContent>
               {images.map((image, index) => (
                 <CarouselItem key={index} className="basis-full">
