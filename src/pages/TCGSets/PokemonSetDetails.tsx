@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -34,6 +35,7 @@ const PokemonSetDetails = () => {
   
   const [set, setSet] = useState<PokemonSet | null>(null);
   const [cards, setCards] = useState<PokemonCard[]>([]);
+  const [displayedCards, setDisplayedCards] = useState<PokemonCard[]>([]);
   const [filteredCards, setFilteredCards] = useState<PokemonCard[]>([]);
   const [loadingSet, setLoadingSet] = useState(true);
   const [loadingCards, setLoadingCards] = useState(true);
@@ -49,8 +51,11 @@ const PokemonSetDetails = () => {
   const [cardsPerRow, setCardsPerRow] = useState(5);
   const [metadataLoaded, setMetadataLoaded] = useState(false);
   const [isPrefetched, setIsPrefetched] = useState(false);
+  // New state for controlling incremental loading
+  const [cardDisplayCount, setCardDisplayCount] = useState(0);
+  const [isLoadingAnimation, setIsLoadingAnimation] = useState(false);
 
-  const displayedCards = isFiltering ? filteredCards : cards;
+  const cardListToDisplay = isFiltering ? filteredCards : cards;
 
   useEffect(() => {
     const updateCardsPerRow = () => {
@@ -135,6 +140,8 @@ const PokemonSetDetails = () => {
       
       setLoadingCards(true);
       setIsLoadingError(false);
+      setCardDisplayCount(0);
+      setDisplayedCards([]);
       
       try {
         console.log(`Fetching all cards for set: ${setId}`);
@@ -148,6 +155,9 @@ const PokemonSetDetails = () => {
         preloadCardImages(sortedCards, 50);
         
         setCards(sortedCards);
+        
+        // Start the card loading animation
+        setIsLoadingAnimation(true);
         
         if (set) {
           const printedTotal = set.printed_total || set.total || 0;
@@ -190,6 +200,36 @@ const PokemonSetDetails = () => {
     
     fetchAllCards();
   }, [setId, toast, set]);
+
+  // New effect for incrementally adding cards with animation
+  useEffect(() => {
+    if (!isLoadingAnimation || cardListToDisplay.length === 0 || cardDisplayCount >= cardListToDisplay.length) {
+      setIsLoadingAnimation(false);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      // Add the next batch of cards (add 1-3 cards at a time for smoother animation)
+      const batchSize = Math.min(3, cardListToDisplay.length - cardDisplayCount);
+      setCardDisplayCount(prevCount => prevCount + batchSize);
+    }, 150); // Speed of adding new cards
+
+    return () => clearTimeout(timer);
+  }, [isLoadingAnimation, cardDisplayCount, cardListToDisplay.length]);
+
+  // Update displayed cards when count changes
+  useEffect(() => {
+    setDisplayedCards(cardListToDisplay.slice(0, cardDisplayCount));
+  }, [cardDisplayCount, cardListToDisplay]);
+  
+  // Reset card animation when filters change
+  useEffect(() => {
+    if (cardListToDisplay.length > 0) {
+      setCardDisplayCount(0);
+      setDisplayedCards([]);
+      setIsLoadingAnimation(true);
+    }
+  }, [filteredCards, isFiltering]);
   
   const applyFilters = useCallback(() => {
     if (rarityFilter === "all" && typeFilter === "all" && !searchQuery) {
@@ -262,6 +302,21 @@ const PokemonSetDetails = () => {
   const cardsWithPlaceholders = useMemo(() => {
     return addPlaceholderCards(displayedCards);
   }, [displayedCards, cardsPerRow]);
+
+  // Show loading animation while incrementally loading cards
+  const loadingProgressContent = (
+    <div className="text-center py-8">
+      <p className="text-lg font-medium mb-4">Loading cards...</p>
+      <div className="flex justify-center items-center mb-4">
+        <LoadingSpinner size="lg" color="red" />
+      </div>
+      {cardListToDisplay.length > 0 && (
+        <p className="text-gray-500">
+          Loaded {displayedCards.length} of {cardListToDisplay.length} cards
+        </p>
+      )}
+    </div>
+  );
 
   useEffect(() => {
     if (!set) return;
@@ -340,7 +395,6 @@ const PokemonSetDetails = () => {
                       alt={`${set.name} logo`} 
                       className="h-24 object-contain"
                       loading="eager"
-                      fetchPriority="high"
                     />
                   )}
                   <div>
@@ -415,7 +469,7 @@ const PokemonSetDetails = () => {
             
             <div className="flex items-center justify-between">
               <p className="text-sm text-gray-500">
-                {displayedCards.length} of {cards.length} cards shown
+                {cardListToDisplay.length} of {cards.length} cards shown
                 {hasSecretRares && secretRares.length > 0 && (
                   <span className="text-red-500 ml-1">
                     (including {secretRares.length} secret rare{secretRares.length > 1 ? 's' : ''})
@@ -438,7 +492,7 @@ const PokemonSetDetails = () => {
         
         <EmptyStateHandler
           isLoading={loadingCards}
-          hasItems={displayedCards.length > 0}
+          hasItems={cardListToDisplay.length > 0}
           loadingComponent={loadingContent}
           emptyComponent={emptyContent}
         >
@@ -457,22 +511,30 @@ const PokemonSetDetails = () => {
               </Button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-              {cardsWithPlaceholders.map((card, index) => (
-                'isPlaceholder' in card ? (
-                  <div key={card.id} className="invisible"> </div>
-                ) : (
-                  <PokemonCardComponent 
-                    key={card.id} 
-                    card={card} 
-                    isSecretRare={
-                      hasSecretRares && secretRares.some(sr => sr.id === card.id)
-                    }
-                    priority={index < 15}
-                  />
-                )
-              ))}
-            </div>
+            <>
+              {/* Show incremental loading progress only while the animation is running */}
+              {isLoadingAnimation && cardDisplayCount < cardListToDisplay.length && (
+                loadingProgressContent
+              )}
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                {cardsWithPlaceholders.map((card, index) => (
+                  'isPlaceholder' in card ? (
+                    <div key={card.id} className="invisible"> </div>
+                  ) : (
+                    <PokemonCardComponent 
+                      key={card.id} 
+                      card={card} 
+                      isSecretRare={
+                        hasSecretRares && secretRares.some(sr => sr.id === card.id)
+                      }
+                      priority={index < 15}
+                      index={index}
+                    />
+                  )
+                ))}
+              </div>
+            </>
           )}
         </EmptyStateHandler>
       </div>
