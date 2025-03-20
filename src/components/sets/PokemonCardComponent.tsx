@@ -56,10 +56,17 @@ const PokemonCardComponent: React.FC<PokemonCardComponentProps> = ({
   // Helper function to safely get set name
   const getSetName = (): string => {
     if (!card.set) return 'Unknown';
-    // Check if card.set is an object with a name property
-    return typeof card.set === 'object' && card.set !== null && 'name' in card.set 
-      ? card.set.name 
-      : String(card.set);
+    
+    // First verify card.set is not null (TypeScript needs this reassurance)
+    const setInfo = card.set;
+    
+    // Now check the type and safely extract the name
+    if (typeof setInfo === 'object' && setInfo !== null && 'name' in setInfo) {
+      return setInfo.name;
+    }
+    
+    // If it's not an object with name property, convert to string
+    return String(setInfo);
   };
   
   return (
