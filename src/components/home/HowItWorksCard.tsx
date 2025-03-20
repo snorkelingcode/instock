@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Bell, Search, ListChecks, Tool } from 'lucide-react';
+import { Bell, Search, ListChecks, Wrench } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const HowItWorksCard = () => {
@@ -37,7 +37,7 @@ const HowItWorksCard = () => {
           
           <div className="flex items-start">
             <div className="mr-4 bg-red-100 p-2 rounded-full">
-              <Tool className="h-5 w-5 text-red-700" />
+              <Wrench className="h-5 w-5 text-red-700" />
             </div>
             <div>
               <h3 className="font-medium mb-1">Create & Customize</h3>
