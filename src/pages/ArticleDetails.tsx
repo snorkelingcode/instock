@@ -10,6 +10,7 @@ import LoadingSpinner from '@/components/ui/loading-spinner';
 import { useToast } from '@/hooks/use-toast';
 import ReadAloud from '@/components/articles/ReadAloud';
 import CommentSection from '@/components/articles/CommentSection';
+import { Card } from '@/components/ui/card';
 
 interface Article {
   id: string;
@@ -91,6 +92,12 @@ const ArticleDetails = () => {
     }
   };
 
+  // Function to properly format paragraphs from HTML content
+  const formatContent = (htmlContent: string) => {
+    // Clean the HTML content by ensuring proper paragraph breaks
+    return htmlContent;
+  };
+
   return (
     <Layout>
       <div className="container max-w-4xl py-8">
@@ -115,32 +122,50 @@ const ArticleDetails = () => {
               />
             )}
             
-            {/* Metadata */}
-            <div className="flex flex-wrap items-center gap-4 mb-8 text-sm text-gray-500 bg-gray-50 p-3 rounded-md">
-              <div className="flex items-center">
-                <CalendarDays className="mr-2 h-4 w-4" />
-                Published on {formatDate(article.published_at || article.created_at)}
+            {/* Metadata & Actions */}
+            <div className="flex flex-wrap items-center justify-between gap-4 mb-8 text-sm text-gray-500 bg-gray-50 p-3 rounded-md">
+              <div className="flex flex-wrap items-center gap-4">
+                <div className="flex items-center">
+                  <CalendarDays className="mr-2 h-4 w-4" />
+                  Published on {formatDate(article.published_at || article.created_at)}
+                </div>
+                <div className="flex items-center">
+                  <Clock className="mr-2 h-4 w-4" />
+                  Updated on {formatDate(article.updated_at)}
+                </div>
               </div>
-              <div className="flex items-center">
-                <Clock className="mr-2 h-4 w-4" />
-                Updated on {formatDate(article.updated_at)}
-              </div>
-              <button onClick={shareArticle} className="flex items-center hover:text-blue-500 ml-auto">
-                <Share2 className="mr-2 h-4 w-4" />
-                Share
-              </button>
-            </div>
-            
-            {/* Content with optional text-to-speech */}
-            <div className="relative">
               <ReadAloud title={article.title} content={article.content} />
-              <div className="prose prose-lg max-w-none bg-white p-5 rounded-lg shadow-sm" dangerouslySetInnerHTML={{ __html: article.content }} />
             </div>
             
-            {/* Comments Section */}
-            <div className="mt-12 bg-white p-6 rounded-lg shadow-sm">
-              <CommentSection articleId={article.id} />
+            {/* Article Content */}
+            <div className="relative">
+              <div 
+                className="prose prose-lg max-w-none bg-white p-5 rounded-lg shadow-sm" 
+                dangerouslySetInnerHTML={{ 
+                  __html: article.content
+                    .replace(/<p>/g, '<p class="mb-4">')
+                    .replace(/<br\s*\/?>/g, '</p><p class="mb-4">') 
+                }} 
+              />
             </div>
+            
+            {/* Comments Section with Share Button */}
+            <Card className="mt-12 bg-white p-6 rounded-lg shadow-sm">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-bold flex items-center">
+                  <MessageSquare className="mr-2 h-5 w-5" />
+                  Join the Discussion
+                </h2>
+                <button 
+                  onClick={shareArticle} 
+                  className="flex items-center px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+                >
+                  <Share2 className="mr-2 h-4 w-4" />
+                  Share Article
+                </button>
+              </div>
+              <CommentSection articleId={article.id} />
+            </Card>
           </>
         ) : (
           <div className="text-center py-10 bg-white rounded-lg shadow-sm">

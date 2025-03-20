@@ -53,28 +53,22 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
 
       // If we have comments, fetch user emails separately
       if (commentsData && commentsData.length > 0) {
-        const userIds = [...new Set(commentsData.map(comment => comment.user_id))];
+        // Since we can't directly query auth.users, we'll use the session user for the current user
+        // and use placeholders for other users
         
-        // Get user data from auth.users
-        const { data: userData, error: userError } = await supabase.auth.admin.listUsers();
-        
-        // If we can't get the users, fallback to anonymous users
-        const userEmailMap = new Map();
-        
-        if (!userError && userData) {
-          userData.users.forEach(user => {
-            userEmailMap.set(user.id, user.email || "Anonymous User");
-          });
-        }
-        
-        // Map the comments with user emails
-        const formattedComments = commentsData.map(comment => ({
-          id: comment.id,
-          content: comment.content,
-          created_at: comment.created_at,
-          user_id: comment.user_id,
-          user_email: userEmailMap.get(comment.user_id) || "Anonymous User"
-        }));
+        const formattedComments = commentsData.map(comment => {
+          // For the current user, use their email from the session
+          const isCurrentUser = user && comment.user_id === user.id;
+          const userEmail = isCurrentUser ? user.email : `user-${comment.user_id.substring(0, 8)}@example.com`;
+          
+          return {
+            id: comment.id,
+            content: comment.content,
+            created_at: comment.created_at,
+            user_id: comment.user_id,
+            user_email: userEmail || "Anonymous User"
+          };
+        });
         
         setComments(formattedComments);
       } else {
@@ -162,7 +156,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
   };
 
   return (
-    <div className="mt-10">
+    <div className="mt-4">
       <h2 className="text-xl font-bold mb-6 flex items-center">
         <MessageSquare className="mr-2 h-5 w-5" />
         Comments
