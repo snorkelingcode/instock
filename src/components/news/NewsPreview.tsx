@@ -39,14 +39,14 @@ const NewsPreview = ({
   };
 
   return (
-    <Card className={`transition-all h-full flex flex-col ${featured ? 'border-red-300 shadow-md' : ''}`}>
+    <Card 
+      className={`transition-all h-full flex flex-col ${featured ? 'border-red-300 shadow-md' : ''} cursor-pointer hover:shadow-lg`}
+      onClick={handleReadClick}
+      role="button"
+      aria-label={`View article: ${title}`}
+    >
       {image && (
-        <div 
-          className="w-full h-48 overflow-hidden rounded-t-lg cursor-pointer"
-          onClick={handleReadClick}
-          role="button"
-          aria-label={`View article: ${title}`}
-        >
+        <div className="w-full h-48 overflow-hidden rounded-t-lg">
           <img 
             src={image} 
             alt={title} 
@@ -68,7 +68,14 @@ const NewsPreview = ({
         <p className="text-gray-700">{excerpt}</p>
       </CardContent>
       <CardFooter className="flex justify-between items-center">
-        <Button variant="ghost" className="p-0 hover:bg-transparent text-red-600" onClick={handleReadClick}>
+        <Button 
+          variant="ghost" 
+          className="p-0 hover:bg-transparent text-red-600" 
+          onClick={(e) => {
+            e.stopPropagation(); // Prevent triggering the card click
+            handleReadClick();
+          }}
+        >
           Read More <ArrowRight className="ml-1 h-4 w-4" />
         </Button>
         <Button 
