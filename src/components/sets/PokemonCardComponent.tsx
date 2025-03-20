@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -58,23 +57,19 @@ const PokemonCardComponent: React.FC<PokemonCardComponentProps> = ({
     }
   };
   
-  // Remove all TypeScript errors by creating a safe function that always returns a string
-  const getSetName = () => {
+  const getSetName = (): string => {
     try {
-      // @ts-ignore - We handle all possible cases below
-      const setData = card.set;
-      
-      if (setData === null || setData === undefined) {
+      if (!card.set) {
         return 'Unknown Set';
       }
       
-      if (typeof setData === 'string') {
-        return setData;
+      if (typeof card.set === 'string') {
+        return card.set;
       }
       
-      // If it's an object with a name property
-      if (typeof setData === 'object' && 'name' in setData && setData.name) {
-        return String(setData.name);
+      if (typeof card.set === 'object' && card.set !== null) {
+        const setObject = card.set as Record<string, any>;
+        return setObject.name?.toString() || 'Unknown Set';
       }
       
       return 'Unknown Set';
@@ -101,8 +96,8 @@ const PokemonCardComponent: React.FC<PokemonCardComponentProps> = ({
         type: "spring",
         stiffness: 260,
         damping: 20,
-        delay: batchAnimation ? 0.05 : index * 0.05, // Reduced delay for faster animation
-        duration: 0.4 // Slightly reduced from 0.5 for faster animation
+        delay: batchAnimation ? 0.05 : index * 0.05,
+        duration: 0.4
       }}
     >
       <Card className="overflow-hidden hover:shadow-lg transition-shadow relative group flex flex-col h-full">

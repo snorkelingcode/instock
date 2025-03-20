@@ -224,40 +224,40 @@ const PokemonSetDetails = () => {
     fetchAllCards();
   }, [setId, toast, set, isSetVisited]);
   
-  useEffect(() => {
-    const applyFilters = useCallback(() => {
-      if (rarityFilter === "all" && typeFilter === "all" && !searchQuery) {
-        setIsFiltering(false);
-        return;
-      }
-      
-      setIsFiltering(true);
-      
-      let filtered = [...cards];
-      
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase();
-        filtered = filtered.filter(card => 
-          card.name.toLowerCase().includes(query) || 
-          card.number.toLowerCase().includes(query)
-        );
-      }
-      
-      if (rarityFilter !== "all") {
-        filtered = filtered.filter(card => card.rarity === rarityFilter);
-      }
-      
-      if (typeFilter !== "all") {
-        filtered = filtered.filter(card => 
-          card.types && card.types.includes(typeFilter)
-        );
-      }
-      
-      setFilteredCards(filtered);
-    }, [searchQuery, rarityFilter, typeFilter, cards]);
+  const applyFilters = useCallback(() => {
+    if (rarityFilter === "all" && typeFilter === "all" && !searchQuery) {
+      setIsFiltering(false);
+      return;
+    }
+    
+    setIsFiltering(true);
+    
+    let filtered = [...cards];
+    
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(card => 
+        card.name.toLowerCase().includes(query) || 
+        card.number.toLowerCase().includes(query)
+      );
+    }
+    
+    if (rarityFilter !== "all") {
+      filtered = filtered.filter(card => card.rarity === rarityFilter);
+    }
+    
+    if (typeFilter !== "all") {
+      filtered = filtered.filter(card => 
+        card.types && card.types.includes(typeFilter)
+      );
+    }
+    
+    setFilteredCards(filtered);
+  }, [searchQuery, rarityFilter, typeFilter, cards]);
 
+  useEffect(() => {
     applyFilters();
-  }, [applyFilters]);
+  }, [searchQuery, rarityFilter, typeFilter, cards, applyFilters]);
 
   const resetFilters = () => {
     setSearchQuery("");
@@ -320,7 +320,7 @@ const PokemonSetDetails = () => {
       </div>
       {cardListToDisplay.length > 0 && (
         <p className="text-gray-500 text-sm">
-          Loaded {displayedCards.length} of {cardListToDisplay.length} cards
+          Loaded {cardListToDisplay.length} of {cardListToDisplay.length} cards
         </p>
       )}
     </div>
