@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import Layout from '@/components/layout/Layout';
 import { supabase } from '@/integrations/supabase/client';
 import { Badge } from '@/components/ui/badge';
-import { CalendarDays, Clock, Share2 } from 'lucide-react';
+import { CalendarDays, Clock, Share2, MessageSquare } from 'lucide-react';
 import LoadingSpinner from '@/components/ui/loading-spinner';
 import { useToast } from '@/hooks/use-toast';
 import ReadAloud from '@/components/articles/ReadAloud';
@@ -92,12 +91,6 @@ const ArticleDetails = () => {
     }
   };
 
-  // Function to properly format paragraphs from HTML content
-  const formatContent = (htmlContent: string) => {
-    // Clean the HTML content by ensuring proper paragraph breaks
-    return htmlContent;
-  };
-
   return (
     <Layout>
       <div className="container max-w-4xl py-8">
@@ -107,13 +100,11 @@ const ArticleDetails = () => {
           </div>
         ) : article ? (
           <>
-            {/* Article Header */}
             <div className="mb-6">
               <Badge className="mb-2">{article.category}</Badge>
               <h1 className="text-3xl font-bold">{article.title}</h1>
             </div>
             
-            {/* Featured Image */}
             {article.featured_image && (
               <img
                 src={article.featured_image}
@@ -122,7 +113,6 @@ const ArticleDetails = () => {
               />
             )}
             
-            {/* Metadata & Actions */}
             <div className="flex flex-wrap items-center justify-between gap-4 mb-8 text-sm text-gray-500 bg-gray-50 p-3 rounded-md">
               <div className="flex flex-wrap items-center gap-4">
                 <div className="flex items-center">
@@ -137,7 +127,6 @@ const ArticleDetails = () => {
               <ReadAloud title={article.title} content={article.content} />
             </div>
             
-            {/* Article Content */}
             <div className="relative">
               <div 
                 className="prose prose-lg max-w-none bg-white p-5 rounded-lg shadow-sm" 
@@ -149,7 +138,6 @@ const ArticleDetails = () => {
               />
             </div>
             
-            {/* Comments Section with Share Button */}
             <Card className="mt-12 bg-white p-6 rounded-lg shadow-sm">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-bold flex items-center">
