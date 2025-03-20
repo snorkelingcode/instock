@@ -85,7 +85,7 @@ const PokemonCardComponent: React.FC<PokemonCardComponentProps> = ({
             <p className="text-xs text-gray-500">{card.number}</p>
           </div>
           {card.rarity && (
-            <Badge className={`${getRarityColor()} text-[0.65rem] ml-1 whitespace-nowrap`}>
+            <Badge className={`${getRarityColor()} text-xs ml-1 whitespace-nowrap`}>
               {card.rarity}
             </Badge>
           )}
@@ -133,9 +133,13 @@ const PokemonCardComponent: React.FC<PokemonCardComponentProps> = ({
                 <div className="sm:w-1/2 space-y-4">
                   <div>
                     <h3 className="text-sm font-semibold">Card Information</h3>
-                    <p className="text-sm">Set: {card.set === null || card.set === undefined ? 'Unknown' : (
-                      typeof card.set === 'object' ? card.set.name : card.set
-                    )}</p>
+                    <p className="text-sm">Set: {
+                      card.set === null || card.set === undefined 
+                        ? 'Unknown' 
+                        : (typeof card.set === 'object' && card.set !== null 
+                            ? card.set.name 
+                            : card.set)
+                    }</p>
                     <p className="text-sm">Number: {card.number}</p>
                     {card.types && <p className="text-sm">Type: {card.types.join(', ')}</p>}
                     {card.artist && <p className="text-sm">Artist: {card.artist}</p>}
