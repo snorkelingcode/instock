@@ -1,242 +1,173 @@
 
-import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { CalendarIcon, BookOpenIcon, BellIcon, ClockIcon } from "lucide-react";
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle 
-} from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
+import React, { useState, useEffect } from 'react';
 import Layout from "@/components/layout/Layout";
 import { useAuth } from "@/contexts/AuthContext";
-import { useMetaTags } from "@/hooks/use-meta-tags";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { CalendarDays, MessageSquare, User, FileText, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import LoadingSpinner from "@/components/ui/loading-spinner";
+import { useToast } from "@/hooks/use-toast";
+import { Link } from 'react-router-dom';
 
 interface UserComment {
   id: string;
-  article_id: string;
-  article_title: string;
+  articleId: string;
+  articleTitle: string;
   content: string;
   created_at: string;
 }
 
 const Dashboard = () => {
-  const { user, isLoading, signOut } = useAuth();
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
   const [userComments, setUserComments] = useState<UserComment[]>([]);
-  const [isLoadingComments, setIsLoadingComments] = useState(false);
-  const navigate = useNavigate();
-  
-  useMetaTags({
-    title: "My Dashboard | TCG Updates",
-    description: "View your profile, activity, and manage your TCG Updates account.",
-  });
+  const { toast } = useToast();
 
   useEffect(() => {
-    if (!isLoading && !user) {
-      navigate("/auth");
-    } else if (user) {
+    if (user) {
       fetchUserComments();
     }
-  }, [user, isLoading, navigate]);
+  }, [user]);
 
   const fetchUserComments = async () => {
-    if (!user) return;
-    
-    setIsLoadingComments(true);
     try {
+      setLoading(true);
+      
       const { data, error } = await supabase
-        .from("article_comments")
+        .from('article_comments')
         .select(`
           id,
-          content,
-          created_at,
           article_id,
-          articles(title)
+          articles:article_id(title),
+          content,
+          created_at
         `)
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
+        .eq('user_id', user?.id)
+        .order('created_at', { ascending: false });
       
       if (error) throw error;
       
-      if (data) {
-        const formattedComments = data.map(item => ({
-          id: item.id,
-          article_id: item.article_id,
-          article_title: item.articles?.title || "Unknown Article",
-          content: item.content,
-          created_at: item.created_at
-        }));
-        
-        setUserComments(formattedComments);
-      }
+      const formattedComments = data.map(item => ({
+        id: item.id,
+        articleId: item.article_id,
+        articleTitle: item.articles?.title || 'Unknown Article',
+        content: item.content,
+        created_at: item.created_at
+      }));
+      
+      setUserComments(formattedComments);
     } catch (error) {
-      console.error("Error fetching comments:", error);
+      console.error('Error fetching user comments:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load your comments. Please try again.",
+        variant: "destructive"
+      });
     } finally {
-      setIsLoadingComments(false);
+      setLoading(false);
     }
   };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric"
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
     });
   };
 
-  if (isLoading) {
-    return (
-      <Layout>
-        <div className="container mx-auto py-16 flex justify-center">
-          <LoadingSpinner size="lg" />
-        </div>
-      </Layout>
-    );
-  }
+  const getUserInitials = () => {
+    if (!user?.email) return 'U';
+    return user.email.substring(0, 2).toUpperCase();
+  };
 
   return (
     <Layout>
-      <div className="container mx-auto py-8 px-4">
-        <div className="max-w-4xl mx-auto">
-          <div className="bg-gradient-to-r from-red-50 to-white p-6 rounded-lg shadow-md mb-6">
-            <h1 className="text-2xl font-bold mb-2">Welcome, {user?.email}</h1>
-            <p className="text-gray-600">
-              Manage your profile, view your activity, and customize your TCG Updates experience.
-            </p>
-          </div>
-
-          <Tabs defaultValue="activity" className="w-full mb-8">
-            <TabsList className="grid grid-cols-3 mb-6">
-              <TabsTrigger value="activity">Activity</TabsTrigger>
-              <TabsTrigger value="comments">My Comments</TabsTrigger>
-              <TabsTrigger value="profile">Profile</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="activity">
-              <div className="grid gap-4 md:grid-cols-2">
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-lg flex items-center">
-                      <BookOpenIcon className="mr-2 h-5 w-5 text-red-600" />
-                      Recent Reads
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-gray-500 text-sm">
-                      You haven't read any articles yet. Explore our latest news!
-                    </p>
-                  </CardContent>
-                  <CardFooter>
-                    <Button variant="outline" size="sm" onClick={() => navigate("/news")}>
-                      Browse News
-                    </Button>
-                  </CardFooter>
-                </Card>
-                
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-lg flex items-center">
-                      <BellIcon className="mr-2 h-5 w-5 text-red-600" />
-                      Notifications
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-gray-500 text-sm">
-                      No new notifications. You're all caught up!
-                    </p>
-                  </CardContent>
-                  <CardFooter>
-                    <Button variant="outline" size="sm" disabled>
-                      View All
-                    </Button>
-                  </CardFooter>
-                </Card>
+      <div className="container max-w-6xl py-8">
+        <h1 className="text-3xl font-bold mb-8">Your Dashboard</h1>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* User Profile Card */}
+          <Card className="md:col-span-1">
+            <CardHeader>
+              <CardTitle>Profile</CardTitle>
+              <CardDescription>Your account information</CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col items-center">
+              <Avatar className="h-24 w-24 mb-4">
+                <AvatarFallback className="bg-red-100 text-red-600 text-xl">
+                  {getUserInitials()}
+                </AvatarFallback>
+              </Avatar>
+              <h3 className="text-xl font-medium mb-2">{user?.email}</h3>
+              <div className="flex items-center text-sm text-gray-500 mb-4">
+                <User className="mr-2 h-4 w-4" />
+                <span>User ID: {user?.id.substring(0, 8)}...</span>
               </div>
-            </TabsContent>
-            
-            <TabsContent value="comments">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Your Comments</CardTitle>
-                  <CardDescription>
-                    Comments you've posted on articles across TCG Updates
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {isLoadingComments ? (
-                    <div className="flex justify-center py-8">
-                      <LoadingSpinner />
+              <div className="flex items-center text-sm text-gray-500">
+                <CalendarDays className="mr-2 h-4 w-4" />
+                <span>Member since: {user?.created_at ? formatDate(user.created_at) : 'N/A'}</span>
+              </div>
+            </CardContent>
+            <CardFooter>
+              <Button variant="outline" className="w-full" asChild>
+                <Link to="/auth">Manage Account</Link>
+              </Button>
+            </CardFooter>
+          </Card>
+          
+          {/* User Activity Card */}
+          <Card className="md:col-span-2">
+            <CardHeader>
+              <CardTitle>Recent Activity</CardTitle>
+              <CardDescription>Your recent comments and interactions</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="flex justify-center py-8">
+                  <LoadingSpinner />
+                </div>
+              ) : userComments.length > 0 ? (
+                <div className="space-y-4">
+                  {userComments.map(comment => (
+                    <div key={comment.id} className="border-b border-gray-100 pb-4 last:border-0">
+                      <div className="flex justify-between items-start mb-2">
+                        <Link to={`/article/${comment.articleId}`} className="font-medium text-blue-600 hover:underline">
+                          {comment.articleTitle}
+                        </Link>
+                        <Badge variant="outline" className="text-xs">
+                          <Clock className="mr-1 h-3 w-3" />
+                          {formatDate(comment.created_at)}
+                        </Badge>
+                      </div>
+                      <p className="text-gray-700 line-clamp-2">{comment.content}</p>
+                      <div className="mt-2 flex justify-end">
+                        <Button variant="ghost" size="sm" asChild>
+                          <Link to={`/article/${comment.articleId}`}>
+                            <MessageSquare className="mr-2 h-4 w-4" />
+                            View Comment
+                          </Link>
+                        </Button>
+                      </div>
                     </div>
-                  ) : userComments.length > 0 ? (
-                    <div className="space-y-4">
-                      {userComments.map((comment) => (
-                        <div key={comment.id} className="border-b pb-4">
-                          <div className="flex justify-between items-start mb-2">
-                            <h3 className="font-medium">
-                              <a 
-                                href={`/article/${comment.article_id}`}
-                                className="text-red-600 hover:underline"
-                              >
-                                {comment.article_title}
-                              </a>
-                            </h3>
-                            <span className="text-xs text-gray-500 flex items-center">
-                              <ClockIcon className="h-3 w-3 mr-1" />
-                              {formatDate(comment.created_at)}
-                            </span>
-                          </div>
-                          <p className="text-gray-700 text-sm">{comment.content}</p>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-6">
-                      <p className="text-gray-500 mb-4">You haven't posted any comments yet.</p>
-                      <Button onClick={() => navigate("/news")} size="sm">
-                        Browse Articles
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-            
-            <TabsContent value="profile">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Account Information</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-500">Email</h3>
-                    <p>{user?.email}</p>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-500">Member Since</h3>
-                    <p className="flex items-center">
-                      <CalendarIcon className="h-4 w-4 mr-2 text-gray-400" />
-                      {user?.created_at ? formatDate(user.created_at) : "N/A"}
-                    </p>
-                  </div>
-                </CardContent>
-                <CardFooter className="flex justify-between">
-                  <Button variant="outline" onClick={() => signOut()}>
-                    Sign Out
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 border border-dashed border-gray-200 rounded-lg">
+                  <FileText className="h-12 w-12 mx-auto text-gray-300 mb-2" />
+                  <h3 className="text-lg font-medium mb-1">No Comments Yet</h3>
+                  <p className="text-gray-500 mb-4">You haven't commented on any articles yet.</p>
+                  <Button asChild>
+                    <Link to="/news">Browse Articles</Link>
                   </Button>
-                  <Button variant="destructive" disabled>
-                    Delete Account
-                  </Button>
-                </CardFooter>
-              </Card>
-            </TabsContent>
-          </Tabs>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
     </Layout>

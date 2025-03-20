@@ -38,13 +38,13 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
     setIsLoading(true);
     try {
       const { data, error } = await supabase
-        .from("article_comments")
+        .from('article_comments')
         .select(`
           id,
           content,
           created_at,
           user_id,
-          users:user_id(email)
+          profiles:user_id(email)
         `)
         .eq("article_id", articleId)
         .order("created_at", { ascending: false });
@@ -57,7 +57,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
           content: item.content,
           created_at: item.created_at,
           user_id: item.user_id,
-          user_email: item.users?.email || "Anonymous User"
+          user_email: item.profiles?.email || "Anonymous User"
         }));
         
         setComments(formattedComments);
@@ -98,16 +98,13 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
     setIsSubmitting(true);
     
     try {
-      const { data, error } = await supabase
-        .from("article_comments")
-        .insert([
-          {
-            article_id: articleId,
-            user_id: user.id,
-            content: newComment.trim()
-          }
-        ])
-        .select();
+      const { error } = await supabase
+        .from('article_comments')
+        .insert({
+          article_id: articleId,
+          user_id: user.id,
+          content: newComment.trim()
+        });
         
       if (error) throw error;
       
