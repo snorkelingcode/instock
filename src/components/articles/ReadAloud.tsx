@@ -9,6 +9,7 @@ import {
   VolumeX 
 } from "lucide-react";
 import textToSpeech, { SpeechState } from "@/utils/textToSpeech";
+import { useToast } from "@/hooks/use-toast";
 
 interface ReadAloudProps {
   content: string;
@@ -19,6 +20,7 @@ interface ReadAloudProps {
 
 const ReadAloud = ({ content, title, className = "", autoplay = false }: ReadAloudProps) => {
   const [speechState, setSpeechState] = useState<SpeechState>(textToSpeech.getState());
+  const { toast } = useToast();
   
   useEffect(() => {
     // Register for state changes
@@ -26,8 +28,7 @@ const ReadAloud = ({ content, title, className = "", autoplay = false }: ReadAlo
     
     // Start reading automatically if autoplay is true
     if (autoplay && speechState === 'idle') {
-      const fullText = `${title}. ${content}`;
-      textToSpeech.speak(fullText);
+      handleStartReading();
     }
     
     // Clean up when component unmounts
@@ -37,8 +38,17 @@ const ReadAloud = ({ content, title, className = "", autoplay = false }: ReadAlo
   }, [autoplay, content, title]);
   
   const handleStartReading = () => {
-    const fullText = `${title}. ${content}`;
-    textToSpeech.speak(fullText);
+    try {
+      const fullText = `${title}. ${content}`;
+      textToSpeech.speak(fullText);
+    } catch (error) {
+      console.error('Failed to start reading:', error);
+      toast({
+        title: "Couldn't start reading",
+        description: "Try using a different browser if the issue persists",
+        variant: "destructive",
+      });
+    }
   };
   
   const handlePauseReading = () => {

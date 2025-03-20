@@ -8,9 +8,23 @@ class TextToSpeech {
   private currentIndex: number = 0;
   private textChunks: string[] = [];
   private onStateChange: ((state: SpeechState) => void) | null = null;
+  private isSafariMobile: boolean;
 
   constructor() {
     this.speechSynthesis = window.speechSynthesis;
+    
+    // Detect Safari on mobile
+    const ua = navigator.userAgent;
+    this.isSafariMobile = /iPhone|iPad|iPod/.test(ua) && /Safari/.test(ua) && !/Chrome/.test(ua);
+    
+    // Fix for Safari that requires periodic resume calls
+    if (this.isSafariMobile) {
+      setInterval(() => {
+        if (this.state === 'speaking' && this.speechSynthesis.paused) {
+          this.speechSynthesis.resume();
+        }
+      }, 5000);
+    }
   }
 
   public setState(state: SpeechState) {
@@ -28,12 +42,26 @@ class TextToSpeech {
     // Stop any ongoing speech
     this.stop();
     
+    if (!this.speechSynthesis) {
+      console.error('Speech synthesis not supported');
+      return;
+    }
+    
     // Split text into manageable chunks (paragraphs)
     this.textChunks = text.split('\n').filter(chunk => chunk.trim().length > 0);
     this.currentIndex = 0;
     
     if (this.textChunks.length > 0) {
-      this.speakCurrentChunk();
+      // For Safari mobile, we need to ensure voices are loaded
+      if (this.isSafariMobile && this.speechSynthesis.getVoices().length === 0) {
+        // Wait for voices to be loaded
+        this.speechSynthesis.onvoiceschanged = () => {
+          this.speakCurrentChunk();
+          this.speechSynthesis.onvoiceschanged = null;
+        };
+      } else {
+        this.speakCurrentChunk();
+      }
     }
   }
 
@@ -72,7 +100,20 @@ class TextToSpeech {
           this.utterance.voice = englishVoice;
           console.log('Using English voice:', englishVoice.name);
         }
+        // Final fallback - any US English voice
+        else {
+          const anyUsVoice = voices.find(voice => voice.lang === 'en-US');
+          if (anyUsVoice) {
+            this.utterance.voice = anyUsVoice;
+            console.log('Using fallback US voice:', anyUsVoice.name);
+          }
+        }
       }
+    }
+
+    // Log available voices on Safari for debugging
+    if (this.isSafariMobile) {
+      console.log('Available voices:', voices.map(v => `${v.name} (${v.lang})`));
     }
 
     // Set properties
@@ -94,28 +135,54 @@ class TextToSpeech {
     };
 
     // Start speaking
-    this.speechSynthesis.speak(this.utterance);
-    this.setState('speaking');
+    try {
+      this.speechSynthesis.speak(this.utterance);
+      this.setState('speaking');
+      
+      // Safari fix: sometimes doesn't start speaking without user interaction
+      if (this.isSafariMobile) {
+        setTimeout(() => {
+          if (this.state === 'speaking' && this.speechSynthesis.paused) {
+            this.speechSynthesis.resume();
+          }
+        }, 100);
+      }
+    } catch (error) {
+      console.error('Error starting speech:', error);
+      this.setState('idle');
+    }
   }
 
   public pause() {
     if (this.state === 'speaking') {
-      this.speechSynthesis.pause();
-      this.setState('paused');
+      try {
+        this.speechSynthesis.pause();
+        this.setState('paused');
+      } catch (error) {
+        console.error('Error pausing speech:', error);
+      }
     }
   }
 
   public resume() {
     if (this.state === 'paused') {
-      this.speechSynthesis.resume();
-      this.setState('speaking');
+      try {
+        this.speechSynthesis.resume();
+        this.setState('speaking');
+      } catch (error) {
+        console.error('Error resuming speech:', error);
+      }
     }
   }
 
   public stop() {
-    this.speechSynthesis.cancel();
-    this.utterance = null;
-    this.setState('idle');
+    try {
+      this.speechSynthesis.cancel();
+      this.utterance = null;
+      this.setState('idle');
+    } catch (error) {
+      console.error('Error stopping speech:', error);
+    }
   }
 
   public getState(): SpeechState {
