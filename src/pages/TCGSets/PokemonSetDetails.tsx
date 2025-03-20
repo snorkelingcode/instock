@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -39,7 +38,6 @@ const PokemonSetDetails = () => {
   
   const [set, setSet] = useState<PokemonSet | null>(null);
   const [cards, setCards] = useState<PokemonCard[]>([]);
-  const [displayedCards, setDisplayedCards] = useState<PokemonCard[]>([]);
   const [filteredCards, setFilteredCards] = useState<PokemonCard[]>([]);
   const [loadingSet, setLoadingSet] = useState(true);
   const [loadingCards, setLoadingCards] = useState(true);
@@ -159,7 +157,6 @@ const PokemonSetDetails = () => {
       
       setLoadingCards(true);
       setIsLoadingError(false);
-      setDisplayedCards([]);
       setLoadProgress(0);
       
       try {
@@ -185,7 +182,6 @@ const PokemonSetDetails = () => {
         preloadCardImages(sortedCards, isSetVisited ? 100 : 50);
         
         setCards(sortedCards);
-        setDisplayedCards(sortedCards);
         
         if (set) {
           const printedTotal = set.printed_total || set.total || 0;
@@ -229,7 +225,6 @@ const PokemonSetDetails = () => {
     fetchAllCards();
   }, [setId, toast, set, isSetVisited]);
 
-  // Update filtered cards based on search and filters
   const applyFilters = useCallback(() => {
     if (rarityFilter === "all" && typeFilter === "all" && !searchQuery) {
       setIsFiltering(false);
@@ -259,7 +254,6 @@ const PokemonSetDetails = () => {
     }
     
     setFilteredCards(filtered);
-    setDisplayedCards(filtered);
   }, [searchQuery, rarityFilter, typeFilter, cards]);
 
   useEffect(() => {
@@ -271,17 +265,6 @@ const PokemonSetDetails = () => {
     setRarityFilter("all");
     setTypeFilter("all");
     setIsFiltering(false);
-    setDisplayedCards(cards);
-  };
-
-  const renderCardSkeletons = () => {
-    return Array(cardsPerRow * 2).fill(0).map((_, index) => (
-      <div key={`card-skeleton-${index}`} className="flex flex-col space-y-2">
-        <Skeleton className="h-64 w-full bg-gray-200" />
-        <Skeleton className="h-6 w-3/4 bg-gray-200" />
-        <Skeleton className="h-4 w-1/2 bg-gray-200" />
-      </div>
-    ));
   };
 
   const addPlaceholderCards = (cardsArray: PokemonCard[]) => {
@@ -301,14 +284,19 @@ const PokemonSetDetails = () => {
   };
 
   const cardsWithPlaceholders = useMemo(() => {
-    return addPlaceholderCards(displayedCards);
-  }, [displayedCards, cardsPerRow]);
+    return addPlaceholderCards(cardListToDisplay);
+  }, [cardListToDisplay, cardsPerRow]);
 
-  const loadingContent = (
+  const fetchingContent = (
     <div className="p-8 flex flex-col items-center justify-center">
-      <LoadingSpinner size="lg" color="red" showText text="Loading cards..." />
+      <LoadingSpinner size="lg" color="red" showText text="Fetching cards..." />
       <div className="w-full max-w-md mt-4">
-        <Progress value={loadProgress} className="h-2" />
+        <Progress value={loadProgress} className="h-2 bg-gray-200">
+          <div 
+            className="h-full bg-red-500 transition-all" 
+            style={{ width: `${loadProgress}%` }}
+          />
+        </Progress>
         <p className="text-gray-500 mt-2 text-center">
           {loadProgress < 100 ? "Fetching cards..." : "Processing cards..."}
         </p>
@@ -482,7 +470,7 @@ const PokemonSetDetails = () => {
         <EmptyStateHandler
           isLoading={loadingCards}
           hasItems={cardListToDisplay.length > 0}
-          loadingComponent={loadingContent}
+          loadingComponent={fetchingContent}
           emptyComponent={emptyContent}
         >
           {isLoadingError ? (
