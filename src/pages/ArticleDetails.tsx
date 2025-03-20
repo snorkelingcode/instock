@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link, useLocation } from 'react-router-dom';
+import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import Layout from '@/components/layout/Layout';
 import { supabase } from '@/integrations/supabase/client';
 import { Badge } from '@/components/ui/badge';
-import { CalendarDays, Clock, Share2, MessageSquare } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { CalendarDays, Clock, Share2, MessageSquare, ArrowLeft } from 'lucide-react';
 import LoadingSpinner from '@/components/ui/loading-spinner';
 import { useToast } from '@/hooks/use-toast';
 import ReadAloud from '@/components/articles/ReadAloud';
@@ -34,6 +35,7 @@ const ArticleDetails = () => {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const location = useLocation();
+  const navigate = useNavigate();
   const searchParams = new URLSearchParams(location.search);
   const autoplay = searchParams.get('autoplay') === 'true';
 
@@ -101,6 +103,10 @@ const ArticleDetails = () => {
     return paragraphs.map(paragraph => `<p class="mb-6">${paragraph}</p>`).join('');
   };
 
+  const handleGoBack = () => {
+    navigate(-1);
+  };
+
   const hasAdditionalImages = article?.additional_images && article.additional_images.length > 0;
 
   return (
@@ -113,6 +119,16 @@ const ArticleDetails = () => {
         ) : article ? (
           <>
             <div className="mb-6">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="mb-4 flex items-center text-gray-600 hover:text-gray-900" 
+                onClick={handleGoBack}
+                aria-label="Go back"
+              >
+                <ArrowLeft className="mr-1 h-4 w-4" />
+                Back
+              </Button>
               <Badge className="mb-2">{article.category}</Badge>
               <h1 className="text-3xl font-bold">{article.title}</h1>
             </div>
