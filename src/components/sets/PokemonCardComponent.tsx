@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -132,7 +133,7 @@ const PokemonCardComponent: React.FC<PokemonCardComponentProps> = ({
                 <div className="sm:w-1/2 space-y-4">
                   <div>
                     <h3 className="text-sm font-semibold">Card Information</h3>
-                    <p className="text-sm">Set: {card.set ? (typeof card.set === 'object' ? card.set.name : card.set) : 'Unknown'}</p>
+                    <p className="text-sm">Set: {!card.set ? 'Unknown' : (typeof card.set === 'object' && card.set !== null ? card.set.name : card.set)}</p>
                     <p className="text-sm">Number: {card.number}</p>
                     {card.types && <p className="text-sm">Type: {card.types.join(', ')}</p>}
                   </div>
