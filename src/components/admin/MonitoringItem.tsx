@@ -3,7 +3,14 @@ import React from "react";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Eye, EyeOff, Trash2, RefreshCw, ExternalLink } from "lucide-react";
+import { Eye, EyeOff, Trash2, RefreshCw, ExternalLink, AlertCircle, Clock } from "lucide-react";
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { format, formatDistanceToNow } from "date-fns";
 
 export interface MonitoringItemProps {
   id: string;
@@ -13,6 +20,7 @@ export interface MonitoringItemProps {
   status: "in-stock" | "out-of-stock" | "unknown" | "error";
   targetText?: string;
   isActive: boolean;
+  error_message?: string;
   onToggleActive?: (id: string) => void;
   onDelete?: (id: string) => void;
   onRefresh?: (id: string) => void;
@@ -26,6 +34,7 @@ const MonitoringItem: React.FC<MonitoringItemProps> = ({
   status,
   targetText,
   isActive,
+  error_message,
   onToggleActive,
   onDelete,
   onRefresh,
@@ -38,10 +47,48 @@ const MonitoringItem: React.FC<MonitoringItemProps> = ({
       case "out-of-stock":
         return <Badge className="bg-red-500">Out of Stock</Badge>;
       case "error":
-        return <Badge variant="destructive">Error</Badge>;
+        return (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge variant="destructive" className="cursor-help">
+                  <AlertCircle size={12} className="mr-1" />
+                  Error
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="max-w-xs">{error_message || "An error occurred during the last check"}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        );
       default:
         return <Badge variant="outline">Unknown</Badge>;
     }
+  };
+
+  const formatLastChecked = () => {
+    if (!lastChecked) return "Never";
+    
+    const date = new Date(lastChecked);
+    const timeAgo = formatDistanceToNow(date, { addSuffix: true });
+    const exactTime = format(date, "MMM d, yyyy h:mm a");
+    
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="flex items-center text-xs text-muted-foreground cursor-help">
+              <Clock size={12} className="mr-1" />
+              {timeAgo}
+            </span>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{exactTime}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
   };
 
   return (
@@ -63,6 +110,7 @@ const MonitoringItem: React.FC<MonitoringItemProps> = ({
               target="_blank" 
               rel="noopener noreferrer"
               className="ml-1 text-blue-500 hover:text-blue-700"
+              aria-label="Open URL in new tab"
             >
               <ExternalLink size={14} />
             </a>
@@ -74,11 +122,7 @@ const MonitoringItem: React.FC<MonitoringItemProps> = ({
             </div>
           )}
           
-          {lastChecked && (
-            <div className="text-xs text-muted-foreground mt-2">
-              Last checked: {new Date(lastChecked).toLocaleString()}
-            </div>
-          )}
+          {formatLastChecked()}
         </div>
       </CardContent>
       <CardFooter className="pt-0 flex justify-between gap-2">
@@ -97,8 +141,10 @@ const MonitoringItem: React.FC<MonitoringItemProps> = ({
             variant="outline"
             size="sm"
             onClick={() => onRefresh?.(id)}
+            disabled={status === "unknown"}
+            className={status === "unknown" ? "opacity-50 cursor-not-allowed" : ""}
           >
-            <RefreshCw size={16} />
+            <RefreshCw size={16} className={status === "unknown" ? "animate-spin" : ""} />
           </Button>
           
           <Button

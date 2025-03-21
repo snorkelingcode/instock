@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -13,8 +13,15 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
-import { Plus } from "lucide-react";
+import { Plus, Info } from "lucide-react";
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const formSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters" }),
@@ -81,7 +88,22 @@ const AddMonitorForm: React.FC<AddMonitorFormProps> = ({ onSubmit }) => {
           name="targetText"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Target Text (Optional)</FormLabel>
+              <div className="flex items-center space-x-2">
+                <FormLabel>Target Text (Optional)</FormLabel>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-4 w-4 text-gray-400" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="max-w-xs">
+                        Enter text that appears when the item is in stock (e.g., "Add to Cart", "In Stock").
+                        The monitor will check if this text exists on the page.
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
               <FormControl>
                 <Textarea 
                   placeholder="e.g. Add to Cart, In Stock, etc." 
@@ -89,6 +111,9 @@ const AddMonitorForm: React.FC<AddMonitorFormProps> = ({ onSubmit }) => {
                   {...field}
                 />
               </FormControl>
+              <FormDescription>
+                If left empty, the monitor will only track changes to the page.
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
