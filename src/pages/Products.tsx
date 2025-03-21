@@ -92,15 +92,15 @@ const ProductsPage = () => {
       // Check if we have cached featured products
       const cachedProducts = getCache<Product[]>(FEATURED_PRODUCTS_KEY, PRODUCTS_PARTITION);
       
-      // If we have cached products, use them
+      // If we have cached products, use them but still fetch fresh data in the background
       if (cachedProducts) {
+        console.log("Using cached featured products:", cachedProducts);
         setFeaturedProducts(cachedProducts);
         setLoading(false);
-        
-        return;
       }
       
-      // Query products marked as featured
+      // Always fetch fresh data from the database
+      console.log("Fetching fresh featured products data");
       const { data: featuredData, error: featuredError } = await supabase
         .from('products')
         .select('*')
@@ -111,19 +111,14 @@ const ProductsPage = () => {
         throw featuredError;
       }
       
-      // If we have featured products, use them
-      if (featuredData && featuredData.length > 0) {
+      // Update state and cache with fresh data
+      if (featuredData) {
+        console.log("Fresh featured products:", featuredData);
         // Type-safe conversion to Product array
         const typedFeatured = featuredData as Product[];
         setFeaturedProducts(typedFeatured);
         setCache(FEATURED_PRODUCTS_KEY, typedFeatured, CACHE_DURATION_MINUTES, PRODUCTS_PARTITION);
-        setLoading(false);
-        return;
       }
-      
-      // No featured products found, set empty array
-      setFeaturedProducts([]);
-      setCache(FEATURED_PRODUCTS_KEY, [], CACHE_DURATION_MINUTES, PRODUCTS_PARTITION);
     } catch (error) {
       console.error('Error fetching featured products:', error);
       toast({
@@ -132,8 +127,7 @@ const ProductsPage = () => {
         variant: "destructive",
       });
       
-      // Set empty array on error
-      setFeaturedProducts([]);
+      // Leave previous state on error
     } finally {
       setLoading(false);
     }

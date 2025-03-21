@@ -37,7 +37,7 @@ const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
   loading,
   emptyMessage = "No featured products found. Please check back later for updates."
 }) => {
-  // Return null when not loading and no products
+  // Only render the component when we have products or are loading
   if (!loading && products.length === 0) {
     return null;
   }
