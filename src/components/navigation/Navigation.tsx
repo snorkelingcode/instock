@@ -28,9 +28,9 @@ const Navigation = () => {
         {/* Logo only */}
         <Link to="/" className="flex items-center">
           <img 
-            src="/lovable-uploads/0268c20a-554b-409a-91d9-50167b8c9678.png" 
+            src="/lovable-uploads/0a1e278e-be26-4217-b0d2-0aa2c2cc995b.png" 
             alt="TCG Updates" 
-            className="h-16 -my-2" // Increased size and adjusted vertical margins to maintain navbar height
+            className="h-16 -my-2" // Keeping the same size adjustments
           />
         </Link>
 
@@ -47,9 +47,9 @@ const Navigation = () => {
               {/* Logo centered at the top - keeping this full logo with image for the mobile menu */}
               <div className="flex justify-center py-6 border-b border-gray-200">
                 <img 
-                  src="/lovable-uploads/0268c20a-554b-409a-91d9-50167b8c9678.png" 
+                  src="/lovable-uploads/0a1e278e-be26-4217-b0d2-0aa2c2cc995b.png" 
                   alt="TCG Updates" 
-                  className="h-24" // Increased size for mobile menu logo
+                  className="h-24" // Keeping the same size for mobile menu logo
                 />
               </div>
               
