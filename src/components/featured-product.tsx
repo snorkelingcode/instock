@@ -1,105 +1,76 @@
 
 import React from "react";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { ExternalLink } from "lucide-react";
 
-// Featured product component with toned down effect
-const FeaturedProduct = ({ title, description, price, retailer, listingLink, imageLink, index = 0 }) => {
-  const [cardColor, setCardColor] = React.useState("");
-  const [isButtonHovered, setIsButtonHovered] = React.useState(false);
+interface FeaturedProductProps {
+  title: string;
+  description: string;
+  price: number;
+  retailer: string;
+  listingLink: string;
+  imageLink?: string;
+  inStock?: boolean;
+  index: number;
+}
+
+const FeaturedProduct: React.FC<FeaturedProductProps> = ({
+  title,
+  description,
+  price,
+  retailer,
+  listingLink,
+  imageLink,
+  inStock = false,
+  index
+}) => {
+  // Default placeholder image if none provided
+  const defaultImage = "/lovable-uploads/05e57c85-5441-4fff-b945-4a5e864300ce.png";
   
-  // Red shades array for the disco effect - matching DiscoCardEffect
-  const redColors = [
-    "#FF0000", // Pure red
-    "#DC143C", // Crimson
-    "#CD5C5C", // Indian Red
-    "#B22222", // Firebrick
-    "#A52A2A", // Brown
-    "#FF6347", // Tomato
-    "#FF4500", // OrangeRed
-    "#E34234", // Vermilion
-    "#C41E3A", // Cardinal
-    "#D70040"  // Crimson glory
-  ];
-
-  // Function to get a random color that's different from the current one
-  const getRandomColor = (currentColor) => {
-    const filteredColors = redColors.filter(color => color !== currentColor);
-    return filteredColors[Math.floor(Math.random() * filteredColors.length)];
-  };
-
-  // Card animation effect (much slower, subtler transition)
-  React.useEffect(() => {
-    // Initialize with a color based on index to make cards different
-    if (!cardColor) {
-      setCardColor(redColors[index % redColors.length]);
-      return; // Exit after initial setup to avoid immediate color change
-    }
-    
-    const animateCard = () => {
-      const newColor = getRandomColor(cardColor);
-      setCardColor(newColor);
-    };
-    
-    // Create the animation interval with much slower timing (5-7 seconds)
-    const intervalId = window.setInterval(
-      animateCard, 
-      Math.floor(Math.random() * 2000) + 5000 // Slow speed: 5000-7000ms
-    );
-    
-    // Clean up on unmount or when dependencies change
-    return () => {
-      window.clearInterval(intervalId);
-    };
-  }, [cardColor, index]);
-
-  // Handle button click to open the listing URL
-  const handleListingClick = () => {
-    if (listingLink) {
-      window.open(listingLink, "_blank");
-    }
-  };
-
   return (
-    <div
-      className="w-[340px] h-[480px] relative bg-white rounded-[10px] max-md:mb-5 transition-all duration-1000 overflow-hidden"
-      style={{
-        boxShadow: cardColor ? `0px 2px 15px 2px ${cardColor}40` : undefined, // Reduced glow with 25% opacity
-        border: cardColor ? `1px solid ${cardColor}60` : undefined, // Subtle border
-        width: 'min(340px, 100%)', // Ensures card never exceeds container width
-      }}
-    >
-      {/* Updated image container to match the Card component size */}
-      {imageLink && (
-        <div className="w-[140px] h-[140px] mx-auto mt-6 overflow-hidden rounded-md bg-white">
-          <img 
-            src={imageLink} 
-            alt={`${title} image`}
-            className="w-full h-full object-contain"
-            onError={(e) => {
-              // Set a fallback image or hide on error
-              e.currentTarget.style.display = 'none';
-            }}
-          />
-        </div>
-      )}
-
-      <div className={`px-[41px] ${imageLink ? 'py-[15px]' : 'py-[30px]'}`}>
-        <div className="text-xl text-[#1E1E1E] mb-[6px]">{title}</div>
-        <div className="text-sm text-[#1E1E1E] mb-[8px]">{description}</div>
-        <div className="text-lg text-[#1E1E1E] mb-[6px] font-medium">${price.toFixed(2)}</div>
-        <div className="text-sm font-medium text-green-600">
-          In Stock
-        </div>
+    <Card className="w-full max-w-sm hover:shadow-lg transition-shadow overflow-hidden">
+      <div className="aspect-square w-full overflow-hidden bg-gray-100 flex items-center justify-center">
+        <img
+          src={imageLink || defaultImage}
+          alt={title}
+          className="h-48 w-auto object-contain mx-auto"
+          onError={(e) => {
+            // Fallback if image fails to load
+            (e.target as HTMLImageElement).src = defaultImage;
+          }}
+        />
       </div>
-      <button
-        onClick={handleListingClick}
-        onMouseEnter={() => setIsButtonHovered(true)}
-        onMouseLeave={() => setIsButtonHovered(false)}
-        className="text-xl font-medium text-white absolute -translate-x-2/4 w-[257px] h-[50px] bg-red-500 hover:bg-red-600 rounded-md left-2/4 bottom-[16px] max-sm:w-[80%] transition-all duration-300 flex items-center justify-center"
-        aria-label={`View listing for ${title}`}
-      >
-        View Listing
-      </button>
-    </div>
+      <CardHeader className="p-4">
+        <div className="flex justify-between items-start">
+          <CardTitle className="text-lg font-bold line-clamp-2">{title}</CardTitle>
+          <Badge className={inStock ? "bg-green-500" : "bg-red-500"}>
+            {inStock ? "In Stock" : "Out of Stock"}
+          </Badge>
+        </div>
+        <CardDescription className="text-sm text-gray-500">
+          {retailer}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="p-4 pt-0">
+        <p className="text-xl font-bold text-primary mb-2">${price.toFixed(2)}</p>
+        <p className="text-sm text-gray-700 line-clamp-2">{description}</p>
+      </CardContent>
+      <CardFooter className="p-4 pt-0">
+        <Button 
+          className="w-full" 
+          disabled={!inStock || !listingLink}
+          onClick={() => {
+            if (listingLink) {
+              window.open(listingLink, '_blank', 'noopener,noreferrer');
+            }
+          }}
+        >
+          View Listing <ExternalLink className="ml-2 h-4 w-4" />
+        </Button>
+      </CardFooter>
+    </Card>
   );
 };
 

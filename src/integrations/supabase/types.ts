@@ -730,8 +730,10 @@ export type Database = {
       }
       products: {
         Row: {
+          featured: boolean | null
           id: number
           image_link: string | null
+          in_stock: boolean | null
           listing_link: string
           price: number
           product: string
@@ -739,8 +741,10 @@ export type Database = {
           source: string
         }
         Insert: {
+          featured?: boolean | null
           id?: number
           image_link?: string | null
+          in_stock?: boolean | null
           listing_link: string
           price: number
           product: string
@@ -748,8 +752,10 @@ export type Database = {
           source: string
         }
         Update: {
+          featured?: boolean | null
           id?: number
           image_link?: string | null
+          in_stock?: boolean | null
           listing_link?: string
           price?: number
           product?: string
