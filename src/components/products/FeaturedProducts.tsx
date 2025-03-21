@@ -37,22 +37,21 @@ const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
   loading,
   emptyMessage = "No featured products found. Please check back later for updates."
 }) => {
+  // Return null when not loading and no products
+  if (!loading && products.length === 0) {
+    return null;
+  }
+  
   // Always render something - either skeletons or products
   const renderProducts = () => {
-    if (loading || products.length === 0) {
+    if (loading) {
       return (
         <>
-          {loading ? (
-            [...Array(3)].map((_, index) => (
-              <div key={`skeleton-${index}`} className="flex justify-center">
-                <FeaturedProductSkeleton />
-              </div>
-            ))
-          ) : (
-            <div className="col-span-1 md:col-span-3 text-center py-8">
-              <p className="text-gray-500">{emptyMessage}</p>
+          {[...Array(3)].map((_, index) => (
+            <div key={`skeleton-${index}`} className="flex justify-center">
+              <FeaturedProductSkeleton />
             </div>
-          )}
+          ))}
         </>
       );
     }

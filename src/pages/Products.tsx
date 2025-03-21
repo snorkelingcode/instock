@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -5,7 +6,7 @@ import Layout from "@/components/layout/Layout";
 import { CardGrid } from "@/components/landing/CardGrid";
 import FeaturedProducts from "@/components/products/FeaturedProducts";
 import AboutSection from "@/components/products/AboutSection";
-import { setCache, getCache, getTotalCacheSize, getPartitionInfo } from "@/utils/cacheUtils";
+import { setCache, getCache } from "@/utils/cacheUtils";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { InfoIcon } from "lucide-react";
 
@@ -46,7 +47,6 @@ const CACHE_DURATION_MINUTES = 24 * 60;
 const ProductsPage = () => {
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [cacheInfo, setCacheInfo] = useState<any>(null);
   const [activeJobs, setActiveJobs] = useState<JobStatus[]>([]);
   const { toast } = useToast();
   
@@ -60,8 +60,6 @@ const ProductsPage = () => {
     
     // Setup interval to refresh active jobs
     const refreshInterval = setInterval(async () => {
-      const partitionInfo = getPartitionInfo(PRODUCTS_PARTITION);
-      setCacheInfo(partitionInfo);
       await fetchActiveJobs();
     }, 10000); // Update every 10 seconds
     
@@ -99,10 +97,6 @@ const ProductsPage = () => {
         setFeaturedProducts(cachedProducts);
         setLoading(false);
         
-        // Update cache info
-        const partitionInfo = getPartitionInfo(PRODUCTS_PARTITION);
-        setCacheInfo(partitionInfo);
-        
         return;
       }
       
@@ -117,41 +111,19 @@ const ProductsPage = () => {
         throw featuredError;
       }
       
-      // If we have enough featured products, use them
+      // If we have featured products, use them
       if (featuredData && featuredData.length > 0) {
         // Type-safe conversion to Product array
         const typedFeatured = featuredData as Product[];
         setFeaturedProducts(typedFeatured);
         setCache(FEATURED_PRODUCTS_KEY, typedFeatured, CACHE_DURATION_MINUTES, PRODUCTS_PARTITION);
-        
-        // Update cache info
-        const partitionInfo = getPartitionInfo(PRODUCTS_PARTITION);
-        setCacheInfo(partitionInfo);
         setLoading(false);
         return;
       }
       
-      // If no featured products, get random products
-      const { data: randomProducts, error: randomError } = await supabase
-        .from('products')
-        .select('*')
-        .limit(3);
-        
-      if (randomError) {
-        throw randomError;
-      }
-      
-      if (randomProducts && randomProducts.length > 0) {
-        const typedRandomProducts = randomProducts as Product[];
-        setFeaturedProducts(typedRandomProducts);
-        setCache(FEATURED_PRODUCTS_KEY, typedRandomProducts, CACHE_DURATION_MINUTES, PRODUCTS_PARTITION);
-        
-        // Update cache info
-        const partitionInfo = getPartitionInfo(PRODUCTS_PARTITION);
-        setCacheInfo(partitionInfo);
-      } else {
-        throw new Error('No products found');
-      }
+      // No featured products found, set empty array
+      setFeaturedProducts([]);
+      setCache(FEATURED_PRODUCTS_KEY, [], CACHE_DURATION_MINUTES, PRODUCTS_PARTITION);
     } catch (error) {
       console.error('Error fetching featured products:', error);
       toast({
@@ -160,54 +132,15 @@ const ProductsPage = () => {
         variant: "destructive",
       });
       
-      // Fallback featured products
-      const fallbackProducts: Product[] = [
-        {
-          id: 1,
-          product_line: "Pokémon TCG",
-          product: "Scarlet & Violet - Twilight Masquerade Booster Box",
-          source: "Pokémon Center",
-          price: 149.99,
-          listing_link: "",
-          image_link: "",
-          in_stock: true,
-          featured: true
-        },
-        {
-          id: 2,
-          product_line: "Pokémon TCG",
-          product: "Charizard ex Premium Collection",
-          source: "Target",
-          price: 39.99,
-          listing_link: "",
-          image_link: "",
-          in_stock: false,
-          featured: true
-        },
-        {
-          id: 3,
-          product_line: "Pokémon TCG",
-          product: "Paldean Fates Elite Trainer Box",
-          source: "Walmart",
-          price: 49.99,
-          listing_link: "",
-          image_link: "",
-          in_stock: true,
-          featured: true
-        }
-      ];
-      
-      setFeaturedProducts(fallbackProducts);
-      // Even on error, cache the fallback products to avoid repeated errors
-      setCache(FEATURED_PRODUCTS_KEY, fallbackProducts, CACHE_DURATION_MINUTES, PRODUCTS_PARTITION);
-      
-      // Update cache info
-      const partitionInfo = getPartitionInfo(PRODUCTS_PARTITION);
-      setCacheInfo(partitionInfo);
+      // Set empty array on error
+      setFeaturedProducts([]);
     } finally {
       setLoading(false);
     }
   };
+  
+  // Check if there are featured products to show
+  const hasFeaturedProducts = !loading && featuredProducts.length > 0;
   
   return (
     <Layout>
@@ -229,8 +162,12 @@ const ProductsPage = () => {
           Find all TCG products with real-time stock information from major retailers. We track booster boxes, elite trainer boxes, special collections, and more.
         </p>
         
-        <h2 className="text-xl font-semibold mb-4">Featured Products</h2>
-        <FeaturedProducts products={featuredProducts} loading={loading} />
+        {hasFeaturedProducts && (
+          <>
+            <h2 className="text-xl font-semibold mb-4">Featured Products</h2>
+            <FeaturedProducts products={featuredProducts} loading={loading} />
+          </>
+        )}
         
         <h2 className="text-xl font-semibold mb-4 mt-12">All Products</h2>
         <p className="text-gray-700 mb-6">
