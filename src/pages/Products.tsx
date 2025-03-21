@@ -72,7 +72,7 @@ const ProductsPage = () => {
   const fetchActiveJobs = async () => {
     try {
       const { data, error } = await supabase
-        .from('api_job_status' as any)
+        .from('api_job_status')
         .select('*')
         .not('status', 'in', '("completed","failed")');
 
@@ -81,8 +81,8 @@ const ProductsPage = () => {
         return;
       }
 
-      // Explicitly cast the data to JobStatus[]
-      setActiveJobs(data as unknown as JobStatus[]);
+      // Safely cast the data to JobStatus[]
+      setActiveJobs(data as JobStatus[]);
     } catch (error) {
       console.error('Error in fetchActiveJobs:', error);
     }
@@ -120,8 +120,10 @@ const ProductsPage = () => {
       
       // If we have enough featured products, use them
       if (markedFeatured && markedFeatured.length >= 3) {
-        setFeaturedProducts(markedFeatured.slice(0, 3));
-        setCache(FEATURED_PRODUCTS_KEY, markedFeatured.slice(0, 3), CACHE_DURATION_MINUTES, PRODUCTS_PARTITION);
+        // Type-safe conversion to Product array
+        const typedFeatured: Product[] = markedFeatured;
+        setFeaturedProducts(typedFeatured.slice(0, 3));
+        setCache(FEATURED_PRODUCTS_KEY, typedFeatured.slice(0, 3), CACHE_DURATION_MINUTES, PRODUCTS_PARTITION);
         
         // Update cache info
         const partitionInfo = getPartitionInfo(PRODUCTS_PARTITION);
@@ -143,13 +145,16 @@ const ProductsPage = () => {
       
       // If there are Pokémon products, get random ones to fill up to 3
       if (pokemonProducts && pokemonProducts.length > 0) {
-        // Start with any marked featured products
-        let selectedProducts = markedFeatured || [];
+        // Start with any marked featured products - ensure proper typing
+        let selectedProducts: Product[] = markedFeatured ? [...markedFeatured] : [];
         
         // Get more products if needed
         if (selectedProducts.length < 3) {
+          // Safely type the pokemonProducts
+          const typedPokemonProducts: Product[] = pokemonProducts;
+          
           // Filter out products already selected as featured
-          const remainingProducts = pokemonProducts.filter(p => 
+          const remainingProducts = typedPokemonProducts.filter(p => 
             !selectedProducts.some(s => s.id === p.id)
           );
           
@@ -191,7 +196,7 @@ const ProductsPage = () => {
       });
       
       // Fallback featured products (all Pokémon-related)
-      const fallbackProducts = [
+      const fallbackProducts: Product[] = [
         {
           id: 1,
           product_line: "Pokémon TCG",
