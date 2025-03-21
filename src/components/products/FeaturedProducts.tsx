@@ -1,6 +1,6 @@
 
 import React from "react";
-import FeaturedProduct from "@/components/featured-product";
+import { Card } from "@/components/landing/Card";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface Product {
@@ -35,7 +35,7 @@ const FeaturedProductSkeleton = () => (
 const FeaturedProducts: React.FC<FeaturedProductsProps> = ({ 
   products, 
   loading,
-  emptyMessage = "No products found. Please check back later for updates."
+  emptyMessage = "No featured products found. Please check back later for updates."
 }) => {
   // Always render something - either skeletons or products
   const renderProducts = () => {
@@ -61,14 +61,13 @@ const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
       <>
         {products.map((product, index) => (
           <div key={product.id} className="flex justify-center">
-            <FeaturedProduct 
-              title={`${product.product_line} ${product.product}`}
-              description={`${product.product_line} ${product.product} available at ${product.source}`}
+            <Card 
+              productLine={product.product_line}
+              product={product.product}
+              source={product.source}
               price={product.price}
-              retailer={product.source}
               listingLink={product.listing_link}
               imageLink={product.image_link}
-              inStock={product.in_stock}
               index={index}
             />
           </div>

@@ -106,23 +106,23 @@ const ProductsPage = () => {
         return;
       }
       
-      // First try to get products marked as featured
-      const { data: markedFeatured, error: markedError } = await supabase
+      // Query products marked as featured
+      const { data: featuredData, error: featuredError } = await supabase
         .from('products')
         .select('*')
         .eq('featured', true)
         .limit(3);
         
-      if (markedError) {
-        throw markedError;
+      if (featuredError) {
+        throw featuredError;
       }
       
       // If we have enough featured products, use them
-      if (markedFeatured && markedFeatured.length >= 3) {
+      if (featuredData && featuredData.length > 0) {
         // Type-safe conversion to Product array
-        const typedFeatured = markedFeatured as Product[];
-        setFeaturedProducts(typedFeatured.slice(0, 3));
-        setCache(FEATURED_PRODUCTS_KEY, typedFeatured.slice(0, 3), CACHE_DURATION_MINUTES, PRODUCTS_PARTITION);
+        const typedFeatured = featuredData as Product[];
+        setFeaturedProducts(typedFeatured);
+        setCache(FEATURED_PRODUCTS_KEY, typedFeatured, CACHE_DURATION_MINUTES, PRODUCTS_PARTITION);
         
         // Update cache info
         const partitionInfo = getPartitionInfo(PRODUCTS_PARTITION);
@@ -131,71 +131,36 @@ const ProductsPage = () => {
         return;
       }
       
-      // If we don't have enough featured products, fall back to Pokémon products
-      const { data: pokemonProducts, error: pokemonError } = await supabase
+      // If no featured products, get random products
+      const { data: randomProducts, error: randomError } = await supabase
         .from('products')
         .select('*')
-        .or('product_line.ilike.%pokemon%,product.ilike.%pokemon%')
-        .limit(10);
+        .limit(3);
         
-      if (pokemonError) {
-        throw pokemonError;
+      if (randomError) {
+        throw randomError;
       }
       
-      // If there are Pokémon products, get random ones to fill up to 3
-      if (pokemonProducts && pokemonProducts.length > 0) {
-        // Start with any marked featured products - ensure proper typing
-        const typedMarkedFeatured = markedFeatured as Product[] || [];
-        let selectedProducts: Product[] = [...typedMarkedFeatured];
-        
-        // Get more products if needed
-        if (selectedProducts.length < 3) {
-          // Safely type the pokemonProducts
-          const typedPokemonProducts = pokemonProducts as Product[];
-          
-          // Filter out products already selected as featured
-          const remainingProducts = typedPokemonProducts.filter(p => 
-            !selectedProducts.some(s => s.id === p.id)
-          );
-          
-          // Generate random unique indices for the remaining slots
-          const needed = 3 - selectedProducts.length;
-          const totalRemaining = remainingProducts.length;
-          const randomIndices = new Set<number>();
-          
-          // Make sure we don't try to get more products than exist
-          const numToFetch = Math.min(needed, totalRemaining);
-          
-          while (randomIndices.size < numToFetch) {
-            const randomIndex = Math.floor(Math.random() * totalRemaining);
-            randomIndices.add(randomIndex);
-          }
-          
-          // Add the randomly selected products
-          Array.from(randomIndices).forEach(index => {
-            selectedProducts.push(remainingProducts[index]);
-          });
-        }
-        
-        // Save to state and cache with partitioning
-        setFeaturedProducts(selectedProducts);
-        setCache(FEATURED_PRODUCTS_KEY, selectedProducts, CACHE_DURATION_MINUTES, PRODUCTS_PARTITION);
+      if (randomProducts && randomProducts.length > 0) {
+        const typedRandomProducts = randomProducts as Product[];
+        setFeaturedProducts(typedRandomProducts);
+        setCache(FEATURED_PRODUCTS_KEY, typedRandomProducts, CACHE_DURATION_MINUTES, PRODUCTS_PARTITION);
         
         // Update cache info
         const partitionInfo = getPartitionInfo(PRODUCTS_PARTITION);
         setCacheInfo(partitionInfo);
       } else {
-        throw new Error('No Pokémon products found');
+        throw new Error('No products found');
       }
     } catch (error) {
       console.error('Error fetching featured products:', error);
       toast({
         title: "Error",
-        description: "Failed to load featured Pokémon products",
+        description: "Failed to load featured products",
         variant: "destructive",
       });
       
-      // Fallback featured products (all Pokémon-related)
+      // Fallback featured products
       const fallbackProducts: Product[] = [
         {
           id: 1,
