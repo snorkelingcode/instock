@@ -30,7 +30,7 @@ const Navigation = () => {
           <img 
             src="/lovable-uploads/0268c20a-554b-409a-91d9-50167b8c9678.png" 
             alt="TCG Updates" 
-            className="h-10"
+            className="h-16 -my-2" // Increased size and adjusted vertical margins to maintain navbar height
           />
         </Link>
 
@@ -49,7 +49,7 @@ const Navigation = () => {
                 <img 
                   src="/lovable-uploads/0268c20a-554b-409a-91d9-50167b8c9678.png" 
                   alt="TCG Updates" 
-                  className="h-16"
+                  className="h-24" // Increased size for mobile menu logo
                 />
               </div>
               
