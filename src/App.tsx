@@ -28,6 +28,7 @@ import SetSyncPage from "./pages/TCGSets/SetSyncPage";
 import ManagePokemonReleases from "./pages/admin/ManagePokemonReleases";
 import Forge from "./pages/Forge";
 import ManageModels from "./pages/admin/ManageModels";
+import ManageProducts from "./pages/admin/ManageProducts";
 
 const queryClient = new QueryClient();
 
@@ -102,6 +103,15 @@ const App = () => {
                 element={
                   <RequireAdmin>
                     <ManagePokemonReleases />
+                  </RequireAdmin>
+                } 
+              />
+              
+              <Route 
+                path="/admin/products" 
+                element={
+                  <RequireAdmin>
+                    <ManageProducts />
                   </RequireAdmin>
                 } 
               />
