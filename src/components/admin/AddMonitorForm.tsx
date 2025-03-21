@@ -62,7 +62,7 @@ const AddMonitorForm: React.FC<AddMonitorFormProps> = ({ onSubmit }) => {
             <FormItem>
               <FormLabel>Product Name</FormLabel>
               <FormControl>
-                <Input placeholder="e.g. Pokemon TCG Scarlet & Violet" {...field} />
+                <Input placeholder="Enter product name" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -76,7 +76,7 @@ const AddMonitorForm: React.FC<AddMonitorFormProps> = ({ onSubmit }) => {
             <FormItem>
               <FormLabel>Product URL</FormLabel>
               <FormControl>
-                <Input placeholder="https://example.com/product" {...field} />
+                <Input placeholder="https://retailer.com/product" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -106,7 +106,7 @@ const AddMonitorForm: React.FC<AddMonitorFormProps> = ({ onSubmit }) => {
               </div>
               <FormControl>
                 <Textarea 
-                  placeholder="e.g. Add to Cart, In Stock, etc." 
+                  placeholder="Text to look for on the page" 
                   className="resize-none"
                   {...field}
                 />

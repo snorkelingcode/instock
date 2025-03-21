@@ -1,203 +1,178 @@
 
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { supabase } from "@/integrations/supabase/client";
+import { format, parseISO } from "date-fns";
+
+// Define monitor types
+export type MonitorStatus = "in-stock" | "out-of-stock" | "unknown" | "error";
 
 export interface MonitoringItem {
   id: string;
   name: string;
   url: string;
   target_text?: string;
-  status: 'in-stock' | 'out-of-stock' | 'unknown' | 'error';
-  last_checked?: string;
+  status: MonitorStatus;
+  last_checked: string | null;
   is_active: boolean;
   error_message?: string;
 }
 
-// Function to add a new monitor
-export const addMonitor = async (values: { name: string; url: string; targetText?: string }): Promise<MonitoringItem | null> => {
-  try {
-    const user = (await supabase.auth.getUser()).data.user;
-    
-    if (!user) {
-      toast.error('You must be logged in to add monitors');
-      return null;
-    }
-
-    const { data, error } = await supabase
-      .from('stock_monitors')
-      .insert({
-        user_id: user.id,
-        name: values.name,
-        url: values.url,
-        target_text: values.targetText || null,
-        status: 'unknown',
-      })
-      .select('*')
-      .single();
-
-    if (error) {
-      console.error('Error adding monitor:', error);
-      toast.error('Failed to add monitor');
-      return null;
-    }
-
-    toast.success('Monitor added successfully');
-    
-    // Format the data to match our component interface
-    return {
-      id: data.id,
-      name: data.name,
-      url: data.url,
-      target_text: data.target_text,
-      status: data.status as 'in-stock' | 'out-of-stock' | 'unknown' | 'error',
-      last_checked: data.last_checked,
-      is_active: data.is_active,
-    };
-  } catch (error) {
-    console.error('Error in addMonitor:', error);
-    toast.error('Failed to add monitor');
-    return null;
-  }
+// Convert database entry to frontend monitoring item
+const convertToMonitoringItem = (item: any): MonitoringItem => {
+  return {
+    id: item.id,
+    name: item.name,
+    url: item.url,
+    target_text: item.target_text,
+    status: item.status || "unknown",
+    last_checked: item.last_checked,
+    is_active: item.is_active,
+    error_message: item.error_message
+  };
 };
 
-// Function to get all monitors for the current user
-export const getMonitors = async (): Promise<MonitoringItem[]> => {
+// Fetch all monitors for the current user
+export const fetchMonitors = async (): Promise<MonitoringItem[]> => {
   try {
+    // This needs to be updated once the stock_monitors table is created
     const { data, error } = await supabase
-      .from('stock_monitors')
-      .select('*')
-      .order('created_at', { ascending: false });
+      .from("stock_monitors")
+      .select("*")
+      .order("created_at", { ascending: false });
 
     if (error) {
-      console.error('Error fetching monitors:', error);
-      toast.error('Failed to fetch monitors');
-      return [];
+      console.error("Error fetching monitors:", error);
+      throw error;
     }
 
-    // Format the data to match our component interface
-    return data.map(item => ({
-      id: item.id,
-      name: item.name,
-      url: item.url,
-      target_text: item.target_text,
-      status: item.status as 'in-stock' | 'out-of-stock' | 'unknown' | 'error',
-      last_checked: item.last_checked,
-      is_active: item.is_active,
-      error_message: item.error_message,
-    }));
+    // Convert database items to frontend items
+    return (data || []).map(convertToMonitoringItem);
   } catch (error) {
-    console.error('Error in getMonitors:', error);
-    toast.error('Failed to fetch monitors');
+    console.error("Error in fetchMonitors:", error);
     return [];
   }
 };
 
-// Function to toggle a monitor's active status
-export const toggleMonitorActive = async (id: string, currentStatus: boolean): Promise<boolean> => {
+// Add a new monitor for the current user
+export const addMonitor = async (
+  name: string,
+  url: string,
+  targetText?: string
+): Promise<MonitoringItem | null> => {
   try {
-    const { error } = await supabase
-      .from('stock_monitors')
-      .update({ is_active: !currentStatus })
-      .eq('id', id);
+    const user = await supabase.auth.getUser();
+    
+    if (!user.data.user) {
+      throw new Error("User not authenticated");
+    }
+
+    const { data, error } = await supabase
+      .from("stock_monitors")
+      .insert({
+        name,
+        url,
+        target_text: targetText,
+        user_id: user.data.user.id,
+        status: "unknown",
+        is_active: true,
+      })
+      .select()
+      .single();
 
     if (error) {
-      console.error('Error toggling monitor:', error);
-      toast.error('Failed to update monitor');
-      return false;
+      console.error("Error adding monitor:", error);
+      throw error;
+    }
+
+    return convertToMonitoringItem(data);
+  } catch (error) {
+    console.error("Error in addMonitor:", error);
+    return null;
+  }
+};
+
+// Toggle the active status of a monitor
+export const toggleMonitorStatus = async (
+  id: string,
+  isActive: boolean
+): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from("stock_monitors")
+      .update({ is_active: isActive })
+      .eq("id", id);
+
+    if (error) {
+      console.error("Error toggling monitor status:", error);
+      throw error;
     }
 
     return true;
   } catch (error) {
-    console.error('Error in toggleMonitorActive:', error);
-    toast.error('Failed to update monitor');
+    console.error("Error in toggleMonitorStatus:", error);
     return false;
   }
 };
 
-// Function to delete a monitor
+// Delete a monitor
 export const deleteMonitor = async (id: string): Promise<boolean> => {
   try {
     const { error } = await supabase
-      .from('stock_monitors')
+      .from("stock_monitors")
       .delete()
-      .eq('id', id);
+      .eq("id", id);
 
     if (error) {
-      console.error('Error deleting monitor:', error);
-      toast.error('Failed to delete monitor');
-      return false;
+      console.error("Error deleting monitor:", error);
+      throw error;
     }
 
-    toast.success('Monitor deleted successfully');
     return true;
   } catch (error) {
-    console.error('Error in deleteMonitor:', error);
-    toast.error('Failed to delete monitor');
+    console.error("Error in deleteMonitor:", error);
     return false;
   }
 };
 
-// Function to refresh a monitor (check its status)
-export const refreshMonitor = async (id: string, url: string, targetText?: string): Promise<boolean> => {
+// Format a date for display
+export const formatDate = (dateString: string | null): string => {
+  if (!dateString) return "Never";
+  
   try {
+    return format(parseISO(dateString), "MMM d, yyyy h:mm a");
+  } catch (e) {
+    console.error("Error formatting date:", e);
+    return "Invalid date";
+  }
+};
+
+// Trigger a manual check of a URL
+export const triggerCheck = async (monitorId: string): Promise<MonitoringItem | null> => {
+  try {
+    // Call the edge function to check the URL status
     const { data, error } = await supabase.functions.invoke('check-url-stock', {
-      body: {
-        id,
-        url,
-        targetText,
-      },
+      body: { monitorId }
     });
 
-    if (error || !data.success) {
-      console.error('Error refreshing monitor:', error || data.error);
-      toast.error('Failed to check URL status');
-      return false;
+    if (error) {
+      console.error("Error triggering URL check:", error);
+      throw error;
     }
 
-    // If the item is in stock, notify the user
-    if (data.isInStock) {
-      toast.success(`Item is in stock!`);
-    } else {
-      toast.info(`Item is currently out of stock`);
+    // Fetch the updated monitor data
+    const { data: monitorData, error: monitorError } = await supabase
+      .from("stock_monitors")
+      .select("*")
+      .eq("id", monitorId)
+      .single();
+
+    if (monitorError) {
+      console.error("Error fetching updated monitor:", monitorError);
+      throw monitorError;
     }
 
-    return true;
+    return convertToMonitoringItem(monitorData);
   } catch (error) {
-    console.error('Error in refreshMonitor:', error);
-    toast.error('Failed to check URL status');
-    return false;
+    console.error("Error in triggerCheck:", error);
+    return null;
   }
-};
-
-// Function to set up real-time updates for monitors
-export const setupMonitorRealtime = (onUpdate: (item: MonitoringItem) => void) => {
-  const channel = supabase
-    .channel('stock_monitors_changes')
-    .on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table: 'stock_monitors',
-      },
-      (payload) => {
-        // Format the data to match our component interface
-        const item: MonitoringItem = {
-          id: payload.new.id,
-          name: payload.new.name,
-          url: payload.new.url,
-          target_text: payload.new.target_text,
-          status: payload.new.status as 'in-stock' | 'out-of-stock' | 'unknown' | 'error',
-          last_checked: payload.new.last_checked,
-          is_active: payload.new.is_active,
-          error_message: payload.new.error_message,
-        };
-        
-        onUpdate(item);
-      }
-    )
-    .subscribe();
-
-  // Return the channel for cleanup
-  return channel;
 };
