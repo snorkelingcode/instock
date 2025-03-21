@@ -36,6 +36,8 @@ import {
 import { useForm } from "react-hook-form";
 import { Pencil, Trash2, Plus } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 
 // Define Product interface
 interface Product {
@@ -47,6 +49,7 @@ interface Product {
   listing_link: string;
   image_link?: string;
   in_stock?: boolean;
+  featured?: boolean;
 }
 
 const ManageProducts = () => {
@@ -67,7 +70,8 @@ const ManageProducts = () => {
       price: 0,
       listing_link: "",
       image_link: "",
-      in_stock: true
+      in_stock: true,
+      featured: false
     }
   });
 
@@ -85,7 +89,8 @@ const ManageProducts = () => {
         price: selectedProduct.price,
         listing_link: selectedProduct.listing_link,
         image_link: selectedProduct.image_link || "",
-        in_stock: selectedProduct.in_stock !== undefined ? selectedProduct.in_stock : true
+        in_stock: selectedProduct.in_stock !== undefined ? selectedProduct.in_stock : true,
+        featured: selectedProduct.featured !== undefined ? selectedProduct.featured : false
       });
     }
   }, [selectedProduct, isEditDialogOpen, form]);
@@ -130,7 +135,8 @@ const ManageProducts = () => {
       price: 0,
       listing_link: "",
       image_link: "",
-      in_stock: true
+      in_stock: true,
+      featured: false
     });
     setIsAddDialogOpen(true);
   };
@@ -228,13 +234,14 @@ const ManageProducts = () => {
                         <TableHead>Source</TableHead>
                         <TableHead>Price</TableHead>
                         <TableHead>Stock</TableHead>
+                        <TableHead>Featured</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {products.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={7} className="text-center h-24">
+                          <TableCell colSpan={8} className="text-center h-24">
                             No products found
                           </TableCell>
                         </TableRow>
@@ -249,6 +256,9 @@ const ManageProducts = () => {
                             <TableCell>
                               {product.in_stock === true ? "In Stock" : 
                                product.in_stock === false ? "Out of Stock" : "Unknown"}
+                            </TableCell>
+                            <TableCell>
+                              {product.featured === true ? "Featured" : "Not Featured"}
                             </TableCell>
                             <TableCell className="text-right space-x-2">
                               <Button
@@ -396,6 +406,23 @@ const ManageProducts = () => {
                       </select>
                     </div>
                   </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="featured" className="text-right">
+                      Featured Product
+                    </Label>
+                    <div className="flex items-center space-x-2 col-span-3">
+                      <Switch 
+                        id="featured"
+                        checked={form.watch('featured')}
+                        onCheckedChange={(checked) => {
+                          form.setValue('featured', checked);
+                        }}
+                      />
+                      <Label htmlFor="featured" className="text-sm">
+                        {form.watch('featured') ? 'Featured' : 'Not Featured'}
+                      </Label>
+                    </div>
+                  </div>
                 </div>
                 <DialogFooter>
                   <Button type="submit">Save Changes</Button>
@@ -501,6 +528,23 @@ const ManageProducts = () => {
                         <option value="true">In Stock</option>
                         <option value="false">Out of Stock</option>
                       </select>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="featured" className="text-right">
+                      Featured Product
+                    </Label>
+                    <div className="flex items-center space-x-2 col-span-3">
+                      <Switch 
+                        id="featured"
+                        checked={form.watch('featured')}
+                        onCheckedChange={(checked) => {
+                          form.setValue('featured', checked);
+                        }}
+                      />
+                      <Label htmlFor="featured" className="text-sm">
+                        {form.watch('featured') ? 'Featured' : 'Not Featured'}
+                      </Label>
                     </div>
                   </div>
                 </div>

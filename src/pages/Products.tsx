@@ -20,6 +20,7 @@ interface Product {
   listing_link: string;
   image_link?: string;
   in_stock?: boolean;
+  featured?: boolean;
 }
 
 // Job status interface
@@ -106,32 +107,70 @@ const ProductsPage = () => {
         return;
       }
       
-      // Get Pokémon products only
+      // First try to get products marked as featured
+      const { data: markedFeatured, error: markedError } = await supabase
+        .from('products')
+        .select('*')
+        .eq('featured', true)
+        .limit(3);
+        
+      if (markedError) {
+        throw markedError;
+      }
+      
+      // If we have enough featured products, use them
+      if (markedFeatured && markedFeatured.length >= 3) {
+        setFeaturedProducts(markedFeatured.slice(0, 3));
+        setCache(FEATURED_PRODUCTS_KEY, markedFeatured.slice(0, 3), CACHE_DURATION_MINUTES, PRODUCTS_PARTITION);
+        
+        // Update cache info
+        const partitionInfo = getPartitionInfo(PRODUCTS_PARTITION);
+        setCacheInfo(partitionInfo);
+        setLoading(false);
+        return;
+      }
+      
+      // If we don't have enough featured products, fall back to Pokémon products
       const { data: pokemonProducts, error: pokemonError } = await supabase
         .from('products')
         .select('*')
-        .or('product_line.ilike.%pokemon%,product.ilike.%pokemon%');
+        .or('product_line.ilike.%pokemon%,product.ilike.%pokemon%')
+        .limit(10);
         
       if (pokemonError) {
         throw pokemonError;
       }
       
-      // If there are Pokémon products, get 3 random ones
+      // If there are Pokémon products, get random ones to fill up to 3
       if (pokemonProducts && pokemonProducts.length > 0) {
-        // Generate 3 random unique indices
-        const totalProducts = pokemonProducts.length;
-        const randomIndices = new Set<number>();
+        // Start with any marked featured products
+        let selectedProducts = markedFeatured || [];
         
-        // Make sure we don't try to get more products than exist
-        const numToFetch = Math.min(3, totalProducts);
-        
-        while (randomIndices.size < numToFetch) {
-          const randomIndex = Math.floor(Math.random() * totalProducts);
-          randomIndices.add(randomIndex);
+        // Get more products if needed
+        if (selectedProducts.length < 3) {
+          // Filter out products already selected as featured
+          const remainingProducts = pokemonProducts.filter(p => 
+            !selectedProducts.some(s => s.id === p.id)
+          );
+          
+          // Generate random unique indices for the remaining slots
+          const needed = 3 - selectedProducts.length;
+          const totalRemaining = remainingProducts.length;
+          const randomIndices = new Set<number>();
+          
+          // Make sure we don't try to get more products than exist
+          const numToFetch = Math.min(needed, totalRemaining);
+          
+          while (randomIndices.size < numToFetch) {
+            const randomIndex = Math.floor(Math.random() * totalRemaining);
+            randomIndices.add(randomIndex);
+          }
+          
+          // Add the randomly selected products
+          Array.from(randomIndices).forEach(index => {
+            selectedProducts.push(remainingProducts[index]);
+          });
         }
-        
-        // Get the randomly selected products
-        const selectedProducts = Array.from(randomIndices).map(index => pokemonProducts[index]);
         
         // Save to state and cache with partitioning
         setFeaturedProducts(selectedProducts);
@@ -161,7 +200,8 @@ const ProductsPage = () => {
           price: 149.99,
           listing_link: "",
           image_link: "",
-          in_stock: true
+          in_stock: true,
+          featured: true
         },
         {
           id: 2,
@@ -171,7 +211,8 @@ const ProductsPage = () => {
           price: 39.99,
           listing_link: "",
           image_link: "",
-          in_stock: false
+          in_stock: false,
+          featured: true
         },
         {
           id: 3,
@@ -181,7 +222,8 @@ const ProductsPage = () => {
           price: 49.99,
           listing_link: "",
           image_link: "",
-          in_stock: true
+          in_stock: true,
+          featured: true
         }
       ];
       
