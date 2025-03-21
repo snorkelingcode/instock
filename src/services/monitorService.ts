@@ -33,7 +33,6 @@ const convertToMonitoringItem = (item: any): MonitoringItem => {
 // Fetch all monitors for the current user
 export const fetchMonitors = async (): Promise<MonitoringItem[]> => {
   try {
-    // This needs to be updated once the stock_monitors table is created
     const { data, error } = await supabase
       .from("stock_monitors")
       .select("*")
@@ -175,4 +174,23 @@ export const triggerCheck = async (monitorId: string): Promise<MonitoringItem | 
     console.error("Error in triggerCheck:", error);
     return null;
   }
+};
+
+// Set up realtime updates for stock monitors
+export const setupMonitorRealtime = (callback: (item: MonitoringItem) => void) => {
+  return supabase
+    .channel('stock_monitors_changes')
+    .on(
+      'postgres_changes',
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'stock_monitors'
+      },
+      (payload) => {
+        const updatedItem = convertToMonitoringItem(payload.new);
+        callback(updatedItem);
+      }
+    )
+    .subscribe();
 };

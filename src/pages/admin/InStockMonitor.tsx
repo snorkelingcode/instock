@@ -8,11 +8,26 @@ import { Separator } from "@/components/ui/separator";
 import { Search, AlertCircle, RotateCw } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import AddMonitorForm from "@/components/admin/AddMonitorForm";
-import MonitoringItem, { MonitoringItemProps } from "@/components/admin/MonitoringItem";
+import MonitoringItem from "@/components/admin/MonitoringItem";
 import { useAuth } from "@/contexts/AuthContext";
-import { addMonitor, getMonitors, toggleMonitorActive, deleteMonitor, refreshMonitor, setupMonitorRealtime } from "@/services/monitorService";
+import { 
+  fetchMonitors, 
+  addMonitor, 
+  toggleMonitorStatus, 
+  deleteMonitor, 
+  triggerCheck, 
+  setupMonitorRealtime,
+  MonitoringItem as MonitoringItemType 
+} from "@/services/monitorService";
 import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
+
+// Extend the MonitoringItemType to match the props needed by MonitoringItem component
+type MonitoringItemProps = MonitoringItemType & {
+  onToggleActive?: (id: string) => void;
+  onDelete?: (id: string) => void;
+  onRefresh?: (id: string) => void;
+};
 
 const InStockMonitor = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -40,8 +55,13 @@ const InStockMonitor = () => {
 
     const loadMonitors = async () => {
       setIsLoading(true);
-      const monitors = await getMonitors();
-      setMonitoredItems(monitors);
+      const monitors = await fetchMonitors();
+      setMonitoredItems(monitors.map(item => ({
+        ...item,
+        onToggleActive: undefined,
+        onDelete: undefined,
+        onRefresh: undefined
+      })));
       setIsLoading(false);
     };
 
@@ -55,7 +75,12 @@ const InStockMonitor = () => {
     const channel = setupMonitorRealtime((updatedItem) => {
       setMonitoredItems(current => 
         current.map(item => 
-          item.id === updatedItem.id ? updatedItem : item
+          item.id === updatedItem.id ? {
+            ...updatedItem,
+            onToggleActive: undefined,
+            onDelete: undefined,
+            onRefresh: undefined
+          } : item
         )
       );
     });
@@ -68,9 +93,14 @@ const InStockMonitor = () => {
   }, [user]);
 
   const handleAddMonitor = async (values: { name: string; url: string; targetText?: string }) => {
-    const newItem = await addMonitor(values);
+    const newItem = await addMonitor(values.name, values.url, values.targetText);
     if (newItem) {
-      setMonitoredItems(prev => [newItem, ...prev]);
+      setMonitoredItems(prev => [{
+        ...newItem,
+        onToggleActive: undefined,
+        onDelete: undefined,
+        onRefresh: undefined
+      }, ...prev]);
     }
   };
 
@@ -79,12 +109,12 @@ const InStockMonitor = () => {
     if (itemIndex === -1) return;
 
     const item = monitoredItems[itemIndex];
-    const success = await toggleMonitorActive(id, item.isActive);
+    const success = await toggleMonitorStatus(id, !item.is_active);
     
     if (success) {
       setMonitoredItems(prev => 
         prev.map(item => 
-          item.id === id ? { ...item, isActive: !item.isActive } : item
+          item.id === id ? { ...item, is_active: !item.is_active } : item
         )
       );
     }
@@ -108,11 +138,11 @@ const InStockMonitor = () => {
       )
     );
 
-    await refreshMonitor(id, item.url, item.targetText);
+    await triggerCheck(id);
   };
 
   const handleRefreshAll = async () => {
-    const activeItems = monitoredItems.filter(item => item.isActive);
+    const activeItems = monitoredItems.filter(item => item.is_active);
     toast({
       title: "Refreshing Monitors",
       description: `Checking ${activeItems.length} active monitors...`,
@@ -123,7 +153,7 @@ const InStockMonitor = () => {
     for (let i = 0; i < activeItems.length; i += batchSize) {
       const batch = activeItems.slice(i, i + batchSize);
       await Promise.all(
-        batch.map(item => refreshMonitor(item.id, item.url, item.targetText))
+        batch.map(item => triggerCheck(item.id))
       );
       
       // Add a delay between batches
@@ -143,8 +173,8 @@ const InStockMonitor = () => {
     item.url.toLowerCase().includes(searchTerm.toLowerCase())
   );
   
-  const activeItems = filteredItems.filter((item) => item.isActive);
-  const inactiveItems = filteredItems.filter((item) => !item.isActive);
+  const activeItems = filteredItems.filter((item) => item.is_active);
+  const inactiveItems = filteredItems.filter((item) => !item.is_active);
 
   if (!user || !isAdmin) {
     return (
