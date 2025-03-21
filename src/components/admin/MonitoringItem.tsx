@@ -16,10 +16,10 @@ export interface MonitoringItemProps {
   id: string;
   url: string;
   name: string;
-  lastChecked?: string;
+  last_checked?: string | null;
   status: "in-stock" | "out-of-stock" | "unknown" | "error";
-  targetText?: string;
-  isActive: boolean;
+  target_text?: string;
+  is_active: boolean;
   error_message?: string;
   onToggleActive?: (id: string) => void;
   onDelete?: (id: string) => void;
@@ -30,10 +30,10 @@ const MonitoringItem: React.FC<MonitoringItemProps> = ({
   id,
   url,
   name,
-  lastChecked,
+  last_checked,
   status,
-  targetText,
-  isActive,
+  target_text,
+  is_active,
   error_message,
   onToggleActive,
   onDelete,
@@ -68,9 +68,9 @@ const MonitoringItem: React.FC<MonitoringItemProps> = ({
   };
 
   const formatLastChecked = () => {
-    if (!lastChecked) return "Never";
+    if (!last_checked) return "Never";
     
-    const date = new Date(lastChecked);
+    const date = new Date(last_checked);
     const timeAgo = formatDistanceToNow(date, { addSuffix: true });
     const exactTime = format(date, "MMM d, yyyy h:mm a");
     
@@ -116,9 +116,9 @@ const MonitoringItem: React.FC<MonitoringItemProps> = ({
             </a>
           </div>
           
-          {targetText && (
+          {target_text && (
             <div className="text-sm text-muted-foreground">
-              <span className="font-medium">Target text:</span> "{targetText}"
+              <span className="font-medium">Target text:</span> "{target_text}"
             </div>
           )}
           
@@ -129,11 +129,11 @@ const MonitoringItem: React.FC<MonitoringItemProps> = ({
         <Button
           variant="outline"
           size="sm"
-          className={isActive ? "text-green-600" : "text-gray-500"}
+          className={is_active ? "text-green-600" : "text-gray-500"}
           onClick={() => onToggleActive?.(id)}
         >
-          {isActive ? <Eye size={16} className="mr-1" /> : <EyeOff size={16} className="mr-1" />}
-          {isActive ? "Watching" : "Paused"}
+          {is_active ? <Eye size={16} className="mr-1" /> : <EyeOff size={16} className="mr-1" />}
+          {is_active ? "Watching" : "Paused"}
         </Button>
         
         <div className="flex gap-2">

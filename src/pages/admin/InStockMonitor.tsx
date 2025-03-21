@@ -22,7 +22,7 @@ import {
 import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
 
-// Extend the MonitoringItemType to match the props needed by MonitoringItem component
+// Define a type that includes all required properties for the MonitoringItem component
 type MonitoringItemProps = MonitoringItemType & {
   onToggleActive?: (id: string) => void;
   onDelete?: (id: string) => void;
@@ -58,9 +58,9 @@ const InStockMonitor = () => {
       const monitors = await fetchMonitors();
       setMonitoredItems(monitors.map(item => ({
         ...item,
-        onToggleActive: undefined,
-        onDelete: undefined,
-        onRefresh: undefined
+        onToggleActive: handleToggleActive,
+        onDelete: handleDelete,
+        onRefresh: handleRefresh
       })));
       setIsLoading(false);
     };
@@ -77,9 +77,9 @@ const InStockMonitor = () => {
         current.map(item => 
           item.id === updatedItem.id ? {
             ...updatedItem,
-            onToggleActive: undefined,
-            onDelete: undefined,
-            onRefresh: undefined
+            onToggleActive: handleToggleActive,
+            onDelete: handleDelete,
+            onRefresh: handleRefresh
           } : item
         )
       );
@@ -97,9 +97,9 @@ const InStockMonitor = () => {
     if (newItem) {
       setMonitoredItems(prev => [{
         ...newItem,
-        onToggleActive: undefined,
-        onDelete: undefined,
-        onRefresh: undefined
+        onToggleActive: handleToggleActive,
+        onDelete: handleDelete,
+        onRefresh: handleRefresh
       }, ...prev]);
     }
   };
@@ -263,9 +263,6 @@ const InStockMonitor = () => {
                           <MonitoringItem
                             key={item.id}
                             {...item}
-                            onToggleActive={handleToggleActive}
-                            onDelete={handleDelete}
-                            onRefresh={handleRefresh}
                           />
                         ))}
                       </div>
@@ -287,9 +284,6 @@ const InStockMonitor = () => {
                           <MonitoringItem
                             key={item.id}
                             {...item}
-                            onToggleActive={handleToggleActive}
-                            onDelete={handleDelete}
-                            onRefresh={handleRefresh}
                           />
                         ))}
                       </div>
