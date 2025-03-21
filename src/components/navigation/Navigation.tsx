@@ -44,10 +44,10 @@ const Navigation = () => {
           </SheetTrigger>
           <SheetContent side="left" className="w-full p-0 bg-white">
             <div className="flex flex-col h-full">
-              {/* Logo centered at the top - keeping this full logo with image for the mobile menu */}
+              {/* Logo centered at the top - now using the red logo for mobile menu */}
               <div className="flex justify-center py-6 border-b border-gray-200">
                 <img 
-                  src="/lovable-uploads/3a088818-3512-46b0-898d-16a118d744fa.png" 
+                  src="/lovable-uploads/e60afbdf-2426-466b-ae0b-ebe03404efc4.png" 
                   alt="TCG Updates" 
                   className="h-24" // Keeping the same size for mobile menu logo
                 />
