@@ -30,7 +30,7 @@ const Navigation = () => {
           <img 
             src="/lovable-uploads/0268c20a-554b-409a-91d9-50167b8c9678.png" 
             alt="TCG Updates" 
-            className="h-10"
+            className="h-14" /* Increased from h-10 to h-14 */
           />
         </Link>
 
@@ -49,7 +49,7 @@ const Navigation = () => {
                 <img 
                   src="/lovable-uploads/0268c20a-554b-409a-91d9-50167b8c9678.png" 
                   alt="TCG Updates" 
-                  className="h-16"
+                  className="h-20" /* Increased from h-16 to h-20 */
                 />
               </div>
               
