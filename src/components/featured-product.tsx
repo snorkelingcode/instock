@@ -2,7 +2,6 @@
 import React from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { ExternalLink } from "lucide-react";
 
 interface FeaturedProductProps {
@@ -45,9 +44,6 @@ const FeaturedProduct: React.FC<FeaturedProductProps> = ({
       <CardHeader className="p-4">
         <div className="flex justify-between items-start">
           <CardTitle className="text-lg font-bold line-clamp-2">{title}</CardTitle>
-          <Badge className={inStock ? "bg-green-500" : "bg-red-500"}>
-            {inStock ? "In Stock" : "Out of Stock"}
-          </Badge>
         </div>
         <CardDescription className="text-sm text-gray-500">
           {retailer}

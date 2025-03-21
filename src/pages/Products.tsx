@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -59,7 +58,7 @@ const ProductsPage = () => {
     
     fetchData();
     
-    // Setup interval to refresh cache info and active jobs
+    // Setup interval to refresh active jobs
     const refreshInterval = setInterval(async () => {
       const partitionInfo = getPartitionInfo(PRODUCTS_PARTITION);
       setCacheInfo(partitionInfo);
@@ -267,18 +266,6 @@ const ProductsPage = () => {
         
         <h2 className="text-xl font-semibold mb-4">Featured Products</h2>
         <FeaturedProducts products={featuredProducts} loading={loading} />
-        
-        {cacheInfo && (
-          <div className="text-xs text-gray-500 mt-2">
-            <p>
-              Products cache: {(cacheInfo.size / 1024).toFixed(2)}KB, 
-              Last updated: {new Date(cacheInfo.lastUpdated).toLocaleString()}
-            </p>
-            <p>
-              Total cache usage: {(getTotalCacheSize() / 1024).toFixed(2)}KB
-            </p>
-          </div>
-        )}
         
         <h2 className="text-xl font-semibold mb-4 mt-12">All Products</h2>
         <p className="text-gray-700 mb-6">
