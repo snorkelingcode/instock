@@ -121,7 +121,7 @@ const ProductsPage = () => {
       // If we have enough featured products, use them
       if (markedFeatured && markedFeatured.length >= 3) {
         // Type-safe conversion to Product array
-        const typedFeatured: Product[] = markedFeatured;
+        const typedFeatured = markedFeatured as Product[];
         setFeaturedProducts(typedFeatured.slice(0, 3));
         setCache(FEATURED_PRODUCTS_KEY, typedFeatured.slice(0, 3), CACHE_DURATION_MINUTES, PRODUCTS_PARTITION);
         
@@ -146,12 +146,13 @@ const ProductsPage = () => {
       // If there are Pokémon products, get random ones to fill up to 3
       if (pokemonProducts && pokemonProducts.length > 0) {
         // Start with any marked featured products - ensure proper typing
-        let selectedProducts: Product[] = markedFeatured ? [...markedFeatured] : [];
+        const typedMarkedFeatured = markedFeatured as Product[] || [];
+        let selectedProducts: Product[] = [...typedMarkedFeatured];
         
         // Get more products if needed
         if (selectedProducts.length < 3) {
           // Safely type the pokemonProducts
-          const typedPokemonProducts: Product[] = pokemonProducts;
+          const typedPokemonProducts = pokemonProducts as Product[];
           
           // Filter out products already selected as featured
           const remainingProducts = typedPokemonProducts.filter(p => 
