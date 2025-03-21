@@ -160,6 +160,14 @@ const Navigation = () => {
                         </SheetClose>
                         <SheetClose asChild>
                           <Link
+                            to="/admin/stock-monitor"
+                            className="py-3 px-6 text-red-600 font-medium border-b border-gray-200 hover:bg-red-50 transition-colors text-left"
+                          >
+                            In-Stock Monitor
+                          </Link>
+                        </SheetClose>
+                        <SheetClose asChild>
+                          <Link
                             to="/sets/sync"
                             className="py-3 px-6 text-red-600 font-medium border-b border-gray-200 hover:bg-red-50 transition-colors text-left"
                           >
