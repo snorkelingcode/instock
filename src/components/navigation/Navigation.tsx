@@ -121,6 +121,14 @@ const Navigation = () => {
                 
                 {user ? (
                   <>
+                    <SheetClose asChild>
+                      <Link
+                        to="/dashboard"
+                        className="py-3 px-6 text-red-600 font-medium border-b border-gray-200 hover:bg-red-50 transition-colors text-left"
+                      >
+                        Dashboard
+                      </Link>
+                    </SheetClose>
                     {isAdmin && (
                       <>
                         <div className="py-2 px-6 text-gray-500 text-sm bg-gray-50 font-medium">
@@ -245,6 +253,11 @@ const Navigation = () => {
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56">
+                <DropdownMenuItem>
+                  <Link to="/dashboard" className="w-full">
+                    Dashboard
+                  </Link>
+                </DropdownMenuItem>
                 {isAdmin && (
                   <>
                     <DropdownMenuItem>
@@ -265,6 +278,11 @@ const Navigation = () => {
                     <DropdownMenuItem>
                       <Link to="/admin/products" className="w-full">
                         Manage Products
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                      <Link to="/admin/stock-monitor" className="w-full">
+                        In-Stock Monitor
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem>
