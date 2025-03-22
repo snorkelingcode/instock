@@ -1,11 +1,10 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { 
   Eye, EyeOff, Trash2, RefreshCw, ExternalLink, AlertCircle, Clock, 
-  CheckCircle2, XCircle, Info, Bell, BellOff, Settings
+  CheckCircle2, XCircle, Info, Bell, BellOff, Settings, History
 } from "lucide-react";
 import { 
   Tooltip,
@@ -34,6 +33,7 @@ export interface MonitoringItemProps {
   isRefreshing?: boolean;
   check_frequency?: number;
   last_status_change?: string | null;
+  last_seen_in_stock?: string | null;
   consecutive_errors?: number;
   onToggleActive?: (id: string) => void;
   onDelete?: (id: string) => void;
@@ -53,6 +53,7 @@ const MonitoringItem: React.FC<MonitoringItemProps> = ({
   isRefreshing = false,
   check_frequency = 30, // Default to 30 minutes
   last_status_change,
+  last_seen_in_stock,
   consecutive_errors = 0,
   onToggleActive,
   onDelete,
@@ -139,6 +140,38 @@ const MonitoringItem: React.FC<MonitoringItemProps> = ({
                 Next check: approximately {getNextCheckTime()}
               </p>
             )}
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  };
+
+  // Format last seen in stock time
+  const formatLastSeen = () => {
+    if (!last_seen_in_stock) {
+      return (
+        <span className="flex items-center text-xs text-muted-foreground">
+          <History size={12} className="mr-1" />
+          {status === "in-stock" ? "Currently in stock" : "Searching..."}
+        </span>
+      );
+    }
+    
+    const date = new Date(last_seen_in_stock);
+    const timeAgo = formatDistanceToNow(date, { addSuffix: true });
+    const exactTime = format(date, "MMM d, yyyy h:mm a");
+    
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="flex items-center text-xs text-muted-foreground cursor-help">
+              <History size={12} className="mr-1" />
+              Last seen: {timeAgo}
+            </span>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Last confirmed in-stock: {exactTime}</p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
@@ -277,7 +310,10 @@ const MonitoringItem: React.FC<MonitoringItemProps> = ({
           
           <div className="flex items-center justify-between">
             {formatLastChecked()}
-            
+            {formatLastSeen()}
+          </div>
+          
+          <div className="flex items-center justify-end">
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>

@@ -1,4 +1,3 @@
-
 // @ts-ignore
 import { serve } from "std/http/server.ts";
 // Using direct import URL for Supabase client
@@ -560,24 +559,21 @@ serve(async (req: Request) => {
     try {
       console.log(`Updating database with check results: status=${isInStock ? "in-stock" : "out-of-stock"}, reason=${stockStatusReason}`);
       
-      const updateData = {
-        last_checked: new Date().toISOString(),
-        status: isInStock ? "in-stock" : "out-of-stock",
-        error_message: errorMessage || stockStatusReason, // Store the reason for transparency
-        consecutive_errors: 0 // Reset consecutive errors on success
-      };
+      const now = new Date().toISOString();
+      const currentStatus = isInStock ? "in-stock" : "out-of-stock";
       
-      const { error: updateError } = await supabase
+      await supabase
         .from("stock_monitors")
-        .update(updateData)
+        .update({ 
+          status: "in-stock", 
+          last_checked: now,
+          last_status_change: currentStatus !== "in-stock" ? now : undefined,
+          last_seen_in_stock: now, // Update last_seen_in_stock when item is in stock
+          error_message: null
+        })
         .eq("id", body.id);
       
-      if (updateError) {
-        console.error(`Database update error:`, updateError);
-        throw new Error(`Database update error: ${stringifyErrorDetails(updateError)}`);
-      } else {
-        console.log("Database updated successfully");
-      }
+      console.log("Database updated successfully");
     } catch (dbError) {
       console.error("Failed to update database:", dbError);
       

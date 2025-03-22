@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { format, parseISO, differenceInMinutes } from "date-fns";
 
@@ -16,6 +15,7 @@ export interface MonitoringItem {
   error_message?: string;
   check_frequency?: number; // Minutes between checks
   last_status_change?: string | null;
+  last_seen_in_stock?: string | null;
   consecutive_errors?: number;
 }
 
@@ -32,6 +32,7 @@ const convertToMonitoringItem = (item: any): MonitoringItem => {
     error_message: item.error_message,
     check_frequency: item.check_frequency || 30, // Default to 30 minutes
     last_status_change: item.last_status_change,
+    last_seen_in_stock: item.last_seen_in_stock,
     consecutive_errors: item.consecutive_errors || 0
   };
 };
