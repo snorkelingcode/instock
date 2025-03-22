@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,6 +12,8 @@ interface AuthContextProps {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  sendOtp: (email: string) => Promise<{ success: boolean; error?: any }>;
+  verifyOtp: (email: string, token: string) => Promise<{ success: boolean; error?: any }>;
 }
 
 const AuthContext = createContext<AuthContextProps | undefined>(undefined);
@@ -147,6 +148,65 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const sendOtp = async (email: string) => {
+    try {
+      setIsLoading(true);
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          shouldCreateUser: false,
+        }
+      });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Verification code sent",
+        description: "Please check your email for the verification code.",
+      });
+      
+      return { success: true };
+    } catch (error: any) {
+      toast({
+        title: "Failed to send verification code",
+        description: error.message || "An error occurred",
+        variant: "destructive",
+      });
+      return { success: false, error };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const verifyOtp = async (email: string, token: string) => {
+    try {
+      setIsLoading(true);
+      const { error } = await supabase.auth.verifyOtp({
+        email,
+        token,
+        type: 'email',
+      });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Verification successful",
+        description: "Your identity has been verified.",
+      });
+      
+      return { success: true };
+    } catch (error: any) {
+      toast({
+        title: "Verification failed",
+        description: error.message || "Invalid or expired code",
+        variant: "destructive",
+      });
+      return { success: false, error };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -165,6 +225,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signIn,
         signUp,
         signOut,
+        sendOtp,
+        verifyOtp,
       }}
     >
       {children}

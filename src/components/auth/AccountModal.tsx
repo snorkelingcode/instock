@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Dialog, 
   DialogContent, 
@@ -16,6 +16,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import TwoFactorVerification from "./TwoFactorVerification";
 
 interface AccountModalProps {
   open: boolean;
@@ -27,9 +28,17 @@ const AccountModal: React.FC<AccountModalProps> = ({ open, onOpenChange }) => {
   const [isUpdating, setIsUpdating] = useState(false);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [userId, setUserId] = useState(user?.id.substring(0, 8) || "");
-  const [displayUserId, setDisplayUserId] = useState(user?.user_metadata?.display_user_id || "");
+  const [displayUserId, setDisplayUserId] = useState("");
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [isVerified, setIsVerified] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (user) {
+      // Set display user ID from user metadata or generate from system ID
+      setDisplayUserId(user.user_metadata?.display_user_id || `user_${user.id.substring(0, 8)}`);
+    }
+  }, [user]);
 
   const handleUpdatePassword = async () => {
     if (!password) {
@@ -73,6 +82,8 @@ const AccountModal: React.FC<AccountModalProps> = ({ open, onOpenChange }) => {
       });
       setPassword("");
       setConfirmPassword("");
+      setIsVerified(false);
+      setIsChangingPassword(false);
     } catch (error: any) {
       toast({
         title: "Update failed",
@@ -126,6 +137,159 @@ const AccountModal: React.FC<AccountModalProps> = ({ open, onOpenChange }) => {
     }
   };
 
+  const handleStartPasswordChange = () => {
+    setIsChangingPassword(true);
+  };
+
+  const handleVerificationComplete = () => {
+    setIsVerified(true);
+  };
+
+  const handleCancelVerification = () => {
+    setIsChangingPassword(false);
+  };
+
+  // Regular account view
+  const accountView = (
+    <>
+      <div className="space-y-4 py-4">
+        <div className="space-y-2">
+          <Label>Email</Label>
+          <Input 
+            value={user?.email || ""} 
+            disabled 
+            className="bg-gray-100"
+          />
+          <p className="text-sm text-gray-500">
+            Your email address cannot be changed
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="displayUserId">Display User ID</Label>
+          <Input 
+            id="displayUserId"
+            placeholder="Enter your preferred User ID" 
+            value={displayUserId}
+            onChange={(e) => setDisplayUserId(e.target.value)}
+          />
+          <p className="text-sm text-gray-500">
+            This is how you'll be identified on the site
+          </p>
+          <Button 
+            onClick={handleUpdateUserId} 
+            disabled={isUpdating || displayUserId === user?.user_metadata?.display_user_id}
+            size="sm"
+          >
+            {isUpdating ? (
+              <>
+                <LoadingSpinner size="sm" className="mr-2" />
+                Updating...
+              </>
+            ) : "Update User ID"}
+          </Button>
+        </div>
+
+        <div className="space-y-2 pt-4 border-t">
+          <Label>Password</Label>
+          <p className="text-sm text-gray-500">
+            Change your password (requires verification)
+          </p>
+          <Button 
+            onClick={handleStartPasswordChange} 
+            size="sm"
+          >
+            Change Password
+          </Button>
+        </div>
+      </div>
+
+      <DialogFooter className="flex flex-col sm:flex-row sm:justify-between">
+        <div className="order-2 sm:order-1">
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" className="w-full sm:w-auto">
+                Delete Account
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete your account
+                  and remove all your data from our servers.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction 
+                  onClick={signOut} 
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  Delete Account
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      </DialogFooter>
+    </>
+  );
+
+  // Password change view (after verification)
+  const passwordChangeView = (
+    <>
+      <div className="space-y-4 py-4">
+        <div className="space-y-2">
+          <Label htmlFor="password">New Password</Label>
+          <Input 
+            id="password"
+            type="password" 
+            placeholder="Enter new password" 
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="confirmPassword">Confirm Password</Label>
+          <Input 
+            id="confirmPassword"
+            type="password" 
+            placeholder="Confirm new password" 
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+          />
+        </div>
+      </div>
+
+      <DialogFooter>
+        <Button 
+          variant="outline" 
+          onClick={() => {
+            setIsChangingPassword(false);
+            setIsVerified(false);
+            setPassword("");
+            setConfirmPassword("");
+          }}
+        >
+          Cancel
+        </Button>
+        <Button 
+          onClick={handleUpdatePassword} 
+          disabled={isUpdating || !password || password !== confirmPassword}
+        >
+          {isUpdating ? (
+            <>
+              <LoadingSpinner size="sm" className="mr-2" />
+              Updating...
+            </>
+          ) : "Update Password"}
+        </Button>
+      </DialogFooter>
+    </>
+  );
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -136,124 +300,19 @@ const AccountModal: React.FC<AccountModalProps> = ({ open, onOpenChange }) => {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label>Email</Label>
-            <Input 
-              value={user?.email || ""} 
-              disabled 
-              className="bg-gray-100"
+        {isChangingPassword ? (
+          isVerified ? (
+            passwordChangeView
+          ) : (
+            <TwoFactorVerification 
+              email={user?.email || ""} 
+              onVerificationComplete={handleVerificationComplete}
+              onCancel={handleCancelVerification}
             />
-            <p className="text-sm text-gray-500">
-              Your email address cannot be changed
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="userId">System User ID</Label>
-            <Input 
-              id="userId"
-              value={userId}
-              disabled
-              className="bg-gray-100"
-            />
-            <p className="text-sm text-gray-500">
-              This is your system identifier
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="displayUserId">Display User ID</Label>
-            <Input 
-              id="displayUserId"
-              placeholder="Enter your preferred User ID" 
-              value={displayUserId}
-              onChange={(e) => setDisplayUserId(e.target.value)}
-            />
-            <p className="text-sm text-gray-500">
-              This is how you'll be identified on the site
-            </p>
-            <Button 
-              onClick={handleUpdateUserId} 
-              disabled={isUpdating || displayUserId === user?.user_metadata?.display_user_id}
-              size="sm"
-            >
-              {isUpdating ? (
-                <>
-                  <LoadingSpinner size="sm" className="mr-2" />
-                  Updating...
-                </>
-              ) : "Update User ID"}
-            </Button>
-          </div>
-
-          <div className="space-y-2 pt-4 border-t">
-            <Label htmlFor="password">New Password</Label>
-            <Input 
-              id="password"
-              type="password" 
-              placeholder="Enter new password" 
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="confirmPassword">Confirm Password</Label>
-            <Input 
-              id="confirmPassword"
-              type="password" 
-              placeholder="Confirm new password" 
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-            />
-          </div>
-        </div>
-
-        <DialogFooter className="flex flex-col sm:flex-row sm:justify-between">
-          <div className="order-2 sm:order-1">
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive" className="w-full sm:w-auto">
-                  Delete Account
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This action cannot be undone. This will permanently delete your account
-                    and remove all your data from our servers.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction 
-                    onClick={signOut} 
-                    className="bg-red-600 hover:bg-red-700"
-                  >
-                    Delete Account
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
-          
-          <div className="order-1 sm:order-2 mb-3 sm:mb-0">
-            <Button 
-              onClick={handleUpdatePassword} 
-              disabled={isUpdating || !password || password !== confirmPassword}
-              className="w-full sm:w-auto"
-            >
-              {isUpdating ? (
-                <>
-                  <LoadingSpinner size="sm" className="mr-2" />
-                  Updating...
-                </>
-              ) : "Update Password"}
-            </Button>
-          </div>
-        </DialogFooter>
+          )
+        ) : (
+          accountView
+        )}
       </DialogContent>
     </Dialog>
   );
