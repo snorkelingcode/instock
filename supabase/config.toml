@@ -13,10 +13,12 @@ enable_signup = true
 double_confirm_changes = true
 enable_confirmations = true
 
+# This is the correct syntax for external email templates
 [auth.external_email_template]
 enable = true
 provider_url = "https://etgkuasmqjidwtaxrfww.supabase.co/functions/v1/custom-email"
 
+# This is where email sender details should be configured
 [auth.external.email]
 sender_name = "TCG Updates"
 sender_email = "noreply@tcgupdates.com"
