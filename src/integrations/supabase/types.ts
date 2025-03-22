@@ -766,6 +766,8 @@ export type Database = {
       }
       stock_monitors: {
         Row: {
+          check_frequency: number | null
+          consecutive_errors: number | null
           created_at: string | null
           error_message: string | null
           id: string
@@ -779,6 +781,8 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          check_frequency?: number | null
+          consecutive_errors?: number | null
           created_at?: string | null
           error_message?: string | null
           id?: string
@@ -792,6 +796,8 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          check_frequency?: number | null
+          consecutive_errors?: number | null
           created_at?: string | null
           error_message?: string | null
           id?: string
