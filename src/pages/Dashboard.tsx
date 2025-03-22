@@ -6,11 +6,13 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CalendarDays, MessageSquare, User, FileText, Clock } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { CalendarDays, MessageSquare, User, FileText, Clock, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from 'react-router-dom';
+import AccountModal from "@/components/auth/AccountModal";
 
 interface UserComment {
   id: string;
@@ -24,6 +26,8 @@ const Dashboard = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [userComments, setUserComments] = useState<UserComment[]>([]);
+  const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
+  const [isDeletingComment, setIsDeletingComment] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -71,6 +75,36 @@ const Dashboard = () => {
     }
   };
 
+  const handleDeleteComment = async (commentId: string) => {
+    try {
+      setIsDeletingComment(commentId);
+      
+      const { error } = await supabase
+        .from('article_comments')
+        .delete()
+        .eq('id', commentId)
+        .eq('user_id', user?.id);
+      
+      if (error) throw error;
+      
+      setUserComments(userComments.filter(comment => comment.id !== commentId));
+      
+      toast({
+        title: "Comment deleted",
+        description: "Your comment has been successfully deleted.",
+      });
+    } catch (error) {
+      console.error('Error deleting comment:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete your comment. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsDeletingComment(null);
+    }
+  };
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
@@ -114,8 +148,12 @@ const Dashboard = () => {
               </div>
             </CardContent>
             <CardFooter>
-              <Button variant="outline" className="w-full" asChild>
-                <Link to="/auth">Manage Account</Link>
+              <Button 
+                variant="outline" 
+                className="w-full" 
+                onClick={() => setIsAccountModalOpen(true)}
+              >
+                Manage Account
               </Button>
             </CardFooter>
           </Card>
@@ -145,13 +183,45 @@ const Dashboard = () => {
                         </Badge>
                       </div>
                       <p className="text-gray-700 line-clamp-2">{comment.content}</p>
-                      <div className="mt-2 flex justify-end">
+                      <div className="mt-2 flex justify-end gap-2">
                         <Button variant="ghost" size="sm" asChild>
                           <Link to={`/article/${comment.articleId}`}>
                             <MessageSquare className="mr-2 h-4 w-4" />
                             View Comment
                           </Link>
                         </Button>
+                        
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Comment</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete this comment? This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction 
+                                onClick={() => handleDeleteComment(comment.id)}
+                                className="bg-red-600 hover:bg-red-700"
+                                disabled={isDeletingComment === comment.id}
+                              >
+                                {isDeletingComment === comment.id ? (
+                                  <>
+                                    <LoadingSpinner size="sm" className="mr-2" />
+                                    Deleting...
+                                  </>
+                                ) : "Delete Comment"}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                     </div>
                   ))}
@@ -169,6 +239,12 @@ const Dashboard = () => {
             </CardContent>
           </Card>
         </div>
+        
+        {/* Account Management Modal */}
+        <AccountModal 
+          open={isAccountModalOpen}
+          onOpenChange={setIsAccountModalOpen}
+        />
       </div>
     </Layout>
   );
