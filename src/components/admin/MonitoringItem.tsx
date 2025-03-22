@@ -68,8 +68,9 @@ const MonitoringItem: React.FC<MonitoringItemProps> = ({
                   Error
                 </Badge>
               </TooltipTrigger>
-              <TooltipContent>
-                <p className="max-w-xs">{error_message || "An error occurred during the last check"}</p>
+              <TooltipContent className="max-w-[350px] p-4">
+                <p className="font-semibold mb-1">Error Details:</p>
+                <p className="text-sm whitespace-pre-wrap">{error_message || "An error occurred during the last check"}</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -142,6 +143,13 @@ const MonitoringItem: React.FC<MonitoringItemProps> = ({
           {target_text && (
             <div className="text-sm text-muted-foreground">
               <span className="font-medium">Target text:</span> "{target_text}"
+            </div>
+          )}
+          
+          {status === "error" && error_message && (
+            <div className="text-xs text-red-500 mt-1 truncate hover:text-clip hover:whitespace-normal">
+              <AlertCircle size={12} className="inline mr-1" />
+              {error_message}
             </div>
           )}
           

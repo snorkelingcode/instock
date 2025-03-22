@@ -1,3 +1,4 @@
+
 // @ts-ignore
 import { serve } from "std/http/server.ts";
 // Using direct import URL for Supabase client
@@ -16,7 +17,7 @@ const createSupabaseClient = (req: Request) => {
   const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") as string;
   
   if (!supabaseUrl || !supabaseServiceKey) {
-    throw new Error("Missing Supabase environment variables");
+    throw new Error("Missing Supabase environment variables: SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY not set");
   }
   
   return createClient(supabaseUrl, supabaseServiceKey);
@@ -63,7 +64,10 @@ serve(async (req: Request) => {
       console.error("Failed to parse request body:", parseError);
       
       return new Response(
-        JSON.stringify({ success: false, error: "Invalid request format" }),
+        JSON.stringify({ 
+          success: false, 
+          error: `Invalid request format: ${parseError instanceof Error ? parseError.message : String(parseError)}` 
+        }),
         {
           status: 200, // Use 200 to avoid client errors
           headers: {
@@ -76,9 +80,19 @@ serve(async (req: Request) => {
     
     // Validate required fields
     if (!body || !body.url || !body.id) {
-      console.error("Missing required fields in request body");
+      const missingFields = [];
+      if (!body) missingFields.push("body");
+      else {
+        if (!body.url) missingFields.push("url");
+        if (!body.id) missingFields.push("id");
+      }
+      
+      console.error(`Missing required fields: ${missingFields.join(", ")}`);
       return new Response(
-        JSON.stringify({ success: false, error: "Missing required fields" }),
+        JSON.stringify({ 
+          success: false, 
+          error: `Missing required fields: ${missingFields.join(", ")}` 
+        }),
         {
           status: 200, // Use 200 to avoid client errors
           headers: {
@@ -96,7 +110,10 @@ serve(async (req: Request) => {
     } catch (dbError) {
       console.error("Failed to create Supabase client:", dbError);
       return new Response(
-        JSON.stringify({ success: false, error: "Database connection error" }),
+        JSON.stringify({ 
+          success: false, 
+          error: `Database connection error: ${dbError instanceof Error ? dbError.message : String(dbError)}` 
+        }),
         {
           status: 200, // Use 200 to avoid client errors
           headers: {
@@ -166,7 +183,7 @@ serve(async (req: Request) => {
       console.log(`Fetch response status: ${response.status}`);
       
       if (!response.ok) {
-        throw new Error(`Failed to fetch URL: ${response.status} ${response.statusText}`);
+        throw new Error(`Failed to fetch URL: HTTP ${response.status} ${response.statusText}`);
       }
       
       // Get the HTML content
@@ -178,6 +195,13 @@ serve(async (req: Request) => {
       fetchError = error;
       console.error("Fetch error:", error);
       
+      // Create detailed error message
+      const errorMessage = error instanceof Error 
+        ? `${error.name}: ${error.message}` 
+        : error instanceof DOMException && error.name === "AbortError" 
+          ? "Request timeout: took longer than 15 seconds to respond" 
+          : String(error);
+      
       // Update database with error status
       try {
         if (supabase) {
@@ -187,7 +211,7 @@ serve(async (req: Request) => {
             .update({
               last_checked: new Date().toISOString(),
               status: "error",
-              error_message: error.message || "Failed to fetch URL"
+              error_message: `Failed to fetch: ${errorMessage}`
             })
             .eq("id", body.id);
         }
@@ -199,7 +223,7 @@ serve(async (req: Request) => {
         JSON.stringify({ 
           success: false, 
           isInStock: false,
-          error: error.message || "Failed to fetch URL",
+          error: errorMessage,
           id: body.id,
           lastChecked: new Date().toISOString()
         }),
@@ -361,7 +385,7 @@ serve(async (req: Request) => {
         if (isTargetSite) {
           // Target-specific stock detection
           const soldOutIndicator = lowerHtml.includes('sold out');
-          const addToCartEnabled = lowerHtml.includes('pickup button');
+          const addToCartEnabled = lowerHtml.includes('pickup button') || lowerHtml.includes('shipit-button');
           
           if (soldOutIndicator) {
             isInStock = false;
@@ -386,7 +410,7 @@ serve(async (req: Request) => {
           // Walmart and BestBuy often have similar patterns
           if (hasOutOfStockIndicator) {
             isInStock = false;
-            stockStatusReason = `${isWalmartSite ? 'Walmart' : 'BestBuy'}: Out of stock indicator found`;
+            stockStatusReason = `${isWalmartSite ? 'Walmart' : 'BestBuy'}: Out of stock indicator found: "${foundOutOfStockPattern}"`;
           } else if (hasEnabledAddToCartButton || hasAddToCartForm) {
             isInStock = true;
             stockStatusReason = `${isWalmartSite ? 'Walmart' : 'BestBuy'}: Add to cart functionality detected`;
@@ -426,9 +450,9 @@ serve(async (req: Request) => {
       
     } catch (analysisError) {
       console.error('Error during stock pattern detection:', analysisError);
-      errorMessage = analysisError.message;
+      errorMessage = analysisError instanceof Error ? analysisError.message : String(analysisError);
       isInStock = false; // Default to out of stock on error
-      stockStatusReason = "Error during analysis";
+      stockStatusReason = `Error during analysis: ${errorMessage}`;
     }
     
     // Save a sample of relevant HTML for debugging
@@ -462,7 +486,7 @@ serve(async (req: Request) => {
           last_checked: new Date().toISOString(),
           status: isInStock ? "in-stock" : "out-of-stock",
           html_snapshot: htmlSample,
-          error_message: errorMessage || null
+          error_message: errorMessage || stockStatusReason // Store the reason for transparency
         })
         .eq("id", body.id);
       
@@ -482,7 +506,7 @@ serve(async (req: Request) => {
           .update({
             last_checked: new Date().toISOString(),
             status: "error",
-            error_message: "Failed to update database with results"
+            error_message: `Failed to update database: ${dbError instanceof Error ? dbError.message : String(dbError)}`
           })
           .eq("id", body.id);
       } catch (e) {
@@ -492,7 +516,7 @@ serve(async (req: Request) => {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: "Database update error",
+          error: `Database update error: ${dbError instanceof Error ? dbError.message : String(dbError)}`,
           stockStatusReason
         }),
         {
@@ -527,6 +551,12 @@ serve(async (req: Request) => {
     // Top-level error handler
     console.error("Unhandled error in check-url-stock function:", error);
     
+    const errorMessage = error instanceof Error 
+      ? `${error.name}: ${error.message}` 
+      : typeof error === 'object' && error !== null 
+        ? JSON.stringify(error) 
+        : String(error);
+    
     // Try to update the database with error status
     try {
       if (supabase && body && body.id) {
@@ -535,7 +565,7 @@ serve(async (req: Request) => {
           .update({
             last_checked: new Date().toISOString(),
             status: "error",
-            error_message: error.message || "Unknown error occurred during check"
+            error_message: `Unhandled error: ${errorMessage}`
           })
           .eq("id", body.id);
       }
@@ -547,7 +577,7 @@ serve(async (req: Request) => {
     return new Response(
       JSON.stringify({
         success: false,
-        error: error.message || "An unknown error occurred",
+        error: errorMessage,
         id: body?.id,
         lastChecked: new Date().toISOString()
       }),

@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { format, parseISO } from "date-fns";
 
@@ -228,7 +229,7 @@ export const triggerCheck = async (monitorId: string): Promise<MonitoringItem | 
         .from("stock_monitors")
         .update({ 
           status: "error",
-          error_message: "Failed to fetch monitor data",
+          error_message: "Failed to fetch monitor data: " + (fetchError instanceof Error ? fetchError.message : String(fetchError)),
           last_checked: new Date().toISOString()
         })
         .eq("id", monitorId);
@@ -245,6 +246,8 @@ export const triggerCheck = async (monitorId: string): Promise<MonitoringItem | 
     try {
       // Call the edge function to check the URL status
       console.log(`Calling edge function for monitor ${monitorId} with URL: ${monitor.url}`);
+      
+      // Use the full Supabase project URL for the function
       const { data, error } = await supabase.functions.invoke('check-url-stock', {
         body: { 
           id: monitorId,
@@ -256,12 +259,12 @@ export const triggerCheck = async (monitorId: string): Promise<MonitoringItem | 
       if (error) {
         console.error("Error triggering URL check:", error);
         
-        // Update the monitor with error status
+        // Update the monitor with detailed error status
         await supabase
           .from("stock_monitors")
           .update({ 
             status: "error",
-            error_message: error.message || "Error checking URL status",
+            error_message: `Edge function error: ${error.message || "Error checking URL"}`,
             last_checked: new Date().toISOString()
           })
           .eq("id", monitorId);
@@ -298,7 +301,13 @@ export const triggerCheck = async (monitorId: string): Promise<MonitoringItem | 
       // If there was an error, make sure we still clear the in-progress flag
       console.error("Function invoke or fetch error:", error);
       
-      // Double-check that we update the DB with error status if needed
+      const errorMessage = error instanceof Error 
+        ? `${error.name}: ${error.message}` 
+        : typeof error === 'object' && error !== null 
+          ? JSON.stringify(error) 
+          : String(error);
+      
+      // Double-check that we update the DB with detailed error status if needed
       try {
         // First fetch to see if the status was updated by the edge function
         const { data: currentData } = await supabase
@@ -315,7 +324,7 @@ export const triggerCheck = async (monitorId: string): Promise<MonitoringItem | 
             .from("stock_monitors")
             .update({ 
               status: "error",
-              error_message: error instanceof Error ? error.message : "Error checking URL status",
+              error_message: `Network or function error: ${errorMessage}`,
               last_checked: new Date().toISOString()
             })
             .eq("id", monitorId);
@@ -332,6 +341,26 @@ export const triggerCheck = async (monitorId: string): Promise<MonitoringItem | 
     }
   } catch (error) {
     console.error("Error in triggerCheck:", error);
+    
+    const errorMessage = error instanceof Error 
+      ? `${error.name}: ${error.message}` 
+      : typeof error === 'object' && error !== null 
+        ? JSON.stringify(error) 
+        : String(error);
+    
+    // Update the database with the detailed error
+    try {
+      await supabase
+        .from("stock_monitors")
+        .update({ 
+          status: "error",
+          error_message: `Check failed: ${errorMessage}`,
+          last_checked: new Date().toISOString()
+        })
+        .eq("id", monitorId);
+    } catch (dbError) {
+      console.error("Failed to update error status after top-level error:", dbError);
+    }
     
     // Clear the in-progress flag even if there was an error
     delete checkInProgress[monitorId];
