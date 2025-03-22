@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { UserIcon, MessageSquare, Clock } from "lucide-react";
+import { UserIcon, MessageSquare, Clock, Shield } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 
@@ -27,7 +27,8 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
   const [newComment, setNewComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const { user } = useAuth();
+  const [isDeletingComment, setIsDeletingComment] = useState<string | null>(null);
+  const { user, isAdmin } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -140,6 +141,46 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
     }
   };
 
+  const handleDeleteComment = async (commentId: string, commentUserId: string) => {
+    // Only proceed if the user is logged in AND (is the comment author OR is an admin)
+    if (!user || (!isAdmin && user.id !== commentUserId)) {
+      toast({
+        title: "Permission denied",
+        description: "You do not have permission to delete this comment.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsDeletingComment(commentId);
+    
+    try {
+      const { error } = await supabase
+        .from('article_comments')
+        .delete()
+        .eq('id', commentId);
+      
+      if (error) throw error;
+      
+      // Remove the deleted comment from state
+      setComments(comments.filter(comment => comment.id !== commentId));
+      
+      toast({
+        title: "Comment deleted",
+        description: "The comment has been successfully deleted.",
+      });
+    } catch (error) {
+      console.error("Error deleting comment:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete the comment. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeletingComment(null);
+    }
+  };
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("en-US", {
@@ -153,6 +194,10 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
   
   const getUserInitials = (email: string) => {
     return email.substring(0, 2).toUpperCase();
+  };
+
+  const canDeleteComment = (commentUserId: string) => {
+    return user && (isAdmin || user.id === commentUserId);
   };
 
   return (
@@ -208,13 +253,40 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
                 </Avatar>
                 <div className="flex-1">
                   <div className="flex flex-col sm:flex-row sm:justify-between sm:items-baseline">
-                    <p className="font-medium">{comment.user_email}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium">{comment.user_email}</p>
+                      {user && user.id === comment.user_id && (
+                        <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">You</span>
+                      )}
+                      {isAdmin && user && user.id === comment.user_id && (
+                        <Shield className="h-4 w-4 text-red-500" title="Admin" />
+                      )}
+                    </div>
                     <span className="text-xs text-gray-500 flex items-center mt-1 sm:mt-0">
                       <Clock className="h-3 w-3 mr-1" />
                       {formatDate(comment.created_at)}
                     </span>
                   </div>
                   <p className="mt-2 text-gray-700">{comment.content}</p>
+                  
+                  {canDeleteComment(comment.user_id) && (
+                    <div className="mt-2 text-right">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        onClick={() => handleDeleteComment(comment.id, comment.user_id)}
+                        disabled={isDeletingComment === comment.id}
+                      >
+                        {isDeletingComment === comment.id ? (
+                          <>
+                            <LoadingSpinner size="sm" className="mr-2" />
+                            Deleting...
+                          </>
+                        ) : "Delete"}
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
