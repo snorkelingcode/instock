@@ -144,7 +144,7 @@ export const formatDate = (dateString: string | null): string => {
   }
 };
 
-// Trigger a manual check of a URL with debounce protection
+// For preventing concurrent checks and managing timeouts
 let checkInProgress: Record<string, boolean> = {};
 let checkTimeouts: Record<string, number> = {};
 
@@ -175,6 +175,13 @@ export const triggerCheck = async (monitorId: string): Promise<MonitoringItem | 
       
     if (fetchError) {
       console.error("Error fetching monitor data:", fetchError);
+      
+      // Clean up the in-progress flag after a delay
+      checkTimeouts[monitorId] = setTimeout(() => {
+        delete checkInProgress[monitorId];
+        delete checkTimeouts[monitorId];
+      }, 2000) as unknown as number;
+      
       throw fetchError;
     }
     
@@ -212,6 +219,8 @@ export const triggerCheck = async (monitorId: string): Promise<MonitoringItem | 
         throw error;
       }
       
+      console.log("Edge function response:", data);
+      
       // Fetch the updated monitor data since the edge function should have updated it
       const { data: monitorData, error: monitorError } = await supabase
         .from("stock_monitors")
@@ -224,7 +233,7 @@ export const triggerCheck = async (monitorId: string): Promise<MonitoringItem | 
         throw monitorError;
       }
 
-      // Add a slight delay before clearing the in-progress flag to avoid race conditions
+      // Clean up the in-progress flag with delay to prevent race conditions
       checkTimeouts[monitorId] = setTimeout(() => {
         delete checkInProgress[monitorId];
         delete checkTimeouts[monitorId];

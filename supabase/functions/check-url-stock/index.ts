@@ -62,7 +62,7 @@ serve(async (req: Request) => {
       return new Response(
         JSON.stringify({ success: false, error: "Invalid request format" }),
         {
-          status: 400,
+          status: 200, // Use 200 to avoid client errors
           headers: {
             ...corsHeaders,
             "Content-Type": "application/json"
@@ -77,7 +77,7 @@ serve(async (req: Request) => {
       return new Response(
         JSON.stringify({ success: false, error: "Missing required fields" }),
         {
-          status: 400,
+          status: 200, // Use 200 to avoid client errors
           headers: {
             ...corsHeaders,
             "Content-Type": "application/json"
@@ -94,7 +94,7 @@ serve(async (req: Request) => {
       return new Response(
         JSON.stringify({ success: false, error: "Database connection error" }),
         {
-          status: 500,
+          status: 200, // Use 200 to avoid client errors
           headers: {
             ...corsHeaders,
             "Content-Type": "application/json"
