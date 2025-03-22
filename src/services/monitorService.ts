@@ -148,11 +148,32 @@ export const formatDate = (dateString: string | null): string => {
 let checkInProgress: Record<string, boolean> = {};
 let checkTimeouts: Record<string, number> = {};
 
+// Safety mechanism to clean up stale in-progress flags
+// This will run every minute to clear any in-progress flags that may have been left behind
+const CLEANUP_INTERVAL = 60 * 1000; // 1 minute
+setInterval(() => {
+  const now = Date.now();
+  const staleTime = 2 * 60 * 1000; // 2 minutes
+  
+  // Check for stale in-progress flags
+  for (const id in checkInProgress) {
+    const timestamp = checkTimeouts[`${id}_started`] || 0;
+    if (now - timestamp > staleTime) {
+      console.log(`Clearing stale in-progress flag for ${id} (after ${Math.round((now - timestamp) / 1000)}s)`);
+      delete checkInProgress[id];
+      delete checkTimeouts[`${id}_started`];
+    }
+  }
+}, CLEANUP_INTERVAL);
+
 // Trigger a manual check of a URL
 export const triggerCheck = async (monitorId: string): Promise<MonitoringItem | null> => {
   console.log(`Starting check for monitor ID: ${monitorId}`);
   
   try {
+    // Record start time for this check
+    checkTimeouts[`${monitorId}_started`] = Date.now();
+    
     // Clear any existing timeouts for this monitor ID
     if (checkTimeouts[monitorId]) {
       clearTimeout(checkTimeouts[monitorId]);
@@ -170,26 +191,37 @@ export const triggerCheck = async (monitorId: string): Promise<MonitoringItem | 
     console.log(`Set checkInProgress[${monitorId}] = true`);
     
     // First update status to unknown to show the check is in progress
-    const { error: updateError } = await supabase
-      .from("stock_monitors")
-      .update({ 
-        status: "unknown",
-        error_message: null 
-      })
-      .eq("id", monitorId);
-      
-    if (updateError) {
-      console.error("Error updating monitor status to unknown:", updateError);
+    try {
+      const { error: updateError } = await supabase
+        .from("stock_monitors")
+        .update({ 
+          status: "unknown",
+          error_message: null 
+        })
+        .eq("id", monitorId);
+        
+      if (updateError) {
+        console.error("Error updating monitor status to unknown:", updateError);
+      }
+    } catch (e) {
+      console.error("Error updating initial status:", e);
     }
     
     // Then fetch the monitor to get URL and target text
-    const { data: monitor, error: fetchError } = await supabase
-      .from("stock_monitors")
-      .select("*")
-      .eq("id", monitorId)
-      .single();
+    let monitor;
+    try {
+      const { data, error } = await supabase
+        .from("stock_monitors")
+        .select("*")
+        .eq("id", monitorId)
+        .single();
+        
+      if (error) {
+        throw error;
+      }
       
-    if (fetchError) {
+      monitor = data;
+    } catch (fetchError) {
       console.error("Error fetching monitor data:", fetchError);
       
       // Update DB with error
@@ -202,12 +234,9 @@ export const triggerCheck = async (monitorId: string): Promise<MonitoringItem | 
         })
         .eq("id", monitorId);
       
-      // Clean up the in-progress flag after a delay
-      checkTimeouts[monitorId] = setTimeout(() => {
-        delete checkInProgress[monitorId];
-        delete checkTimeouts[monitorId];
-        console.log(`Cleared checkInProgress for ${monitorId} after fetch error`);
-      }, 2000) as unknown as number;
+      // Clean up the in-progress flag
+      delete checkInProgress[monitorId];
+      console.log(`Cleared checkInProgress for ${monitorId} after fetch error`);
       
       throw fetchError;
     }
@@ -243,7 +272,8 @@ export const triggerCheck = async (monitorId: string): Promise<MonitoringItem | 
       
       console.log("Edge function response:", data);
       
-      // Fetch the updated monitor data since the edge function should have updated it
+      // Even if the edge function returns success=false, it should have updated the DB
+      // so we fetch the updated monitor data
       const { data: monitorData, error: monitorError } = await supabase
         .from("stock_monitors")
         .select("*")
@@ -257,45 +287,56 @@ export const triggerCheck = async (monitorId: string): Promise<MonitoringItem | 
 
       console.log("Updated monitor data:", monitorData);
       
-      // Clean up the in-progress flag with delay to prevent race conditions
+      // Clean up the in-progress flag with a slight delay to prevent race conditions
       checkTimeouts[monitorId] = setTimeout(() => {
         delete checkInProgress[monitorId];
         delete checkTimeouts[monitorId];
         console.log(`Cleared checkInProgress for ${monitorId} after successful check`);
-      }, 2000) as unknown as number;
+      }, 3000) as unknown as number;
       
       return convertToMonitoringItem(monitorData);
     } catch (error) {
-      // If there was an error, make sure we still clear the in-progress flag after a delay
+      // If there was an error, make sure we still clear the in-progress flag
       console.error("Function invoke or fetch error:", error);
       
-      // Ensure we update the DB with error status if not already done
-      await supabase
-        .from("stock_monitors")
-        .update({ 
-          status: "error",
-          error_message: error instanceof Error ? error.message : "Unknown error occurred",
-          last_checked: new Date().toISOString()
-        })
-        .eq("id", monitorId);
+      // Double-check that we update the DB with error status if needed
+      try {
+        // First fetch to see if the status was updated by the edge function
+        const { data: currentData } = await supabase
+          .from("stock_monitors")
+          .select("status, last_checked")
+          .eq("id", monitorId)
+          .single();
+          
+        // Only update if it's still in "unknown" state or hasn't been checked recently
+        if (currentData?.status === "unknown" || 
+            !currentData?.last_checked || 
+            (new Date().getTime() - new Date(currentData.last_checked).getTime() > 10000)) {
+          await supabase
+            .from("stock_monitors")
+            .update({ 
+              status: "error",
+              error_message: error instanceof Error ? error.message : "Unknown error occurred",
+              last_checked: new Date().toISOString()
+            })
+            .eq("id", monitorId);
+        }
+      } catch (dbError) {
+        console.error("Error updating monitor status after error:", dbError);
+      }
       
-      checkTimeouts[monitorId] = setTimeout(() => {
-        delete checkInProgress[monitorId];
-        delete checkTimeouts[monitorId];
-        console.log(`Cleared checkInProgress for ${monitorId} after error`);
-      }, 2000) as unknown as number;
+      // Clear the in-progress flag
+      delete checkInProgress[monitorId];
+      console.log(`Cleared checkInProgress for ${monitorId} after error`);
       
-      // Return null to indicate an error
       return null;
     }
   } catch (error) {
     console.error("Error in triggerCheck:", error);
     
     // Clear the in-progress flag even if there was an error
-    setTimeout(() => {
-      delete checkInProgress[monitorId];
-      console.log(`Cleared checkInProgress for ${monitorId} after outer catch`);
-    }, 2000);
+    delete checkInProgress[monitorId];
+    console.log(`Cleared checkInProgress for ${monitorId} after outer catch`);
     
     return null;
   }

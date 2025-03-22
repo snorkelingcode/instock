@@ -146,7 +146,7 @@ serve(async (req: Request) => {
     
     // Make the request with a timeout
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 12000); // 12 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
     
     let response = null;
     let html = "";
@@ -217,20 +217,21 @@ serve(async (req: Request) => {
     // If we got the HTML content successfully, analyze it
     let isInStock = false;
     let errorMessage = null;
+    let stockStatusReason = ""; // For debugging
     
     try {
       console.log("Analyzing HTML content for stock status");
+      
+      const lowerHtml = html.toLowerCase();
+      
       // First check for specific target text if provided
       if (body.targetText && body.targetText.trim() !== '') {
         console.log(`Checking for custom target text: "${body.targetText}"`);
         isInStock = html.includes(body.targetText);
-        console.log(`Custom target text check "${body.targetText}": ${isInStock ? 'found' : 'not found'}`);
+        stockStatusReason = `Custom target text: "${body.targetText}" was ${isInStock ? 'found' : 'not found'}`;
+        console.log(stockStatusReason);
       } else {
-        // Universal stock check with improved button state detection
-        const lowerHtml = html.toLowerCase();
-        
-        // IMPROVED BUTTON DETECTION:
-        // Extract all buttons from the HTML for detailed analysis
+        // EXTRACT BUTTONS: Find all <button> elements
         const buttonRegex = /<button[^>]*>(.*?)<\/button>/gis;
         let match;
         const buttons = [];
@@ -245,15 +246,19 @@ serve(async (req: Request) => {
         let hasEnabledAddToCartButton = false;
         let hasDisabledAddToCartButton = false;
 
+        // Common phrases in add-to-cart buttons
         const cartButtonPatterns = [
           'add to cart',
           'add to basket',
           'buy now',
           'purchase',
           'checkout',
-          'preorder'
+          'preorder',
+          'shop now',
+          'get it now'
         ];
         
+        // Patterns that indicate a button is disabled
         const disabledPatterns = [
           'disabled',
           'out-of-stock',
@@ -274,12 +279,20 @@ serve(async (req: Request) => {
             
             if (isDisabled) {
               hasDisabledAddToCartButton = true;
-              console.log("Found disabled cart button:", button);
+              console.log("Found disabled cart button:", button.substring(0, 100));
             } else {
               hasEnabledAddToCartButton = true;
-              console.log("Found enabled cart button:", button);
+              console.log("Found enabled cart button:", button.substring(0, 100));
             }
           }
+        }
+        
+        // Also look for 'add to cart' forms which are common in ecommerce sites
+        const hasAddToCartForm = lowerHtml.includes('form') && 
+          (lowerHtml.includes('add to cart') || lowerHtml.includes('add-to-cart'));
+          
+        if (hasAddToCartForm) {
+          console.log("Found add to cart form");
         }
         
         // Out of stock indicators in the entire page
@@ -297,72 +310,160 @@ serve(async (req: Request) => {
           'temporarily out of stock'
         ];
         
-        const hasOutOfStockIndicator = outOfStockPatterns.some(pattern => 
-          lowerHtml.includes(pattern)
-        );
+        // Check for out-of-stock indicators
+        let hasOutOfStockIndicator = false;
+        let foundOutOfStockPattern = "";
+        
+        for (const pattern of outOfStockPatterns) {
+          if (lowerHtml.includes(pattern)) {
+            hasOutOfStockIndicator = true;
+            foundOutOfStockPattern = pattern;
+            break;
+          }
+        }
 
+        if (hasOutOfStockIndicator) {
+          console.log(`Found out-of-stock text indicator: "${foundOutOfStockPattern}"`);
+        }
+        
         // In stock indicators in the entire page
         const inStockPatterns = [
           'in stock',
           'in-stock',
           'available',
           'ready to ship',
-          'ships today'
+          'ships today',
+          'add to cart'
         ];
 
-        const hasInStockIndicator = inStockPatterns.some(pattern =>
-          lowerHtml.includes(pattern)
-        );
+        // Check for in-stock indicators
+        let hasInStockIndicator = false;
+        let foundInStockPattern = "";
         
-        if (hasOutOfStockIndicator) {
-          console.log("Found out-of-stock text indicator");
+        for (const pattern of inStockPatterns) {
+          if (lowerHtml.includes(pattern)) {
+            hasInStockIndicator = true;
+            foundInStockPattern = pattern;
+            break;
+          }
         }
         
         if (hasInStockIndicator) {
-          console.log("Found in-stock text indicator");
+          console.log(`Found in-stock text indicator: "${foundInStockPattern}"`);
         }
         
-        // Make the final determination:
-        // 1. Enabled "Add to Cart" button is the strongest indicator for in-stock
-        // 2. Disabled "Add to Cart" button is a strong indicator for out-of-stock
-        // 3. General text indicators as fallback
+        // E-commerce site detection (refines stock detection logic)
+        const isTargetSite = body.url.includes('target.com');
+        const isAmazonSite = body.url.includes('amazon.com');
+        const isWalmartSite = body.url.includes('walmart.com');
+        const isBestBuySite = body.url.includes('bestbuy.com');
         
-        if (hasEnabledAddToCartButton && !hasDisabledAddToCartButton) {
-          isInStock = true;
-          console.log("Found enabled Add to Cart button, considering item IN STOCK");
-        } else if (hasDisabledAddToCartButton) {
-          isInStock = false;
-          console.log("Found disabled Add to Cart button, considering item OUT OF STOCK");
-        } else if (hasOutOfStockIndicator) {
-          isInStock = false;
-          console.log("Found out-of-stock text indicator, considering item OUT OF STOCK");
-        } else if (hasInStockIndicator) {
-          isInStock = true;
-          console.log("Found in-stock text indicator, considering item IN STOCK");
+        // Site-specific logic
+        if (isTargetSite) {
+          // Target-specific stock detection
+          const soldOutIndicator = lowerHtml.includes('sold out');
+          const addToCartEnabled = lowerHtml.includes('pickup button');
+          
+          if (soldOutIndicator) {
+            isInStock = false;
+            stockStatusReason = "Target: 'Sold out' indicator found";
+          } else if (addToCartEnabled || lowerHtml.includes('add to cart')) {
+            isInStock = true;
+            stockStatusReason = "Target: Add to cart functionality detected";
+          } else {
+            isInStock = false;
+            stockStatusReason = "Target: No clear stock indicators";
+          }
+        } else if (isAmazonSite) {
+          // Amazon-specific stock detection
+          if (lowerHtml.includes('add to cart') && !lowerHtml.includes('currently unavailable')) {
+            isInStock = true;
+            stockStatusReason = "Amazon: Add to cart available and not listed as unavailable";
+          } else {
+            isInStock = false;
+            stockStatusReason = "Amazon: Product unavailable or no add to cart option";
+          }
+        } else if (isWalmartSite || isBestBuySite) {
+          // Walmart and BestBuy often have similar patterns
+          if (hasOutOfStockIndicator) {
+            isInStock = false;
+            stockStatusReason = `${isWalmartSite ? 'Walmart' : 'BestBuy'}: Out of stock indicator found`;
+          } else if (hasEnabledAddToCartButton || hasAddToCartForm) {
+            isInStock = true;
+            stockStatusReason = `${isWalmartSite ? 'Walmart' : 'BestBuy'}: Add to cart functionality detected`;
+          } else {
+            isInStock = hasInStockIndicator && !hasOutOfStockIndicator;
+            stockStatusReason = `${isWalmartSite ? 'Walmart' : 'BestBuy'}: Using general stock indicators`;
+          }
         } else {
-          isInStock = false;
-          console.log("No clear indicators found, defaulting to OUT OF STOCK to avoid false positives");
+          // General stock detection logic for other sites
+          // 1. Enabled "Add to Cart" button is the strongest indicator for in-stock
+          // 2. Disabled "Add to Cart" button is a strong indicator for out-of-stock
+          // 3. General text indicators as fallback
+          
+          if (hasEnabledAddToCartButton && !hasDisabledAddToCartButton) {
+            isInStock = true;
+            stockStatusReason = "Found enabled Add to Cart button, considering item IN STOCK";
+          } else if (hasAddToCartForm && !hasOutOfStockIndicator) {
+            isInStock = true;
+            stockStatusReason = "Found Add to Cart form without out-of-stock indicators";
+          } else if (hasDisabledAddToCartButton) {
+            isInStock = false;
+            stockStatusReason = "Found disabled Add to Cart button, considering item OUT OF STOCK";
+          } else if (hasOutOfStockIndicator) {
+            isInStock = false;
+            stockStatusReason = `Found out-of-stock text indicator: "${foundOutOfStockPattern}"`;
+          } else if (hasInStockIndicator) {
+            isInStock = true;
+            stockStatusReason = `Found in-stock text indicator: "${foundInStockPattern}"`;
+          } else {
+            isInStock = false;
+            stockStatusReason = "No clear indicators found, defaulting to OUT OF STOCK to avoid false positives";
+          }
         }
       }
       
-      console.log(`Final stock determination: ${isInStock ? 'IN STOCK' : 'OUT OF STOCK'}`);
+      console.log(`Final stock determination: ${isInStock ? 'IN STOCK' : 'OUT OF STOCK'} - Reason: ${stockStatusReason}`);
       
     } catch (analysisError) {
       console.error('Error during stock pattern detection:', analysisError);
       errorMessage = analysisError.message;
       isInStock = false; // Default to out of stock on error
+      stockStatusReason = "Error during analysis";
+    }
+    
+    // Save a sample of relevant HTML for debugging
+    let htmlSample = "";
+    try {
+      // Try to extract a more focused section of HTML that might contain stock info
+      const bodyContent = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+      if (bodyContent && bodyContent[1]) {
+        const mainContent = bodyContent[1].match(/<main[^>]*>([\s\S]*?)<\/main>/i) || 
+                           bodyContent[1].match(/<div[^>]*id=["']?content["']?[^>]*>([\s\S]*?)<\/div>/i) ||
+                           bodyContent[1].match(/<div[^>]*class=["']?product["']?[^>]*>([\s\S]*?)<\/div>/i);
+        
+        if (mainContent && mainContent[1]) {
+          htmlSample = mainContent[1].substring(0, 5000);
+        } else {
+          htmlSample = bodyContent[1].substring(0, 5000);
+        }
+      } else {
+        htmlSample = html.substring(0, 5000);
+      }
+    } catch (e) {
+      htmlSample = html.substring(0, 5000);
     }
     
     // Update the database with results
     try {
-      console.log("Updating database with check results");
+      console.log(`Updating database with check results: status=${isInStock ? "in-stock" : "out-of-stock"}, reason=${stockStatusReason}`);
       const { error: updateError } = await supabase
         .from("stock_monitors")
         .update({
           last_checked: new Date().toISOString(),
           status: isInStock ? "in-stock" : "out-of-stock",
-          html_snapshot: html.substring(0, 5000), // Store partial HTML for verification
-          error_message: errorMessage
+          html_snapshot: htmlSample,
+          error_message: errorMessage || null
         })
         .eq("id", body.id);
       
@@ -390,7 +491,11 @@ serve(async (req: Request) => {
       }
       
       return new Response(
-        JSON.stringify({ success: false, error: "Database update error" }),
+        JSON.stringify({ 
+          success: false, 
+          error: "Database update error",
+          stockStatusReason
+        }),
         {
           status: 200, // Return 200 even for db errors to prevent client errors
           headers: {
@@ -407,7 +512,8 @@ serve(async (req: Request) => {
         success: true,
         isInStock,
         id: body.id,
-        lastChecked: new Date().toISOString()
+        lastChecked: new Date().toISOString(),
+        stockStatusReason
       }),
       {
         status: 200,
