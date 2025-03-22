@@ -27,6 +27,8 @@ const AccountModal: React.FC<AccountModalProps> = ({ open, onOpenChange }) => {
   const [isUpdating, setIsUpdating] = useState(false);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [userId, setUserId] = useState(user?.id.substring(0, 8) || "");
+  const [displayUserId, setDisplayUserId] = useState(user?.user_metadata?.display_user_id || "");
   const { toast } = useToast();
 
   const handleUpdatePassword = async () => {
@@ -82,6 +84,48 @@ const AccountModal: React.FC<AccountModalProps> = ({ open, onOpenChange }) => {
     }
   };
 
+  const handleUpdateUserId = async () => {
+    if (!displayUserId) {
+      toast({
+        title: "Error",
+        description: "Please enter a User ID",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (displayUserId.length < 3) {
+      toast({
+        title: "Error",
+        description: "User ID must be at least 3 characters",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsUpdating(true);
+    try {
+      const { error } = await supabase.auth.updateUser({
+        data: { display_user_id: displayUserId }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "User ID updated",
+        description: "Your User ID has been successfully updated",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Update failed",
+        description: error.message || "Failed to update User ID",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -106,6 +150,44 @@ const AccountModal: React.FC<AccountModalProps> = ({ open, onOpenChange }) => {
           </div>
 
           <div className="space-y-2">
+            <Label htmlFor="userId">System User ID</Label>
+            <Input 
+              id="userId"
+              value={userId}
+              disabled
+              className="bg-gray-100"
+            />
+            <p className="text-sm text-gray-500">
+              This is your system identifier
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="displayUserId">Display User ID</Label>
+            <Input 
+              id="displayUserId"
+              placeholder="Enter your preferred User ID" 
+              value={displayUserId}
+              onChange={(e) => setDisplayUserId(e.target.value)}
+            />
+            <p className="text-sm text-gray-500">
+              This is how you'll be identified on the site
+            </p>
+            <Button 
+              onClick={handleUpdateUserId} 
+              disabled={isUpdating || displayUserId === user?.user_metadata?.display_user_id}
+              size="sm"
+            >
+              {isUpdating ? (
+                <>
+                  <LoadingSpinner size="sm" className="mr-2" />
+                  Updating...
+                </>
+              ) : "Update User ID"}
+            </Button>
+          </div>
+
+          <div className="space-y-2 pt-4 border-t">
             <Label htmlFor="password">New Password</Label>
             <Input 
               id="password"
@@ -160,7 +242,7 @@ const AccountModal: React.FC<AccountModalProps> = ({ open, onOpenChange }) => {
           <div className="order-1 sm:order-2 mb-3 sm:mb-0">
             <Button 
               onClick={handleUpdatePassword} 
-              disabled={isUpdating}
+              disabled={isUpdating || !password || password !== confirmPassword}
               className="w-full sm:w-auto"
             >
               {isUpdating ? (

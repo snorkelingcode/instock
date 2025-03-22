@@ -32,6 +32,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsLoading(false);
       
       if (session?.user) {
+        // Ensure user has a display_user_id if not already set
+        if (!session.user.user_metadata?.display_user_id) {
+          const shortId = session.user.id.substring(0, 8);
+          supabase.auth.updateUser({
+            data: { display_user_id: `user_${shortId}` }
+          }).then(({ data, error }) => {
+            if (error) {
+              console.error('Error setting initial display_user_id:', error);
+            } else if (data.user) {
+              setUser(data.user);
+            }
+          });
+        }
+        
         checkUserRole(session.user.id);
       }
     });

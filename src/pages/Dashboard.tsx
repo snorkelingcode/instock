@@ -115,8 +115,15 @@ const Dashboard = () => {
   };
 
   const getUserInitials = () => {
+    if (user?.user_metadata?.display_user_id) {
+      return user.user_metadata.display_user_id.substring(0, 2).toUpperCase();
+    }
     if (!user?.email) return 'U';
     return user.email.substring(0, 2).toUpperCase();
+  };
+
+  const getDisplayName = () => {
+    return user?.user_metadata?.display_user_id || user?.email || 'User';
   };
 
   return (
@@ -137,7 +144,7 @@ const Dashboard = () => {
                   {getUserInitials()}
                 </AvatarFallback>
               </Avatar>
-              <h3 className="text-xl font-medium mb-2">{user?.email}</h3>
+              <h3 className="text-xl font-medium mb-2">{getDisplayName()}</h3>
               <div className="flex items-center text-sm text-gray-500 mb-4">
                 <User className="mr-2 h-4 w-4" />
                 <span>User ID: {user?.id.substring(0, 8)}...</span>
