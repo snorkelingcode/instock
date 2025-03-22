@@ -3,3 +3,16 @@ project_id = "etgkuasmqjidwtaxrfww"
 
 [api]
 port = 8080
+
+[auth]
+disable_signup = false
+
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+enable_confirmations = true
+
+# Configure custom SMTP
+[auth.smtp]
+sender_name = "TCG Updates"
+sender_email = "noreply@tcgupdates.com"
