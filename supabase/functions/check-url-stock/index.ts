@@ -314,6 +314,7 @@ serve(async (req: Request) => {
     let isInStock = false;
     let errorMessage = null;
     let stockStatusReason = ""; // For debugging
+    let targetTextStatus = null; // Status specific to the target text search
     
     try {
       console.log("Analyzing HTML content for stock status");
@@ -323,10 +324,28 @@ serve(async (req: Request) => {
       // First check for specific target text if provided
       if (body.targetText && body.targetText.trim() !== '') {
         console.log(`Checking for custom target text: "${body.targetText}"`);
-        isInStock = html.includes(body.targetText);
-        stockStatusReason = `Custom target text: "${body.targetText}" was ${isInStock ? 'found' : 'not found'}`;
+        const targetTextLower = body.targetText.toLowerCase().trim();
+        const targetTextFound = lowerHtml.includes(targetTextLower);
+        
+        // Store this result separately
+        targetTextStatus = {
+          found: targetTextFound,
+          text: body.targetText
+        };
+        
+        stockStatusReason = `Custom target text: "${body.targetText}" was ${targetTextFound ? 'found' : 'not found'}`;
         console.log(stockStatusReason);
-      } else {
+        
+        // Only use custom text as the primary determination if found
+        // If not found, we'll do additional checks below
+        if (targetTextFound) {
+          isInStock = true;
+        }
+      }
+      
+      // If no target text was provided or if the target text wasn't found
+      // run our comprehensive analysis to determine stock status
+      if (!targetTextStatus?.found) {
         // EXTRACT BUTTONS: Find all <button> elements
         const buttonRegex = /<button[^>]*>(.*?)<\/button>/gis;
         let match;
@@ -342,6 +361,7 @@ serve(async (req: Request) => {
         let hasEnabledAddToCartButton = false;
         let hasDisabledAddToCartButton = false;
         let hasInStoreOnlyButton = false;
+        let hasInStoreOnlyLink = false;
 
         // Common phrases in add-to-cart buttons
         const cartButtonPatterns = [
@@ -363,7 +383,10 @@ serve(async (req: Request) => {
           'not available online',
           'not sold online',
           'pick up in store',
-          'in-store pickup'
+          'in-store pickup',
+          'available in store',
+          'online not available',
+          'pickup not eligible' // Target's common phrase
         ];
         
         // Patterns that indicate a button is disabled
@@ -401,6 +424,18 @@ serve(async (req: Request) => {
           }
         }
         
+        // Check for in-store only links
+        const linkRegex = /<a[^>]*>(.*?)<\/a>/gis;
+        while ((match = linkRegex.exec(html)) !== null) {
+          const link = match[0].toLowerCase();
+          const isInStoreOnlyLink = inStoreOnlyPatterns.some(pattern => link.includes(pattern));
+          if (isInStoreOnlyLink) {
+            hasInStoreOnlyLink = true;
+            console.log("Found in-store only link:", link.substring(0, 100));
+            break;
+          }
+        }
+        
         // Also look for 'add to cart' forms which are common in ecommerce sites
         const hasAddToCartForm = lowerHtml.includes('form') && 
           (lowerHtml.includes('add to cart') || lowerHtml.includes('add-to-cart'));
@@ -410,9 +445,16 @@ serve(async (req: Request) => {
         }
         
         // Check if any in-store only text patterns exist in the page
-        const hasInStoreOnlyText = inStoreOnlyPatterns.some(pattern => lowerHtml.includes(pattern));
-        if (hasInStoreOnlyText) {
-          console.log("Found in-store only text in page content");
+        let hasInStoreOnlyText = false;
+        let foundInStorePattern = "";
+        
+        for (const pattern of inStoreOnlyPatterns) {
+          if (lowerHtml.includes(pattern)) {
+            hasInStoreOnlyText = true;
+            foundInStorePattern = pattern;
+            console.log(`Found in-store only text: "${pattern}"`);
+            break;
+          }
         }
         
         // Out of stock indicators in the entire page
@@ -427,7 +469,11 @@ serve(async (req: Request) => {
           'email when available',
           'back in stock',
           'back-in-stock',
-          'temporarily out of stock'
+          'temporarily out of stock',
+          'check local stores', // Common indicator that online ordering isn't available
+          'not available for delivery', // Common indicator for online ordering
+          'not available for shipping', // Another common indicator
+          'check nearby stores' // Target's phrase when online purchase isn't available
         ];
         
         // Check for out-of-stock indicators
@@ -438,14 +484,11 @@ serve(async (req: Request) => {
           if (lowerHtml.includes(pattern)) {
             hasOutOfStockIndicator = true;
             foundOutOfStockPattern = pattern;
+            console.log(`Found out-of-stock text indicator: "${pattern}"`);
             break;
           }
         }
 
-        if (hasOutOfStockIndicator) {
-          console.log(`Found out-of-stock text indicator: "${foundOutOfStockPattern}"`);
-        }
-        
         // In stock indicators in the entire page
         const inStockPatterns = [
           'in stock',
@@ -453,7 +496,9 @@ serve(async (req: Request) => {
           'available',
           'ready to ship',
           'ships today',
-          'add to cart'
+          'add to cart',
+          'delivery available', // Indicates online ordering is available
+          'shipping available' // Indicates online ordering is available
         ];
 
         // Check for in-stock indicators
@@ -464,13 +509,14 @@ serve(async (req: Request) => {
           if (lowerHtml.includes(pattern)) {
             hasInStockIndicator = true;
             foundInStockPattern = pattern;
+            console.log(`Found in-stock text indicator: "${pattern}"`);
             break;
           }
         }
         
-        if (hasInStockIndicator) {
-          console.log(`Found in-stock text indicator: "${foundInStockPattern}"`);
-        }
+        // Look for price information - if no price is displayed, often means out of stock
+        const hasPriceDisplay = lowerHtml.includes('price') && 
+          (lowerHtml.includes('$') || lowerHtml.includes('€') || lowerHtml.includes('£'));
         
         // E-commerce site detection (refines stock detection logic)
         const urlObj = new URL(sanitizedUrl);
@@ -485,33 +531,51 @@ serve(async (req: Request) => {
         // Site-specific logic
         if (isTargetSite) {
           // Target-specific stock detection
-          const soldOutIndicator = lowerHtml.includes('sold out');
+          const soldOutIndicator = lowerHtml.includes('sold out') || 
+                                 lowerHtml.includes('out of stock') ||
+                                 lowerHtml.includes('not available for delivery') ||
+                                 lowerHtml.includes('not available for shipping');
+                                 
           const inStoreOnlyIndicator = lowerHtml.includes('in store only') || 
                                       lowerHtml.includes('in-store only') ||
-                                      lowerHtml.includes('not sold online');
-          const addToCartEnabled = lowerHtml.includes('pickup button') || 
-                                  lowerHtml.includes('shipit-button') || 
-                                  (lowerHtml.includes('add to cart') && !lowerHtml.includes('disabled'));
+                                      lowerHtml.includes('not sold online') ||
+                                      lowerHtml.includes('check nearby stores');
+                                      
+          const addToCartEnabled = lowerHtml.includes('add to cart') && 
+                                  !lowerHtml.includes('disabled') &&
+                                  !lowerHtml.includes('not available') &&
+                                  !lowerHtml.includes('not eligible');
           
-          if (soldOutIndicator || inStoreOnlyIndicator) {
+          // Check if the "Pickup not eligible" text is present, which usually means online ordering isn't available
+          const pickupNotEligible = lowerHtml.includes('pickup not eligible');
+          
+          if (soldOutIndicator || inStoreOnlyIndicator || pickupNotEligible) {
             isInStock = false;
             stockStatusReason = inStoreOnlyIndicator ? 
               "Target: 'In-Store Only' indicator found" : 
-              "Target: 'Sold out' indicator found";
+              soldOutIndicator ? "Target: 'Sold out' indicator found" :
+              "Target: 'Pickup not eligible' indicator found";
           } else if (addToCartEnabled) {
             isInStock = true;
             stockStatusReason = "Target: Add to cart functionality detected";
           } else {
             isInStock = false;
-            stockStatusReason = "Target: No clear stock indicators";
+            stockStatusReason = "Target: No clear stock indicators, defaulting to out of stock";
           }
         } else if (isAmazonSite) {
           // Amazon-specific stock detection
           const unavailableIndicator = lowerHtml.includes('currently unavailable') || 
                                       lowerHtml.includes('not available') ||
-                                      lowerHtml.includes('out of stock');
+                                      lowerHtml.includes('out of stock') ||
+                                      lowerHtml.includes('available at a lower price from other sellers');
+                                      
+          const inStoreIndicator = lowerHtml.includes('available in-store') ||
+                                  lowerHtml.includes('available at') && lowerHtml.includes('store');
           
-          if (!unavailableIndicator && lowerHtml.includes('add to cart')) {
+          if (inStoreIndicator && !lowerHtml.includes('add to cart')) {
+            isInStock = false;
+            stockStatusReason = "Amazon: In-store only, not available online";
+          } else if (!unavailableIndicator && lowerHtml.includes('add to cart')) {
             isInStock = true;
             stockStatusReason = "Amazon: Add to cart available and not listed as unavailable";
           } else {
@@ -523,37 +587,41 @@ serve(async (req: Request) => {
           const hasActiveAddToCart = lowerHtml.includes('add to cart') && 
                                     !lowerHtml.includes('disabled') && 
                                     !lowerHtml.includes('not available');
+                                    
+          const onlineUnavailable = lowerHtml.includes('not available') ||
+                                  lowerHtml.includes('out of stock');
           
-          if (hasInStoreOnlyButton || lowerHtml.includes('in-store only')) {
+          if (hasInStoreOnlyButton || hasInStoreOnlyText || hasInStoreOnlyLink) {
             isInStock = false;
             stockStatusReason = "Walmart: In-store only indicator found";
-          } else if (hasActiveAddToCart && !hasOutOfStockIndicator) {
+          } else if (hasActiveAddToCart && !hasOutOfStockIndicator && !onlineUnavailable) {
             isInStock = true;
             stockStatusReason = "Walmart: Add to cart available without out-of-stock indicators";
-          } else if (hasOutOfStockIndicator) {
+          } else if (hasOutOfStockIndicator || onlineUnavailable) {
             isInStock = false;
-            stockStatusReason = `Walmart: Out of stock indicator found: "${foundOutOfStockPattern}"`;
+            stockStatusReason = `Walmart: Out of stock indicator found: "${foundOutOfStockPattern || 'Not available online'}"`;
           } else {
             isInStock = false;
-            stockStatusReason = "Walmart: No clear stock indicators";
+            stockStatusReason = "Walmart: No clear stock indicators, defaulting to out of stock";
           }
         } else if (isBestBuySite) {
           // BestBuy-specific detection
           const inStoreOnlyIndicator = lowerHtml.includes('in store only') || 
-                                      lowerHtml.includes('not available online');
+                                      lowerHtml.includes('not available online') ||
+                                      lowerHtml.includes('check stores');
                                       
           if (inStoreOnlyIndicator) {
             isInStock = false;
             stockStatusReason = "BestBuy: In-store only product";
-          } else if (lowerHtml.includes('add to cart') && !lowerHtml.includes('sold out')) {
+          } else if (lowerHtml.includes('add to cart') && !lowerHtml.includes('sold out') && !lowerHtml.includes('disabled')) {
             isInStock = true;
             stockStatusReason = "BestBuy: Add to cart available without sold out indicator";
-          } else if (lowerHtml.includes('sold out')) {
+          } else if (lowerHtml.includes('sold out') || lowerHtml.includes('out of stock')) {
             isInStock = false;
             stockStatusReason = "BestBuy: Sold out indicator found";
           } else {
             isInStock = false;
-            stockStatusReason = "BestBuy: No clear stock indicators";
+            stockStatusReason = "BestBuy: No clear stock indicators, defaulting to out of stock";
           }
         } else if (isGamestopSite) {
           // GameStop-specific detection
@@ -563,7 +631,7 @@ serve(async (req: Request) => {
           if (inStoreOnlyIndicator) {
             isInStock = false;
             stockStatusReason = "GameStop: In-store only product";
-          } else if (lowerHtml.includes('add to cart') && !lowerHtml.includes('not available')) {
+          } else if (lowerHtml.includes('add to cart') && !lowerHtml.includes('not available') && !lowerHtml.includes('disabled')) {
             isInStock = true;
             stockStatusReason = "GameStop: Add to cart available without unavailable indicator";
           } else if (lowerHtml.includes('not available') || lowerHtml.includes('out of stock')) {
@@ -571,39 +639,41 @@ serve(async (req: Request) => {
             stockStatusReason = "GameStop: Not available or out of stock indicator found";
           } else {
             isInStock = false;
-            stockStatusReason = "GameStop: No clear stock indicators";
+            stockStatusReason = "GameStop: No clear stock indicators, defaulting to out of stock";
           }
         } else {
-          // General stock detection logic for other sites
-          // 1. Check for in-store only products first
-          if (hasInStoreOnlyButton || hasInStoreOnlyText) {
+          // General stock detection logic for other sites - MORE STRICT VERSION
+          // This version will require stronger evidence to mark something as in-stock
+          
+          // 1. Check for in-store only products first - these are NOT online available
+          if (hasInStoreOnlyButton || hasInStoreOnlyText || hasInStoreOnlyLink) {
             isInStock = false;
             stockStatusReason = "Found in-store only indicators, product not available online";
           } 
-          // 2. Enabled "Add to Cart" button is the strongest indicator for in-stock
-          else if (hasEnabledAddToCartButton && !hasDisabledAddToCartButton && !hasOutOfStockIndicator) {
-            isInStock = true;
-            stockStatusReason = "Found enabled Add to Cart button without out-of-stock indicators";
-          } 
-          // 3. Active add to cart form is also a good indicator
-          else if (hasAddToCartForm && !hasOutOfStockIndicator && !hasInStoreOnlyText) {
-            isInStock = true;
-            stockStatusReason = "Found Add to Cart form without out-of-stock indicators";
-          } 
-          // 4. Disabled buttons are a clear sign of out-of-stock
+          // 2. Check for out-of-stock indicators - these are strong signals
+          else if (hasOutOfStockIndicator) {
+            isInStock = false;
+            stockStatusReason = `Found out-of-stock text indicator: "${foundOutOfStockPattern}"`;
+          }
+          // 3. Check for disabled cart buttons - another strong signal of out-of-stock
           else if (hasDisabledAddToCartButton) {
             isInStock = false;
             stockStatusReason = "Found disabled Add to Cart button, considering item OUT OF STOCK";
           } 
-          // 5. Out of stock text indicators
-          else if (hasOutOfStockIndicator) {
-            isInStock = false;
-            stockStatusReason = `Found out-of-stock text indicator: "${foundOutOfStockPattern}"`;
-          } 
-          // 6. In stock indicators as a last resort, if no contrary evidence
-          else if (hasInStockIndicator && !hasDisabledAddToCartButton && !hasOutOfStockIndicator && !hasInStoreOnlyText) {
+          // 4. Check for enabled Add to Cart functionality - strongest in-stock indicator
+          else if (hasEnabledAddToCartButton && !hasOutOfStockIndicator) {
             isInStock = true;
-            stockStatusReason = `Found in-stock text indicator: "${foundInStockPattern}"`;
+            stockStatusReason = "Found enabled Add to Cart button without out-of-stock indicators";
+          } 
+          // 5. Active add to cart form is also a good indicator
+          else if (hasAddToCartForm && !hasOutOfStockIndicator && !hasInStoreOnlyText) {
+            isInStock = true;
+            stockStatusReason = "Found Add to Cart form without out-of-stock indicators";
+          } 
+          // 6. In stock indicators as a weaker signal, only if price is shown and no contrary evidence
+          else if (hasInStockIndicator && hasPriceDisplay && !hasOutOfStockIndicator && !hasInStoreOnlyText) {
+            isInStock = true;
+            stockStatusReason = `Found in-stock text indicator and price display: "${foundInStockPattern}"`;
           } 
           // 7. Default to out of stock if no clear indicators
           else {
@@ -611,6 +681,13 @@ serve(async (req: Request) => {
             stockStatusReason = "No clear indicators found, defaulting to OUT OF STOCK to avoid false positives";
           }
         }
+      }
+      
+      // Override general logic with target text result if specified and found
+      // This is important because users explicitly want to check for this text
+      if (targetTextStatus?.found) {
+        isInStock = true;
+        stockStatusReason = `Custom target text "${targetTextStatus.text}" was found, marking as IN STOCK`;
       }
       
       console.log(`Final stock determination: ${isInStock ? 'IN STOCK' : 'OUT OF STOCK'} - Reason: ${stockStatusReason}`);
@@ -709,7 +786,8 @@ serve(async (req: Request) => {
         isInStock,
         id: body.id,
         lastChecked: new Date().toISOString(),
-        stockStatusReason
+        stockStatusReason,
+        targetTextFound: targetTextStatus?.found
       }),
       {
         status: 200,
