@@ -259,7 +259,9 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
                         <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">You</span>
                       )}
                       {isAdmin && user && user.id === comment.user_id && (
-                        <Shield className="h-4 w-4 text-red-500" title="Admin" />
+                        <div className="flex items-center" aria-label="Admin">
+                          <Shield className="h-4 w-4 text-red-500" />
+                        </div>
                       )}
                     </div>
                     <span className="text-xs text-gray-500 flex items-center mt-1 sm:mt-0">
