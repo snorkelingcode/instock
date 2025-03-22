@@ -179,36 +179,56 @@ export const triggerCheck = async (monitorId: string): Promise<MonitoringItem | 
       .update({ status: "unknown" })
       .eq("id", monitorId);
     
-    // Call the edge function to check the URL status
-    const { data, error } = await supabase.functions.invoke('check-url-stock', {
-      body: { 
-        id: monitorId,
-        url: monitor.url,
-        targetText: monitor.target_text
+    try {
+      // Call the edge function to check the URL status
+      const { data, error } = await supabase.functions.invoke('check-url-stock', {
+        body: { 
+          id: monitorId,
+          url: monitor.url,
+          targetText: monitor.target_text
+        }
+      });
+
+      if (error) {
+        console.error("Error triggering URL check:", error);
+        throw error;
       }
-    });
+      
+      // Fetch the updated monitor data
+      const { data: monitorData, error: monitorError } = await supabase
+        .from("stock_monitors")
+        .select("*")
+        .eq("id", monitorId)
+        .single();
 
-    if (error) {
-      console.error("Error triggering URL check:", error);
-      throw error;
+      if (monitorError) {
+        console.error("Error fetching updated monitor:", monitorError);
+        throw monitorError;
+      }
+
+      // Clear the in-progress flag
+      delete checkInProgress[monitorId];
+      
+      return convertToMonitoringItem(monitorData);
+    } catch (error) {
+      // If there was an error with the check, update the status in the database
+      await supabase
+        .from("stock_monitors")
+        .update({ 
+          status: "error",
+          error_message: error instanceof Error ? error.message : "Unknown error",
+          last_checked: new Date().toISOString()
+        })
+        .eq("id", monitorId);
+        
+      console.error("Error in triggerCheck:", error);
+      
+      // Clear the in-progress flag even if there was an error
+      delete checkInProgress[monitorId];
+      
+      // Return null to indicate an error
+      return null;
     }
-
-    // Fetch the updated monitor data
-    const { data: monitorData, error: monitorError } = await supabase
-      .from("stock_monitors")
-      .select("*")
-      .eq("id", monitorId)
-      .single();
-
-    if (monitorError) {
-      console.error("Error fetching updated monitor:", monitorError);
-      throw monitorError;
-    }
-
-    // Clear the in-progress flag
-    delete checkInProgress[monitorId];
-    
-    return convertToMonitoringItem(monitorData);
   } catch (error) {
     console.error("Error in triggerCheck:", error);
     // Clear the in-progress flag even if there was an error
