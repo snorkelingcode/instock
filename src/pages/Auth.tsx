@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertTriangle, Info } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 import Layout from '@/components/layout/Layout';
 import LoadingSpinner from '@/components/ui/loading-spinner';
 
@@ -143,13 +143,6 @@ const Auth: React.FC = () => {
                 <TabsContent value="signup">
                   <form onSubmit={handleSignUp}>
                     <div className="space-y-4 mt-4">
-                      <Alert variant="default" className="bg-blue-50 border-blue-200">
-                        <Info className="h-4 w-4 text-blue-600" />
-                        <AlertDescription className="text-blue-800">
-                          A random username will be generated for you. You can change it after signing up.
-                        </AlertDescription>
-                      </Alert>
-                      
                       <div>
                         <Input
                           type="email"

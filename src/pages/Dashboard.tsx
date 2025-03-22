@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CalendarDays, MessageSquare, User, FileText, Clock, Edit } from "lucide-react";
+import { CalendarDays, MessageSquare, User, FileText, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import { useToast } from "@/hooks/use-toast";
@@ -21,7 +21,7 @@ interface UserComment {
 }
 
 const Dashboard = () => {
-  const { user, username } = useAuth();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [userComments, setUserComments] = useState<UserComment[]>([]);
   const { toast } = useToast();
@@ -81,11 +81,8 @@ const Dashboard = () => {
   };
 
   const getUserInitials = () => {
-    if (username) {
-      // Use first two characters of username
-      return username.substring(0, 2).toUpperCase();
-    }
-    return 'U';
+    if (!user?.email) return 'U';
+    return user.email.substring(0, 2).toUpperCase();
   };
 
   return (
@@ -106,7 +103,7 @@ const Dashboard = () => {
                   {getUserInitials()}
                 </AvatarFallback>
               </Avatar>
-              <h3 className="text-xl font-medium mb-2">{username || "Loading..."}</h3>
+              <h3 className="text-xl font-medium mb-2">{user?.email}</h3>
               <div className="flex items-center text-sm text-gray-500 mb-4">
                 <User className="mr-2 h-4 w-4" />
                 <span>User ID: {user?.id.substring(0, 8)}...</span>
@@ -116,12 +113,9 @@ const Dashboard = () => {
                 <span>Member since: {user?.created_at ? formatDate(user.created_at) : 'N/A'}</span>
               </div>
             </CardContent>
-            <CardFooter className="flex flex-col gap-2">
+            <CardFooter>
               <Button variant="outline" className="w-full" asChild>
-                <Link to="/profile">
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit Profile
-                </Link>
+                <Link to="/auth">Manage Account</Link>
               </Button>
             </CardFooter>
           </Card>
