@@ -386,7 +386,8 @@ serve(async (req: Request) => {
           'in-store pickup',
           'available in store',
           'online not available',
-          'pickup not eligible' // Target's common phrase
+          'pickup not eligible', // Target's common phrase
+          'check stores'         // Added BestBuy specific
         ];
         
         // Patterns that indicate a button is disabled
@@ -473,7 +474,10 @@ serve(async (req: Request) => {
           'check local stores', // Common indicator that online ordering isn't available
           'not available for delivery', // Common indicator for online ordering
           'not available for shipping', // Another common indicator
-          'check nearby stores' // Target's phrase when online purchase isn't available
+          'check nearby stores', // Target's phrase when online purchase isn't available
+          'this product is no longer available', // Added for BestBuy
+          'coming soon', // Added for product not yet released
+          'check stores' // Added for BestBuy
         ];
         
         // Check for out-of-stock indicators
@@ -605,23 +609,34 @@ serve(async (req: Request) => {
             stockStatusReason = "Walmart: No clear stock indicators, defaulting to out of stock";
           }
         } else if (isBestBuySite) {
-          // BestBuy-specific detection
-          const inStoreOnlyIndicator = lowerHtml.includes('in store only') || 
-                                      lowerHtml.includes('not available online') ||
-                                      lowerHtml.includes('check stores');
-                                      
-          if (inStoreOnlyIndicator) {
+          // BestBuy-specific detection - IMPROVED
+          const hasSoldOut = lowerHtml.includes('sold out');
+          const hasCheckStores = lowerHtml.includes('check stores');
+          const hasComingSoon = lowerHtml.includes('coming soon');
+          const hasNotAvailable = lowerHtml.includes('this product is no longer available');
+          const realAddToCartButton = lowerHtml.includes('<button') && 
+                                      lowerHtml.includes('add to cart') && 
+                                      !lowerHtml.includes('disabled');
+          
+          // More specific check for BestBuy - look for cart button with specific class
+          const hasCartButton = lowerHtml.includes('"add-to-cart-button"');
+          
+          // Better handling for BestBuy's "Check Stores" case which usually means online ordering isn't available
+          if (hasCheckStores || hasInStoreOnlyButton || hasInStoreOnlyText) {
             isInStock = false;
-            stockStatusReason = "BestBuy: In-store only product";
-          } else if (lowerHtml.includes('add to cart') && !lowerHtml.includes('sold out') && !lowerHtml.includes('disabled')) {
+            stockStatusReason = "BestBuy: Product appears to be in-store only (Check Stores)";
+          } else if (hasSoldOut || hasNotAvailable) {
+            isInStock = false;
+            stockStatusReason = "BestBuy: Product shows as 'Sold Out' or 'No Longer Available'";
+          } else if (hasComingSoon) {
+            isInStock = false;
+            stockStatusReason = "BestBuy: Product is 'Coming Soon' and not yet available";
+          } else if (realAddToCartButton && hasCartButton) {
             isInStock = true;
-            stockStatusReason = "BestBuy: Add to cart available without sold out indicator";
-          } else if (lowerHtml.includes('sold out') || lowerHtml.includes('out of stock')) {
-            isInStock = false;
-            stockStatusReason = "BestBuy: Sold out indicator found";
+            stockStatusReason = "BestBuy: Add to Cart button is active and present";
           } else {
             isInStock = false;
-            stockStatusReason = "BestBuy: No clear stock indicators, defaulting to out of stock";
+            stockStatusReason = "BestBuy: No clear 'Add to Cart' button found, marking as OUT OF STOCK";
           }
         } else if (isGamestopSite) {
           // GameStop-specific detection
