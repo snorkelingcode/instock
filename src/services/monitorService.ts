@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { format, parseISO } from "date-fns";
 
@@ -262,7 +261,7 @@ export const triggerCheck = async (monitorId: string): Promise<MonitoringItem | 
           .from("stock_monitors")
           .update({ 
             status: "error",
-            error_message: error.message || "Error invoking check function",
+            error_message: error.message || "Error checking URL status",
             last_checked: new Date().toISOString()
           })
           .eq("id", monitorId);
@@ -316,13 +315,13 @@ export const triggerCheck = async (monitorId: string): Promise<MonitoringItem | 
             .from("stock_monitors")
             .update({ 
               status: "error",
-              error_message: error instanceof Error ? error.message : "Unknown error occurred",
+              error_message: error instanceof Error ? error.message : "Error checking URL status",
               last_checked: new Date().toISOString()
             })
             .eq("id", monitorId);
         }
       } catch (dbError) {
-        console.error("Error updating monitor status after error:", dbError);
+        console.error("Failed to update error status:", dbError);
       }
       
       // Clear the in-progress flag

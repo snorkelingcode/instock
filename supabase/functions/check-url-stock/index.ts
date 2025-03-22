@@ -1,4 +1,3 @@
-
 // @ts-ignore
 import { serve } from "std/http/server.ts";
 // Using direct import URL for Supabase client
