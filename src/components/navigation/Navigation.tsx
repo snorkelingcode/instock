@@ -38,7 +38,7 @@ const Navigation = () => {
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="relative h-8 w-8 rounded-full">
             <Avatar className="h-8 w-8">
-              <AvatarFallback className="bg-red-100 text-red-600 text-xs">
+              <AvatarFallback className="bg-white text-red-600 text-xs">
                 {username ? username.substring(0, 2).toUpperCase() : "U"}
               </AvatarFallback>
             </Avatar>
@@ -87,13 +87,13 @@ const Navigation = () => {
   };
   
   return (
-    <div className="navbar bg-base-100 shadow-md">
+    <div className="navbar bg-[#ea384c] text-white shadow-md">
       <div className="navbar-start">
         <div className="dropdown">
           <div tabIndex={0} role="button" className="btn btn-ghost lg:hidden">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h8m-8 6h16" /></svg>
           </div>
-          <ul tabIndex={0} className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
+          <ul tabIndex={0} className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-[#ea384c] text-white rounded-box w-52">
             <li><Link to="/">Home</Link></li>
             <li><Link to="/news">News</Link></li>
             <li><Link to="/sets">Sets</Link></li>
@@ -102,15 +102,15 @@ const Navigation = () => {
             </li>
           </ul>
         </div>
-        <Link to="/" className="btn btn-ghost text-xl">TCG Updates</Link>
+        <Link to="/" className="btn btn-ghost text-xl text-white">TCG Updates</Link>
       </div>
       <div className="navbar-center hidden lg:flex">
         <ul className="menu menu-horizontal px-1">
-          <li><Link to="/">Home</Link></li>
-          <li><Link to="/news">News</Link></li>
-          <li><Link to="/sets">Sets</Link></li>
+          <li><Link to="/" className="text-white hover:bg-red-600">Home</Link></li>
+          <li><Link to="/news" className="text-white hover:bg-red-600">News</Link></li>
+          <li><Link to="/sets" className="text-white hover:bg-red-600">Sets</Link></li>
           <li>
-            <Link to="/articles">Articles</Link>
+            <Link to="/articles" className="text-white hover:bg-red-600">Articles</Link>
           </li>
         </ul>
       </div>
@@ -118,7 +118,7 @@ const Navigation = () => {
         {user ? (
           renderUserMenu()
         ) : (
-          <Link to="/auth" className="btn">
+          <Link to="/auth" className="btn bg-white text-[#ea384c] hover:bg-gray-100 border-none">
             Login
           </Link>
         )}
