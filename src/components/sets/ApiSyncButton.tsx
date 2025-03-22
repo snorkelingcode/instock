@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -62,32 +63,76 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({ game, source, label, onSu
   const [open, setOpen] = useState(false);
   const [jobId, setJobId] = useState<string | null>(null);
   const [currentStatus, setCurrentStatus] = useState<JobStatus | null>(null);
-  const [intervalId, setIntervalId] = useState<NodeJS.Timeout | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isPolling, setIsPolling] = useState(false);
   const [syncType, setSyncType] = useState('full');
   const [setCode, setSetCode] = useState('');
+  const [retryCount, setRetryCount] = useState(0);
+  const [lastFetchTime, setLastFetchTime] = useState(0);
   const { user } = useAuth();
 
   const targetSource = source || game;
 
+  // Improved query with error handling and automatic retry with backoff
   const { data: jobStatusData, refetch: refetchJobStatus } = useQuery({
     queryKey: ['jobStatus', jobId],
     queryFn: async () => {
       if (!jobId) return null;
       
-      const { data, error } = await supabase.rpc('get_job_by_id', { job_id: jobId });
-
-      if (error) {
-        console.error("Error fetching job status:", error);
-        throw error;
+      // Implement rate limiting to prevent excessive requests
+      const now = Date.now();
+      const timeSinceLastFetch = now - lastFetchTime;
+      
+      // Wait at least 2 seconds between requests
+      if (timeSinceLastFetch < 2000 && lastFetchTime > 0) {
+        return currentStatus; // Return current status without fetching
       }
       
-      return data.length > 0 ? data[0] as JobStatus : null;
+      setLastFetchTime(now);
+      
+      try {
+        const { data, error } = await supabase.rpc('get_job_by_id', { job_id: jobId });
+
+        if (error) {
+          console.error("Error fetching job status:", error);
+          throw error;
+        }
+        
+        // Reset retry count on successful fetch
+        setRetryCount(0);
+        return data.length > 0 ? data[0] as JobStatus : null;
+      } catch (error) {
+        console.error("Error fetching job status:", error);
+        
+        // Increment retry count on failure
+        setRetryCount(prev => prev + 1);
+        
+        // If we've tried too many times, stop polling
+        if (retryCount > 5) {
+          setIsPolling(false);
+          toast({
+            title: "Connection Issue",
+            description: "Unable to get update on sync status. The operation may still be running in the background.",
+            variant: "destructive",
+          });
+        }
+        
+        // Return current status on error
+        return currentStatus;
+      }
     },
-    enabled: !!jobId,
-    refetchInterval: isPolling ? 5000 : false,
+    enabled: !!jobId && isPolling,
+    refetchInterval: isPolling ? getPollingInterval(retryCount) : false,
+    retry: 3,
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
+
+  // Function to calculate polling interval with exponential backoff
+  function getPollingInterval(retries: number): number {
+    // Start with 5 seconds, then increase with each retry
+    // 5s, 10s, 20s, 30s (max)
+    return Math.min(5000 * Math.pow(1.5, retries), 30000);
+  }
 
   useEffect(() => {
     if (jobStatusData) {
@@ -95,8 +140,6 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({ game, source, label, onSu
       
       if (jobStatusData.status === 'completed' || jobStatusData.status === 'failed') {
         setIsPolling(false);
-        clearInterval(intervalId || undefined);
-        setIntervalId(null);
         
         if (jobStatusData.status === 'completed') {
           toast({
@@ -115,7 +158,7 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({ game, source, label, onSu
         }
       }
     }
-  }, [jobStatusData, intervalId, game, label, onSuccess, toast]);
+  }, [jobStatusData, game, label, onSuccess, toast]);
 
   const syncMutation = useMutation({
     mutationFn: async () => {
@@ -150,6 +193,8 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({ game, source, label, onSu
       setIsSyncing(false);
       setOpen(false);
       setIsPolling(true);
+      setRetryCount(0);
+      setLastFetchTime(Date.now());
 
       toast({
         title: "Sync Started",
@@ -174,66 +219,6 @@ const ApiSyncButton: React.FC<ApiSyncButtonProps> = ({ game, source, label, onSu
     setIsSyncing(true);
     syncMutation.mutate();
   };
-
-  const handleJobStatus = useCallback(async (jobId: string) => {
-    try {
-      const { data, error } = await supabase.rpc('get_job_by_id', { job_id: jobId });
-
-      if (error) {
-        console.error("Error fetching job status:", error);
-        setCurrentStatus((prevStatus) => prevStatus ? ({
-          ...prevStatus,
-          status: 'failed',
-          error_message: error.message || 'Failed to fetch job status',
-        }) : null);
-        return;
-      }
-
-      if (data && data.length > 0) {
-        const jobData = data[0] as JobStatus;
-        setCurrentStatus(jobData);
-
-        if (jobData.status === 'completed' || jobData.status === 'failed') {
-          setIsPolling(false);
-          clearInterval(intervalId || undefined);
-          setIntervalId(null);
-        }
-      }
-    } catch (error: any) {
-      console.error("Error fetching job status:", error);
-      setCurrentStatus((prevStatus) => prevStatus ? ({
-        ...prevStatus,
-        status: 'failed',
-        error_message: error.message || 'Failed to fetch job status',
-      }) : null);
-      setIsPolling(false);
-      clearInterval(intervalId || undefined);
-      setIntervalId(null);
-    }
-  }, [intervalId]);
-
-  useEffect(() => {
-    if (jobId && isPolling) {
-      const checkStatus = async () => {
-        if (jobId) {
-          await handleJobStatus(jobId);
-        }
-      };
-
-      checkStatus(); // Initial check
-
-      const id = setInterval(() => {
-        checkStatus();
-      }, 5000);
-
-      setIntervalId(id);
-
-      return () => {
-        clearInterval(id);
-        setIntervalId(null);
-      };
-    }
-  }, [jobId, isPolling, handleJobStatus]);
 
   const getStatusColor = () => {
     if (!currentStatus) return 'text-gray-500';
