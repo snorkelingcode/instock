@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Layout from "@/components/layout/Layout";
 import { useAuth } from "@/contexts/AuthContext";
@@ -7,7 +6,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { CalendarDays, MessageSquare, User, FileText, Clock, Trash2 } from "lucide-react";
+import { CalendarDays, MessageSquare, Trash2, FileText, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import { useToast } from "@/hooks/use-toast";
@@ -145,10 +144,6 @@ const Dashboard = () => {
                 </AvatarFallback>
               </Avatar>
               <h3 className="text-xl font-medium mb-2">{getDisplayName()}</h3>
-              <div className="flex items-center text-sm text-gray-500 mb-4">
-                <User className="mr-2 h-4 w-4" />
-                <span>User ID: {user?.id.substring(0, 8)}...</span>
-              </div>
               <div className="flex items-center text-sm text-gray-500">
                 <CalendarDays className="mr-2 h-4 w-4" />
                 <span>Member since: {user?.created_at ? formatDate(user.created_at) : 'N/A'}</span>
