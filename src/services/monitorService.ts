@@ -147,9 +147,27 @@ export const formatDate = (dateString: string | null): string => {
 // Trigger a manual check of a URL
 export const triggerCheck = async (monitorId: string): Promise<MonitoringItem | null> => {
   try {
+    // First fetch the monitor to get URL and target text
+    const { data: monitor, error: fetchError } = await supabase
+      .from("stock_monitors")
+      .select("*")
+      .eq("id", monitorId)
+      .single();
+      
+    if (fetchError) {
+      console.error("Error fetching monitor data:", fetchError);
+      throw fetchError;
+    }
+    
+    console.log("Triggering check for monitor:", monitor);
+    
     // Call the edge function to check the URL status
     const { data, error } = await supabase.functions.invoke('check-url-stock', {
-      body: { monitorId }
+      body: { 
+        id: monitorId,
+        url: monitor.url,
+        targetText: monitor.target_text
+      }
     });
 
     if (error) {

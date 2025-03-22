@@ -99,10 +99,85 @@ serve(async (req: Request) => {
     // Get the HTML content
     const html = await response.text();
     
-    // Check if target text exists (if provided)
-    let isInStock = true;
-    if (body.targetText) {
-      isInStock = html.includes(body.targetText);
+    // Check if product is in stock using universal indicators
+    let isInStock = false;
+    let errorMessage = null;
+    
+    try {
+      // First check for specific target text if provided
+      if (body.targetText && body.targetText.trim() !== '') {
+        isInStock = html.includes(body.targetText);
+        console.log(`Custom target text check "${body.targetText}": ${isInStock ? 'found' : 'not found'}`);
+      } else {
+        // Universal stock check - look for "Add to Cart" text or button
+        // Using lowercase for case-insensitive matching
+        const lowerHtml = html.toLowerCase();
+        
+        // Common "Add to Cart" patterns across e-commerce sites
+        const inStockPatterns = [
+          'add to cart',
+          'add to basket',
+          'buy now',
+          'add to bag',
+          'addtocart',
+          'add-to-cart',
+          'data-button-action="add-to-cart"',
+          'class="btn-cart"',
+          'class="add-to-cart"'
+        ];
+        
+        // Out of stock indicators
+        const outOfStockPatterns = [
+          'out of stock',
+          'sold out',
+          'currently unavailable',
+          'not available',
+          'out-of-stock',
+          'notify me when available',
+          'email when available',
+          'temporarily out of stock'
+        ];
+        
+        // Check for in-stock patterns
+        let foundInStockPattern = false;
+        for (const pattern of inStockPatterns) {
+          if (lowerHtml.includes(pattern)) {
+            foundInStockPattern = true;
+            console.log(`Found in-stock pattern: ${pattern}`);
+            break;
+          }
+        }
+        
+        // Check for out-of-stock patterns
+        let foundOutOfStockPattern = false;
+        for (const pattern of outOfStockPatterns) {
+          if (lowerHtml.includes(pattern)) {
+            foundOutOfStockPattern = true;
+            console.log(`Found out-of-stock pattern: ${pattern}`);
+            break;
+          }
+        }
+        
+        // Determine stock status based on patterns found
+        if (foundInStockPattern && !foundOutOfStockPattern) {
+          isInStock = true;
+        } else if (foundOutOfStockPattern) {
+          isInStock = false;
+        } else if (foundInStockPattern) {
+          // If we found in-stock pattern but also out-of-stock pattern, 
+          // we'll still consider it in stock but log this ambiguity
+          isInStock = true;
+          console.log('Found both in-stock and out-of-stock patterns, defaulting to in-stock');
+        } else {
+          // If no patterns were found, default to out of stock
+          isInStock = false;
+          console.log('No stock indicators found, defaulting to out-of-stock');
+        }
+      }
+    } catch (e) {
+      console.error('Error during stock pattern detection:', e);
+      errorMessage = e.message;
+      isInStock = false; // Default to out of stock on error
     }
     
     // Update the database with results
@@ -111,7 +186,8 @@ serve(async (req: Request) => {
       .update({
         last_checked: new Date().toISOString(),
         status: isInStock ? "in-stock" : "out-of-stock",
-        html_snapshot: html.substring(0, 10000) // Store partial HTML for verification
+        html_snapshot: html.substring(0, 10000), // Store partial HTML for verification
+        error_message: errorMessage
       })
       .eq("id", body.id);
     
@@ -136,6 +212,25 @@ serve(async (req: Request) => {
     );
   } catch (error) {
     console.error("Error checking URL:", error);
+    
+    // Try to update the database with error status
+    try {
+      const supabase = createSupabaseClient(req);
+      const body = await req.json() as CheckUrlRequest;
+      
+      if (body && body.id) {
+        await supabase
+          .from("stock_monitors")
+          .update({
+            last_checked: new Date().toISOString(),
+            status: "error",
+            error_message: error.message || "Unknown error occurred during check"
+          })
+          .eq("id", body.id);
+      }
+    } catch (dbError) {
+      console.error("Failed to update error status in database:", dbError);
+    }
     
     return new Response(
       JSON.stringify({
