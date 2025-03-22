@@ -75,21 +75,21 @@ serve(async (req: Request) => {
       "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
       "Accept-Language": "en-US,en;q=0.5",
       "Cache-Control": "no-cache",
-      // Random referrers could be added here for greater stealth
       "Pragma": "no-cache",
       "DNT": "1",
     };
     
     console.log(`Checking URL: ${body.url}`);
     
-    // Random timeout to avoid regular patterns
-    const timeout = Math.floor(Math.random() * 5000) + 2000;
+    // Random timeout to avoid regular patterns (reduced to prevent long waits)
+    const timeout = Math.floor(Math.random() * 2000) + 1000;
     await new Promise(resolve => setTimeout(resolve, timeout));
     
     // Make the request
     const response = await fetch(body.url, {
       method: "GET",
-      headers
+      headers,
+      redirect: "follow",
     });
     
     if (!response.ok) {
@@ -99,46 +99,83 @@ serve(async (req: Request) => {
     // Get the HTML content
     const html = await response.text();
     
-    // Check if product is in stock using universal indicators
+    // Check if product is in stock
     let isInStock = false;
     let errorMessage = null;
     
     try {
       // First check for specific target text if provided
       if (body.targetText && body.targetText.trim() !== '') {
+        console.log(`Checking for custom target text: "${body.targetText}"`);
         isInStock = html.includes(body.targetText);
         console.log(`Custom target text check "${body.targetText}": ${isInStock ? 'found' : 'not found'}`);
       } else {
-        // Universal stock check - look for "Add to Cart" text or button
-        // Using lowercase for case-insensitive matching
+        // Universal stock check with improved button state detection
         const lowerHtml = html.toLowerCase();
+        
+        // Check for disabled buttons which often indicate out-of-stock
+        const disabledButtonPatterns = [
+          'button[disabled',
+          'button disabled',
+          'disabled="disabled"',
+          'class="disabled',
+          'btn disabled',
+          'btn-disabled',
+          'out-of-stock-button',
+          'sold-out-button',
+          '<button[^>]*disabled[^>]*>pre-?order<\/button>',
+          '<button[^>]*disabled[^>]*>add to cart<\/button>',
+          '<button[^>]*disabled[^>]*>buy now<\/button>',
+          '<button[^>]*class="[^"]*disabled[^"]*"[^>]*>',
+        ];
         
         // Common "Add to Cart" patterns across e-commerce sites
         const inStockPatterns = [
-          'add to cart',
-          'add to basket',
-          'buy now',
-          'add to bag',
-          'addtocart',
-          'add-to-cart',
+          '<button[^>]*>add to cart<\/button>',
+          '<button[^>]*>add to basket<\/button>',
+          '<button[^>]*>buy now<\/button>',
+          '<input[^>]*value="add to cart"[^>]*>',
+          'class="add-to-cart-button"',
+          'id="add-to-cart-button"',
           'data-button-action="add-to-cart"',
           'class="btn-cart"',
-          'class="add-to-cart"'
+          'addtocart',
+          'add-to-cart',
+          'in stock',
+          'instock',
+          'in-stock',
+          'available for purchase',
+          'available now',
         ];
         
         // Out of stock indicators
         const outOfStockPatterns = [
           'out of stock',
+          'out-of-stock',
           'sold out',
+          'sold-out',
           'currently unavailable',
           'not available',
-          'out-of-stock',
           'notify me when available',
           'email when available',
-          'temporarily out of stock'
+          'back in stock',
+          'back-in-stock',
+          'temporarily out of stock',
+          'preorder only',
+          '<button[^>]*disabled[^>]*>',
         ];
         
-        // Check for in-stock patterns
+        // Check for disabled buttons (indicates out of stock)
+        let hasDisabledButtons = false;
+        for (const pattern of disabledButtonPatterns) {
+          if (lowerHtml.match(new RegExp(pattern, 'i'))) {
+            hasDisabledButtons = true;
+            console.log(`Found disabled button pattern: ${pattern}`);
+            break;
+          }
+        }
+        
+        // Check for in-stock patterns (but not if inside disabled buttons)
         let foundInStockPattern = false;
         for (const pattern of inStockPatterns) {
           if (lowerHtml.includes(pattern)) {
@@ -159,21 +196,25 @@ serve(async (req: Request) => {
         }
         
         // Determine stock status based on patterns found
-        if (foundInStockPattern && !foundOutOfStockPattern) {
-          isInStock = true;
+        // If there are disabled buttons for add to cart/preorder, consider it out of stock
+        if (hasDisabledButtons) {
+          isInStock = false;
+          console.log('Found disabled buttons, considering out of stock');
         } else if (foundOutOfStockPattern) {
           isInStock = false;
+          console.log('Found out-of-stock pattern, considering out of stock');
         } else if (foundInStockPattern) {
-          // If we found in-stock pattern but also out-of-stock pattern, 
-          // we'll still consider it in stock but log this ambiguity
           isInStock = true;
-          console.log('Found both in-stock and out-of-stock patterns, defaulting to in-stock');
+          console.log('Found in-stock pattern, considering in stock');
         } else {
           // If no patterns were found, default to out of stock
           isInStock = false;
           console.log('No stock indicators found, defaulting to out-of-stock');
         }
       }
+      
+      console.log(`Final stock determination: ${isInStock ? 'IN STOCK' : 'OUT OF STOCK'}`);
+      
     } catch (e) {
       console.error('Error during stock pattern detection:', e);
       errorMessage = e.message;

@@ -144,9 +144,21 @@ export const formatDate = (dateString: string | null): string => {
   }
 };
 
+// Trigger a manual check of a URL with debounce protection
+let checkInProgress: Record<string, boolean> = {};
+
 // Trigger a manual check of a URL
 export const triggerCheck = async (monitorId: string): Promise<MonitoringItem | null> => {
   try {
+    // If check is already in progress for this ID, don't start another one
+    if (checkInProgress[monitorId]) {
+      console.log(`Check already in progress for monitor ${monitorId}, skipping duplicate request`);
+      return null;
+    }
+    
+    // Mark this check as in progress
+    checkInProgress[monitorId] = true;
+    
     // First fetch the monitor to get URL and target text
     const { data: monitor, error: fetchError } = await supabase
       .from("stock_monitors")
@@ -160,6 +172,12 @@ export const triggerCheck = async (monitorId: string): Promise<MonitoringItem | 
     }
     
     console.log("Triggering check for monitor:", monitor);
+    
+    // Update status to unknown to show the check is in progress
+    await supabase
+      .from("stock_monitors")
+      .update({ status: "unknown" })
+      .eq("id", monitorId);
     
     // Call the edge function to check the URL status
     const { data, error } = await supabase.functions.invoke('check-url-stock', {
@@ -187,9 +205,14 @@ export const triggerCheck = async (monitorId: string): Promise<MonitoringItem | 
       throw monitorError;
     }
 
+    // Clear the in-progress flag
+    delete checkInProgress[monitorId];
+    
     return convertToMonitoringItem(monitorData);
   } catch (error) {
     console.error("Error in triggerCheck:", error);
+    // Clear the in-progress flag even if there was an error
+    delete checkInProgress[monitorId];
     return null;
   }
 };

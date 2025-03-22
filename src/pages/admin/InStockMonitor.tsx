@@ -22,17 +22,11 @@ import {
 import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
 
-// Define a type that includes all required properties for the MonitoringItem component
-type MonitoringItemProps = MonitoringItemType & {
-  onToggleActive?: (id: string) => void;
-  onDelete?: (id: string) => void;
-  onRefresh?: (id: string) => void;
-};
-
 const InStockMonitor = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [monitoredItems, setMonitoredItems] = useState<MonitoringItemProps[]>([]);
+  const [monitoredItems, setMonitoredItems] = useState<MonitoringItemType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [refreshingIds, setRefreshingIds] = useState<Set<string>>(new Set());
   const { user, isAdmin } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -56,12 +50,7 @@ const InStockMonitor = () => {
     const loadMonitors = async () => {
       setIsLoading(true);
       const monitors = await fetchMonitors();
-      setMonitoredItems(monitors.map(item => ({
-        ...item,
-        onToggleActive: handleToggleActive,
-        onDelete: handleDelete,
-        onRefresh: handleRefresh
-      })));
+      setMonitoredItems(monitors);
       setIsLoading(false);
     };
 
@@ -73,14 +62,34 @@ const InStockMonitor = () => {
     if (!user) return;
 
     const channel = setupMonitorRealtime((updatedItem) => {
+      console.log("Realtime update received:", updatedItem);
+      
+      // If the item was refreshing and now has a status other than "unknown", 
+      // remove it from the refreshing set and show a toast
+      if (refreshingIds.has(updatedItem.id) && updatedItem.status !== "unknown") {
+        setRefreshingIds(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(updatedItem.id);
+          return newSet;
+        });
+        
+        // Show toast with status
+        const statusMessage = 
+          updatedItem.status === "in-stock" ? "Product is in stock!" :
+          updatedItem.status === "out-of-stock" ? "Product is out of stock" :
+          updatedItem.status === "error" ? "Error checking product" : "Status unknown";
+        
+        toast({
+          title: `Status Update: ${updatedItem.name}`,
+          description: statusMessage,
+          variant: updatedItem.status === "in-stock" ? "default" : 
+                  updatedItem.status === "error" ? "destructive" : "default",
+        });
+      }
+      
       setMonitoredItems(current => 
         current.map(item => 
-          item.id === updatedItem.id ? {
-            ...updatedItem,
-            onToggleActive: handleToggleActive,
-            onDelete: handleDelete,
-            onRefresh: handleRefresh
-          } : item
+          item.id === updatedItem.id ? updatedItem : item
         )
       );
     });
@@ -90,17 +99,16 @@ const InStockMonitor = () => {
         channel.unsubscribe();
       }
     };
-  }, [user]);
+  }, [user, toast, refreshingIds]);
 
   const handleAddMonitor = async (values: { name: string; url: string; targetText?: string }) => {
     const newItem = await addMonitor(values.name, values.url, values.targetText);
     if (newItem) {
-      setMonitoredItems(prev => [{
-        ...newItem,
-        onToggleActive: handleToggleActive,
-        onDelete: handleDelete,
-        onRefresh: handleRefresh
-      }, ...prev]);
+      setMonitoredItems(prev => [newItem, ...prev]);
+      toast({
+        title: "Monitor Added",
+        description: `Now monitoring ${newItem.name}`,
+      });
     }
   };
 
@@ -117,36 +125,81 @@ const InStockMonitor = () => {
           item.id === id ? { ...item, is_active: !item.is_active } : item
         )
       );
+      
+      toast({
+        title: item.is_active ? "Monitoring Paused" : "Monitoring Resumed",
+        description: `${item.name} is now ${item.is_active ? "paused" : "active"}`,
+      });
     }
   };
 
   const handleDelete = async (id: string) => {
+    const item = monitoredItems.find(item => item.id === id);
+    if (!item) return;
+    
     const success = await deleteMonitor(id);
     if (success) {
       setMonitoredItems(prev => prev.filter(item => item.id !== id));
+      
+      toast({
+        title: "Monitor Deleted",
+        description: `${item.name} has been removed`,
+      });
     }
   };
 
   const handleRefresh = async (id: string) => {
+    // Don't allow refreshing if it's already in progress
+    if (refreshingIds.has(id)) {
+      return;
+    }
+    
     const item = monitoredItems.find(item => item.id === id);
     if (!item) return;
 
-    // Show loading state
+    // Add to refreshing set
+    setRefreshingIds(prev => new Set(prev).add(id));
+    
+    // Show loading state in UI
     setMonitoredItems(prev => 
       prev.map(i => 
         i.id === id ? { ...i, status: 'unknown' } : i
       )
     );
 
+    // Trigger the check
     await triggerCheck(id);
   };
 
   const handleRefreshAll = async () => {
     const activeItems = monitoredItems.filter(item => item.is_active);
+    
+    if (activeItems.length === 0) {
+      toast({
+        title: "No Active Monitors",
+        description: "There are no active monitors to refresh",
+      });
+      return;
+    }
+    
     toast({
       title: "Refreshing Monitors",
       description: `Checking ${activeItems.length} active monitors...`,
     });
+
+    // Add all to refreshing set
+    const newRefreshingIds = new Set(refreshingIds);
+    activeItems.forEach(item => newRefreshingIds.add(item.id));
+    setRefreshingIds(newRefreshingIds);
+    
+    // Update UI to show all as refreshing
+    setMonitoredItems(prev => 
+      prev.map(item => 
+        activeItems.some(active => active.id === item.id) 
+          ? { ...item, status: 'unknown' } 
+          : item
+      )
+    );
 
     // Process in batches of 3 to avoid rate limiting
     const batchSize = 3;
@@ -161,11 +214,6 @@ const InStockMonitor = () => {
         await new Promise(resolve => setTimeout(resolve, 5000));
       }
     }
-
-    toast({
-      title: "Refresh Complete",
-      description: `Finished checking ${activeItems.length} monitors`,
-    });
   };
 
   const filteredItems = monitoredItems.filter((item) =>
@@ -218,7 +266,7 @@ const InStockMonitor = () => {
                     onClick={handleRefreshAll}
                     disabled={isLoading || activeItems.length === 0}
                   >
-                    <RotateCw className="h-4 w-4 mr-2" />
+                    <RotateCw className={`h-4 w-4 mr-2 ${refreshingIds.size > 0 ? 'animate-spin' : ''}`} />
                     Refresh All
                   </Button>
                   <div className="relative w-64">
@@ -263,6 +311,10 @@ const InStockMonitor = () => {
                           <MonitoringItem
                             key={item.id}
                             {...item}
+                            onToggleActive={handleToggleActive}
+                            onDelete={handleDelete}
+                            onRefresh={handleRefresh}
+                            isRefreshing={refreshingIds.has(item.id)}
                           />
                         ))}
                       </div>
@@ -284,6 +336,10 @@ const InStockMonitor = () => {
                           <MonitoringItem
                             key={item.id}
                             {...item}
+                            onToggleActive={handleToggleActive}
+                            onDelete={handleDelete}
+                            onRefresh={handleRefresh}
+                            isRefreshing={refreshingIds.has(item.id)}
                           />
                         ))}
                       </div>

@@ -3,7 +3,7 @@ import React from "react";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Eye, EyeOff, Trash2, RefreshCw, ExternalLink, AlertCircle, Clock } from "lucide-react";
+import { Eye, EyeOff, Trash2, RefreshCw, ExternalLink, AlertCircle, Clock, CheckCircle2, XCircle } from "lucide-react";
 import { 
   Tooltip,
   TooltipContent,
@@ -21,6 +21,7 @@ export interface MonitoringItemProps {
   target_text?: string;
   is_active: boolean;
   error_message?: string;
+  isRefreshing?: boolean;
   onToggleActive?: (id: string) => void;
   onDelete?: (id: string) => void;
   onRefresh?: (id: string) => void;
@@ -35,6 +36,7 @@ const MonitoringItem: React.FC<MonitoringItemProps> = ({
   target_text,
   is_active,
   error_message,
+  isRefreshing = false,
   onToggleActive,
   onDelete,
   onRefresh,
@@ -43,16 +45,26 @@ const MonitoringItem: React.FC<MonitoringItemProps> = ({
   const getStatusBadge = () => {
     switch (status) {
       case "in-stock":
-        return <Badge className="bg-green-500">In Stock</Badge>;
+        return (
+          <Badge className="bg-green-500 flex items-center gap-1">
+            <CheckCircle2 size={12} />
+            In Stock
+          </Badge>
+        );
       case "out-of-stock":
-        return <Badge className="bg-red-500">Out of Stock</Badge>;
+        return (
+          <Badge className="bg-red-500 flex items-center gap-1">
+            <XCircle size={12} />
+            Out of Stock
+          </Badge>
+        );
       case "error":
         return (
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Badge variant="destructive" className="cursor-help">
-                  <AlertCircle size={12} className="mr-1" />
+                <Badge variant="destructive" className="cursor-help flex items-center gap-1">
+                  <AlertCircle size={12} />
                   Error
                 </Badge>
               </TooltipTrigger>
@@ -63,7 +75,18 @@ const MonitoringItem: React.FC<MonitoringItemProps> = ({
           </TooltipProvider>
         );
       default:
-        return <Badge variant="outline">Unknown</Badge>;
+        return (
+          <Badge variant="outline" className="flex items-center gap-1">
+            {isRefreshing ? (
+              <>
+                <RefreshCw size={12} className="animate-spin" />
+                Checking...
+              </>
+            ) : (
+              <>Unknown</>
+            )}
+          </Badge>
+        );
     }
   };
 
@@ -92,7 +115,7 @@ const MonitoringItem: React.FC<MonitoringItemProps> = ({
   };
 
   return (
-    <Card className="w-full shadow-sm hover:shadow transition-shadow">
+    <Card className={`w-full shadow-sm hover:shadow transition-shadow ${status === "in-stock" ? "border-green-500" : ""}`}>
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start">
           <CardTitle className="text-lg font-medium">{name}</CardTitle>
@@ -141,10 +164,10 @@ const MonitoringItem: React.FC<MonitoringItemProps> = ({
             variant="outline"
             size="sm"
             onClick={() => onRefresh?.(id)}
-            disabled={status === "unknown"}
-            className={status === "unknown" ? "opacity-50 cursor-not-allowed" : ""}
+            disabled={isRefreshing}
+            className={isRefreshing ? "opacity-50 cursor-not-allowed" : ""}
           >
-            <RefreshCw size={16} className={status === "unknown" ? "animate-spin" : ""} />
+            <RefreshCw size={16} className={isRefreshing ? "animate-spin" : ""} />
           </Button>
           
           <Button
