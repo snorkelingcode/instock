@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { format, parseISO, differenceInMinutes } from "date-fns";
 
@@ -7,16 +6,17 @@ export interface MonitoringItem {
   id: string;
   name: string;
   url: string;
-  is_active: boolean;
-  status: "in-stock" | "out-of-stock" | "error" | "unknown";
-  target_text: string | null;
+  target_text?: string;
+  status: string;
   last_checked: string | null;
-  error_message: string | null;
+  is_active: boolean;
+  user_id: string;
   created_at: string;
   updated_at: string;
-  user_id: string | null;
-  check_frequency?: number; // Added this field
-  consecutive_errors?: number; // Added this field
+  error_message?: string;
+  html_snapshot?: string;
+  check_frequency?: number; // Added field
+  consecutive_errors?: number; // Added field
 }
 
 // Function to fetch all monitoring items
@@ -298,5 +298,103 @@ const checkDueMonitors = async () => {
     }
   } catch (error) {
     console.error("Error in checkDueMonitors:", error);
+  }
+};
+
+// Function to create a new monitor
+export const createMonitor = async (monitorData: {
+  name: string;
+  url: string;
+  target_text?: string;
+  check_frequency?: number;
+}): Promise<MonitoringItem | null> => {
+  try {
+    // Get user ID
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      throw new Error("User not authenticated");
+    }
+    
+    // Insert the monitor with the new field
+    const { data, error } = await supabase
+      .from('stock_monitors')
+      .insert({
+        name: monitorData.name,
+        url: monitorData.url,
+        target_text: monitorData.target_text || null,
+        user_id: user.id,
+        is_active: true,
+        status: 'pending',
+        check_frequency: monitorData.check_frequency || 30,
+      } as any)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error("Error creating monitor:", error);
+      throw error;
+    }
+    
+    return data as unknown as MonitoringItem;
+  } catch (error) {
+    console.error("Error in createMonitor:", error);
+    return null;
+  }
+};
+
+// Function to reset consecutive errors
+export const resetConsecutiveErrors = async (monitorId: string): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('stock_monitors')
+      .update({ 
+        consecutive_errors: 0,
+        status: 'active'
+      } as any)
+      .eq('id', monitorId);
+    
+    if (error) {
+      console.error("Error resetting consecutive errors:", error);
+      throw error;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error("Error in resetConsecutiveErrors:", error);
+    return false;
+  }
+};
+
+// Function to get monitor stats
+export const getMonitorStats = async (): Promise<{
+  total: number;
+  active: number;
+  paused: number;
+  error: number;
+  inStock: number;
+}> => {
+  try {
+    const { data, error } = await supabase
+      .from('stock_monitors')
+      .select('status, last_checked')
+      .order('last_checked', { ascending: false });
+    
+    if (error) {
+      throw error;
+    }
+    
+    // Safely handle data with type assertions
+    const monitors = data as unknown as MonitoringItem[];
+    const total = monitors.length;
+    const active = monitors.filter(m => m.is_active).length;
+    const paused = monitors.filter(m => !m.is_active).length;
+    const error = monitors.filter(m => m.status === 'error' && m.consecutive_errors && m.consecutive_errors > 2).length;
+    const inStock = monitors.filter(m => m.status === 'in_stock').length;
+    
+    return { total, active, paused, error, inStock };
+  } catch (error) {
+    console.error("Error getting monitor stats:", error);
+    return { total: 0, active: 0, paused: 0, error: 0, inStock: 0 };
   }
 };
