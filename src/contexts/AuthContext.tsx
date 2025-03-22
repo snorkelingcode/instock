@@ -64,13 +64,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const fetchUsername = async (userId: string) => {
     try {
       const { data, error } = await supabase
-        .from("profiles")
+        .from("profiles" as any)
         .select("username")
         .eq("id", userId)
         .single();
       
       if (error) throw error;
-      setUsername(data?.username);
+      
+      // Use optional chaining and type assertion
+      const usernameData = data as any;
+      setUsername(usernameData?.username);
     } catch (error) {
       console.error("Error fetching username:", error);
       setUsername(null);

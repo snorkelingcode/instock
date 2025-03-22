@@ -43,9 +43,9 @@ const UserProfile: React.FC = () => {
     
     try {
       setIsLoading(true);
-      // Using direct table access instead of RPC function to fix TypeScript errors
+      // Using direct table access with type assertion to work around TypeScript errors
       const { data, error } = await supabase
-        .from("profiles")
+        .from("profiles" as any)
         .select("id, username, display_name")
         .eq("id", user.id)
         .single();
@@ -53,8 +53,10 @@ const UserProfile: React.FC = () => {
       if (error) throw error;
       
       if (data) {
-        setProfile(data as Profile);
-        form.setValue("username", data.username);
+        // Use type assertion to tell TypeScript about the structure
+        const profileData = data as unknown as Profile;
+        setProfile(profileData);
+        form.setValue("username", profileData.username);
       }
     } catch (error: any) {
       console.error("Error fetching profile", error);
@@ -80,14 +82,14 @@ const UserProfile: React.FC = () => {
       
       // Check if username is already taken
       const { data: existingUsers, error: checkError } = await supabase
-        .from("profiles")
+        .from("profiles" as any)
         .select("id")
         .eq("username", values.username)
         .neq("id", user.id);
       
       if (checkError) throw checkError;
       
-      if (existingUsers && existingUsers.length > 0) {
+      if (existingUsers && (existingUsers as any[]).length > 0) {
         form.setError("username", { 
           message: "This username is already taken" 
         });
@@ -96,8 +98,8 @@ const UserProfile: React.FC = () => {
       
       // Update profile
       const { error } = await supabase
-        .from("profiles")
-        .update({ username: values.username })
+        .from("profiles" as any)
+        .update({ username: values.username } as any)
         .eq("id", user.id);
       
       if (error) throw error;
