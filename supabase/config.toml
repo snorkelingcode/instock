@@ -18,7 +18,7 @@ enable_confirmations = true
 enabled = true
 url = "https://etgkuasmqjidwtaxrfww.supabase.co/functions/v1/custom-email"
 
-# Sender information
+# Sender information - moved to correct location
 [auth.smtp]
 sender_name = "TCG Updates"
 sender_email = "noreply@tcgupdates.com"
