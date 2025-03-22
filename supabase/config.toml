@@ -13,12 +13,14 @@ enable_signup = true
 double_confirm_changes = true
 enable_confirmations = true
 
-# External email provider configuration
-[auth.email.template.provider]
-enabled = true
-url = "https://etgkuasmqjidwtaxrfww.supabase.co/functions/v1/custom-email"
+# Correct format for external email provider
+[auth.external.email.template]
+provider = {
+  enabled = true,
+  url = "https://etgkuasmqjidwtaxrfww.supabase.co/functions/v1/custom-email"
+}
 
-# Sender information - placed at root level, not under auth
+# SMTP configuration - must be at the root level
 [smtp]
 sender_name = "TCG Updates"
 sender_email = "noreply@tcgupdates.com"
