@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -146,13 +147,13 @@ const MonitoringItem: React.FC<MonitoringItemProps> = ({
     );
   };
 
-  // Format last seen in stock time
+  // Format last seen in stock time with more prominence
   const formatLastSeen = () => {
     if (!last_seen_in_stock) {
       return (
         <span className="flex items-center text-xs text-muted-foreground">
           <History size={12} className="mr-1" />
-          {status === "in-stock" ? "Currently in stock" : "Searching..."}
+          {status === "in-stock" ? "Currently in stock" : "Never seen in stock"}
         </span>
       );
     }
@@ -161,13 +162,33 @@ const MonitoringItem: React.FC<MonitoringItemProps> = ({
     const timeAgo = formatDistanceToNow(date, { addSuffix: true });
     const exactTime = format(date, "MMM d, yyyy h:mm a");
     
+    // For in-stock items, show "Currently in stock" instead of last seen time
+    if (status === "in-stock") {
+      return (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="flex items-center text-xs text-green-600 font-medium cursor-help">
+                <CheckCircle2 size={12} className="mr-1" />
+                Currently in stock
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Confirmed in-stock: {exactTime}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      );
+    }
+    
+    // For out-of-stock items, show last seen time with more emphasis
     return (
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <span className="flex items-center text-xs text-muted-foreground cursor-help">
+            <span className="flex items-center text-xs text-amber-600 font-medium cursor-help">
               <History size={12} className="mr-1" />
-              Last seen: {timeAgo}
+              Last in stock: {timeAgo}
             </span>
           </TooltipTrigger>
           <TooltipContent>
@@ -308,23 +329,25 @@ const MonitoringItem: React.FC<MonitoringItemProps> = ({
             </div>
           )}
           
-          <div className="flex items-center justify-between">
-            {formatLastChecked()}
-            {formatLastSeen()}
-          </div>
-          
-          <div className="flex items-center justify-end">
+          {/* Make the last seen status more prominent */}
+          <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-900 rounded-md">
+            <div className="flex flex-col gap-1">
+              <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Status History</span>
+              <div className="flex items-center space-x-3">
+                {formatLastChecked()}
+                {formatLastSeen()}
+              </div>
+            </div>
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="text-xs flex items-center text-muted-foreground">
                     <Clock size={12} className="mr-1" />
-                    Auto-check: {formatFrequency(frequency)}
+                    Check: {formatFrequency(frequency)}
                   </div>
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>This item is checked automatically every {formatFrequency(frequency)}</p>
-                  {status !== "unknown" && <p>Actual timing may vary based on item status</p>}
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
