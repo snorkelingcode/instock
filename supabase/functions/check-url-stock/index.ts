@@ -49,11 +49,29 @@ serve(async (req: Request) => {
     });
   }
   
+  let body: CheckUrlRequest | null = null;
+  let supabase = null;
+  
   try {
-    const body = await req.json() as CheckUrlRequest;
+    // Try to parse request body
+    try {
+      body = await req.json() as CheckUrlRequest;
+      console.log("Received request:", JSON.stringify(body, null, 2));
+    } catch (parseError) {
+      console.error("Failed to parse request body:", parseError);
+      return new Response(
+        JSON.stringify({ success: false, error: "Invalid request format" }),
+        {
+          status: 400,
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json"
+          }
+        }
+      );
+    }
     
-    console.log("Received request:", JSON.stringify(body, null, 2));
-    
+    // Validate required fields
     if (!body || !body.url || !body.id) {
       console.error("Missing required fields in request body");
       return new Response(
@@ -68,12 +86,27 @@ serve(async (req: Request) => {
       );
     }
     
-    const supabase = createSupabaseClient(req);
+    // Create Supabase client
+    try {
+      supabase = createSupabaseClient(req);
+    } catch (dbError) {
+      console.error("Failed to create Supabase client:", dbError);
+      return new Response(
+        JSON.stringify({ success: false, error: "Database connection error" }),
+        {
+          status: 500,
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json"
+          }
+        }
+      );
+    }
     
-    // Random user agent selection
+    // Select a random user agent
     const userAgent = USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
     
-    // Randomized headers to avoid patterns
+    // Set up headers for the request
     const headers = {
       "User-Agent": userAgent,
       "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
@@ -85,17 +118,21 @@ serve(async (req: Request) => {
     
     console.log(`Checking URL: ${body.url}`);
     
-    // Random timeout to avoid regular patterns (reduced to prevent long waits)
+    // Small random delay to avoid detection patterns (reduced to prevent long waits)
     const timeout = Math.floor(Math.random() * 1000) + 500;
     await new Promise(resolve => setTimeout(resolve, timeout));
     
     // Make the request with a timeout
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 12000); // 12 second timeout
+    
+    let response = null;
+    let html = "";
+    let fetchError = null;
     
     try {
       // Make the request
-      const response = await fetch(body.url, {
+      response = await fetch(body.url, {
         method: "GET",
         headers,
         redirect: "follow",
@@ -109,125 +146,177 @@ serve(async (req: Request) => {
       }
       
       // Get the HTML content
-      const html = await response.text();
+      html = await response.text();
       
-      // Check if product is in stock
-      let isInStock = false;
-      let errorMessage = null;
+    } catch (error) {
+      clearTimeout(timeoutId);
+      fetchError = error;
+      console.error("Fetch error:", error);
       
+      // Update database with error status
       try {
-        // First check for specific target text if provided
-        if (body.targetText && body.targetText.trim() !== '') {
-          console.log(`Checking for custom target text: "${body.targetText}"`);
-          isInStock = html.includes(body.targetText);
-          console.log(`Custom target text check "${body.targetText}": ${isInStock ? 'found' : 'not found'}`);
-        } else {
-          // Universal stock check with improved button state detection
-          const lowerHtml = html.toLowerCase();
-          
-          // Check for disabled buttons which often indicate out-of-stock
-          const disabledButtonPatterns = [
-            'button[disabled',
-            'button disabled',
-            'disabled="disabled"',
-            'class="disabled',
-            'btn disabled',
-            'btn-disabled',
-            'out-of-stock-button',
-            'sold-out-button',
-            '<button[^>]*disabled[^>]*>add to cart<\/button>',
-            '<button[^>]*disabled[^>]*>buy now<\/button>',
-            '<button[^>]*class="[^"]*disabled[^"]*"[^>]*>'
-          ];
-          
-          // Common "Add to Cart" patterns across e-commerce sites
-          const inStockPatterns = [
-            'add to cart',
-            'add to basket',
-            'buy now',
-            'add-to-cart',
-            'in stock',
-            'instock',
-            'in-stock',
-            'available'
-          ];
-          
-          // Out of stock indicators
-          const outOfStockPatterns = [
-            'out of stock',
-            'out-of-stock',
-            'sold out',
-            'sold-out',
-            'currently unavailable',
-            'not available',
-            'notify me when',
-            'email when available',
-            'back in stock',
-            'back-in-stock',
-            'temporarily out of stock',
-            'pre-order',
-            'preorder'
-          ];
-          
-          // Find all buttons in the HTML
-          const buttonRegex = /<button[^>]*>(.*?)<\/button>/gis;
-          let match;
-          let buttons = [];
-          
-          while ((match = buttonRegex.exec(html)) !== null) {
-            buttons.push(match[0].toLowerCase());
+        if (supabase) {
+          await supabase
+            .from("stock_monitors")
+            .update({
+              last_checked: new Date().toISOString(),
+              status: "error",
+              error_message: error.message || "Failed to fetch URL"
+            })
+            .eq("id", body.id);
+        }
+      } catch (updateError) {
+        console.error("Failed to update error status:", updateError);
+      }
+      
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          isInStock: false,
+          error: error.message || "Failed to fetch URL",
+          id: body.id,
+          lastChecked: new Date().toISOString()
+        }),
+        {
+          status: 200, // Return 200 even for fetch errors to prevent client errors
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json"
           }
+        }
+      );
+    }
+    
+    // If we got the HTML content successfully, analyze it
+    let isInStock = false;
+    let errorMessage = null;
+    
+    try {
+      // First check for specific target text if provided
+      if (body.targetText && body.targetText.trim() !== '') {
+        console.log(`Checking for custom target text: "${body.targetText}"`);
+        isInStock = html.includes(body.targetText);
+        console.log(`Custom target text check "${body.targetText}": ${isInStock ? 'found' : 'not found'}`);
+      } else {
+        // Universal stock check with improved button state detection
+        const lowerHtml = html.toLowerCase();
+        
+        // IMPROVED BUTTON DETECTION:
+        // Extract all buttons from the HTML for detailed analysis
+        const buttonRegex = /<button[^>]*>(.*?)<\/button>/gis;
+        let match;
+        const buttons = [];
+        
+        while ((match = buttonRegex.exec(html)) !== null) {
+          buttons.push(match[0].toLowerCase());
+        }
+        
+        // Look for Add to Cart buttons and check if they're disabled
+        let hasEnabledAddToCartButton = false;
+        let hasDisabledAddToCartButton = false;
+
+        const cartButtonPatterns = [
+          'add to cart',
+          'add to basket',
+          'buy now',
+          'purchase',
+          'checkout',
+          'preorder'
+        ];
+        
+        const disabledPatterns = [
+          'disabled',
+          'out-of-stock',
+          'sold-out',
+          'unavailable',
+          'btn-disabled',
+          'disabled="true"',
+          'disabled=""',
+          'class="[^"]*disabled[^"]*"'
+        ];
+        
+        // Analyze each button
+        for (const button of buttons) {
+          const isCartButton = cartButtonPatterns.some(pattern => button.includes(pattern));
           
-          // Check if any buttons contain "add to cart" or similar phrases
-          let hasInStockButton = false;
-          let hasDisabledInStockButton = false;
-          
-          for (const button of buttons) {
-            const isDisabled = disabledButtonPatterns.some(pattern => button.includes(pattern));
+          if (isCartButton) {
+            const isDisabled = disabledPatterns.some(pattern => button.includes(pattern));
             
-            // Check if this button has in-stock text
-            const hasInStockText = inStockPatterns.some(pattern => button.includes(pattern));
-            
-            if (hasInStockText) {
-              if (isDisabled) {
-                hasDisabledInStockButton = true;
-                console.log("Found disabled in-stock button:", button);
-              } else {
-                hasInStockButton = true;
-                console.log("Found enabled in-stock button:", button);
-              }
+            if (isDisabled) {
+              hasDisabledAddToCartButton = true;
+              console.log("Found disabled cart button:", button);
+            } else {
+              hasEnabledAddToCartButton = true;
+              console.log("Found enabled cart button:", button);
             }
-          }
-          
-          // Check for out-of-stock patterns
-          const hasOutOfStockText = outOfStockPatterns.some(pattern => lowerHtml.includes(pattern));
-          
-          // Determine stock status based on patterns found
-          if (hasInStockButton && !hasDisabledInStockButton) {
-            isInStock = true;
-            console.log('Found enabled in-stock button, considering in stock');
-          } else if (hasDisabledInStockButton) {
-            isInStock = false;
-            console.log('Found disabled in-stock button, considering out of stock');
-          } else if (hasOutOfStockText) {
-            isInStock = false;
-            console.log('Found out-of-stock text, considering out of stock');
-          } else {
-            // If we can't determine, check if ANY in-stock patterns exist in the HTML
-            isInStock = inStockPatterns.some(pattern => lowerHtml.includes(pattern));
-            console.log(`No clear indicators, found in-stock patterns: ${isInStock}`);
           }
         }
         
-        console.log(`Final stock determination: ${isInStock ? 'IN STOCK' : 'OUT OF STOCK'}`);
+        // Out of stock indicators in the entire page
+        const outOfStockPatterns = [
+          'out of stock',
+          'out-of-stock',
+          'sold out',
+          'sold-out',
+          'currently unavailable',
+          'not available',
+          'notify me when',
+          'email when available',
+          'back in stock',
+          'back-in-stock',
+          'temporarily out of stock'
+        ];
         
-      } catch (e) {
-        console.error('Error during stock pattern detection:', e);
-        errorMessage = e.message;
-        isInStock = false; // Default to out of stock on error
+        const hasOutOfStockIndicator = outOfStockPatterns.some(pattern => 
+          lowerHtml.includes(pattern)
+        );
+
+        // In stock indicators in the entire page
+        const inStockPatterns = [
+          'in stock',
+          'in-stock',
+          'available',
+          'ready to ship',
+          'ships today'
+        ];
+
+        const hasInStockIndicator = inStockPatterns.some(pattern =>
+          lowerHtml.includes(pattern)
+        );
+        
+        // Make the final determination:
+        // 1. Enabled "Add to Cart" button is the strongest indicator for in-stock
+        // 2. Disabled "Add to Cart" button is a strong indicator for out-of-stock
+        // 3. General text indicators as fallback
+        
+        if (hasEnabledAddToCartButton && !hasDisabledAddToCartButton) {
+          isInStock = true;
+          console.log("Found enabled Add to Cart button, considering item IN STOCK");
+        } else if (hasDisabledAddToCartButton) {
+          isInStock = false;
+          console.log("Found disabled Add to Cart button, considering item OUT OF STOCK");
+        } else if (hasOutOfStockIndicator) {
+          isInStock = false;
+          console.log("Found out-of-stock text indicator, considering item OUT OF STOCK");
+        } else if (hasInStockIndicator) {
+          isInStock = true;
+          console.log("Found in-stock text indicator, considering item IN STOCK");
+        } else {
+          isInStock = false;
+          console.log("No clear indicators found, defaulting to OUT OF STOCK to avoid false positives");
+        }
       }
       
-      // Update the database with results
+      console.log(`Final stock determination: ${isInStock ? 'IN STOCK' : 'OUT OF STOCK'}`);
+      
+    } catch (analysisError) {
+      console.error('Error during stock pattern detection:', analysisError);
+      errorMessage = analysisError.message;
+      isInStock = false; // Default to out of stock on error
+    }
+    
+    // Update the database with results
+    try {
       const { error: updateError } = await supabase
         .from("stock_monitors")
         .update({
@@ -240,38 +329,46 @@ serve(async (req: Request) => {
       
       if (updateError) {
         console.error(`Database update error: ${updateError.message}`);
-        throw new Error(`Database update error: ${updateError.message}`);
+        throw updateError;
       }
-      
+    } catch (dbError) {
+      console.error("Failed to update database:", dbError);
       return new Response(
-        JSON.stringify({
-          success: true,
-          isInStock,
-          id: body.id,
-          lastChecked: new Date().toISOString()
-        }),
+        JSON.stringify({ success: false, error: "Database update error" }),
         {
-          status: 200,
+          status: 200, // Return 200 even for db errors to prevent client errors
           headers: {
             ...corsHeaders,
             "Content-Type": "application/json"
           }
         }
       );
-    } catch (fetchError) {
-      clearTimeout(timeoutId);
-      console.error("Fetch error:", fetchError);
-      throw fetchError;
     }
+    
+    // Return success response
+    return new Response(
+      JSON.stringify({
+        success: true,
+        isInStock,
+        id: body.id,
+        lastChecked: new Date().toISOString()
+      }),
+      {
+        status: 200,
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/json"
+        }
+      }
+    );
+    
   } catch (error) {
-    console.error("Error checking URL:", error);
+    // Top-level error handler
+    console.error("Unhandled error in check-url-stock function:", error);
     
     // Try to update the database with error status
     try {
-      const supabase = createSupabaseClient(req);
-      const body = await req.json() as CheckUrlRequest;
-      
-      if (body && body.id) {
+      if (supabase && body && body.id) {
         await supabase
           .from("stock_monitors")
           .update({
@@ -285,13 +382,16 @@ serve(async (req: Request) => {
       console.error("Failed to update error status in database:", dbError);
     }
     
+    // Return error response with 200 status to avoid client errors
     return new Response(
       JSON.stringify({
         success: false,
-        error: error.message || "An unknown error occurred"
+        error: error.message || "An unknown error occurred",
+        id: body?.id,
+        lastChecked: new Date().toISOString()
       }),
       {
-        status: 500,
+        status: 200, 
         headers: {
           ...corsHeaders,
           "Content-Type": "application/json"

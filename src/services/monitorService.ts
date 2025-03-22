@@ -146,10 +146,17 @@ export const formatDate = (dateString: string | null): string => {
 
 // Trigger a manual check of a URL with debounce protection
 let checkInProgress: Record<string, boolean> = {};
+let checkTimeouts: Record<string, number> = {};
 
 // Trigger a manual check of a URL
 export const triggerCheck = async (monitorId: string): Promise<MonitoringItem | null> => {
   try {
+    // Clear any existing timeouts for this monitor ID
+    if (checkTimeouts[monitorId]) {
+      clearTimeout(checkTimeouts[monitorId]);
+      delete checkTimeouts[monitorId];
+    }
+    
     // If check is already in progress for this ID, don't start another one
     if (checkInProgress[monitorId]) {
       console.log(`Check already in progress for monitor ${monitorId}, skipping duplicate request`);
@@ -191,10 +198,21 @@ export const triggerCheck = async (monitorId: string): Promise<MonitoringItem | 
 
       if (error) {
         console.error("Error triggering URL check:", error);
+        
+        // Update the monitor with error status
+        await supabase
+          .from("stock_monitors")
+          .update({ 
+            status: "error",
+            error_message: error.message || "Error invoking check function",
+            last_checked: new Date().toISOString()
+          })
+          .eq("id", monitorId);
+          
         throw error;
       }
       
-      // Fetch the updated monitor data
+      // Fetch the updated monitor data since the edge function should have updated it
       const { data: monitorData, error: monitorError } = await supabase
         .from("stock_monitors")
         .select("*")
@@ -206,33 +224,33 @@ export const triggerCheck = async (monitorId: string): Promise<MonitoringItem | 
         throw monitorError;
       }
 
-      // Clear the in-progress flag
-      delete checkInProgress[monitorId];
+      // Add a slight delay before clearing the in-progress flag to avoid race conditions
+      checkTimeouts[monitorId] = setTimeout(() => {
+        delete checkInProgress[monitorId];
+        delete checkTimeouts[monitorId];
+      }, 2000) as unknown as number;
       
       return convertToMonitoringItem(monitorData);
     } catch (error) {
-      // If there was an error with the check, update the status in the database
-      await supabase
-        .from("stock_monitors")
-        .update({ 
-          status: "error",
-          error_message: error instanceof Error ? error.message : "Unknown error",
-          last_checked: new Date().toISOString()
-        })
-        .eq("id", monitorId);
-        
-      console.error("Error in triggerCheck:", error);
+      // If there was an error, make sure we still clear the in-progress flag after a delay
+      checkTimeouts[monitorId] = setTimeout(() => {
+        delete checkInProgress[monitorId];
+        delete checkTimeouts[monitorId];
+      }, 2000) as unknown as number;
       
-      // Clear the in-progress flag even if there was an error
-      delete checkInProgress[monitorId];
+      console.error("Error in triggerCheck:", error);
       
       // Return null to indicate an error
       return null;
     }
   } catch (error) {
     console.error("Error in triggerCheck:", error);
+    
     // Clear the in-progress flag even if there was an error
-    delete checkInProgress[monitorId];
+    setTimeout(() => {
+      delete checkInProgress[monitorId];
+    }, 2000);
+    
     return null;
   }
 };
