@@ -1,6 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, differenceInMinutes } from "date-fns";
 
 // Define monitor types
 export type MonitorStatus = "in-stock" | "out-of-stock" | "unknown" | "error";
@@ -14,6 +14,9 @@ export interface MonitoringItem {
   last_checked: string | null;
   is_active: boolean;
   error_message?: string;
+  check_frequency?: number; // Minutes between checks
+  last_status_change?: string | null;
+  consecutive_errors?: number;
 }
 
 // Convert database entry to frontend monitoring item
@@ -26,7 +29,10 @@ const convertToMonitoringItem = (item: any): MonitoringItem => {
     status: item.status || "unknown",
     last_checked: item.last_checked,
     is_active: item.is_active,
-    error_message: item.error_message
+    error_message: item.error_message,
+    check_frequency: item.check_frequency || 30, // Default to 30 minutes
+    last_status_change: item.last_status_change,
+    consecutive_errors: item.consecutive_errors || 0
   };
 };
 
@@ -55,7 +61,8 @@ export const fetchMonitors = async (): Promise<MonitoringItem[]> => {
 export const addMonitor = async (
   name: string,
   url: string,
-  targetText?: string
+  targetText?: string,
+  checkFrequency: number = 30 // Default to 30 minutes
 ): Promise<MonitoringItem | null> => {
   try {
     const user = await supabase.auth.getUser();
@@ -73,6 +80,7 @@ export const addMonitor = async (
         user_id: user.data.user.id,
         status: "unknown",
         is_active: true,
+        check_frequency: checkFrequency
       })
       .select()
       .single();
@@ -81,6 +89,11 @@ export const addMonitor = async (
       console.error("Error adding monitor:", error);
       throw error;
     }
+
+    // Immediately trigger a check for the new monitor
+    setTimeout(() => {
+      triggerCheck(data.id).catch(console.error);
+    }, 500);
 
     return convertToMonitoringItem(data);
   } catch (error) {
@@ -108,6 +121,29 @@ export const toggleMonitorStatus = async (
     return true;
   } catch (error) {
     console.error("Error in toggleMonitorStatus:", error);
+    return false;
+  }
+};
+
+// Update check frequency for a monitor
+export const updateCheckFrequency = async (
+  id: string,
+  frequency: number
+): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from("stock_monitors")
+      .update({ check_frequency: frequency })
+      .eq("id", id);
+
+    if (error) {
+      console.error("Error updating check frequency:", error);
+      throw error;
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Error in updateCheckFrequency:", error);
     return false;
   }
 };
@@ -147,6 +183,7 @@ export const formatDate = (dateString: string | null): string => {
 // For preventing concurrent checks and managing timeouts
 let checkInProgress: Record<string, boolean> = {};
 let checkTimeouts: Record<string, number> = {};
+let autoCheckIntervals: Record<string, number> = {};
 
 // Safety mechanism to clean up stale in-progress flags
 // This will run every minute to clear any in-progress flags that may have been left behind
@@ -246,7 +283,8 @@ export const triggerCheck = async (monitorId: string): Promise<MonitoringItem | 
         .update({ 
           status: "error",
           error_message: "Failed to fetch monitor data: " + createDetailedErrorMessage(fetchError),
-          last_checked: new Date().toISOString()
+          last_checked: new Date().toISOString(),
+          consecutive_errors: monitor?.consecutive_errors ? monitor.consecutive_errors + 1 : 1
         })
         .eq("id", monitorId);
       
@@ -284,7 +322,8 @@ export const triggerCheck = async (monitorId: string): Promise<MonitoringItem | 
           .update({ 
             status: "error",
             error_message: `Edge function error: ${detailedError}`,
-            last_checked: new Date().toISOString()
+            last_checked: new Date().toISOString(),
+            consecutive_errors: monitor.consecutive_errors ? monitor.consecutive_errors + 1 : 1
           })
           .eq("id", monitorId);
           
@@ -308,6 +347,17 @@ export const triggerCheck = async (monitorId: string): Promise<MonitoringItem | 
 
       console.log("Updated monitor data:", monitorData);
       
+      // If this was successful and previous checks had errors, reset consecutive errors
+      if (monitorData.status !== "error" && monitorData.consecutive_errors > 0) {
+        await supabase
+          .from("stock_monitors")
+          .update({ consecutive_errors: 0 })
+          .eq("id", monitorId);
+      }
+      
+      // Schedule next automatic check if the monitor is active
+      scheduleNextCheck(monitorData);
+      
       // Clean up the in-progress flag with a slight delay to prevent race conditions
       checkTimeouts[monitorId] = setTimeout(() => {
         delete checkInProgress[monitorId];
@@ -327,7 +377,7 @@ export const triggerCheck = async (monitorId: string): Promise<MonitoringItem | 
         // First fetch to see if the status was updated by the edge function
         const { data: currentData } = await supabase
           .from("stock_monitors")
-          .select("status, last_checked")
+          .select("status, last_checked, consecutive_errors")
           .eq("id", monitorId)
           .single();
           
@@ -340,9 +390,15 @@ export const triggerCheck = async (monitorId: string): Promise<MonitoringItem | 
             .update({ 
               status: "error",
               error_message: `Network or function error: ${errorMessage}`,
-              last_checked: new Date().toISOString()
+              last_checked: new Date().toISOString(),
+              consecutive_errors: (currentData?.consecutive_errors || 0) + 1
             })
             .eq("id", monitorId);
+        }
+        
+        // Schedule next check despite the error
+        if (monitor && monitor.is_active) {
+          scheduleNextCheck(monitor);
         }
       } catch (dbError) {
         console.error("Failed to update error status:", dbError);
@@ -379,6 +435,97 @@ export const triggerCheck = async (monitorId: string): Promise<MonitoringItem | 
     
     return null;
   }
+};
+
+// Schedule the next automatic check based on monitor settings and status
+const scheduleNextCheck = (monitor: any) => {
+  if (!monitor || !monitor.is_active) {
+    return;
+  }
+  
+  // Clear any existing scheduled checks
+  if (autoCheckIntervals[monitor.id]) {
+    clearTimeout(autoCheckIntervals[monitor.id]);
+    delete autoCheckIntervals[monitor.id];
+  }
+  
+  // Determine check frequency in minutes
+  let checkFrequency = monitor.check_frequency || 30; // Default to 30 minutes
+  
+  // Adjust frequency based on status and error history
+  if (monitor.status === "in-stock") {
+    // Check less frequently if in stock (we already found what we want)
+    checkFrequency = Math.max(checkFrequency, 60); // At least 60 minutes
+  } else if (monitor.status === "error") {
+    // Exponential backoff for errors
+    const errorCount = monitor.consecutive_errors || 1;
+    const backoffFactor = Math.min(Math.pow(2, errorCount - 1), 8); // Max 8x backoff
+    checkFrequency = Math.min(checkFrequency * backoffFactor, 240); // Max 4 hours
+  } else if (monitor.status === "out-of-stock") {
+    // Possibly check more frequently if out of stock and we want to catch when it comes back
+    checkFrequency = Math.min(checkFrequency, 15); // At least every 15 minutes
+  }
+  
+  // Add some randomness to avoid hitting sites all at the same time
+  const jitter = Math.floor(Math.random() * 5) - 2; // -2 to +2 minutes
+  checkFrequency = Math.max(1, checkFrequency + jitter);
+  
+  // Convert to milliseconds
+  const checkFrequencyMs = checkFrequency * 60 * 1000;
+  
+  console.log(`Scheduling next check for ${monitor.name} (ID: ${monitor.id}) in ${checkFrequency} minutes`);
+  
+  // Schedule the next check
+  autoCheckIntervals[monitor.id] = setTimeout(() => {
+    console.log(`Auto-triggering scheduled check for ${monitor.name} (ID: ${monitor.id})`);
+    triggerCheck(monitor.id).catch(error => {
+      console.error(`Error during scheduled check for ${monitor.id}:`, error);
+    });
+  }, checkFrequencyMs) as unknown as number;
+};
+
+// Initial auto-check setup for all active monitors
+export const initializeAutoChecks = async () => {
+  console.log("Initializing automatic checks for all active monitors");
+  
+  try {
+    const monitors = await fetchMonitors();
+    const activeMonitors = monitors.filter(m => m.is_active);
+    
+    console.log(`Found ${activeMonitors.length} active monitors to schedule`);
+    
+    // Schedule initial checks with staggered starts to avoid overwhelming systems
+    activeMonitors.forEach((monitor, index) => {
+      // Stagger initial checks 5-10 seconds apart
+      const initialDelay = 5000 + (index * 5000);
+      
+      setTimeout(() => {
+        // Check if it needs updating (hasn't been checked recently)
+        const needsCheck = !monitor.last_checked || 
+          differenceInMinutes(new Date(), parseISO(monitor.last_checked)) > (monitor.check_frequency || 30) / 2;
+        
+        if (needsCheck) {
+          console.log(`Scheduling initial check for ${monitor.name} in ${Math.round(initialDelay/1000)} seconds`);
+          triggerCheck(monitor.id).catch(console.error);
+        } else {
+          console.log(`${monitor.name} was checked recently, scheduling next regular check`);
+          scheduleNextCheck(monitor);
+        }
+      }, initialDelay);
+    });
+    
+    return true;
+  } catch (error) {
+    console.error("Error initializing auto checks:", error);
+    return false;
+  }
+};
+
+// Clean up all auto-check intervals when component unmounts
+export const cleanupAutoChecks = () => {
+  Object.values(autoCheckIntervals).forEach(interval => clearTimeout(interval));
+  autoCheckIntervals = {};
+  console.log("Cleaned up all automatic check intervals");
 };
 
 // Set up realtime updates for stock monitors

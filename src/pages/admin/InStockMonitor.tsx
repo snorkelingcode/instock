@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Search, AlertCircle, RotateCw } from "lucide-react";
+import { Search, AlertCircle, RotateCw, ClockIcon } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import AddMonitorForm from "@/components/admin/AddMonitorForm";
 import MonitoringItem from "@/components/admin/MonitoringItem";
@@ -15,8 +15,11 @@ import {
   addMonitor, 
   toggleMonitorStatus, 
   deleteMonitor, 
-  triggerCheck, 
+  triggerCheck,
+  updateCheckFrequency,
   setupMonitorRealtime,
+  initializeAutoChecks,
+  cleanupAutoChecks,
   MonitoringItem as MonitoringItemType 
 } from "@/services/monitorService";
 import { useToast } from "@/components/ui/use-toast";
@@ -27,6 +30,7 @@ const InStockMonitor = () => {
   const [monitoredItems, setMonitoredItems] = useState<MonitoringItemType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshingIds, setRefreshingIds] = useState<Set<string>>(new Set());
+  const [autoCheckEnabled, setAutoCheckEnabled] = useState(true);
   const { user, isAdmin } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -52,10 +56,20 @@ const InStockMonitor = () => {
       const monitors = await fetchMonitors();
       setMonitoredItems(monitors);
       setIsLoading(false);
+      
+      // Initialize auto-checks after loading monitors
+      if (monitors.length > 0 && autoCheckEnabled) {
+        initializeAutoChecks();
+      }
     };
 
     loadMonitors();
-  }, [user, isAdmin, navigate, toast]);
+    
+    // Clean up auto-checks on unmount
+    return () => {
+      cleanupAutoChecks();
+    };
+  }, [user, isAdmin, navigate, toast, autoCheckEnabled]);
 
   // Set up realtime updates
   useEffect(() => {
@@ -73,18 +87,24 @@ const InStockMonitor = () => {
           return newSet;
         });
         
-        // Show toast with status
-        const statusMessage = 
-          updatedItem.status === "in-stock" ? "Product is in stock!" :
-          updatedItem.status === "out-of-stock" ? "Product is out of stock" :
-          updatedItem.status === "error" ? "Error checking product" : "Status unknown";
+        // Get the previous status to check if it changed
+        const previousItem = monitoredItems.find(item => item.id === updatedItem.id);
+        const statusChanged = previousItem && previousItem.status !== updatedItem.status;
         
-        toast({
-          title: `Status Update: ${updatedItem.name}`,
-          description: statusMessage,
-          variant: updatedItem.status === "in-stock" ? "default" : 
-                  updatedItem.status === "error" ? "destructive" : "default",
-        });
+        // Show toast with status
+        if (statusChanged || updatedItem.status === "error") {
+          const statusMessage = 
+            updatedItem.status === "in-stock" ? "Product is in stock!" :
+            updatedItem.status === "out-of-stock" ? "Product is out of stock" :
+            updatedItem.status === "error" ? "Error checking product" : "Status unknown";
+          
+          toast({
+            title: `Status Update: ${updatedItem.name}`,
+            description: statusMessage,
+            variant: updatedItem.status === "in-stock" ? "default" : 
+                    updatedItem.status === "error" ? "destructive" : "default",
+          });
+        }
       }
       
       setMonitoredItems(current => 
@@ -99,15 +119,17 @@ const InStockMonitor = () => {
         channel.unsubscribe();
       }
     };
-  }, [user, toast, refreshingIds]);
+  }, [user, toast, refreshingIds, monitoredItems]);
 
-  const handleAddMonitor = async (values: { name: string; url: string; targetText?: string }) => {
-    const newItem = await addMonitor(values.name, values.url, values.targetText);
+  const handleAddMonitor = async (values: { name: string; url: string; targetText?: string; frequency?: number }) => {
+    const frequency = values.frequency || 30; // Default to 30 minutes if not specified
+    const newItem = await addMonitor(values.name, values.url, values.targetText, frequency);
+    
     if (newItem) {
       setMonitoredItems(prev => [newItem, ...prev]);
       toast({
         title: "Monitor Added",
-        description: `Now monitoring ${newItem.name}`,
+        description: `Now monitoring ${newItem.name} every ${frequency} minutes`,
       });
     }
   };
@@ -129,6 +151,31 @@ const InStockMonitor = () => {
       toast({
         title: item.is_active ? "Monitoring Paused" : "Monitoring Resumed",
         description: `${item.name} is now ${item.is_active ? "paused" : "active"}`,
+      });
+      
+      // If activating, trigger immediate check
+      if (!item.is_active) {
+        handleRefresh(id);
+      }
+    }
+  };
+
+  const handleUpdateFrequency = async (id: string, frequency: number) => {
+    const item = monitoredItems.find(item => item.id === id);
+    if (!item) return;
+    
+    const success = await updateCheckFrequency(id, frequency);
+    
+    if (success) {
+      setMonitoredItems(prev => 
+        prev.map(item => 
+          item.id === id ? { ...item, check_frequency: frequency } : item
+        )
+      );
+      
+      toast({
+        title: "Check Frequency Updated",
+        description: `${item.name} will now be checked every ${frequency} minutes`,
       });
     }
   };
@@ -224,6 +271,26 @@ const InStockMonitor = () => {
   const activeItems = filteredItems.filter((item) => item.is_active);
   const inactiveItems = filteredItems.filter((item) => !item.is_active);
 
+  const toggleAutoCheck = () => {
+    setAutoCheckEnabled(!autoCheckEnabled);
+    
+    if (!autoCheckEnabled) {
+      // Re-enable auto checks
+      initializeAutoChecks();
+      toast({
+        title: "Auto-Check Enabled",
+        description: "Monitors will be checked automatically based on their schedules",
+      });
+    } else {
+      // Disable auto checks
+      cleanupAutoChecks();
+      toast({
+        title: "Auto-Check Disabled",
+        description: "Automatic checking has been disabled. You'll need to check manually.",
+      });
+    }
+  };
+
   if (!user || !isAdmin) {
     return (
       <Layout>
@@ -252,6 +319,39 @@ const InStockMonitor = () => {
           {/* Add new monitoring URL form */}
           <div className="lg:col-span-1">
             <AddMonitorForm onSubmit={handleAddMonitor} />
+            
+            <div className="mt-6 p-4 bg-white rounded-lg border shadow-sm">
+              <h3 className="text-lg font-medium mb-3">Monitoring Settings</h3>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-medium">Automatic Checking</h4>
+                    <p className="text-sm text-gray-500">
+                      Automatically check monitors based on their schedules
+                    </p>
+                  </div>
+                  <Button 
+                    variant={autoCheckEnabled ? "default" : "outline"}
+                    onClick={toggleAutoCheck}
+                    className="gap-2"
+                  >
+                    <ClockIcon size={16} />
+                    {autoCheckEnabled ? "Enabled" : "Disabled"}
+                  </Button>
+                </div>
+                <Separator />
+                <div>
+                  <h4 className="font-medium mb-2">How It Works</h4>
+                  <ul className="text-sm space-y-2 text-gray-700">
+                    <li>• Each monitor has its own check frequency</li>
+                    <li>• Out-of-stock items are checked more frequently</li>
+                    <li>• In-stock items are checked less frequently</li>
+                    <li>• Error retries use exponential backoff</li>
+                    <li>• Manual checks are always available</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Monitoring list */}
@@ -314,6 +414,7 @@ const InStockMonitor = () => {
                             onToggleActive={handleToggleActive}
                             onDelete={handleDelete}
                             onRefresh={handleRefresh}
+                            onUpdateFrequency={handleUpdateFrequency}
                             isRefreshing={refreshingIds.has(item.id)}
                           />
                         ))}
@@ -339,6 +440,7 @@ const InStockMonitor = () => {
                             onToggleActive={handleToggleActive}
                             onDelete={handleDelete}
                             onRefresh={handleRefresh}
+                            onUpdateFrequency={handleUpdateFrequency}
                             isRefreshing={refreshingIds.has(item.id)}
                           />
                         ))}

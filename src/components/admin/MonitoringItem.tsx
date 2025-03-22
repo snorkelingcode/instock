@@ -1,9 +1,12 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Eye, EyeOff, Trash2, RefreshCw, ExternalLink, AlertCircle, Clock, CheckCircle2, XCircle, Info } from "lucide-react";
+import { 
+  Eye, EyeOff, Trash2, RefreshCw, ExternalLink, AlertCircle, Clock, 
+  CheckCircle2, XCircle, Info, Bell, BellOff, Settings
+} from "lucide-react";
 import { 
   Tooltip,
   TooltipContent,
@@ -11,6 +14,13 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { format, formatDistanceToNow } from "date-fns";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Slider } from "@/components/ui/slider";
+import { Label } from "@/components/ui/label";
 
 export interface MonitoringItemProps {
   id: string;
@@ -22,9 +32,13 @@ export interface MonitoringItemProps {
   is_active: boolean;
   error_message?: string;
   isRefreshing?: boolean;
+  check_frequency?: number;
+  last_status_change?: string | null;
+  consecutive_errors?: number;
   onToggleActive?: (id: string) => void;
   onDelete?: (id: string) => void;
   onRefresh?: (id: string) => void;
+  onUpdateFrequency?: (id: string, frequency: number) => void;
 }
 
 const MonitoringItem: React.FC<MonitoringItemProps> = ({
@@ -37,10 +51,16 @@ const MonitoringItem: React.FC<MonitoringItemProps> = ({
   is_active,
   error_message,
   isRefreshing = false,
+  check_frequency = 30, // Default to 30 minutes
+  last_status_change,
+  consecutive_errors = 0,
   onToggleActive,
   onDelete,
   onRefresh,
+  onUpdateFrequency,
 }) => {
+  const [frequency, setFrequency] = useState(check_frequency);
+  
   // Status badge colors
   const getStatusBadge = () => {
     switch (status) {
@@ -65,12 +85,17 @@ const MonitoringItem: React.FC<MonitoringItemProps> = ({
               <TooltipTrigger asChild>
                 <Badge variant="destructive" className="cursor-help flex items-center gap-1">
                   <AlertCircle size={12} />
-                  Error
+                  Error {consecutive_errors > 1 ? `(${consecutive_errors})` : ''}
                 </Badge>
               </TooltipTrigger>
               <TooltipContent className="max-w-[350px] p-4">
                 <p className="font-semibold mb-1">Error Details:</p>
                 <p className="text-sm whitespace-pre-wrap">{error_message || "An error occurred during the last check"}</p>
+                {consecutive_errors > 1 && (
+                  <p className="text-sm mt-2 text-red-500">
+                    {consecutive_errors} consecutive errors. Automatic checks will be less frequent.
+                  </p>
+                )}
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -109,10 +134,34 @@ const MonitoringItem: React.FC<MonitoringItemProps> = ({
           </TooltipTrigger>
           <TooltipContent>
             <p>{exactTime}</p>
+            {is_active && (
+              <p className="text-xs mt-1">
+                Next check: approximately {getNextCheckTime()}
+              </p>
+            )}
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
     );
+  };
+
+  // Calculate next check time based on status and check frequency
+  const getNextCheckTime = () => {
+    if (!is_active) return "paused";
+    
+    let adjustedFrequency = frequency;
+    
+    // Adjust based on status
+    if (status === "in-stock") {
+      adjustedFrequency = Math.max(adjustedFrequency, 60); // At least 60 min
+    } else if (status === "error") {
+      const backoffFactor = Math.min(Math.pow(2, consecutive_errors - 1), 8);
+      adjustedFrequency = Math.min(adjustedFrequency * backoffFactor, 240);
+    } else if (status === "out-of-stock") {
+      adjustedFrequency = Math.min(adjustedFrequency, 15); // More frequent
+    }
+    
+    return `${adjustedFrequency} minutes`;
   };
 
   // Format error message for display
@@ -163,6 +212,23 @@ const MonitoringItem: React.FC<MonitoringItemProps> = ({
     }
   };
 
+  // Handle saving the new check frequency
+  const handleSaveFrequency = () => {
+    if (onUpdateFrequency) {
+      onUpdateFrequency(id, frequency);
+    }
+  };
+  
+  // Format frequency display
+  const formatFrequency = (mins: number) => {
+    if (mins < 60) {
+      return `${mins} minutes`;
+    } else {
+      const hours = mins / 60;
+      return `${hours === 1 ? '1 hour' : `${hours} hours`}`;
+    }
+  };
+
   return (
     <Card className={`w-full shadow-sm hover:shadow transition-shadow ${getStatusClass()}`}>
       <CardHeader className="pb-2">
@@ -209,7 +275,24 @@ const MonitoringItem: React.FC<MonitoringItemProps> = ({
             </div>
           )}
           
-          {formatLastChecked()}
+          <div className="flex items-center justify-between">
+            {formatLastChecked()}
+            
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="text-xs flex items-center text-muted-foreground">
+                    <Clock size={12} className="mr-1" />
+                    Auto-check: {formatFrequency(frequency)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>This item is checked automatically every {formatFrequency(frequency)}</p>
+                  {status !== "unknown" && <p>Actual timing may vary based on item status</p>}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
         </div>
       </CardContent>
       <CardFooter className="pt-0 flex justify-between gap-2">
@@ -224,6 +307,42 @@ const MonitoringItem: React.FC<MonitoringItemProps> = ({
         </Button>
         
         <div className="flex gap-2">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Settings size={16} />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80">
+              <div className="space-y-4">
+                <h4 className="font-medium">Check Frequency</h4>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <Label htmlFor="frequency">Check every:</Label>
+                    <span className="text-sm">{formatFrequency(frequency)}</span>
+                  </div>
+                  <Slider
+                    id="frequency"
+                    min={5}
+                    max={240}
+                    step={5}
+                    value={[frequency]}
+                    onValueChange={(values) => setFrequency(values[0])}
+                    className="w-full"
+                  />
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>5m</span>
+                    <span>1h</span>
+                    <span>4h</span>
+                  </div>
+                </div>
+                <Button onClick={handleSaveFrequency} className="w-full">
+                  Save
+                </Button>
+              </div>
+            </PopoverContent>
+          </Popover>
+          
           <Button
             variant="outline"
             size="sm"

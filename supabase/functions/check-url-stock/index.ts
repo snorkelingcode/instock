@@ -25,13 +25,16 @@ const createSupabaseClient = (req: Request) => {
 
 // Anti-detection measures
 const USER_AGENTS = [
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1.1 Safari/605.1.15",
-  "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.107 Safari/537.36",
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:90.0) Gecko/20100101 Firefox/90.0",
-  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:90.0) Gecko/20100101 Firefox/90.0",
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36 Edg/91.0.864.59",
-  "Mozilla/5.0 (iPhone; CPU iPhone OS 14_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1"
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36",
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Safari/605.1.15",
+  "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36",
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/115.0",
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:109.0) Gecko/20100101 Firefox/115.0",
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36 Edg/115.0.1901.183",
+  "Mozilla/5.0 (iPhone; CPU iPhone OS 16_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Mobile/15E148 Safari/604.1",
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36 OPR/101.0.0.0",
+  "Mozilla/5.0 (iPad; CPU OS 16_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Mobile/15E148 Safari/604.1",
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36"
 ];
 
 interface CheckUrlRequest {
@@ -42,19 +45,51 @@ interface CheckUrlRequest {
 
 // Helper function to stringify error objects fully
 const stringifyErrorDetails = (error: any): string => {
-  if (error instanceof Error) {
-    return `${error.name}: ${error.message}`;
-  } else if (typeof error === 'object' && error !== null) {
-    try {
-      // Try to stringify the entire object for more details
-      const jsonStr = JSON.stringify(error);
-      return jsonStr === '{}' ? 'Empty error object' : jsonStr;
-    } catch (e) {
-      // If circular reference or other JSON error
-      return `[Complex error object: ${Object.keys(error).join(', ')}]`;
+  try {
+    if (error instanceof Error) {
+      return `${error.name}: ${error.message}`;
+    } else if (typeof error === 'object' && error !== null) {
+      try {
+        // Check if it's a Response object
+        if (error.status && error.statusText) {
+          return `HTTP Error: ${error.status} ${error.statusText}`;
+        }
+        
+        // Try to stringify the entire object for more details
+        const jsonStr = JSON.stringify(error);
+        return jsonStr === '{}' ? 'Empty error object' : jsonStr;
+      } catch (e) {
+        // If circular reference or other JSON error
+        return `[Complex error object: ${Object.keys(error).join(', ')}]`;
+      }
     }
+  } catch (e) {
+    return `[Error stringifying error: ${e}]`;
   }
   return String(error);
+};
+
+// Sanitize URL to avoid common tracking parameters
+const sanitizeUrl = (url: string): string => {
+  try {
+    const urlObj = new URL(url);
+    
+    // Common tracking parameters to remove
+    const paramsToRemove = [
+      'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content',
+      'fbclid', 'gclid', 'msclkid', 'zanpid', 'dclid', 'igshid'
+    ];
+    
+    // Remove tracking parameters
+    paramsToRemove.forEach(param => {
+      urlObj.searchParams.delete(param);
+    });
+    
+    return urlObj.toString();
+  } catch (e) {
+    console.error("Error sanitizing URL:", e);
+    return url; // Return original URL if parsing fails
+  }
 };
 
 serve(async (req: Request) => {
@@ -158,6 +193,9 @@ serve(async (req: Request) => {
       console.error("Error updating initial status:", e);
     }
     
+    // Sanitize URL to avoid tracking parameters
+    const sanitizedUrl = sanitizeUrl(body.url);
+    
     // Select a random user agent
     const userAgent = USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
     
@@ -169,9 +207,10 @@ serve(async (req: Request) => {
       "Cache-Control": "no-cache",
       "Pragma": "no-cache",
       "DNT": "1",
+      "Referer": new URL(sanitizedUrl).origin,
     };
     
-    console.log(`Checking URL: ${body.url}`);
+    console.log(`Checking URL: ${sanitizedUrl}`);
     
     // Small random delay to avoid detection patterns
     const timeout = Math.floor(Math.random() * 1000) + 500;
@@ -188,7 +227,7 @@ serve(async (req: Request) => {
     try {
       console.log("Sending fetch request...");
       // Make the request
-      response = await fetch(body.url, {
+      response = await fetch(sanitizedUrl, {
         method: "GET",
         headers,
         redirect: "follow",
@@ -200,7 +239,7 @@ serve(async (req: Request) => {
       console.log(`Fetch response status: ${response.status}`);
       
       if (!response.ok) {
-        throw new Error(`Failed to fetch URL: HTTP ${response.status} ${response.statusText}`);
+        throw new Response(response);
       }
       
       // Get the HTML content
@@ -213,11 +252,23 @@ serve(async (req: Request) => {
       console.error("Fetch error:", error);
       
       // Create detailed error message
-      const errorMessage = error instanceof Error 
-        ? `${error.name}: ${error.message}` 
-        : error instanceof DOMException && error.name === "AbortError" 
-          ? "Request timeout: took longer than 15 seconds to respond" 
-          : String(error);
+      let errorMessage;
+      
+      if (error instanceof DOMException && error.name === "AbortError") {
+        errorMessage = "Request timeout: took longer than 15 seconds to respond";
+      } else if (error instanceof Response) {
+        errorMessage = `HTTP error: ${error.status} ${error.statusText}`;
+        try {
+          const errorText = await error.text();
+          if (errorText) {
+            errorMessage += ` - ${errorText.substring(0, 200)}${errorText.length > 200 ? '...' : ''}`;
+          }
+        } catch (e) {
+          // Ignore error getting text
+        }
+      } else {
+        errorMessage = stringifyErrorDetails(error);
+      }
       
       // Update database with error status
       try {
@@ -228,7 +279,12 @@ serve(async (req: Request) => {
             .update({
               last_checked: new Date().toISOString(),
               status: "error",
-              error_message: `Failed to fetch: ${errorMessage}`
+              error_message: `Failed to fetch: ${errorMessage}`,
+              consecutive_errors: supabase.rpc('increment_field', { 
+                row_id: body.id,
+                table_name: 'stock_monitors',
+                field_name: 'consecutive_errors'
+              })
             })
             .eq("id", body.id);
         }
@@ -393,10 +449,14 @@ serve(async (req: Request) => {
         }
         
         // E-commerce site detection (refines stock detection logic)
-        const isTargetSite = body.url.includes('target.com');
-        const isAmazonSite = body.url.includes('amazon.com');
-        const isWalmartSite = body.url.includes('walmart.com');
-        const isBestBuySite = body.url.includes('bestbuy.com');
+        const urlObj = new URL(sanitizedUrl);
+        const hostname = urlObj.hostname.toLowerCase();
+        
+        const isTargetSite = hostname.includes('target.com');
+        const isAmazonSite = hostname.includes('amazon.com');
+        const isWalmartSite = hostname.includes('walmart.com');
+        const isBestBuySite = hostname.includes('bestbuy.com');
+        const isGamestopSite = hostname.includes('gamestop.com');
         
         // Site-specific logic
         if (isTargetSite) {
@@ -423,17 +483,41 @@ serve(async (req: Request) => {
             isInStock = false;
             stockStatusReason = "Amazon: Product unavailable or no add to cart option";
           }
-        } else if (isWalmartSite || isBestBuySite) {
-          // Walmart and BestBuy often have similar patterns
-          if (hasOutOfStockIndicator) {
-            isInStock = false;
-            stockStatusReason = `${isWalmartSite ? 'Walmart' : 'BestBuy'}: Out of stock indicator found: "${foundOutOfStockPattern}"`;
-          } else if (hasEnabledAddToCartButton || hasAddToCartForm) {
+        } else if (isWalmartSite) {
+          // Walmart-specific detection
+          if (lowerHtml.includes('add to cart') && !hasOutOfStockIndicator) {
             isInStock = true;
-            stockStatusReason = `${isWalmartSite ? 'Walmart' : 'BestBuy'}: Add to cart functionality detected`;
+            stockStatusReason = "Walmart: Add to cart available without out-of-stock indicators";
+          } else if (hasOutOfStockIndicator) {
+            isInStock = false;
+            stockStatusReason = `Walmart: Out of stock indicator found: "${foundOutOfStockPattern}"`;
           } else {
-            isInStock = hasInStockIndicator && !hasOutOfStockIndicator;
-            stockStatusReason = `${isWalmartSite ? 'Walmart' : 'BestBuy'}: Using general stock indicators`;
+            isInStock = false;
+            stockStatusReason = "Walmart: No clear stock indicators";
+          }
+        } else if (isBestBuySite) {
+          // BestBuy-specific detection
+          if (lowerHtml.includes('add to cart') && !lowerHtml.includes('sold out')) {
+            isInStock = true;
+            stockStatusReason = "BestBuy: Add to cart available without sold out indicator";
+          } else if (lowerHtml.includes('sold out')) {
+            isInStock = false;
+            stockStatusReason = "BestBuy: Sold out indicator found";
+          } else {
+            isInStock = false;
+            stockStatusReason = "BestBuy: No clear stock indicators";
+          }
+        } else if (isGamestopSite) {
+          // GameStop-specific detection
+          if (lowerHtml.includes('add to cart') && !lowerHtml.includes('not available')) {
+            isInStock = true;
+            stockStatusReason = "GameStop: Add to cart available without unavailable indicator";
+          } else if (lowerHtml.includes('not available') || lowerHtml.includes('out of stock')) {
+            isInStock = false;
+            stockStatusReason = "GameStop: Not available or out of stock indicator found";
+          } else {
+            isInStock = false;
+            stockStatusReason = "GameStop: No clear stock indicators";
           }
         } else {
           // General stock detection logic for other sites
@@ -475,19 +559,22 @@ serve(async (req: Request) => {
     // Update the database with results
     try {
       console.log(`Updating database with check results: status=${isInStock ? "in-stock" : "out-of-stock"}, reason=${stockStatusReason}`);
+      
+      const updateData = {
+        last_checked: new Date().toISOString(),
+        status: isInStock ? "in-stock" : "out-of-stock",
+        error_message: errorMessage || stockStatusReason, // Store the reason for transparency
+        consecutive_errors: 0 // Reset consecutive errors on success
+      };
+      
       const { error: updateError } = await supabase
         .from("stock_monitors")
-        .update({
-          last_checked: new Date().toISOString(),
-          status: isInStock ? "in-stock" : "out-of-stock",
-          error_message: errorMessage || stockStatusReason // Store the reason for transparency
-        })
+        .update(updateData)
         .eq("id", body.id);
       
       if (updateError) {
         console.error(`Database update error:`, updateError);
-        const errorDetails = stringifyErrorDetails(updateError);
-        throw new Error(`Database update error: ${errorDetails}`);
+        throw new Error(`Database update error: ${stringifyErrorDetails(updateError)}`);
       } else {
         console.log("Database updated successfully");
       }
@@ -559,7 +646,12 @@ serve(async (req: Request) => {
           .update({
             last_checked: new Date().toISOString(),
             status: "error",
-            error_message: `Unhandled error: ${errorMessage}`
+            error_message: `Unhandled error: ${errorMessage}`,
+            consecutive_errors: supabase.rpc('increment_field', { 
+              row_id: body.id,
+              table_name: 'stock_monitors',
+              field_name: 'consecutive_errors'
+            })
           })
           .eq("id", body.id);
       }
