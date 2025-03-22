@@ -10,9 +10,14 @@ interface AuthContextProps {
   session: Session | null;
   isAdmin: boolean;
   isLoading: boolean;
+  username: string | null;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+}
+
+interface UserProfile {
+  username: string;
 }
 
 const AuthContext = createContext<AuthContextProps | undefined>(undefined);
@@ -22,6 +27,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [username, setUsername] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -33,6 +39,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (session?.user) {
         checkUserRole(session.user.id);
+        fetchUsername(session.user.id);
       }
     });
 
@@ -45,8 +52,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         if (session?.user) {
           checkUserRole(session.user.id);
+          fetchUsername(session.user.id);
         } else {
           setIsAdmin(false);
+          setUsername(null);
         }
       }
     );
@@ -55,6 +64,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       subscription.unsubscribe();
     };
   }, []);
+
+  const fetchUsername = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("username")
+        .eq("id", userId)
+        .single();
+      
+      if (error) throw error;
+      setUsername(data.username);
+    } catch (error) {
+      console.error("Error fetching username:", error);
+      setUsername(null);
+    }
+  };
 
   const checkUserRole = async (userId: string) => {
     try {
@@ -148,6 +173,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         session,
         isAdmin,
         isLoading,
+        username,
         signIn,
         signUp,
         signOut,

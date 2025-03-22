@@ -1,315 +1,128 @@
-
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
+import React from 'react';
+import { Link } from 'react-router-dom';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  DropdownMenuGroup,
+} from "@/components/ui/dropdown-menu"
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
-  Sheet,
-  SheetContent,
-  SheetTrigger,
-  SheetClose,
-} from "@/components/ui/sheet";
-import { X, Menu } from "lucide-react";
+  LogOut,
+  Settings,
+  User,
+  Edit,
+} from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useIsMobile } from "@/hooks/use-mobile";
 
 const Navigation = () => {
-  const { user, signOut, isAdmin } = useAuth();
-  const isMobile = useIsMobile();
+  
+  const { user, username, isAdmin, signOut } = useAuth();
+  
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      console.error("Failed to sign out:", error);
+    }
+  };
 
-  return (
-    <nav className="bg-red-600 text-white py-4 relative">
-      <div className="container mx-auto px-4 flex justify-between items-center relative z-50">
-        {/* Logo only */}
-        <Link to="/" className="flex items-center">
-          <img 
-            src="/lovable-uploads/3a088818-3512-46b0-898d-16a118d744fa.png" 
-            alt="TCG Updates" 
-            className="h-16 -my-2" // Keeping the same size adjustments
-          />
-        </Link>
-
-        {/* Mobile Menu Button */}
-        <Sheet>
-          <SheetTrigger asChild className="md:hidden">
-            <Button variant="ghost" size="icon" className="text-white hover:bg-red-700">
-              <Menu className="h-6 w-6" />
-              <span className="sr-only">Toggle menu</span>
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="w-full p-0 bg-white">
-            <div className="flex flex-col h-full">
-              {/* Logo centered at the top - now using the red logo for mobile menu */}
-              <div className="flex justify-center py-6 border-b border-gray-200">
-                <img 
-                  src="/lovable-uploads/e60afbdf-2426-466b-ae0b-ebe03404efc4.png" 
-                  alt="TCG Updates" 
-                  className="h-24" // Keeping the same size for mobile menu logo
-                />
-              </div>
-              
-              {/* Close button - positioned absolute top right */}
-              <SheetClose className="absolute top-4 right-4 rounded-sm opacity-70 ring-offset-white transition-opacity hover:opacity-100 focus:outline-none">
-                <X className="h-6 w-6" color="#ea384c" />
-                <span className="sr-only">Close</span>
-              </SheetClose>
-              
-              {/* Navigation Links */}
-              <div className="flex flex-col py-4 overflow-y-auto">
-                <SheetClose asChild>
-                  <Link
-                    to="/"
-                    className="py-3 px-6 text-red-600 font-medium border-b border-gray-200 hover:bg-red-50 transition-colors text-left"
-                  >
-                    Home
-                  </Link>
-                </SheetClose>
-                <SheetClose asChild>
-                  <Link
-                    to="/products"
-                    className="py-3 px-6 text-red-600 font-medium border-b border-gray-200 hover:bg-red-50 transition-colors text-left"
-                  >
-                    Products
-                  </Link>
-                </SheetClose>
-                <SheetClose asChild>
-                  <Link
-                    to="/news"
-                    className="py-3 px-6 text-red-600 font-medium border-b border-gray-200 hover:bg-red-50 transition-colors text-left"
-                  >
-                    News
-                  </Link>
-                </SheetClose>
-                <SheetClose asChild>
-                  <Link
-                    to="/sets"
-                    className="py-3 px-6 text-red-600 font-medium border-b border-gray-200 hover:bg-red-50 transition-colors text-left"
-                  >
-                    Sets
-                  </Link>
-                </SheetClose>
-                <SheetClose asChild>
-                  <Link
-                    to="/about"
-                    className="py-3 px-6 text-red-600 font-medium border-b border-gray-200 hover:bg-red-50 transition-colors text-left"
-                  >
-                    About
-                  </Link>
-                </SheetClose>
-                <SheetClose asChild>
-                  <Link
-                    to="/contact"
-                    className="py-3 px-6 text-red-600 font-medium border-b border-gray-200 hover:bg-red-50 transition-colors text-left"
-                  >
-                    Contact
-                  </Link>
-                </SheetClose>
-                
-                <SheetClose asChild>
-                  <Link
-                    to="/forge"
-                    className="py-3 px-6 text-red-600 font-medium border-b border-gray-200 hover:bg-red-50 transition-colors text-left"
-                  >
-                    Forge
-                  </Link>
-                </SheetClose>
-                
-                {user ? (
-                  <>
-                    <SheetClose asChild>
-                      <Link
-                        to="/dashboard"
-                        className="py-3 px-6 text-red-600 font-medium border-b border-gray-200 hover:bg-red-50 transition-colors text-left"
-                      >
-                        Dashboard
-                      </Link>
-                    </SheetClose>
-                    {isAdmin && (
-                      <>
-                        <div className="py-2 px-6 text-gray-500 text-sm bg-gray-50 font-medium">
-                          Admin Tools
-                        </div>
-                        <SheetClose asChild>
-                          <Link
-                            to="/admin/articles"
-                            className="py-3 px-6 text-red-600 font-medium border-b border-gray-200 hover:bg-red-50 transition-colors text-left"
-                          >
-                            Manage Articles
-                          </Link>
-                        </SheetClose>
-                        <SheetClose asChild>
-                          <Link
-                            to="/admin/pokemon-releases"
-                            className="py-3 px-6 text-red-600 font-medium border-b border-gray-200 hover:bg-red-50 transition-colors text-left"
-                          >
-                            Manage Pokémon Releases
-                          </Link>
-                        </SheetClose>
-                        <SheetClose asChild>
-                          <Link
-                            to="/admin/models"
-                            className="py-3 px-6 text-red-600 font-medium border-b border-gray-200 hover:bg-red-50 transition-colors text-left"
-                          >
-                            Manage 3D Models
-                          </Link>
-                        </SheetClose>
-                        <SheetClose asChild>
-                          <Link
-                            to="/admin/products"
-                            className="py-3 px-6 text-red-600 font-medium border-b border-gray-200 hover:bg-red-50 transition-colors text-left"
-                          >
-                            Manage Products
-                          </Link>
-                        </SheetClose>
-                        <SheetClose asChild>
-                          <Link
-                            to="/admin/stock-monitor"
-                            className="py-3 px-6 text-red-600 font-medium border-b border-gray-200 hover:bg-red-50 transition-colors text-left"
-                          >
-                            In-Stock Monitor
-                          </Link>
-                        </SheetClose>
-                        <SheetClose asChild>
-                          <Link
-                            to="/sets/sync"
-                            className="py-3 px-6 text-red-600 font-medium border-b border-gray-200 hover:bg-red-50 transition-colors text-left"
-                          >
-                            Sync TCG Sets
-                          </Link>
-                        </SheetClose>
-                      </>
-                    )}
-                    <SheetClose asChild>
-                      <button
-                        onClick={signOut}
-                        className="py-3 px-6 text-red-600 font-medium text-left hover:bg-red-50 transition-colors"
-                      >
-                        Sign Out
-                      </button>
-                    </SheetClose>
-                  </>
-                ) : (
-                  <SheetClose asChild>
-                    <Link
-                      to="/auth"
-                      className="py-3 px-6 text-red-600 font-medium border-b border-gray-200 hover:bg-red-50 transition-colors text-left"
-                    >
-                      Sign In
-                    </Link>
-                  </SheetClose>
-                )}
-              </div>
+  const renderUserMenu = () => {
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+            <Avatar className="h-8 w-8">
+              <AvatarFallback className="bg-red-100 text-red-600 text-xs">
+                {username ? username.substring(0, 2).toUpperCase() : "U"}
+              </AvatarFallback>
+            </Avatar>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="w-56" align="end" forceMount>
+          <DropdownMenuLabel className="font-normal">
+            <div className="flex flex-col space-y-1">
+              <p className="text-sm font-medium leading-none">{username || "User"}</p>
+              <p className="text-xs leading-none text-muted-foreground">
+                {user?.email}
+              </p>
             </div>
-          </SheetContent>
-        </Sheet>
-
-        {/* Desktop Menu */}
-        <div className="hidden md:flex items-center space-x-6">
-          <Link to="/" className="hover:text-red-200 transition-colors">
-            Home
-          </Link>
-          <Link
-            to="/products"
-            className="hover:text-red-200 transition-colors"
-          >
-            Products
-          </Link>
-          <Link to="/news" className="hover:text-red-200 transition-colors">
-            News
-          </Link>
-          <Link to="/sets" className="hover:text-red-200 transition-colors">
-            Sets
-          </Link>
-          <Link
-            to="/about"
-            className="hover:text-red-200 transition-colors"
-          >
-            About
-          </Link>
-          <Link
-            to="/contact"
-            className="hover:text-red-200 transition-colors"
-          >
-            Contact
-          </Link>
-          
-          <Link
-            to="/forge"
-            className="hover:text-red-200 transition-colors"
-          >
-            Forge
-          </Link>
-          
-          {user ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="hover:text-red-200 transition-colors bg-transparent text-white">
-                  My Account
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56">
-                <DropdownMenuItem>
-                  <Link to="/dashboard" className="w-full">
-                    Dashboard
-                  </Link>
-                </DropdownMenuItem>
-                {isAdmin && (
-                  <>
-                    <DropdownMenuItem>
-                      <Link to="/admin/articles" className="w-full">
-                        Manage Articles
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <Link to="/admin/pokemon-releases" className="w-full">
-                        Manage Pokémon Releases
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <Link to="/admin/models" className="w-full">
-                        Manage 3D Models
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <Link to="/admin/products" className="w-full">
-                        Manage Products
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <Link to="/admin/stock-monitor" className="w-full">
-                        In-Stock Monitor
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <Link to="/sets/sync" className="w-full">
-                        Sync TCG Sets
-                      </Link>
-                    </DropdownMenuItem>
-                  </>
-                )}
-                <DropdownMenuItem>
-                  <button onClick={signOut} className="w-full text-left">
-                    Sign Out
-                  </button>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : (
-            <Link 
-              to="/auth" 
-              className="hover:text-red-200 transition-colors"
-            >
-              Sign In
-            </Link>
-          )}
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuGroup>
+            <DropdownMenuItem asChild>
+              <Link to="/dashboard">
+                <User className="mr-2 h-4 w-4" />
+                <span>Dashboard</span>
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link to="/profile">
+                <Edit className="mr-2 h-4 w-4" />
+                <span>Edit Profile</span>
+              </Link>
+            </DropdownMenuItem>
+            {isAdmin && (
+              <DropdownMenuItem asChild>
+                <Link to="/admin/articles">
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Admin</span>
+                </Link>
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuGroup>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={handleSignOut}>
+            <LogOut className="mr-2 h-4 w-4" />
+            <span>Log out</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  };
+  
+  return (
+    <div className="navbar bg-base-100 shadow-md">
+      <div className="navbar-start">
+        <div className="dropdown">
+          <div tabIndex={0} role="button" className="btn btn-ghost lg:hidden">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h8m-8 6h16" /></svg>
+          </div>
+          <ul tabIndex={0} className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
+            <li><Link to="/">Home</Link></li>
+            <li><Link to="/news">News</Link></li>
+            <li><Link to="/sets">Sets</Link></li>
+            <li>
+              <Link to="/articles">Articles</Link>
+            </li>
+          </ul>
         </div>
+        <Link to="/" className="btn btn-ghost text-xl">TCG Updates</Link>
       </div>
-    </nav>
+      <div className="navbar-center hidden lg:flex">
+        <ul className="menu menu-horizontal px-1">
+          <li><Link to="/">Home</Link></li>
+          <li><Link to="/news">News</Link></li>
+          <li><Link to="/sets">Sets</Link></li>
+          <li>
+            <Link to="/articles">Articles</Link>
+          </li>
+        </ul>
+      </div>
+      <div className="navbar-end">
+        {user ? (
+          renderUserMenu()
+        ) : (
+          <Link to="/auth" className="btn">
+            Login
+          </Link>
+        )}
+      </div>
+    </div>
   );
 };
 

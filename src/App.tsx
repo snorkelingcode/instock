@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -30,10 +29,11 @@ import Forge from "./pages/Forge";
 import ManageModels from "./pages/admin/ManageModels";
 import ManageProducts from "./pages/admin/ManageProducts";
 import InStockMonitor from "./pages/admin/InStockMonitor";
+import UserProfile from "./pages/UserProfile";
 
 const queryClient = new QueryClient();
 
-const App = () => {
+function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
@@ -137,6 +137,8 @@ const App = () => {
                 } 
               />
               
+              <Route path="/profile" element={<UserProfile />} />
+              
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
@@ -144,6 +146,6 @@ const App = () => {
       </AuthProvider>
     </QueryClientProvider>
   );
-};
+}
 
 export default App;
