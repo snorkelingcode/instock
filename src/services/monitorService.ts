@@ -150,6 +150,8 @@ let checkTimeouts: Record<string, number> = {};
 
 // Trigger a manual check of a URL
 export const triggerCheck = async (monitorId: string): Promise<MonitoringItem | null> => {
+  console.log(`Starting check for monitor ID: ${monitorId}`);
+  
   try {
     // Clear any existing timeouts for this monitor ID
     if (checkTimeouts[monitorId]) {
@@ -165,8 +167,22 @@ export const triggerCheck = async (monitorId: string): Promise<MonitoringItem | 
     
     // Mark this check as in progress
     checkInProgress[monitorId] = true;
+    console.log(`Set checkInProgress[${monitorId}] = true`);
     
-    // First fetch the monitor to get URL and target text
+    // First update status to unknown to show the check is in progress
+    const { error: updateError } = await supabase
+      .from("stock_monitors")
+      .update({ 
+        status: "unknown",
+        error_message: null 
+      })
+      .eq("id", monitorId);
+      
+    if (updateError) {
+      console.error("Error updating monitor status to unknown:", updateError);
+    }
+    
+    // Then fetch the monitor to get URL and target text
     const { data: monitor, error: fetchError } = await supabase
       .from("stock_monitors")
       .select("*")
@@ -176,10 +192,21 @@ export const triggerCheck = async (monitorId: string): Promise<MonitoringItem | 
     if (fetchError) {
       console.error("Error fetching monitor data:", fetchError);
       
+      // Update DB with error
+      await supabase
+        .from("stock_monitors")
+        .update({ 
+          status: "error",
+          error_message: "Failed to fetch monitor data",
+          last_checked: new Date().toISOString()
+        })
+        .eq("id", monitorId);
+      
       // Clean up the in-progress flag after a delay
       checkTimeouts[monitorId] = setTimeout(() => {
         delete checkInProgress[monitorId];
         delete checkTimeouts[monitorId];
+        console.log(`Cleared checkInProgress for ${monitorId} after fetch error`);
       }, 2000) as unknown as number;
       
       throw fetchError;
@@ -187,14 +214,9 @@ export const triggerCheck = async (monitorId: string): Promise<MonitoringItem | 
     
     console.log("Triggering check for monitor:", monitor);
     
-    // Update status to unknown to show the check is in progress
-    await supabase
-      .from("stock_monitors")
-      .update({ status: "unknown" })
-      .eq("id", monitorId);
-    
     try {
       // Call the edge function to check the URL status
+      console.log(`Calling edge function for monitor ${monitorId} with URL: ${monitor.url}`);
       const { data, error } = await supabase.functions.invoke('check-url-stock', {
         body: { 
           id: monitorId,
@@ -233,21 +255,35 @@ export const triggerCheck = async (monitorId: string): Promise<MonitoringItem | 
         throw monitorError;
       }
 
+      console.log("Updated monitor data:", monitorData);
+      
       // Clean up the in-progress flag with delay to prevent race conditions
       checkTimeouts[monitorId] = setTimeout(() => {
         delete checkInProgress[monitorId];
         delete checkTimeouts[monitorId];
+        console.log(`Cleared checkInProgress for ${monitorId} after successful check`);
       }, 2000) as unknown as number;
       
       return convertToMonitoringItem(monitorData);
     } catch (error) {
       // If there was an error, make sure we still clear the in-progress flag after a delay
+      console.error("Function invoke or fetch error:", error);
+      
+      // Ensure we update the DB with error status if not already done
+      await supabase
+        .from("stock_monitors")
+        .update({ 
+          status: "error",
+          error_message: error instanceof Error ? error.message : "Unknown error occurred",
+          last_checked: new Date().toISOString()
+        })
+        .eq("id", monitorId);
+      
       checkTimeouts[monitorId] = setTimeout(() => {
         delete checkInProgress[monitorId];
         delete checkTimeouts[monitorId];
+        console.log(`Cleared checkInProgress for ${monitorId} after error`);
       }, 2000) as unknown as number;
-      
-      console.error("Error in triggerCheck:", error);
       
       // Return null to indicate an error
       return null;
@@ -258,6 +294,7 @@ export const triggerCheck = async (monitorId: string): Promise<MonitoringItem | 
     // Clear the in-progress flag even if there was an error
     setTimeout(() => {
       delete checkInProgress[monitorId];
+      console.log(`Cleared checkInProgress for ${monitorId} after outer catch`);
     }, 2000);
     
     return null;
@@ -266,7 +303,9 @@ export const triggerCheck = async (monitorId: string): Promise<MonitoringItem | 
 
 // Set up realtime updates for stock monitors
 export const setupMonitorRealtime = (callback: (item: MonitoringItem) => void) => {
-  return supabase
+  console.log("Setting up realtime subscription for stock monitors...");
+  
+  const channel = supabase
     .channel('stock_monitors_changes')
     .on(
       'postgres_changes',
@@ -276,9 +315,14 @@ export const setupMonitorRealtime = (callback: (item: MonitoringItem) => void) =
         table: 'stock_monitors'
       },
       (payload) => {
+        console.log("Realtime update received:", payload);
         const updatedItem = convertToMonitoringItem(payload.new);
         callback(updatedItem);
       }
     )
-    .subscribe();
+    .subscribe((status) => {
+      console.log("Realtime subscription status:", status);
+    });
+    
+  return channel;
 };

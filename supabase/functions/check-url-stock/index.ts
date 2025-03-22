@@ -41,8 +41,11 @@ interface CheckUrlRequest {
 }
 
 serve(async (req: Request) => {
+  console.log("Edge function received request");
+  
   // Handle CORS preflight request
   if (req.method === "OPTIONS") {
+    console.log("Handling OPTIONS request");
     return new Response(null, {
       status: 200,
       headers: corsHeaders
@@ -59,6 +62,7 @@ serve(async (req: Request) => {
       console.log("Received request:", JSON.stringify(body, null, 2));
     } catch (parseError) {
       console.error("Failed to parse request body:", parseError);
+      
       return new Response(
         JSON.stringify({ success: false, error: "Invalid request format" }),
         {
@@ -89,6 +93,7 @@ serve(async (req: Request) => {
     // Create Supabase client
     try {
       supabase = createSupabaseClient(req);
+      console.log("Supabase client created successfully");
     } catch (dbError) {
       console.error("Failed to create Supabase client:", dbError);
       return new Response(
@@ -101,6 +106,23 @@ serve(async (req: Request) => {
           }
         }
       );
+    }
+    
+    // First update the database to show we're checking
+    try {
+      const { error: updateError } = await supabase
+        .from("stock_monitors")
+        .update({
+          status: "unknown",
+          error_message: null
+        })
+        .eq("id", body.id);
+        
+      if (updateError) {
+        console.error("Failed to update initial status:", updateError);
+      }
+    } catch (e) {
+      console.error("Error updating initial status:", e);
     }
     
     // Select a random user agent
@@ -118,7 +140,7 @@ serve(async (req: Request) => {
     
     console.log(`Checking URL: ${body.url}`);
     
-    // Small random delay to avoid detection patterns (reduced to prevent long waits)
+    // Small random delay to avoid detection patterns
     const timeout = Math.floor(Math.random() * 1000) + 500;
     await new Promise(resolve => setTimeout(resolve, timeout));
     
@@ -131,6 +153,7 @@ serve(async (req: Request) => {
     let fetchError = null;
     
     try {
+      console.log("Sending fetch request...");
       // Make the request
       response = await fetch(body.url, {
         method: "GET",
@@ -141,12 +164,15 @@ serve(async (req: Request) => {
       
       clearTimeout(timeoutId);
       
+      console.log(`Fetch response status: ${response.status}`);
+      
       if (!response.ok) {
         throw new Error(`Failed to fetch URL: ${response.status} ${response.statusText}`);
       }
       
       // Get the HTML content
       html = await response.text();
+      console.log(`Received HTML content (${html.length} characters)`);
       
     } catch (error) {
       clearTimeout(timeoutId);
@@ -156,6 +182,7 @@ serve(async (req: Request) => {
       // Update database with error status
       try {
         if (supabase) {
+          console.log("Updating database with fetch error");
           await supabase
             .from("stock_monitors")
             .update({
@@ -192,6 +219,7 @@ serve(async (req: Request) => {
     let errorMessage = null;
     
     try {
+      console.log("Analyzing HTML content for stock status");
       // First check for specific target text if provided
       if (body.targetText && body.targetText.trim() !== '') {
         console.log(`Checking for custom target text: "${body.targetText}"`);
@@ -210,6 +238,8 @@ serve(async (req: Request) => {
         while ((match = buttonRegex.exec(html)) !== null) {
           buttons.push(match[0].toLowerCase());
         }
+        
+        console.log(`Found ${buttons.length} buttons in HTML`);
         
         // Look for Add to Cart buttons and check if they're disabled
         let hasEnabledAddToCartButton = false;
@@ -284,6 +314,14 @@ serve(async (req: Request) => {
           lowerHtml.includes(pattern)
         );
         
+        if (hasOutOfStockIndicator) {
+          console.log("Found out-of-stock text indicator");
+        }
+        
+        if (hasInStockIndicator) {
+          console.log("Found in-stock text indicator");
+        }
+        
         // Make the final determination:
         // 1. Enabled "Add to Cart" button is the strongest indicator for in-stock
         // 2. Disabled "Add to Cart" button is a strong indicator for out-of-stock
@@ -317,12 +355,13 @@ serve(async (req: Request) => {
     
     // Update the database with results
     try {
+      console.log("Updating database with check results");
       const { error: updateError } = await supabase
         .from("stock_monitors")
         .update({
           last_checked: new Date().toISOString(),
           status: isInStock ? "in-stock" : "out-of-stock",
-          html_snapshot: html.substring(0, 5000), // Store partial HTML for verification (reduced to save space)
+          html_snapshot: html.substring(0, 5000), // Store partial HTML for verification
           error_message: errorMessage
         })
         .eq("id", body.id);
@@ -330,9 +369,26 @@ serve(async (req: Request) => {
       if (updateError) {
         console.error(`Database update error: ${updateError.message}`);
         throw updateError;
+      } else {
+        console.log("Database updated successfully");
       }
     } catch (dbError) {
       console.error("Failed to update database:", dbError);
+      
+      // Try one more update with error status
+      try {
+        await supabase
+          .from("stock_monitors")
+          .update({
+            last_checked: new Date().toISOString(),
+            status: "error",
+            error_message: "Failed to update database with results"
+          })
+          .eq("id", body.id);
+      } catch (e) {
+        console.error("Second attempt to update database failed:", e);
+      }
+      
       return new Response(
         JSON.stringify({ success: false, error: "Database update error" }),
         {
