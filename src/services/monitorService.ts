@@ -166,6 +166,22 @@ setInterval(() => {
   }
 }, CLEANUP_INTERVAL);
 
+// Helper function to create a detailed error message
+const createDetailedErrorMessage = (error: any): string => {
+  if (error instanceof Error) {
+    return `${error.name}: ${error.message}`;
+  } else if (typeof error === 'object' && error !== null) {
+    try {
+      // Try to stringify the object for more details
+      return JSON.stringify(error);
+    } catch (e) {
+      // If circular reference or other JSON error
+      return `[Complex error object: ${Object.keys(error).join(', ')}]`;
+    }
+  }
+  return String(error);
+};
+
 // Trigger a manual check of a URL
 export const triggerCheck = async (monitorId: string): Promise<MonitoringItem | null> => {
   console.log(`Starting check for monitor ID: ${monitorId}`);
@@ -229,7 +245,7 @@ export const triggerCheck = async (monitorId: string): Promise<MonitoringItem | 
         .from("stock_monitors")
         .update({ 
           status: "error",
-          error_message: "Failed to fetch monitor data: " + (fetchError instanceof Error ? fetchError.message : String(fetchError)),
+          error_message: "Failed to fetch monitor data: " + createDetailedErrorMessage(fetchError),
           last_checked: new Date().toISOString()
         })
         .eq("id", monitorId);
@@ -247,7 +263,7 @@ export const triggerCheck = async (monitorId: string): Promise<MonitoringItem | 
       // Call the edge function to check the URL status
       console.log(`Calling edge function for monitor ${monitorId} with URL: ${monitor.url}`);
       
-      // Use the full Supabase project URL for the function
+      // Make sure to use the correctly formed function name and request body
       const { data, error } = await supabase.functions.invoke('check-url-stock', {
         body: { 
           id: monitorId,
@@ -257,14 +273,17 @@ export const triggerCheck = async (monitorId: string): Promise<MonitoringItem | 
       });
 
       if (error) {
-        console.error("Error triggering URL check:", error);
+        console.error("Error invoking edge function:", error);
+        
+        // Create a detailed error message
+        const detailedError = createDetailedErrorMessage(error);
         
         // Update the monitor with detailed error status
         await supabase
           .from("stock_monitors")
           .update({ 
             status: "error",
-            error_message: `Edge function error: ${error.message || "Error checking URL"}`,
+            error_message: `Edge function error: ${detailedError}`,
             last_checked: new Date().toISOString()
           })
           .eq("id", monitorId);
@@ -301,11 +320,7 @@ export const triggerCheck = async (monitorId: string): Promise<MonitoringItem | 
       // If there was an error, make sure we still clear the in-progress flag
       console.error("Function invoke or fetch error:", error);
       
-      const errorMessage = error instanceof Error 
-        ? `${error.name}: ${error.message}` 
-        : typeof error === 'object' && error !== null 
-          ? JSON.stringify(error) 
-          : String(error);
+      const errorMessage = createDetailedErrorMessage(error);
       
       // Double-check that we update the DB with detailed error status if needed
       try {
@@ -342,11 +357,7 @@ export const triggerCheck = async (monitorId: string): Promise<MonitoringItem | 
   } catch (error) {
     console.error("Error in triggerCheck:", error);
     
-    const errorMessage = error instanceof Error 
-      ? `${error.name}: ${error.message}` 
-      : typeof error === 'object' && error !== null 
-        ? JSON.stringify(error) 
-        : String(error);
+    const errorMessage = createDetailedErrorMessage(error);
     
     // Update the database with the detailed error
     try {

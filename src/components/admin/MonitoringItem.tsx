@@ -3,7 +3,7 @@ import React from "react";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Eye, EyeOff, Trash2, RefreshCw, ExternalLink, AlertCircle, Clock, CheckCircle2, XCircle } from "lucide-react";
+import { Eye, EyeOff, Trash2, RefreshCw, ExternalLink, AlertCircle, Clock, CheckCircle2, XCircle, Info } from "lucide-react";
 import { 
   Tooltip,
   TooltipContent,
@@ -115,8 +115,56 @@ const MonitoringItem: React.FC<MonitoringItemProps> = ({
     );
   };
 
+  // Format error message for display
+  const formatErrorMessage = () => {
+    if (!error_message) return null;
+
+    // Try to parse if it's a JSON string
+    let errorObj;
+    try {
+      if (error_message.startsWith('{') && error_message.endsWith('}')) {
+        errorObj = JSON.parse(error_message);
+        return `${errorObj.message || errorObj.error || JSON.stringify(errorObj)}`;
+      }
+    } catch (e) {
+      // Not a valid JSON, use as is
+    }
+
+    // Return the raw error message, truncated if too long
+    if (error_message.length > 150) {
+      return (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="cursor-help">{error_message.substring(0, 147)}...</span>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-[350px] p-4 whitespace-pre-wrap">
+              {error_message}
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      );
+    }
+    
+    return error_message;
+  };
+
+  // Get a CSS class based on status
+  const getStatusClass = () => {
+    switch (status) {
+      case "in-stock":
+        return "border-green-500 border-2";
+      case "error":
+        return "border-red-300";
+      case "out-of-stock":
+        return "border-red-200";
+      default:
+        return "";
+    }
+  };
+
   return (
-    <Card className={`w-full shadow-sm hover:shadow transition-shadow ${status === "in-stock" ? "border-green-500" : ""}`}>
+    <Card className={`w-full shadow-sm hover:shadow transition-shadow ${getStatusClass()}`}>
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start">
           <CardTitle className="text-lg font-medium">{name}</CardTitle>
@@ -147,9 +195,17 @@ const MonitoringItem: React.FC<MonitoringItemProps> = ({
           )}
           
           {status === "error" && error_message && (
-            <div className="text-xs text-red-500 mt-1 truncate hover:text-clip hover:whitespace-normal">
-              <AlertCircle size={12} className="inline mr-1" />
-              {error_message}
+            <div className="text-xs text-red-500 mt-1 flex items-start gap-1">
+              <AlertCircle size={12} className="mt-0.5 flex-shrink-0" />
+              <div>{formatErrorMessage()}</div>
+            </div>
+          )}
+          
+          {/* Show explanation of status for non-error states */}
+          {status !== "error" && error_message && !error_message.includes("Error") && (
+            <div className="text-xs text-gray-600 mt-1 flex items-start gap-1">
+              <Info size={12} className="mt-0.5 flex-shrink-0" />
+              <div>{formatErrorMessage()}</div>
             </div>
           )}
           

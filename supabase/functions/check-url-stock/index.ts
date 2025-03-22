@@ -40,6 +40,23 @@ interface CheckUrlRequest {
   targetText?: string;
 }
 
+// Helper function to stringify error objects fully
+const stringifyErrorDetails = (error: any): string => {
+  if (error instanceof Error) {
+    return `${error.name}: ${error.message}`;
+  } else if (typeof error === 'object' && error !== null) {
+    try {
+      // Try to stringify the entire object for more details
+      const jsonStr = JSON.stringify(error);
+      return jsonStr === '{}' ? 'Empty error object' : jsonStr;
+    } catch (e) {
+      // If circular reference or other JSON error
+      return `[Complex error object: ${Object.keys(error).join(', ')}]`;
+    }
+  }
+  return String(error);
+};
+
 serve(async (req: Request) => {
   console.log("Edge function received request");
   
@@ -112,7 +129,7 @@ serve(async (req: Request) => {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: `Database connection error: ${dbError instanceof Error ? dbError.message : String(dbError)}` 
+          error: `Database connection error: ${stringifyErrorDetails(dbError)}` 
         }),
         {
           status: 200, // Use 200 to avoid client errors
@@ -455,28 +472,6 @@ serve(async (req: Request) => {
       stockStatusReason = `Error during analysis: ${errorMessage}`;
     }
     
-    // Save a sample of relevant HTML for debugging
-    let htmlSample = "";
-    try {
-      // Try to extract a more focused section of HTML that might contain stock info
-      const bodyContent = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
-      if (bodyContent && bodyContent[1]) {
-        const mainContent = bodyContent[1].match(/<main[^>]*>([\s\S]*?)<\/main>/i) || 
-                           bodyContent[1].match(/<div[^>]*id=["']?content["']?[^>]*>([\s\S]*?)<\/div>/i) ||
-                           bodyContent[1].match(/<div[^>]*class=["']?product["']?[^>]*>([\s\S]*?)<\/div>/i);
-        
-        if (mainContent && mainContent[1]) {
-          htmlSample = mainContent[1].substring(0, 5000);
-        } else {
-          htmlSample = bodyContent[1].substring(0, 5000);
-        }
-      } else {
-        htmlSample = html.substring(0, 5000);
-      }
-    } catch (e) {
-      htmlSample = html.substring(0, 5000);
-    }
-    
     // Update the database with results
     try {
       console.log(`Updating database with check results: status=${isInStock ? "in-stock" : "out-of-stock"}, reason=${stockStatusReason}`);
@@ -485,19 +480,22 @@ serve(async (req: Request) => {
         .update({
           last_checked: new Date().toISOString(),
           status: isInStock ? "in-stock" : "out-of-stock",
-          html_snapshot: htmlSample,
           error_message: errorMessage || stockStatusReason // Store the reason for transparency
         })
         .eq("id", body.id);
       
       if (updateError) {
-        console.error(`Database update error: ${updateError.message}`);
-        throw updateError;
+        console.error(`Database update error:`, updateError);
+        const errorDetails = stringifyErrorDetails(updateError);
+        throw new Error(`Database update error: ${errorDetails}`);
       } else {
         console.log("Database updated successfully");
       }
     } catch (dbError) {
       console.error("Failed to update database:", dbError);
+      
+      // Create a detailed error message
+      const detailedError = stringifyErrorDetails(dbError);
       
       // Try one more update with error status
       try {
@@ -506,7 +504,7 @@ serve(async (req: Request) => {
           .update({
             last_checked: new Date().toISOString(),
             status: "error",
-            error_message: `Failed to update database: ${dbError instanceof Error ? dbError.message : String(dbError)}`
+            error_message: `Database error: ${detailedError}`
           })
           .eq("id", body.id);
       } catch (e) {
@@ -516,7 +514,7 @@ serve(async (req: Request) => {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: `Database update error: ${dbError instanceof Error ? dbError.message : String(dbError)}`,
+          error: `Database update error: ${detailedError}`,
           stockStatusReason
         }),
         {
@@ -551,11 +549,7 @@ serve(async (req: Request) => {
     // Top-level error handler
     console.error("Unhandled error in check-url-stock function:", error);
     
-    const errorMessage = error instanceof Error 
-      ? `${error.name}: ${error.message}` 
-      : typeof error === 'object' && error !== null 
-        ? JSON.stringify(error) 
-        : String(error);
+    const errorMessage = stringifyErrorDetails(error);
     
     // Try to update the database with error status
     try {
