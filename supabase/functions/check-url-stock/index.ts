@@ -1,4 +1,3 @@
-
 // @ts-ignore
 import { serve } from "std/http/server.ts";
 // Using direct import URL for Supabase client
@@ -609,19 +608,22 @@ serve(async (req: Request) => {
             stockStatusReason = "Walmart: No clear stock indicators, defaulting to out of stock";
           }
         } else if (isBestBuySite) {
-          // BestBuy-specific detection - IMPROVED
+          // BestBuy-specific detection - FURTHER IMPROVED
           const hasSoldOut = lowerHtml.includes('sold out');
           const hasCheckStores = lowerHtml.includes('check stores');
           const hasComingSoon = lowerHtml.includes('coming soon');
           const hasNotAvailable = lowerHtml.includes('this product is no longer available');
-          const realAddToCartButton = lowerHtml.includes('<button') && 
-                                      lowerHtml.includes('add to cart') && 
-                                      !lowerHtml.includes('disabled');
           
-          // More specific check for BestBuy - look for cart button with specific class
-          const hasCartButton = lowerHtml.includes('"add-to-cart-button"');
+          // Look for specific BestBuy add to cart button patterns
+          const addToCartButtonRegex = /<button[^>]*class="[^"]*add-to-cart-button[^"]*"[^>]*>/i;
+          const hasAddToCartButton = addToCartButtonRegex.test(html);
           
-          // Better handling for BestBuy's "Check Stores" case which usually means online ordering isn't available
+          // Check if "Out of Stock" text exists near the add to cart region
+          const cartRegionOutOfStock = html.includes('Out of Stock') || 
+                                      html.includes('out of stock') || 
+                                      html.includes('Sold out');
+          
+          // Better detection for "Check Stores" situation
           if (hasCheckStores || hasInStoreOnlyButton || hasInStoreOnlyText) {
             isInStock = false;
             stockStatusReason = "BestBuy: Product appears to be in-store only (Check Stores)";
@@ -631,12 +633,19 @@ serve(async (req: Request) => {
           } else if (hasComingSoon) {
             isInStock = false;
             stockStatusReason = "BestBuy: Product is 'Coming Soon' and not yet available";
-          } else if (realAddToCartButton && hasCartButton) {
-            isInStock = true;
-            stockStatusReason = "BestBuy: Add to Cart button is active and present";
+          } else if (hasAddToCartButton && !cartRegionOutOfStock) {
+            // Further verification - check for "Add to Cart" text specifically near the button
+            const cartAreaText = html.toLowerCase().match(/<div[^>]*class="[^"]*fulfillment-add-to-cart-button[^"]*"[^>]*>[\s\S]*?<\/div>/i);
+            if (cartAreaText && cartAreaText[0].includes('add to cart') && !cartAreaText[0].includes('disabled')) {
+              isInStock = true;
+              stockStatusReason = "BestBuy: Verified Add to Cart button is active and present";
+            } else {
+              isInStock = false;
+              stockStatusReason = "BestBuy: Add to Cart section doesn't contain expected 'Add to Cart' text";
+            }
           } else {
             isInStock = false;
-            stockStatusReason = "BestBuy: No clear 'Add to Cart' button found, marking as OUT OF STOCK";
+            stockStatusReason = "BestBuy: No clear 'Add to Cart' button found or Out of Stock indicator present";
           }
         } else if (isGamestopSite) {
           // GameStop-specific detection
