@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { format, parseISO, differenceInMinutes } from "date-fns";
 
@@ -71,17 +70,23 @@ export const addMonitor = async (
       throw new Error("User not authenticated");
     }
 
+    // Since we're dealing with typings that might not be updated,
+    // we need to create a base object and then add the potentially missing fields
+    const monitorData: any = {
+      name,
+      url,
+      target_text: targetText,
+      user_id: user.data.user.id,
+      status: "unknown",
+      is_active: true
+    };
+    
+    // Add the check_frequency field
+    monitorData.check_frequency = checkFrequency;
+
     const { data, error } = await supabase
       .from("stock_monitors")
-      .insert({
-        name,
-        url,
-        target_text: targetText,
-        user_id: user.data.user.id,
-        status: "unknown",
-        is_active: true,
-        check_frequency: checkFrequency
-      })
+      .insert(monitorData)
       .select()
       .single();
 
@@ -323,7 +328,7 @@ export const triggerCheck = async (monitorId: string): Promise<MonitoringItem | 
             status: "error",
             error_message: `Edge function error: ${detailedError}`,
             last_checked: new Date().toISOString(),
-            consecutive_errors: monitor.consecutive_errors ? monitor.consecutive_errors + 1 : 1
+            consecutive_errors: monitor?.consecutive_errors ? monitor.consecutive_errors + 1 : 1
           })
           .eq("id", monitorId);
           

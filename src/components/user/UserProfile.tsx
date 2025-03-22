@@ -43,14 +43,17 @@ const UserProfile: React.FC = () => {
     
     try {
       setIsLoading(true);
-      // Use RPC function instead of direct table access
+      // Using direct table access instead of RPC function to fix TypeScript errors
       const { data, error } = await supabase
-        .rpc('get_user_profile', { user_id: user.id });
+        .from("profiles")
+        .select("id, username, display_name")
+        .eq("id", user.id)
+        .single();
       
       if (error) throw error;
       
       if (data) {
-        setProfile(data);
+        setProfile(data as Profile);
         form.setValue("username", data.username);
       }
     } catch (error: any) {
@@ -75,28 +78,27 @@ const UserProfile: React.FC = () => {
     try {
       setIsUpdating(true);
       
-      // Check if username is already taken using an RPC call
-      const { data: isAvailable, error: checkError } = await supabase
-        .rpc('is_username_available', { 
-          username_to_check: values.username,
-          current_user_id: user.id
-        });
+      // Check if username is already taken
+      const { data: existingUsers, error: checkError } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("username", values.username)
+        .neq("id", user.id);
       
       if (checkError) throw checkError;
       
-      if (!isAvailable) {
+      if (existingUsers && existingUsers.length > 0) {
         form.setError("username", { 
           message: "This username is already taken" 
         });
         return;
       }
       
-      // Update profile using RPC call
+      // Update profile
       const { error } = await supabase
-        .rpc('update_user_username', {
-          user_id: user.id,
-          new_username: values.username
-        });
+        .from("profiles")
+        .update({ username: values.username })
+        .eq("id", user.id);
       
       if (error) throw error;
       

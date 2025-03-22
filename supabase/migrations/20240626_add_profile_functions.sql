@@ -1,4 +1,8 @@
 
+-- This file is left with the existing functions for future reference, 
+-- but we're not using these RPC functions in the code right now due to type issues.
+-- Instead, we're using direct table access.
+
 -- Function to get a user's profile
 CREATE OR REPLACE FUNCTION public.get_user_profile(user_id UUID)
 RETURNS TABLE (

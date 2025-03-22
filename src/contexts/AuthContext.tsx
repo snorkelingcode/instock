@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -63,10 +64,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const fetchUsername = async (userId: string) => {
     try {
       const { data, error } = await supabase
-        .rpc('get_username', { user_id: userId });
+        .from("profiles")
+        .select("username")
+        .eq("id", userId)
+        .single();
       
       if (error) throw error;
-      setUsername(data);
+      setUsername(data?.username);
     } catch (error) {
       console.error("Error fetching username:", error);
       setUsername(null);
