@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,10 +13,6 @@ interface AuthContextProps {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
-}
-
-interface UserProfile {
-  username: string;
 }
 
 const AuthContext = createContext<AuthContextProps | undefined>(undefined);
@@ -68,13 +63,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const fetchUsername = async (userId: string) => {
     try {
       const { data, error } = await supabase
-        .from("profiles")
-        .select("username")
-        .eq("id", userId)
-        .single();
+        .rpc('get_username', { user_id: userId });
       
       if (error) throw error;
-      setUsername(data.username);
+      setUsername(data);
     } catch (error) {
       console.error("Error fetching username:", error);
       setUsername(null);

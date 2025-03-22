@@ -43,16 +43,16 @@ const UserProfile: React.FC = () => {
     
     try {
       setIsLoading(true);
+      // Use RPC function instead of direct table access
       const { data, error } = await supabase
-        .from("profiles")
-        .select("id, username, display_name")
-        .eq("id", user.id)
-        .single();
+        .rpc('get_user_profile', { user_id: user.id });
       
       if (error) throw error;
       
-      setProfile(data);
-      form.setValue("username", data.username);
+      if (data) {
+        setProfile(data);
+        form.setValue("username", data.username);
+      }
     } catch (error: any) {
       console.error("Error fetching profile", error);
       toast({
@@ -75,30 +75,28 @@ const UserProfile: React.FC = () => {
     try {
       setIsUpdating(true);
       
-      // Check if username is already taken
-      const { data: existingUser, error: checkError } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("username", values.username)
-        .neq("id", user.id)
-        .single();
+      // Check if username is already taken using an RPC call
+      const { data: isAvailable, error: checkError } = await supabase
+        .rpc('is_username_available', { 
+          username_to_check: values.username,
+          current_user_id: user.id
+        });
       
-      if (existingUser) {
+      if (checkError) throw checkError;
+      
+      if (!isAvailable) {
         form.setError("username", { 
           message: "This username is already taken" 
         });
         return;
       }
       
-      if (checkError && checkError.code !== "PGRST116") {
-        throw checkError;
-      }
-      
-      // Update profile
+      // Update profile using RPC call
       const { error } = await supabase
-        .from("profiles")
-        .update({ username: values.username })
-        .eq("id", user.id);
+        .rpc('update_user_username', {
+          user_id: user.id,
+          new_username: values.username
+        });
       
       if (error) throw error;
       
