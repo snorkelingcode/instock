@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { format, parseISO, differenceInMinutes } from "date-fns";
 
@@ -317,7 +318,7 @@ export const createMonitor = async (monitorData: {
     }
     
     // Insert the monitor with the new field
-    const { data, error } = await supabase
+    const { data, error: insertError } = await supabase
       .from('stock_monitors')
       .insert({
         name: monitorData.name,
@@ -331,9 +332,9 @@ export const createMonitor = async (monitorData: {
       .select()
       .single();
     
-    if (error) {
-      console.error("Error creating monitor:", error);
-      throw error;
+    if (insertError) {
+      console.error("Error creating monitor:", insertError);
+      throw insertError;
     }
     
     return data as unknown as MonitoringItem;
@@ -346,7 +347,7 @@ export const createMonitor = async (monitorData: {
 // Function to reset consecutive errors
 export const resetConsecutiveErrors = async (monitorId: string): Promise<boolean> => {
   try {
-    const { error } = await supabase
+    const { error: updateError } = await supabase
       .from('stock_monitors')
       .update({ 
         consecutive_errors: 0,
@@ -354,9 +355,9 @@ export const resetConsecutiveErrors = async (monitorId: string): Promise<boolean
       } as any)
       .eq('id', monitorId);
     
-    if (error) {
-      console.error("Error resetting consecutive errors:", error);
-      throw error;
+    if (updateError) {
+      console.error("Error resetting consecutive errors:", updateError);
+      throw updateError;
     }
     
     return true;
@@ -375,13 +376,13 @@ export const getMonitorStats = async (): Promise<{
   inStock: number;
 }> => {
   try {
-    const { data, error } = await supabase
+    const { data, error: fetchError } = await supabase
       .from('stock_monitors')
       .select('status, last_checked')
       .order('last_checked', { ascending: false });
     
-    if (error) {
-      throw error;
+    if (fetchError) {
+      throw fetchError;
     }
     
     // Safely handle data with type assertions
@@ -389,10 +390,23 @@ export const getMonitorStats = async (): Promise<{
     const total = monitors.length;
     const active = monitors.filter(m => m.is_active).length;
     const paused = monitors.filter(m => !m.is_active).length;
-    const error = monitors.filter(m => m.status === 'error' && m.consecutive_errors && m.consecutive_errors > 2).length;
+    
+    // Use optional chaining to safely check consecutive_errors
+    const errorCount = monitors.filter(m => 
+      m.status === 'error' && 
+      m.consecutive_errors != null && 
+      m.consecutive_errors > 2
+    ).length;
+    
     const inStock = monitors.filter(m => m.status === 'in_stock').length;
     
-    return { total, active, paused, error, inStock };
+    return { 
+      total, 
+      active, 
+      paused, 
+      error: errorCount, 
+      inStock 
+    };
   } catch (error) {
     console.error("Error getting monitor stats:", error);
     return { total: 0, active: 0, paused: 0, error: 0, inStock: 0 };

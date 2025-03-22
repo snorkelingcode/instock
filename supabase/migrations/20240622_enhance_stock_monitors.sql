@@ -38,3 +38,6 @@ ALTER TABLE public.stock_monitors REPLICA IDENTITY FULL;
 -- Add index on is_active and check_frequency for faster queries
 CREATE INDEX IF NOT EXISTS idx_stock_monitors_active_frequency
 ON public.stock_monitors(is_active, check_frequency);
+
+-- Make sure status column accepts all possible values
+COMMENT ON COLUMN public.stock_monitors.status IS 'Status of monitor: in-stock, out-of-stock, error, unknown, pending, active';

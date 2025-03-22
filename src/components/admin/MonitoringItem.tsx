@@ -27,7 +27,7 @@ export interface MonitoringItemProps {
   url: string;
   name: string;
   last_checked?: string | null;
-  status: "in-stock" | "out-of-stock" | "unknown" | "error";
+  status: string; // Changed from specific values to string to accept any status value
   target_text?: string;
   is_active: boolean;
   error_message?: string;
