@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,6 +13,7 @@ interface AuthContextProps {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
   sendOtp: (email: string) => Promise<{ success: boolean; error?: any }>;
   verifyOtp: (email: string, token: string) => Promise<{ success: boolean; error?: any }>;
 }
@@ -99,6 +101,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       toast({
         title: "Sign in failed",
         description: error.message || "An error occurred during sign in",
+        variant: "destructive",
+      });
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  const signInWithGoogle = async () => {
+    try {
+      setIsLoading(true);
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth`
+        }
+      });
+      
+      if (error) throw error;
+    } catch (error: any) {
+      toast({
+        title: "Google sign in failed",
+        description: error.message || "An error occurred during Google sign in",
         variant: "destructive",
       });
       throw error;
@@ -225,6 +250,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signIn,
         signUp,
         signOut,
+        signInWithGoogle,
         sendOtp,
         verifyOtp,
       }}
