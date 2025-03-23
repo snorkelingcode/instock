@@ -14,11 +14,12 @@ double_confirm_changes = true
 enable_confirmations = true
 
 # Correct format for external email provider
-[auth.external.email.template]
-provider = {
-  enabled = true,
-  url = "https://etgkuasmqjidwtaxrfww.supabase.co/functions/v1/custom-email"
-}
+[auth.external.email]
+provider = "custom"
+
+[auth.external.email.custom]
+enabled = true
+url = "https://etgkuasmqjidwtaxrfww.supabase.co/functions/v1/custom-email"
 
 # SMTP configuration - must be at the root level
 [smtp]
