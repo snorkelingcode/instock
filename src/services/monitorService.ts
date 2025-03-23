@@ -17,8 +17,8 @@ export interface MonitoringItem {
   last_status_change?: string | null;
   last_seen_in_stock?: string | null;
   consecutive_errors?: number;
-  auto_checkout?: boolean; // New field for auto checkout
-  checkout_status?: string; // New field for checkout status
+  auto_checkout?: boolean; // Property for auto checkout
+  checkout_status?: string; // Property for checkout status
 }
 
 // Convert database entry to frontend monitoring item
