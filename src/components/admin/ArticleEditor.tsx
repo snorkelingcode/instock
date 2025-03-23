@@ -113,7 +113,7 @@ const ArticleEditor = () => {
           published: data.published,
           featured_image: data.featured_image || "",
           featured_video: data.featured_video || "",
-          media_type: data.media_type || "image",
+          media_type: (data.media_type as 'image' | 'video') || "image",
           additional_images: data.additional_images || []
         });
       }
