@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Search, AlertCircle, RotateCw, ClockIcon } from "lucide-react";
+import { Search, AlertCircle, RotateCw, ClockIcon, ShoppingCart } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import AddMonitorForm from "@/components/admin/AddMonitorForm";
 import MonitoringItem from "@/components/admin/MonitoringItem";
@@ -20,6 +20,7 @@ import {
   setupMonitorRealtime,
   initializeAutoChecks,
   cleanupAutoChecks,
+  toggleAutoCheckout,
   MonitoringItem as MonitoringItemType 
 } from "@/services/monitorService";
 import { useToast } from "@/components/ui/use-toast";
@@ -91,12 +92,30 @@ const InStockMonitor = () => {
         const previousItem = monitoredItems.find(item => item.id === updatedItem.id);
         const statusChanged = previousItem && previousItem.status !== updatedItem.status;
         
-        // Show toast with status
+        // Show toast with status and checkout information if available
         if (statusChanged || updatedItem.status === "error") {
-          const statusMessage = 
+          let statusMessage = 
             updatedItem.status === "in-stock" ? "Product is in stock!" :
             updatedItem.status === "out-of-stock" ? "Product is out of stock" :
             updatedItem.status === "error" ? "Error checking product" : "Status unknown";
+          
+          // Add checkout status if available
+          if (updatedItem.checkout_status && updatedItem.status === "in-stock") {
+            switch (updatedItem.checkout_status) {
+              case "reached_checkout":
+                statusMessage += " - Checkout ready!";
+                break;
+              case "failed_add_to_cart":
+                statusMessage += " - Failed to add to cart";
+                break;
+              case "failed_checkout":
+                statusMessage += " - Failed to proceed to checkout";
+                break;
+              case "error":
+                statusMessage += " - Error during checkout";
+                break;
+            }
+          }
           
           toast({
             title: `Status Update: ${updatedItem.name}`,
@@ -121,15 +140,17 @@ const InStockMonitor = () => {
     };
   }, [user, toast, refreshingIds, monitoredItems]);
 
-  const handleAddMonitor = async (values: { name: string; url: string; targetText?: string; frequency?: number }) => {
+  const handleAddMonitor = async (values: { name: string; url: string; targetText?: string; frequency?: number; autoCheckout?: boolean }) => {
     const frequency = values.frequency || 30; // Default to 30 minutes if not specified
-    const newItem = await addMonitor(values.name, values.url, values.targetText, frequency);
+    const autoCheckout = values.autoCheckout || false; // Default to no auto checkout if not specified
+    
+    const newItem = await addMonitor(values.name, values.url, values.targetText, frequency, autoCheckout);
     
     if (newItem) {
       setMonitoredItems(prev => [newItem, ...prev]);
       toast({
         title: "Monitor Added",
-        description: `Now monitoring ${newItem.name} every ${frequency} minutes`,
+        description: `Now monitoring ${newItem.name} every ${frequency} minutes${autoCheckout ? " with auto checkout enabled" : ""}`,
       });
     }
   };
@@ -177,6 +198,33 @@ const InStockMonitor = () => {
         title: "Check Frequency Updated",
         description: `${item.name} will now be checked every ${frequency} minutes`,
       });
+    }
+  };
+
+  const handleToggleAutoCheckout = async (id: string, enabled: boolean) => {
+    const item = monitoredItems.find(item => item.id === id);
+    if (!item) return;
+    
+    const success = await toggleAutoCheckout(id, enabled);
+    
+    if (success) {
+      setMonitoredItems(prev => 
+        prev.map(item => 
+          item.id === id ? { ...item, auto_checkout: enabled } : item
+        )
+      );
+      
+      toast({
+        title: enabled ? "Auto Checkout Enabled" : "Auto Checkout Disabled",
+        description: enabled 
+          ? `${item.name} will automatically proceed to checkout when in stock` 
+          : `${item.name} will only check availability`,
+      });
+      
+      // If enabling auto checkout, trigger an immediate check
+      if (enabled) {
+        handleRefresh(id);
+      }
     }
   };
 
@@ -341,6 +389,32 @@ const InStockMonitor = () => {
                 </div>
                 <Separator />
                 <div>
+                  <h4 className="font-medium mb-2 flex items-center gap-2">
+                    <ShoppingCart size={18} />
+                    Auto Checkout Feature
+                  </h4>
+                  <div className="text-sm space-y-2 text-gray-700">
+                    <p className="text-sm text-gray-600">
+                      When enabled for a monitor, the system will:
+                    </p>
+                    <ul className="list-disc pl-5 space-y-1">
+                      <li>Check if the item is in stock</li>
+                      <li>If in stock, it will navigate to the product page</li>
+                      <li>Attempt to add the product to cart</li>
+                      <li>Proceed to checkout (stopping before payment)</li>
+                      <li>All actions are performed in a secure, isolated environment</li>
+                    </ul>
+                    <Alert className="mt-3">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertTitle>Testing Feature</AlertTitle>
+                      <AlertDescription>
+                        This is a testing feature and will not complete purchases. The checkout process stops before payment information is entered.
+                      </AlertDescription>
+                    </Alert>
+                  </div>
+                </div>
+                <Separator />
+                <div>
                   <h4 className="font-medium mb-2">How It Works</h4>
                   <ul className="text-sm space-y-2 text-gray-700">
                     <li>• Each monitor has its own check frequency</li>
@@ -415,6 +489,7 @@ const InStockMonitor = () => {
                             onDelete={handleDelete}
                             onRefresh={handleRefresh}
                             onUpdateFrequency={handleUpdateFrequency}
+                            onToggleAutoCheckout={handleToggleAutoCheckout}
                             isRefreshing={refreshingIds.has(item.id)}
                           />
                         ))}
@@ -441,6 +516,7 @@ const InStockMonitor = () => {
                             onDelete={handleDelete}
                             onRefresh={handleRefresh}
                             onUpdateFrequency={handleUpdateFrequency}
+                            onToggleAutoCheckout={handleToggleAutoCheckout}
                             isRefreshing={refreshingIds.has(item.id)}
                           />
                         ))}
