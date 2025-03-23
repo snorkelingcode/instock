@@ -1,51 +1,62 @@
 
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
+        xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
+                            http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
   <!-- Main pages -->
   <url>
     <loc>https://tcgupdates.com/</loc>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
+    <lastmod>2024-03-23</lastmod>
   </url>
   <url>
     <loc>https://tcgupdates.com/about</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
+    <lastmod>2024-03-23</lastmod>
   </url>
   <url>
     <loc>https://tcgupdates.com/contact</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
+    <lastmod>2024-03-23</lastmod>
   </url>
   <url>
     <loc>https://tcgupdates.com/products</loc>
-    <changefreq>weekly</changefreq>
+    <changefreq>daily</changefreq>
     <priority>0.9</priority>
+    <lastmod>2024-03-23</lastmod>
   </url>
   <url>
     <loc>https://tcgupdates.com/news</loc>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
+    <lastmod>2024-03-23</lastmod>
   </url>
   <url>
     <loc>https://tcgupdates.com/sets</loc>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
+    <lastmod>2024-03-23</lastmod>
   </url>
   <url>
     <loc>https://tcgupdates.com/sets/pokemon</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <lastmod>2024-03-23</lastmod>
+    <image:image>
+      <image:loc>https://tcgupdates.com/lovable-uploads/e60afbdf-2426-466b-ae0b-ebe03404efc4.png</image:loc>
+      <image:caption>Pokemon Trading Card Game Sets</image:caption>
+    </image:image>
   </url>
   <url>
     <loc>https://tcgupdates.com/forge</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://tcgupdates.com/auth</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <lastmod>2024-03-23</lastmod>
   </url>
   
   <!-- Legal pages -->
@@ -53,15 +64,18 @@
     <loc>https://tcgupdates.com/privacy</loc>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
+    <lastmod>2024-03-23</lastmod>
   </url>
   <url>
     <loc>https://tcgupdates.com/terms</loc>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
+    <lastmod>2024-03-23</lastmod>
   </url>
   <url>
     <loc>https://tcgupdates.com/cookies</loc>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
+    <lastmod>2024-03-23</lastmod>
   </url>
 </urlset>

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
@@ -14,8 +15,31 @@ const ARTICLES_PER_PAGE = 6;
 
 const Index = () => {
   useMetaTags({
-    title: "Home",
-    description: "The latest news and updates from the TCG world."
+    title: "TCG Updates - Trading Card Game News, Inventory Tracking & DIY Accessories",
+    description: "Get the latest news, in-stock alerts, and DIY tips for Pokemon, Magic: The Gathering, Yu-Gi-Oh and other trading card games. Track inventory across major retailers.",
+    keywords: "TCG news, Pokemon cards, MTG, Yu-Gi-Oh, trading card games, in-stock alerts, DIY card accessories, card collecting",
+    ogTitle: "TCG Updates - Your Complete Trading Card Game Resource",
+    ogDescription: "Stay informed with breaking news, inventory tracking, and DIY projects for all major trading card games.",
+    structuredData: {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "TCG Updates",
+      "url": "https://tcgupdates.com/",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://tcgupdates.com/search?q={search_term_string}",
+        "query-input": "required name=search_term_string"
+      },
+      "description": "Trading card game news, inventory tracking and DIY accessories for Pokemon, Magic: The Gathering, Yu-Gi-Oh and other TCGs.",
+      "publisher": {
+        "@type": "Organization",
+        "name": "TCG Updates",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://tcgupdates.com/lovable-uploads/e60afbdf-2426-466b-ae0b-ebe03404efc4.png"
+        }
+      }
+    }
   });
 
   const navigate = useNavigate();

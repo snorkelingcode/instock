@@ -2,5 +2,9 @@
 User-agent: *
 Allow: /
 
+# Disallow admin sections
+Disallow: /admin/
+Disallow: /auth/
+
 # Sitemap
 Sitemap: https://tcgupdates.com/sitemap.xml
