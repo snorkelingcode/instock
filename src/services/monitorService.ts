@@ -3,7 +3,6 @@ import { format, parseISO, differenceInMinutes } from "date-fns";
 
 // Define monitor types
 export type MonitorStatus = "in-stock" | "out-of-stock" | "unknown" | "error";
-export type CheckoutStatus = "pending" | "success" | "failed" | "not-attempted";
 
 export interface MonitoringItem {
   id: string;
@@ -18,8 +17,6 @@ export interface MonitoringItem {
   last_status_change?: string | null;
   last_seen_in_stock?: string | null;
   consecutive_errors?: number;
-  auto_checkout?: boolean; // Added this property
-  checkout_status?: CheckoutStatus; // Added this property
 }
 
 // Convert database entry to frontend monitoring item
@@ -36,9 +33,7 @@ const convertToMonitoringItem = (item: any): MonitoringItem => {
     check_frequency: item.check_frequency || 30, // Default to 30 minutes
     last_status_change: item.last_status_change,
     last_seen_in_stock: item.last_seen_in_stock,
-    consecutive_errors: item.consecutive_errors || 0,
-    auto_checkout: item.auto_checkout || false,
-    checkout_status: item.checkout_status || "not-attempted"
+    consecutive_errors: item.consecutive_errors || 0
   };
 };
 
@@ -68,8 +63,7 @@ export const addMonitor = async (
   name: string,
   url: string,
   targetText?: string,
-  checkFrequency: number = 30, // Default to 30 minutes
-  autoCheckout: boolean = false // New parameter
+  checkFrequency: number = 30 // Default to 30 minutes
 ): Promise<MonitoringItem | null> => {
   try {
     const user = await supabase.auth.getUser();
@@ -78,21 +72,17 @@ export const addMonitor = async (
       throw new Error("User not authenticated");
     }
 
-    const monitorData = {
-      name,
-      url,
-      target_text: targetText,
-      user_id: user.data.user.id,
-      status: "unknown",
-      is_active: true,
-      check_frequency: checkFrequency,
-      auto_checkout: autoCheckout,
-      checkout_status: "not-attempted"
-    };
-
     const { data, error } = await supabase
       .from("stock_monitors")
-      .insert(monitorData)
+      .insert({
+        name,
+        url,
+        target_text: targetText,
+        user_id: user.data.user.id,
+        status: "unknown",
+        is_active: true,
+        check_frequency: checkFrequency
+      })
       .select()
       .single();
 
@@ -309,32 +299,41 @@ export const triggerCheck = async (monitorId: string): Promise<MonitoringItem | 
     console.log("Triggering check for monitor:", monitor);
     
     try {
-      // Call the Vercel serverless function instead of Supabase edge function
-      console.log(`Calling Vercel serverless function for monitor ${monitorId} with URL: ${monitor.url}`);
+      // Call the edge function to check the URL status
+      console.log(`Calling edge function for monitor ${monitorId} with URL: ${monitor.url}`);
       
-      const response = await fetch('/api/check-url-stock', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
+      // Make sure to use the correctly formed function name and request body
+      const { data, error } = await supabase.functions.invoke('check-url-stock', {
+        body: { 
           id: monitorId,
           url: monitor.url,
-          targetText: monitor.target_text,
-          autoCheckout: monitor.auto_checkout
-        })
+          targetText: monitor.target_text
+        }
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Error from serverless function: ${errorText}`);
+      if (error) {
+        console.error("Error invoking edge function:", error);
+        
+        // Create a detailed error message
+        const detailedError = createDetailedErrorMessage(error);
+        
+        // Update the monitor with detailed error status
+        await supabase
+          .from("stock_monitors")
+          .update({ 
+            status: "error",
+            error_message: `Edge function error: ${detailedError}`,
+            last_checked: new Date().toISOString(),
+            consecutive_errors: monitor.consecutive_errors ? monitor.consecutive_errors + 1 : 1
+          })
+          .eq("id", monitorId);
+          
+        throw error;
       }
-
-      const data = await response.json();
       
-      console.log("Serverless function response:", data);
+      console.log("Edge function response:", data);
       
-      // Even if the function returns success=false, it should have updated the DB
+      // Even if the edge function returns success=false, it should have updated the DB
       // so we fetch the updated monitor data
       const { data: monitorData, error: monitorError } = await supabase
         .from("stock_monitors")
