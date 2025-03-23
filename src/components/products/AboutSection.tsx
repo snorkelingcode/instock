@@ -5,7 +5,7 @@ import { Separator } from "@/components/ui/separator";
 const AboutSection = () => (
   <div className="bg-white p-6 rounded-lg shadow-md">
     <h2 className="text-xl font-semibold mb-2">About TCG Updates</h2>
-    <Separator className="h-[2px] w-16 bg-red-500 mb-4" />
+    <Separator className="h-[2px] bg-red-500 mb-4" />
     <p className="text-gray-700 mb-4">
       The Pokemon Trading Card Game continues to be one of the most popular collectible card games worldwide. We provide comprehensive coverage of trading card games, including product availability, news, and DIY accessories.
     </p>
