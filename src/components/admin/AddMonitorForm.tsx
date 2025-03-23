@@ -22,6 +22,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Switch } from "@/components/ui/switch";
 
 // Form schema
 const formSchema = z.object({
@@ -29,6 +30,7 @@ const formSchema = z.object({
   url: z.string().url("Please enter a valid URL"),
   targetText: z.string().optional(),
   frequency: z.coerce.number().min(5).max(240).default(30),
+  autoCheckout: z.boolean().default(false),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -54,6 +56,7 @@ const AddMonitorForm: React.FC<AddMonitorFormProps> = ({ onSubmit }) => {
       url: "",
       targetText: "",
       frequency: 30,
+      autoCheckout: false,
     },
   });
 
@@ -150,6 +153,28 @@ const AddMonitorForm: React.FC<AddMonitorFormProps> = ({ onSubmit }) => {
                           <p className="text-xs text-muted-foreground">
                             How often to check if this item is in stock
                           </p>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="autoCheckout"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                          <div className="space-y-0.5">
+                            <FormLabel>Auto Checkout</FormLabel>
+                            <p className="text-xs text-muted-foreground">
+                              Attempt to purchase automatically when in-stock
+                            </p>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}

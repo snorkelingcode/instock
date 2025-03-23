@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -121,15 +120,30 @@ const InStockMonitor = () => {
     };
   }, [user, toast, refreshingIds, monitoredItems]);
 
-  const handleAddMonitor = async (values: { name: string; url: string; targetText?: string; frequency?: number }) => {
+  // Update handleAddMonitor to include autoCheckout
+  const handleAddMonitor = async (values: { 
+    name: string; 
+    url: string; 
+    targetText?: string; 
+    frequency?: number;
+    autoCheckout?: boolean; // New parameter
+  }) => {
     const frequency = values.frequency || 30; // Default to 30 minutes if not specified
-    const newItem = await addMonitor(values.name, values.url, values.targetText, frequency);
+    const autoCheckout = values.autoCheckout || false; // Default to false if not specified
+    
+    const newItem = await addMonitor(
+      values.name, 
+      values.url, 
+      values.targetText, 
+      frequency,
+      autoCheckout
+    );
     
     if (newItem) {
       setMonitoredItems(prev => [newItem, ...prev]);
       toast({
         title: "Monitor Added",
-        description: `Now monitoring ${newItem.name} every ${frequency} minutes`,
+        description: `Now monitoring ${newItem.name} every ${frequency} minutes${autoCheckout ? ' with auto-checkout enabled' : ''}`,
       });
     }
   };
