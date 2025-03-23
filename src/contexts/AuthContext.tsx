@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,14 +27,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { toast } = useToast();
 
   useEffect(() => {
-    // Initial session check
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setIsLoading(false);
       
       if (session?.user) {
-        // Ensure user has a display_user_id if not already set
         if (!session.user.user_metadata?.display_user_id) {
           const shortId = session.user.id.substring(0, 8);
           supabase.auth.updateUser({
@@ -53,7 +50,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     });
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setSession(session);
@@ -115,14 +111,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth`
+          redirectTo: `${window.location.origin}/dashboard`
         }
       });
       
       if (error) throw error;
+
+      toast({
+        title: "Google Sign In",
+        description: "Successfully signed in with Google",
+      });
     } catch (error: any) {
       toast({
-        title: "Google sign in failed",
+        title: "Google Sign In Failed",
         description: error.message || "An error occurred during Google sign in",
         variant: "destructive",
       });
