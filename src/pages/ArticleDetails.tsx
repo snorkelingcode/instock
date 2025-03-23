@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
@@ -25,9 +26,22 @@ interface Article {
   created_at: string;
   updated_at: string;
   published_at: string;
-  featured_image: string;
+  featured_image?: string;
+  featured_video?: string;
+  media_type?: 'image' | 'video';
   additional_images?: string[];
 }
+
+// Function to extract YouTube video ID
+const extractYoutubeId = (url: string): string | null => {
+  // Match patterns like:
+  // https://www.youtube.com/watch?v=VIDEO_ID
+  // https://youtu.be/VIDEO_ID
+  // https://youtube.com/shorts/VIDEO_ID
+  const regExp = /^.*(?:(?:youtu\.be\/|v\/|vi\/|u\/\w\/|embed\/|shorts\/)|(?:(?:watch)?\?v(?:i)?=|\&v(?:i)?=))([^#\&\?]*).*/;
+  const match = url.match(regExp);
+  return (match && match[1].length === 11) ? match[1] : null;
+};
 
 const ArticleDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -108,6 +122,11 @@ const ArticleDetails = () => {
   };
 
   const hasAdditionalImages = article?.additional_images && article.additional_images.length > 0;
+  
+  // Generate YouTube embed URL if available
+  const youtubeEmbedUrl = article?.featured_video ? 
+    `https://www.youtube.com/embed/${extractYoutubeId(article.featured_video)}` : 
+    '';
 
   return (
     <Layout>
@@ -133,12 +152,24 @@ const ArticleDetails = () => {
               <h1 className="text-3xl font-bold">{article.title}</h1>
             </div>
             
-            {article.featured_image && (
+            {article.featured_image && (!article.media_type || article.media_type === 'image') && (
               <img
                 src={article.featured_image}
                 alt={article.title}
                 className="w-full h-auto rounded-lg mb-6 shadow-md object-cover"
               />
+            )}
+
+            {article.featured_video && youtubeEmbedUrl && (article.media_type === 'video') && (
+              <div className="aspect-video w-full mb-6 overflow-hidden rounded-lg shadow-md">
+                <iframe 
+                  src={youtubeEmbedUrl}
+                  title={article.title}
+                  className="w-full h-full"
+                  allowFullScreen
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                ></iframe>
+              </div>
             )}
             
             <div className="flex flex-wrap items-center justify-between gap-4 mb-8 text-sm text-gray-500 bg-gray-50 p-3 rounded-md">

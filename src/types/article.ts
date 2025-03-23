@@ -12,6 +12,8 @@ export interface Article {
   featured: boolean;
   published: boolean;
   featured_image?: string;
+  featured_video?: string;
+  media_type?: 'image' | 'video';
   additional_images?: string[];
 }
 
@@ -23,6 +25,8 @@ export interface ArticleFormData {
   featured: boolean;
   published: boolean;
   featured_image?: string;
+  featured_video?: string;
+  media_type?: 'image' | 'video';
   additional_images?: string[];
 }
 

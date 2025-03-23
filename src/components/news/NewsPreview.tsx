@@ -13,8 +13,17 @@ interface NewsPreviewProps {
   excerpt: string;
   featured?: boolean;
   image?: string;
+  video?: string;
+  mediaType?: 'image' | 'video';
   onClick?: () => void;
 }
+
+// Function to extract YouTube video ID
+const extractYoutubeId = (url: string): string | null => {
+  const regExp = /^.*(?:(?:youtu\.be\/|v\/|vi\/|u\/\w\/|embed\/|shorts\/)|(?:(?:watch)?\?v(?:i)?=|\&v(?:i)?=))([^#\&\?]*).*/;
+  const match = url.match(regExp);
+  return (match && match[1].length === 11) ? match[1] : null;
+};
 
 const NewsPreview = ({ 
   id, 
@@ -24,6 +33,8 @@ const NewsPreview = ({
   excerpt, 
   featured = false, 
   image,
+  video,
+  mediaType = 'image',
   onClick 
 }: NewsPreviewProps) => {
   const navigate = useNavigate();
@@ -38,6 +49,10 @@ const NewsPreview = ({
     navigate(`/article/${id}?autoplay=true`);
   };
 
+  // Generate YouTube thumbnail if needed
+  const youtubeId = video ? extractYoutubeId(video) : null;
+  const youtubeThumbnail = youtubeId ? `https://img.youtube.com/vi/${youtubeId}/mqdefault.jpg` : null;
+
   return (
     <Card 
       className={`transition-all h-full flex flex-col ${featured ? 'border-red-300 shadow-md' : ''} cursor-pointer hover:shadow-lg`}
@@ -45,13 +60,30 @@ const NewsPreview = ({
       role="button"
       aria-label={`View article: ${title}`}
     >
-      {image && (
-        <div className="w-full h-48 overflow-hidden rounded-t-lg">
-          <img 
-            src={image} 
-            alt={title} 
-            className="w-full h-full object-cover transition-transform hover:scale-105"
-          />
+      {(image || youtubeThumbnail) && (
+        <div className="w-full h-48 overflow-hidden rounded-t-lg relative">
+          {mediaType === 'video' && youtubeId ? (
+            <div className="relative w-full h-full">
+              <img 
+                src={youtubeThumbnail} 
+                alt={title} 
+                className="w-full h-full object-cover transition-transform hover:scale-105"
+              />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="bg-red-600 bg-opacity-80 rounded-full w-12 h-12 flex items-center justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" className="w-6 h-6">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <img 
+              src={image} 
+              alt={title} 
+              className="w-full h-full object-cover transition-transform hover:scale-105"
+            />
+          )}
         </div>
       )}
       <CardHeader className="pb-2">

@@ -11,10 +11,29 @@ interface FeaturedNewsProps {
   category: string;
   excerpt: string;
   image?: string;
+  video?: string;
+  mediaType?: 'image' | 'video';
   onClick?: () => void;
 }
 
-const FeaturedNews = ({ id, title, date, category, excerpt, image, onClick }: FeaturedNewsProps) => {
+// Function to extract YouTube video ID
+const extractYoutubeId = (url: string): string | null => {
+  const regExp = /^.*(?:(?:youtu\.be\/|v\/|vi\/|u\/\w\/|embed\/|shorts\/)|(?:(?:watch)?\?v(?:i)?=|\&v(?:i)?=))([^#\&\?]*).*/;
+  const match = url.match(regExp);
+  return (match && match[1].length === 11) ? match[1] : null;
+};
+
+const FeaturedNews = ({ 
+  id, 
+  title, 
+  date, 
+  category, 
+  excerpt, 
+  image, 
+  video,
+  mediaType = 'image',
+  onClick 
+}: FeaturedNewsProps) => {
   const navigate = useNavigate();
   
   const handleReadClick = () => {
@@ -26,25 +45,46 @@ const FeaturedNews = ({ id, title, date, category, excerpt, image, onClick }: Fe
     e.stopPropagation(); // Prevent triggering the card click
     navigate(`/article/${id}?autoplay=true`);
   };
+
+  // Generate YouTube thumbnail if needed
+  const youtubeId = video ? extractYoutubeId(video) : null;
+  const youtubeThumbnail = youtubeId ? `https://img.youtube.com/vi/${youtubeId}/maxresdefault.jpg` : null;
   
   return (
     <div className="bg-white rounded-lg shadow-md border border-red-200 overflow-hidden">
       <div className="md:flex">
-        {image && (
+        {(image || youtubeThumbnail) && (
           <div 
             className="md:w-2/5 h-48 md:h-auto relative overflow-hidden bg-red-50 cursor-pointer"
             onClick={handleReadClick}
             role="button"
             aria-label={`View featured article: ${title}`}
           >
-            <img 
-              src={image} 
-              alt={title} 
-              className="w-full h-full object-cover"
-            />
+            {mediaType === 'video' && youtubeId ? (
+              <div className="relative w-full h-full">
+                <img 
+                  src={youtubeThumbnail} 
+                  alt={title} 
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="bg-red-600 bg-opacity-80 rounded-full w-12 h-12 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" className="w-6 h-6">
+                      <path d="M8 5v14l11-7z" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <img 
+                src={image} 
+                alt={title} 
+                className="w-full h-full object-cover"
+              />
+            )}
           </div>
         )}
-        <div className={`bg-gradient-to-r from-red-50 to-white p-5 ${image ? 'md:w-3/5' : 'w-full'}`}>
+        <div className={`bg-gradient-to-r from-red-50 to-white p-5 ${(image || youtubeThumbnail) ? 'md:w-3/5' : 'w-full'}`}>
           <div className="flex justify-between items-start mb-2">
             <Badge variant="default" className="font-medium">{category}</Badge>
             <Badge className="bg-red-500 hover:bg-red-600">Featured Story</Badge>
