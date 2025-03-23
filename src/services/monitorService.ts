@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { format, parseISO, differenceInMinutes } from "date-fns";
 
@@ -77,18 +78,22 @@ export const addMonitor = async (
       throw new Error("User not authenticated");
     }
 
+    // Define the complete monitor object with all properties that will be inserted
+    // This ensures TypeScript knows all properties being used
+    const monitorData = {
+      name,
+      url,
+      target_text: targetText,
+      user_id: user.data.user.id,
+      status: "unknown",
+      is_active: true,
+      check_frequency: checkFrequency,
+      auto_checkout: autoCheckout
+    };
+
     const { data, error } = await supabase
       .from("stock_monitors")
-      .insert({
-        name,
-        url,
-        target_text: targetText,
-        user_id: user.data.user.id,
-        status: "unknown",
-        is_active: true,
-        check_frequency: checkFrequency,
-        auto_checkout: autoCheckout
-      })
+      .insert(monitorData)
       .select()
       .single();
 
