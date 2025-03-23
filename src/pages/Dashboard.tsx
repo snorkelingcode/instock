@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Layout from "@/components/layout/Layout";
 import { useAuth } from "@/contexts/AuthContext";
@@ -122,7 +123,8 @@ const Dashboard = () => {
   };
 
   const getDisplayName = () => {
-    return user?.user_metadata?.display_user_id || user?.email || 'User';
+    // Prioritize display_user_id from user metadata
+    return user?.user_metadata?.display_user_id || 'User';
   };
 
   return (
