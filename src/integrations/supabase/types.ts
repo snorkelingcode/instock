@@ -120,7 +120,9 @@ export type Database = {
           excerpt: string
           featured: boolean
           featured_image: string | null
+          featured_video: string | null
           id: string
+          media_type: string | null
           published: boolean
           published_at: string | null
           title: string
@@ -135,7 +137,9 @@ export type Database = {
           excerpt: string
           featured?: boolean
           featured_image?: string | null
+          featured_video?: string | null
           id?: string
+          media_type?: string | null
           published?: boolean
           published_at?: string | null
           title: string
@@ -150,7 +154,9 @@ export type Database = {
           excerpt?: string
           featured?: boolean
           featured_image?: string | null
+          featured_video?: string | null
           id?: string
+          media_type?: string | null
           published?: boolean
           published_at?: string | null
           title?: string
@@ -1151,11 +1157,13 @@ export type Database = {
           category: string
           featured: boolean
           published: boolean
+          featured_image: string
+          featured_video: string
+          media_type: string
+          additional_images: string[]
           created_at: string
           updated_at: string
           published_at: string
-          featured_image: string
-          additional_images: string[]
         }[]
       }
       get_article_by_id: {
@@ -1171,11 +1179,13 @@ export type Database = {
           category: string
           featured: boolean
           published: boolean
+          featured_image: string
+          featured_video: string
+          media_type: string
+          additional_images: string[]
           created_at: string
           updated_at: string
           published_at: string
-          featured_image: string
-          additional_images: string[]
         }[]
       }
       get_featured_article: {
@@ -1189,11 +1199,13 @@ export type Database = {
           category: string
           featured: boolean
           published: boolean
+          featured_image: string
+          featured_video: string
+          media_type: string
+          additional_images: string[]
           created_at: string
           updated_at: string
           published_at: string
-          featured_image: string
-          additional_images: string[]
         }[]
       }
       get_job_by_id: {
@@ -1226,11 +1238,13 @@ export type Database = {
           category: string
           featured: boolean
           published: boolean
+          featured_image: string
+          featured_video: string
+          media_type: string
+          additional_images: string[]
           created_at: string
           updated_at: string
           published_at: string
-          featured_image: string
-          additional_images: string[]
         }[]
       }
       get_published_articles: {
@@ -1244,11 +1258,13 @@ export type Database = {
           category: string
           featured: boolean
           published: boolean
+          featured_image: string
+          featured_video: string
+          media_type: string
+          additional_images: string[]
           created_at: string
           updated_at: string
           published_at: string
-          featured_image: string
-          additional_images: string[]
         }[]
       }
       gtrgm_compress: {
