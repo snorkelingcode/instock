@@ -1,3 +1,4 @@
+
 // @ts-ignore
 import { serve } from "std/http/server.ts";
 // Using direct import URL for Supabase client
@@ -530,9 +531,66 @@ serve(async (req: Request) => {
         const isWalmartSite = hostname.includes('walmart.com');
         const isBestBuySite = hostname.includes('bestbuy.com');
         const isGamestopSite = hostname.includes('gamestop.com');
+        const isPokemonCenterSite = hostname.includes('pokemoncenter.com');
         
         // Site-specific logic
-        if (isTargetSite) {
+        if (isPokemonCenterSite) {
+          // Pokemon Center specific detection
+          console.log("Detected Pokemon Center site");
+          
+          // Check for the specific add to cart button used on Pokemon Center
+          const pcAddToCartRegex = /<button[^>]*class="[^"]*add-to-cart[^"]*"[^>]*>(.*?)<\/button>/i;
+          const pcAddToCartMatch = html.match(pcAddToCartRegex);
+          const pcAddToCartButtonPresent = !!pcAddToCartMatch;
+          
+          // Check for out of stock indicator text that's specific to Pokemon Center
+          const pcOutOfStockRegex = /<div[^>]*class="[^"]*out-of-stock[^"]*"[^>]*>/i;
+          const pcOutOfStockMatch = html.match(pcOutOfStockRegex);
+          const pcOutOfStockPresent = !!pcOutOfStockMatch;
+          
+          // Extract inventory status - Pokemon Center has a specific JSON structure in their page
+          let inventoryStatus = null;
+          const inventoryRegex = /"inventory"\s*:\s*{\s*"status"\s*:\s*"([^"]*)"/i;
+          const inventoryMatch = html.match(inventoryRegex);
+          if (inventoryMatch && inventoryMatch[1]) {
+            inventoryStatus = inventoryMatch[1].toLowerCase();
+            console.log(`Found Pokemon Center inventory status: "${inventoryStatus}"`);
+          }
+          
+          // Find the "Add to Cart" button text to see if it's disabled
+          const buttonDisabled = html.includes('data-disabled="true"') &&
+                                html.includes('add to cart');
+          
+          // Check for the "Out of Stock" indicator in their specific structure
+          const outOfStockText = lowerHtml.includes('"out of stock"') ||
+                               lowerHtml.includes('out-of-stock') ||
+                               lowerHtml.includes('sold out');
+          
+          // Pokemon Center specific logic
+          if (pcOutOfStockPresent || outOfStockText || buttonDisabled || inventoryStatus === "out_of_stock") {
+            isInStock = false;
+            stockStatusReason = pcOutOfStockPresent 
+              ? "PokemonCenter: Out of stock indicator element found" 
+              : outOfStockText 
+                ? "PokemonCenter: Out of stock text found" 
+                : buttonDisabled 
+                  ? "PokemonCenter: Add to cart button is disabled"
+                  : "PokemonCenter: Inventory status is out of stock";
+          } else if (pcAddToCartButtonPresent && !pcOutOfStockPresent && inventoryStatus === "in_stock") {
+            isInStock = true;
+            stockStatusReason = "PokemonCenter: Add to cart button is enabled and inventory status is in stock";
+          } else if (inventoryStatus === "in_stock") {
+            isInStock = true;
+            stockStatusReason = "PokemonCenter: Inventory status is in stock";
+          } else if (pcAddToCartButtonPresent && !outOfStockText && !buttonDisabled) {
+            isInStock = true;
+            stockStatusReason = "PokemonCenter: Add to cart button is present and not disabled";
+          } else {
+            isInStock = false;
+            stockStatusReason = "PokemonCenter: Default to out of stock as no clear in-stock indicators found";
+          }
+        }
+        else if (isTargetSite) {
           // Target-specific stock detection
           const soldOutIndicator = lowerHtml.includes('sold out') || 
                                  lowerHtml.includes('out of stock') ||
@@ -748,7 +806,8 @@ serve(async (req: Request) => {
         status: currentStatus, 
         last_checked: now,
         error_message: stockStatusReason,
-        consecutive_errors: 0 // Reset error count on successful check
+        consecutive_errors: 0, // Reset error count on successful check
+        html_snapshot: html.substring(0, 10000) // Store the first 10k chars of HTML for debugging
       };
       
       // Set last_status_change if status changed
