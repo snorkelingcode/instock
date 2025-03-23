@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { 
   Eye, EyeOff, Trash2, RefreshCw, ExternalLink, AlertCircle, Clock, 
-  CheckCircle2, XCircle, Info, Bell, BellOff, Settings, History, ShoppingCart
+  CheckCircle2, XCircle, Info, Bell, BellOff, Settings, History
 } from "lucide-react";
 import { 
   Tooltip,
@@ -21,7 +21,6 @@ import {
 } from "@/components/ui/popover";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 
 export interface MonitoringItemProps {
   id: string;
@@ -37,13 +36,10 @@ export interface MonitoringItemProps {
   last_status_change?: string | null;
   last_seen_in_stock?: string | null;
   consecutive_errors?: number;
-  auto_checkout?: boolean;
-  checkout_status?: string;
   onToggleActive?: (id: string) => void;
   onDelete?: (id: string) => void;
   onRefresh?: (id: string) => void;
   onUpdateFrequency?: (id: string, frequency: number) => void;
-  onToggleAutoCheckout?: (id: string, enabled: boolean) => void;
 }
 
 const MonitoringItem: React.FC<MonitoringItemProps> = ({
@@ -60,13 +56,10 @@ const MonitoringItem: React.FC<MonitoringItemProps> = ({
   last_status_change,
   last_seen_in_stock,
   consecutive_errors = 0,
-  auto_checkout = false,
-  checkout_status,
   onToggleActive,
   onDelete,
   onRefresh,
   onUpdateFrequency,
-  onToggleAutoCheckout,
 }) => {
   const [frequency, setFrequency] = useState(check_frequency);
   
@@ -120,56 +113,6 @@ const MonitoringItem: React.FC<MonitoringItemProps> = ({
             ) : (
               <>Unknown</>
             )}
-          </Badge>
-        );
-    }
-  };
-
-  // Get checkout status badge if available
-  const getCheckoutBadge = () => {
-    if (!checkout_status) return null;
-    
-    switch (checkout_status) {
-      case "reached_checkout":
-        return (
-          <Badge className="bg-green-600 ml-2 flex items-center gap-1">
-            <ShoppingCart size={12} />
-            Checkout Ready
-          </Badge>
-        );
-      case "failed_add_to_cart":
-        return (
-          <Badge variant="destructive" className="ml-2 flex items-center gap-1">
-            <AlertCircle size={12} />
-            Add to Cart Failed
-          </Badge>
-        );
-      case "failed_checkout":
-        return (
-          <Badge variant="destructive" className="ml-2 flex items-center gap-1">
-            <AlertCircle size={12} />
-            Checkout Failed
-          </Badge>
-        );
-      case "skipped":
-        return (
-          <Badge variant="outline" className="ml-2 flex items-center gap-1">
-            <Info size={12} />
-            Checkout Skipped
-          </Badge>
-        );
-      case "error":
-        return (
-          <Badge variant="destructive" className="ml-2 flex items-center gap-1">
-            <AlertCircle size={12} />
-            Checkout Error
-          </Badge>
-        );
-      default:
-        return (
-          <Badge variant="secondary" className="ml-2 flex items-center gap-1">
-            <Info size={12} />
-            {checkout_status}
           </Badge>
         );
     }
@@ -340,22 +283,12 @@ const MonitoringItem: React.FC<MonitoringItemProps> = ({
     }
   };
 
-  // Handle toggling auto checkout
-  const handleToggleAutoCheckout = () => {
-    if (onToggleAutoCheckout) {
-      onToggleAutoCheckout(id, !auto_checkout);
-    }
-  };
-
   return (
     <Card className={`w-full shadow-sm hover:shadow transition-shadow ${getStatusClass()}`}>
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start">
           <CardTitle className="text-lg font-medium">{name}</CardTitle>
-          <div className="flex items-center space-x-2">
-            {getStatusBadge()}
-            {getCheckoutBadge()}
-          </div>
+          {getStatusBadge()}
         </div>
       </CardHeader>
       <CardContent className="pb-3">
@@ -418,23 +351,6 @@ const MonitoringItem: React.FC<MonitoringItemProps> = ({
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
-          </div>
-          
-          {/* Auto checkout option */}
-          <div className="flex items-center justify-between pt-1">
-            <div className="flex flex-col">
-              <span className="text-sm font-medium">Auto Checkout</span>
-              <span className="text-xs text-gray-500">
-                {auto_checkout 
-                  ? "Will attempt checkout when in stock" 
-                  : "Only checks availability"}
-              </span>
-            </div>
-            <Switch
-              checked={auto_checkout}
-              onCheckedChange={handleToggleAutoCheckout}
-              aria-label="Toggle auto checkout"
-            />
           </div>
         </div>
       </CardContent>

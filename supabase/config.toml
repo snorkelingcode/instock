@@ -13,13 +13,6 @@ enable_signup = true
 double_confirm_changes = true
 enable_confirmations = true
 
-[auth.smtp]
-sender_name = "TCG Updates"
-sender_email = "noreply@tcgupdates.com"
-
-[auth.external.email]
-enabled = true
-
 [auth.external]
 apple.enabled = false
 azure.enabled = false
@@ -38,3 +31,12 @@ twitch.enabled = false
 twitter.enabled = false
 workos.enabled = false
 zoom.enabled = false
+
+[auth.external.email]
+enabled = true
+provider = "custom"
+url = "https://etgkuasmqjidwtaxrfww.supabase.co/functions/v1/custom-email"
+
+[auth.smtp]
+sender_name = "TCG Updates"
+sender_email = "noreply@tcgupdates.com"

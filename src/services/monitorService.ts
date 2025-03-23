@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { format, parseISO, differenceInMinutes } from "date-fns";
 
@@ -18,8 +17,6 @@ export interface MonitoringItem {
   last_status_change?: string | null;
   last_seen_in_stock?: string | null;
   consecutive_errors?: number;
-  auto_checkout?: boolean; // Property for auto checkout
-  checkout_status?: string; // Property for checkout status
 }
 
 // Convert database entry to frontend monitoring item
@@ -36,9 +33,7 @@ const convertToMonitoringItem = (item: any): MonitoringItem => {
     check_frequency: item.check_frequency || 30, // Default to 30 minutes
     last_status_change: item.last_status_change,
     last_seen_in_stock: item.last_seen_in_stock,
-    consecutive_errors: item.consecutive_errors || 0,
-    auto_checkout: item.auto_checkout || false,
-    checkout_status: item.checkout_status
+    consecutive_errors: item.consecutive_errors || 0
   };
 };
 
@@ -68,8 +63,7 @@ export const addMonitor = async (
   name: string,
   url: string,
   targetText?: string,
-  checkFrequency: number = 30, // Default to 30 minutes
-  autoCheckout: boolean = false // Default to no auto checkout
+  checkFrequency: number = 30 // Default to 30 minutes
 ): Promise<MonitoringItem | null> => {
   try {
     const user = await supabase.auth.getUser();
@@ -78,22 +72,17 @@ export const addMonitor = async (
       throw new Error("User not authenticated");
     }
 
-    // Define the complete monitor object with all properties that will be inserted
-    // This ensures TypeScript knows all properties being used
-    const monitorData = {
-      name,
-      url,
-      target_text: targetText,
-      user_id: user.data.user.id,
-      status: "unknown",
-      is_active: true,
-      check_frequency: checkFrequency,
-      auto_checkout: autoCheckout
-    };
-
     const { data, error } = await supabase
       .from("stock_monitors")
-      .insert(monitorData)
+      .insert({
+        name,
+        url,
+        target_text: targetText,
+        user_id: user.data.user.id,
+        status: "unknown",
+        is_active: true,
+        check_frequency: checkFrequency
+      })
       .select()
       .single();
 
@@ -133,29 +122,6 @@ export const toggleMonitorStatus = async (
     return true;
   } catch (error) {
     console.error("Error in toggleMonitorStatus:", error);
-    return false;
-  }
-};
-
-// Toggle auto checkout for a monitor
-export const toggleAutoCheckout = async (
-  id: string,
-  enableAutoCheckout: boolean
-): Promise<boolean> => {
-  try {
-    const { error } = await supabase
-      .from("stock_monitors")
-      .update({ auto_checkout: enableAutoCheckout })
-      .eq("id", id);
-
-    if (error) {
-      console.error("Error toggling auto checkout:", error);
-      throw error;
-    }
-
-    return true;
-  } catch (error) {
-    console.error("Error in toggleAutoCheckout:", error);
     return false;
   }
 };
@@ -341,8 +307,7 @@ export const triggerCheck = async (monitorId: string): Promise<MonitoringItem | 
         body: { 
           id: monitorId,
           url: monitor.url,
-          targetText: monitor.target_text,
-          autoCheckout: monitor.auto_checkout || false
+          targetText: monitor.target_text
         }
       });
 
