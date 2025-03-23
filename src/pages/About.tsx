@@ -6,6 +6,7 @@ import Layout from "@/components/layout/Layout";
 import AdContainer from "@/components/ads/AdContainer";
 import { useMetaTags } from "@/hooks/use-meta-tags";
 import EmptyStateHandler from "@/components/ui/empty-state-handler";
+import { Separator } from "@/components/ui/separator";
 
 const AboutPage = () => {
   // Add meta tags for SEO and AdSense compliance
@@ -40,7 +41,8 @@ const AboutPage = () => {
           <h1 className="text-3xl font-bold mb-6">About TCG Updates</h1>
           
           <section className="mb-12">
-            <h2 className="text-2xl font-semibold mb-4">Our Mission</h2>
+            <h2 className="text-2xl font-semibold mb-2">Our Mission</h2>
+            <Separator className="h-[2px] w-16 bg-red-500 mb-4" />
             <p className="text-gray-700 mb-4">
               TCG Updates was created with a mission to serve the trading card game community in three key ways: providing breaking news and updates, helping collectors find products at retail prices, and inspiring creativity through DIY accessories and collection solutions.
             </p>
@@ -61,7 +63,8 @@ const AboutPage = () => {
           />
           
           <section className="mb-12">
-            <h2 className="text-2xl font-semibold mb-4">Our Story</h2>
+            <h2 className="text-2xl font-semibold mb-2">Our Story</h2>
+            <Separator className="h-[2px] w-16 bg-red-500 mb-4" />
             <p className="text-gray-700 mb-4">
               TCG Updates began in early 2024 during a period of unprecedented growth in the trading card game market. As lifelong TCG enthusiasts ourselves, we recognized the need for a comprehensive platform that went beyond just tracking inventory.
             </p>
@@ -74,7 +77,8 @@ const AboutPage = () => {
           </section>
           
           <section className="mb-12">
-            <h2 className="text-2xl font-semibold mb-4">What We Offer</h2>
+            <h2 className="text-2xl font-semibold mb-2">What We Offer</h2>
+            <Separator className="h-[2px] w-16 bg-red-500 mb-4" />
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <div className="bg-gray-50 p-6 rounded-lg border border-gray-100">
                 <h3 className="text-xl font-medium mb-3">1. Breaking News & Updates</h3>
@@ -108,7 +112,8 @@ const AboutPage = () => {
           />
           
           <section className="mb-12">
-            <h2 className="text-2xl font-semibold mb-4">Contact Us</h2>
+            <h2 className="text-2xl font-semibold mb-2">Contact Us</h2>
+            <Separator className="h-[2px] w-16 bg-red-500 mb-4" />
             <p className="text-gray-700 mb-6">
               Have questions, suggestions, or want to partner with us? We'd love to hear from you!
             </p>
