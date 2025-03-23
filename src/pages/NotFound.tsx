@@ -24,12 +24,21 @@ const NotFound = () => {
     noAdsenseMetaTag.name = 'googlebot';
     noAdsenseMetaTag.content = 'noindex';
     document.head.appendChild(noAdsenseMetaTag);
+
+    // Set status code for crawlers
+    const statusCodeMeta = document.createElement('meta');
+    statusCodeMeta.name = 'prerender-status-code';
+    statusCodeMeta.content = '404';
+    document.head.appendChild(statusCodeMeta);
     
     return () => {
       // Clean up meta tags when component unmounts
       document.head.removeChild(noAdsMetaTag);
       if (document.head.contains(noAdsenseMetaTag)) {
         document.head.removeChild(noAdsenseMetaTag);
+      }
+      if (document.head.contains(statusCodeMeta)) {
+        document.head.removeChild(statusCodeMeta);
       }
     };
   }, [location.pathname]);

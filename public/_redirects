@@ -12,3 +12,5 @@ https://www.fixthesupplyissue.com/*  https://tcgupdates.com/:splat  301!
 # Ensure sitemap.xml is served with the correct content type
 /sitemap.xml  /sitemap.xml  200  Content-Type=application/xml
 
+# Allow Googlebot specifically
+/* /index.html 200!  User-Agent=Googlebot
