@@ -8,3 +8,7 @@ https://www.tcgupdates.com/*  https://tcgupdates.com/:splat  301!
 # Redirect old domain to the new one
 https://fixthesupplyissue.com/*  https://tcgupdates.com/:splat  301!
 https://www.fixthesupplyissue.com/*  https://tcgupdates.com/:splat  301!
+
+# Ensure sitemap.xml is served with the correct content type
+/sitemap.xml  /sitemap.xml  200  Content-Type=application/xml
+
