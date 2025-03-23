@@ -185,7 +185,7 @@ const ManageProducts = () => {
         });
         setIsEditDialogOpen(false);
       } else {
-        // Add new product
+        // Add new product - explicitly don't include an id field
         const { data, error } = await supabase
           .from('products')
           .insert(formData)
@@ -193,14 +193,17 @@ const ManageProducts = () => {
         
         if (error) throw error;
         
-        setProducts([...products, data[0]]);
-        toast({
-          title: "Success",
-          description: "Product added successfully",
-        });
-        setIsAddDialogOpen(false);
+        if (data && data.length > 0) {
+          setProducts([...products, data[0]]);
+          toast({
+            title: "Success",
+            description: "Product added successfully",
+          });
+          setIsAddDialogOpen(false);
+        }
       }
     } catch (error: any) {
+      console.error('Error saving product:', error);
       toast({
         title: "Error",
         description: `Failed to save product: ${error.message}`,
