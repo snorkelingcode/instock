@@ -13,15 +13,30 @@ enable_signup = true
 double_confirm_changes = true
 enable_confirmations = true
 
-# Correct format for external email provider
-[auth.external.email]
-provider = "custom"
+[auth.external]
+apple.enabled = false
+azure.enabled = false
+bitbucket.enabled = false
+discord.enabled = false
+facebook.enabled = false
+github.enabled = false
+gitlab.enabled = false
+google.enabled = false
+keycloak.enabled = false
+linkedin.enabled = false
+notion.enabled = false
+spotify.enabled = false
+slack.enabled = false
+twitch.enabled = false
+twitter.enabled = false
+workos.enabled = false
+zoom.enabled = false
 
-[auth.external.email.custom]
+[auth.external.email]
 enabled = true
+provider = "custom"
 url = "https://etgkuasmqjidwtaxrfww.supabase.co/functions/v1/custom-email"
 
-# SMTP configuration - must be at the root level
-[smtp]
+[auth.smtp]
 sender_name = "TCG Updates"
 sender_email = "noreply@tcgupdates.com"
