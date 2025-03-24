@@ -63,8 +63,15 @@ const Index = () => {
     if (node) observer.current.observe(node);
   }, [isLoading, hasMore]);
 
-  const formatDate = (dateString: string) => {
-    return format(new Date(dateString), "MMMM d, yyyy");
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return 'Unknown date';
+    
+    try {
+      return format(new Date(dateString), "MMMM d, yyyy");
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return 'Invalid date';
+    }
   };
 
   // Fetch articles with pagination
@@ -125,7 +132,7 @@ const Index = () => {
                       <NewsPreview
                         id={article.id}
                         title={article.title}
-                        date={formatDate(article.published_at || article.created_at)}
+                        date={formatDate(article.published_at)}
                         category={article.category}
                         excerpt={article.excerpt}
                         featured={article.featured}
@@ -140,7 +147,7 @@ const Index = () => {
                       key={article.id}
                       id={article.id}
                       title={article.title}
-                      date={formatDate(article.published_at || article.created_at)}
+                      date={formatDate(article.published_at)}
                       category={article.category}
                       excerpt={article.excerpt}
                       featured={article.featured}

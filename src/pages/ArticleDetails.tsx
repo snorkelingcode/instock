@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
@@ -25,19 +24,14 @@ interface Article {
   published: boolean;
   created_at: string;
   updated_at: string;
-  published_at: string;
+  published_at: string | null;
   featured_image?: string;
   featured_video?: string;
   media_type?: 'image' | 'video';
   additional_images?: string[];
 }
 
-// Function to extract YouTube video ID
 const extractYoutubeId = (url: string): string | null => {
-  // Match patterns like:
-  // https://www.youtube.com/watch?v=VIDEO_ID
-  // https://youtu.be/VIDEO_ID
-  // https://youtube.com/shorts/VIDEO_ID
   const regExp = /^.*(?:(?:youtu\.be\/|v\/|vi\/|u\/\w\/|embed\/|shorts\/)|(?:(?:watch)?\?v(?:i)?=|\&v(?:i)?=))([^#\&\?]*).*/;
   const match = url.match(regExp);
   return (match && match[1].length === 11) ? match[1] : null;
@@ -86,9 +80,16 @@ const ArticleDetails = () => {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return format(date, 'MMMM dd, yyyy');
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return 'Unknown date';
+    
+    try {
+      const date = new Date(dateString);
+      return format(date, 'MMMM dd, yyyy');
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return 'Invalid date';
+    }
   };
 
   const shareArticle = () => {
@@ -123,7 +124,6 @@ const ArticleDetails = () => {
 
   const hasAdditionalImages = article?.additional_images && article.additional_images.length > 0;
   
-  // Generate YouTube embed URL if available
   const youtubeEmbedUrl = article?.featured_video ? 
     `https://www.youtube.com/embed/${extractYoutubeId(article.featured_video)}` : 
     '';
@@ -176,7 +176,7 @@ const ArticleDetails = () => {
               <div className="flex flex-wrap items-center gap-4">
                 <div className="flex items-center">
                   <CalendarDays className="mr-2 h-4 w-4" />
-                  Published on {formatDate(article.published_at || article.created_at)}
+                  Published on {formatDate(article.published_at)}
                 </div>
                 <div className="flex items-center">
                   <Clock className="mr-2 h-4 w-4" />
