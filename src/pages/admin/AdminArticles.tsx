@@ -97,11 +97,26 @@ const AdminArticles = () => {
   const togglePublish = async (id: string, published: boolean) => {
     try {
       const now = new Date().toISOString();
+      
+      let publishedAt = null;
+      
+      if (!published) {
+        const { data, error: fetchError } = await supabase
+          .from('articles')
+          .select('published_at')
+          .eq('id', id)
+          .single();
+          
+        if (fetchError) throw fetchError;
+        
+        publishedAt = data.published_at || now;
+      }
+      
       const { error } = await supabase
         .from('articles')
         .update({ 
           published: !published,
-          published_at: !published ? now : null,
+          published_at: !published ? publishedAt : null,
           updated_at: now
         })
         .eq('id', id);
@@ -114,7 +129,7 @@ const AdminArticles = () => {
             ? { 
                 ...article, 
                 published: !published,
-                published_at: !published ? now : null 
+                published_at: !published ? publishedAt : null 
               } 
             : article
         )

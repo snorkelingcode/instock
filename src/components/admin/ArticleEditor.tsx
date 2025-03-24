@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -274,29 +273,64 @@ const ArticleEditor = () => {
       }
       
       const now = new Date().toISOString();
-      const articleData = {
-        ...formData,
-        featured_image: formData.media_type === 'image' ? featuredImageUrl : null,
-        featured_video: formData.media_type === 'video' ? formData.featured_video : null,
-        additional_images: additionalImageUrls,
-        author_id: user.id,
-        updated_at: now,
-        published_at: formData.published ? now : null
-      };
       
       if (isEditing && id) {
+        // For updates, we need to get the current article data first to preserve the original published_at
+        const { data: currentArticle, error: fetchError } = await supabase
+          .from('articles')
+          .select('published, published_at')
+          .eq('id', id)
+          .single();
+          
+        if (fetchError) throw fetchError;
+        
+        // Set published_at based on publishing status:
+        // 1. If newly published (wasn't published before but is now), set to current time
+        // 2. If already published, keep the original published_at date
+        // 3. If unpublished, set to null
+        const publishedAt = 
+          !currentArticle.published && formData.published ? now :
+          formData.published ? currentArticle.published_at :
+          null;
+          
         const { error } = await supabase
           .from('articles')
-          .update(articleData)
+          .update({
+            title: formData.title,
+            content: formData.content,
+            excerpt: formData.excerpt,
+            category: formData.category,
+            featured: formData.featured,
+            published: formData.published,
+            featured_image: formData.media_type === 'image' ? featuredImageUrl : null,
+            featured_video: formData.media_type === 'video' ? formData.featured_video : null,
+            media_type: formData.media_type,
+            additional_images: additionalImageUrls,
+            updated_at: now,
+            published_at: publishedAt
+          })
           .eq('id', id);
         
         if (error) throw error;
       } else {
+        // For new articles, only set published_at if published is true
         const { error } = await supabase
           .from('articles')
           .insert([{
-            ...articleData,
-            created_at: now
+            title: formData.title,
+            content: formData.content,
+            excerpt: formData.excerpt,
+            category: formData.category,
+            featured: formData.featured,
+            published: formData.published,
+            featured_image: formData.media_type === 'image' ? featuredImageUrl : null,
+            featured_video: formData.media_type === 'video' ? formData.featured_video : null,
+            media_type: formData.media_type,
+            additional_images: additionalImageUrls,
+            author_id: user.id,
+            created_at: now,
+            updated_at: now,
+            published_at: formData.published ? now : null
           }]);
         
         if (error) throw error;
