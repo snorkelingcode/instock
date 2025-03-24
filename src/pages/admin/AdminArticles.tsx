@@ -98,25 +98,21 @@ const AdminArticles = () => {
     try {
       const now = new Date().toISOString();
       
-      let publishedAt = null;
-      
-      if (!published) {
-        const { data, error: fetchError } = await supabase
-          .from('articles')
-          .select('published_at')
-          .eq('id', id)
-          .single();
-          
-        if (fetchError) throw fetchError;
+      const { data: articleData, error: fetchError } = await supabase
+        .from('articles')
+        .select('created_at')
+        .eq('id', id)
+        .single();
         
-        publishedAt = data.published_at || now;
-      }
+      if (fetchError) throw fetchError;
+      
+      const publishedAt = !published ? articleData.created_at : null;
       
       const { error } = await supabase
         .from('articles')
         .update({ 
           published: !published,
-          published_at: !published ? publishedAt : null,
+          published_at: publishedAt,
           updated_at: now
         })
         .eq('id', id);
@@ -129,7 +125,7 @@ const AdminArticles = () => {
             ? { 
                 ...article, 
                 published: !published,
-                published_at: !published ? publishedAt : null 
+                published_at: !published ? articleData.created_at : null 
               } 
             : article
         )

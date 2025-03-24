@@ -275,21 +275,21 @@ const ArticleEditor = () => {
       const now = new Date().toISOString();
       
       if (isEditing && id) {
-        // For updates, we need to get the current article data first to preserve the original published_at
+        // For updates, we need to get the current article data first to preserve dates
         const { data: currentArticle, error: fetchError } = await supabase
           .from('articles')
-          .select('published, published_at')
+          .select('published, published_at, created_at')
           .eq('id', id)
           .single();
           
         if (fetchError) throw fetchError;
         
         // Set published_at based on publishing status:
-        // 1. If newly published (wasn't published before but is now), set to current time
+        // 1. If newly published and wasn't published before, use created_at
         // 2. If already published, keep the original published_at date
         // 3. If unpublished, set to null
         const publishedAt = 
-          !currentArticle.published && formData.published ? now :
+          !currentArticle.published && formData.published ? currentArticle.created_at :
           formData.published ? currentArticle.published_at :
           null;
           
@@ -313,7 +313,8 @@ const ArticleEditor = () => {
         
         if (error) throw error;
       } else {
-        // For new articles, only set published_at if published is true
+        // For new articles, set published_at to created_at if published is true
+        // Use the same timestamp for both created_at and published_at to ensure they match
         const { error } = await supabase
           .from('articles')
           .insert([{
