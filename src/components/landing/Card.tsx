@@ -6,6 +6,7 @@ interface CardProps {
   product?: string;
   source?: string;
   price?: number;
+  msrp?: number;
   listingLink?: string;
   imageLink?: string;
   onListingClick?: () => void;
@@ -17,6 +18,7 @@ export const Card: React.FC<CardProps> = ({
   product = "Product",
   source = "Source",
   price,
+  msrp,
   listingLink,
   imageLink,
   onListingClick,
@@ -24,6 +26,11 @@ export const Card: React.FC<CardProps> = ({
 }) => {
   const [cardColor, setCardColor] = useState("");
   const [isButtonHovered, setIsButtonHovered] = useState(false);
+  
+  // Calculate discount percentage if MSRP is provided and price is less than MSRP
+  const discountPercentage = msrp && price && msrp > price
+    ? Math.round(((msrp - price) / msrp) * 100)
+    : null;
   
   // Red shades array for the disco effect - matching DiscoCardEffect
   const redColors = [
@@ -101,8 +108,29 @@ export const Card: React.FC<CardProps> = ({
         <div className="text-xl text-[#1E1E1E] mb-[6px]">{productLine}</div>
         <div className="text-xl text-[#1E1E1E] mb-[6px]">{product}</div>
         <div className="text-xl text-[#1E1E1E] mb-[6px]">{source}</div>
+        
         {price && (
-          <div className="text-xl text-[#1E1E1E] mb-[6px]">${price.toFixed(2)}</div>
+          <div className="flex items-baseline gap-2 mb-[6px]">
+            <div className="text-xl text-[#1E1E1E]">${price.toFixed(2)}</div>
+            
+            {msrp && msrp > price && (
+              <div className="text-sm text-gray-500 line-through">
+                ${msrp.toFixed(2)}
+              </div>
+            )}
+            
+            {discountPercentage && (
+              <div className="text-sm font-semibold text-green-600 ml-auto">
+                Save {discountPercentage}%
+              </div>
+            )}
+          </div>
+        )}
+        
+        {msrp && !(msrp > price && price) && (
+          <div className="text-sm text-gray-500 mb-[6px]">
+            MSRP: ${msrp.toFixed(2)}
+          </div>
         )}
       </div>
       <button

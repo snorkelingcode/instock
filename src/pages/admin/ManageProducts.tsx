@@ -46,6 +46,7 @@ interface Product {
   product: string;
   source: string;
   price: number;
+  msrp?: number;
   listing_link: string;
   image_link?: string;
   in_stock?: boolean;
@@ -68,6 +69,7 @@ const ManageProducts = () => {
       product: "",
       source: "",
       price: 0,
+      msrp: 0,
       listing_link: "",
       image_link: "",
       in_stock: true,
@@ -87,6 +89,7 @@ const ManageProducts = () => {
         product: selectedProduct.product,
         source: selectedProduct.source,
         price: selectedProduct.price,
+        msrp: selectedProduct.msrp || 0,
         listing_link: selectedProduct.listing_link,
         image_link: selectedProduct.image_link || "",
         in_stock: selectedProduct.in_stock !== undefined ? selectedProduct.in_stock : true,
@@ -133,6 +136,7 @@ const ManageProducts = () => {
       product: "",
       source: "",
       price: 0,
+      msrp: 0,
       listing_link: "",
       image_link: "",
       in_stock: true,
@@ -236,6 +240,7 @@ const ManageProducts = () => {
                         <TableHead>Product</TableHead>
                         <TableHead>Source</TableHead>
                         <TableHead>Price</TableHead>
+                        <TableHead>MSRP</TableHead>
                         <TableHead>Stock</TableHead>
                         <TableHead>Featured</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
@@ -244,7 +249,7 @@ const ManageProducts = () => {
                     <TableBody>
                       {products.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={8} className="text-center h-24">
+                          <TableCell colSpan={9} className="text-center h-24">
                             No products found
                           </TableCell>
                         </TableRow>
@@ -256,6 +261,9 @@ const ManageProducts = () => {
                             <TableCell>{product.product}</TableCell>
                             <TableCell>{product.source}</TableCell>
                             <TableCell>${product.price.toFixed(2)}</TableCell>
+                            <TableCell>
+                              {product.msrp ? `$${product.msrp.toFixed(2)}` : 'N/A'}
+                            </TableCell>
                             <TableCell>
                               {product.in_stock === true ? "In Stock" : 
                                product.in_stock === false ? "Out of Stock" : "Unknown"}
@@ -365,6 +373,19 @@ const ManageProducts = () => {
                       {...form.register('price', { valueAsNumber: true })}
                       className="col-span-3"
                       required
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="msrp" className="text-right">
+                      MSRP
+                    </Label>
+                    <Input
+                      id="msrp"
+                      type="number"
+                      step="0.01"
+                      {...form.register('msrp', { valueAsNumber: true })}
+                      className="col-span-3"
+                      placeholder="Manufacturer's Suggested Retail Price"
                     />
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
@@ -489,6 +510,19 @@ const ManageProducts = () => {
                       {...form.register('price', { valueAsNumber: true })}
                       className="col-span-3"
                       required
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="msrp" className="text-right">
+                      MSRP
+                    </Label>
+                    <Input
+                      id="msrp"
+                      type="number"
+                      step="0.01"
+                      {...form.register('msrp', { valueAsNumber: true })}
+                      className="col-span-3"
+                      placeholder="Manufacturer's Suggested Retail Price"
                     />
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">

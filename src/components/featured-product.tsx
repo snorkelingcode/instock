@@ -8,6 +8,7 @@ interface FeaturedProductProps {
   title: string;
   description: string;
   price: number;
+  msrp?: number;
   retailer: string;
   listingLink: string;
   imageLink?: string;
@@ -19,6 +20,7 @@ const FeaturedProduct: React.FC<FeaturedProductProps> = ({
   title,
   description,
   price,
+  msrp,
   retailer,
   listingLink,
   imageLink,
@@ -27,6 +29,11 @@ const FeaturedProduct: React.FC<FeaturedProductProps> = ({
 }) => {
   // Default placeholder image if none provided
   const defaultImage = "/lovable-uploads/05e57c85-5441-4fff-b945-4a5e864300ce.png";
+  
+  // Calculate discount percentage if MSRP is provided and price is less than MSRP
+  const discountPercentage = msrp && msrp > price
+    ? Math.round(((msrp - price) / msrp) * 100)
+    : null;
   
   return (
     <Card className="w-full max-w-sm hover:shadow-lg transition-shadow overflow-hidden">
@@ -50,7 +57,28 @@ const FeaturedProduct: React.FC<FeaturedProductProps> = ({
         </CardDescription>
       </CardHeader>
       <CardContent className="p-4 pt-0">
-        <p className="text-xl font-bold text-primary mb-2">${price.toFixed(2)}</p>
+        <div className="flex items-baseline gap-2 mb-2">
+          <p className="text-xl font-bold text-primary">${price.toFixed(2)}</p>
+          
+          {msrp && msrp > price && (
+            <p className="text-sm text-gray-500 line-through">
+              ${msrp.toFixed(2)}
+            </p>
+          )}
+          
+          {discountPercentage && (
+            <span className="ml-auto text-sm font-semibold text-green-600">
+              Save {discountPercentage}%
+            </span>
+          )}
+        </div>
+        
+        {msrp && !(msrp > price) && (
+          <p className="text-sm text-gray-500 mb-2">
+            MSRP: ${msrp.toFixed(2)}
+          </p>
+        )}
+        
         <p className="text-sm text-gray-700 line-clamp-2">{description}</p>
       </CardContent>
       <CardFooter className="p-4 pt-0">

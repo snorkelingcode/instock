@@ -11,6 +11,7 @@ interface Product {
   product: string;
   source: string;
   price: number;
+  msrp?: number;
   listing_link: string;
   image_link?: string;
 }
@@ -76,6 +77,7 @@ export const CardGrid: React.FC = () => {
     product: "Charizard ex Super",
     source: "Target",
     price: 69.99,
+    msrp: 79.99,
     listing_link: "",
     image_link: ""
   }));
@@ -132,6 +134,7 @@ export const CardGrid: React.FC = () => {
                     product={product.product}
                     source={product.source}
                     price={product.price}
+                    msrp={product.msrp}
                     listingLink={product.listing_link}
                     imageLink={product.image_link}
                     onListingClick={() => handleListingClick(product.id)}

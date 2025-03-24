@@ -9,6 +9,7 @@ interface Product {
   product: string;
   source: string;
   price: number;
+  msrp?: number;
   listing_link: string;
   image_link?: string;
   in_stock?: boolean;
@@ -65,6 +66,7 @@ const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
               product={product.product}
               source={product.source}
               price={product.price}
+              msrp={product.msrp}
               listingLink={product.listing_link}
               imageLink={product.image_link}
               index={index}
