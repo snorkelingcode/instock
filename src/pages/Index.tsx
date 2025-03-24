@@ -6,6 +6,7 @@ import { Shell } from "@/components/layout/Shell";
 import WelcomeCard from "@/components/home/WelcomeCard";
 import HowItWorksCard from "@/components/home/HowItWorksCard";
 import NewsPreview from "@/components/news/NewsPreview";
+import FeaturedNews from "@/components/news/FeaturedNews";
 import { useMetaTags } from "@/hooks/use-meta-tags";
 import { supabase } from "@/integrations/supabase/client";
 import { Article } from "@/types/article";
@@ -44,6 +45,7 @@ const Index = () => {
 
   const navigate = useNavigate();
   const [articles, setArticles] = useState<Article[]>([]);
+  const [featuredArticle, setFeaturedArticle] = useState<Article | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(0);
@@ -74,10 +76,35 @@ const Index = () => {
     }
   };
 
-  // Fetch articles with pagination
+  // First, fetch the featured article
+  useEffect(() => {
+    fetchFeaturedArticle();
+  }, []);
+
+  // Then fetch regular articles with pagination
   useEffect(() => {
     fetchArticles();
-  }, [page]);
+  }, [page, featuredArticle]);
+
+  const fetchFeaturedArticle = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('articles')
+        .select('*')
+        .eq('published', true)
+        .eq('featured', true)
+        .order('updated_at', { ascending: false })
+        .limit(1);
+      
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        setFeaturedArticle(data[0] as Article);
+      }
+    } catch (error: any) {
+      console.error("Error fetching featured article:", error);
+    }
+  };
 
   const fetchArticles = async () => {
     if (!hasMore || isLoading) return;
@@ -87,12 +114,18 @@ const Index = () => {
       const from = page * ARTICLES_PER_PAGE;
       const to = from + ARTICLES_PER_PAGE - 1;
       
-      const { data, error } = await supabase
+      let query = supabase
         .from('articles')
         .select('*')
         .eq('published', true)
-        .order('published_at', { ascending: false })
-        .range(from, to);
+        .order('updated_at', { ascending: false });
+      
+      // Skip the featured article if it exists
+      if (featuredArticle) {
+        query = query.neq('id', featuredArticle.id);
+      }
+      
+      const { data, error } = await query.range(from, to);
       
       if (error) throw error;
       
@@ -123,6 +156,24 @@ const Index = () => {
         <section className="mt-12 mb-16">
           <h2 className="text-3xl font-bold mb-6">Latest News</h2>
           
+          {/* Featured Article Section */}
+          {featuredArticle && (
+            <div className="mb-8">
+              <FeaturedNews
+                id={featuredArticle.id}
+                title={featuredArticle.title}
+                date={formatDate(featuredArticle.published_at)}
+                category={featuredArticle.category}
+                excerpt={featuredArticle.excerpt}
+                image={featuredArticle.featured_image}
+                video={featuredArticle.featured_video}
+                mediaType={featuredArticle.media_type}
+                onClick={() => handleArticleClick(featuredArticle.id)}
+              />
+            </div>
+          )}
+          
+          {/* Regular Articles Grid */}
           {articles.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {articles.map((article, index) => {
@@ -137,6 +188,8 @@ const Index = () => {
                         excerpt={article.excerpt}
                         featured={article.featured}
                         image={article.featured_image}
+                        video={article.featured_video}
+                        mediaType={article.media_type}
                         onClick={() => handleArticleClick(article.id)}
                       />
                     </div>
@@ -152,6 +205,8 @@ const Index = () => {
                       excerpt={article.excerpt}
                       featured={article.featured}
                       image={article.featured_image}
+                      video={article.featured_video}
+                      mediaType={article.media_type}
                       onClick={() => handleArticleClick(article.id)}
                     />
                   );
