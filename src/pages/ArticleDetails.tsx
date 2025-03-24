@@ -176,12 +176,16 @@ const ArticleDetails = () => {
               <div className="flex flex-wrap items-center gap-4">
                 <div className="flex items-center">
                   <CalendarDays className="mr-2 h-4 w-4" />
-                  Published on {formatDate(article.published_at)}
+                  {article.published_at 
+                    ? `Published on ${formatDate(article.published_at)}` 
+                    : `Created on ${formatDate(article.created_at)}`}
                 </div>
-                <div className="flex items-center">
-                  <Clock className="mr-2 h-4 w-4" />
-                  Updated on {formatDate(article.updated_at)}
-                </div>
+                {article.updated_at !== article.published_at && article.updated_at !== article.created_at && (
+                  <div className="flex items-center">
+                    <Clock className="mr-2 h-4 w-4" />
+                    Last updated on {formatDate(article.updated_at)}
+                  </div>
+                )}
               </div>
               <ReadAloud title={article.title} content={article.content} autoplay={autoplay} />
             </div>
