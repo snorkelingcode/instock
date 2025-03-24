@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { Shell } from "@/components/layout/Shell";
 import WelcomeCard from "@/components/home/WelcomeCard";
@@ -67,7 +67,7 @@ const Index = () => {
     if (!dateString) return 'Unknown date';
     
     try {
-      return format(new Date(dateString), "MMMM d, yyyy");
+      return format(parseISO(dateString), "MMMM d, yyyy");
     } catch (error) {
       console.error("Error formatting date:", error);
       return 'Invalid date';

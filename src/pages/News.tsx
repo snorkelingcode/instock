@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
@@ -85,7 +85,7 @@ const News = () => {
     if (!dateString) return 'Unknown date';
     
     try {
-      return format(new Date(dateString), "MMMM d, yyyy");
+      return format(parseISO(dateString), "MMMM d, yyyy");
     } catch (error) {
       console.error("Error formatting date:", error);
       return 'Invalid date';

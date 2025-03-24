@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import Layout from '@/components/layout/Layout';
 import { supabase } from '@/integrations/supabase/client';
 import { Badge } from '@/components/ui/badge';
@@ -84,8 +85,7 @@ const ArticleDetails = () => {
     if (!dateString) return 'Unknown date';
     
     try {
-      const date = new Date(dateString);
-      return format(date, 'MMMM dd, yyyy');
+      return format(parseISO(dateString), 'MMMM dd, yyyy');
     } catch (error) {
       console.error("Error formatting date:", error);
       return 'Invalid date';
