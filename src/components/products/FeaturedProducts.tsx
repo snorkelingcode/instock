@@ -1,6 +1,6 @@
 
 import React from "react";
-import FeaturedProduct from "@/components/featured-product";
+import { Card } from "@/components/landing/Card";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface Product {
@@ -61,10 +61,10 @@ const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
       <>
         {products.map((product, index) => (
           <div key={product.id} className="flex justify-center">
-            <FeaturedProduct
-              title={product.product}
-              description={product.product_line} 
-              retailer={product.source}
+            <Card 
+              productLine={product.product_line}
+              product={product.product}
+              source={product.source}
               price={product.price}
               msrp={product.msrp}
               listingLink={product.listing_link}
