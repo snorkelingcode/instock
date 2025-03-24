@@ -741,6 +741,7 @@ export type Database = {
           image_link: string | null
           in_stock: boolean | null
           listing_link: string
+          msrp: number | null
           price: number
           product: string
           product_line: string
@@ -752,6 +753,7 @@ export type Database = {
           image_link?: string | null
           in_stock?: boolean | null
           listing_link: string
+          msrp?: number | null
           price: number
           product: string
           product_line: string
@@ -763,6 +765,7 @@ export type Database = {
           image_link?: string | null
           in_stock?: boolean | null
           listing_link?: string
+          msrp?: number | null
           price?: number
           product?: string
           product_line?: string
