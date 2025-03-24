@@ -84,7 +84,7 @@ const FeaturedNews = ({
             )}
           </div>
         )}
-        <div className={`bg-gradient-to-r from-red-50 to-white p-5 ${(image || youtubeThumbnail) ? 'md:w-3/5' : 'w-full'}`}>
+        <div className={`p-5 ${(image || youtubeThumbnail) ? 'md:w-3/5' : 'w-full'}`}>
           <div className="flex justify-between items-start mb-2">
             <Badge variant="default" className="font-medium">{category}</Badge>
             <Badge className="bg-red-500 hover:bg-red-600">Featured Story</Badge>
