@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 
 interface CardProps {
@@ -109,29 +108,27 @@ export const Card: React.FC<CardProps> = ({
         <div className="text-xl text-[#1E1E1E] mb-[6px]">{product}</div>
         <div className="text-xl text-[#1E1E1E] mb-[6px]">{source}</div>
         
-        {price && (
-          <div className="flex items-baseline gap-2 mb-[6px]">
-            <div className="text-xl text-[#1E1E1E]">${price.toFixed(2)}</div>
-            
-            {msrp && msrp > price && (
-              <div className="text-sm text-gray-500 line-through">
-                ${msrp.toFixed(2)}
+        <div className="space-y-1">
+          {msrp && (
+            <div className={`text-sm ${discountPercentage ? 'line-through text-gray-500' : 'text-[#1E1E1E]'}`}>
+              MSRP: ${msrp.toFixed(2)}
+            </div>
+          )}
+          
+          {price && (
+            <div className="flex items-baseline gap-2">
+              <div className="text-xl text-[#1E1E1E]">
+                {discountPercentage ? 'Sale: ' : ''}${price.toFixed(2)}
               </div>
-            )}
-            
-            {discountPercentage && (
-              <div className="text-sm font-semibold text-green-600 ml-auto">
-                Save {discountPercentage}%
-              </div>
-            )}
-          </div>
-        )}
-        
-        {msrp && !(msrp > price && price) && (
-          <div className="text-sm text-gray-500 mb-[6px]">
-            MSRP: ${msrp.toFixed(2)}
-          </div>
-        )}
+              
+              {discountPercentage && (
+                <div className="text-sm font-semibold text-green-600">
+                  Save {discountPercentage}%
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
       <button
         onClick={handleClick}
