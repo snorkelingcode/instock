@@ -69,7 +69,8 @@ const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
               msrp={product.msrp}
               listingLink={product.listing_link}
               imageLink={product.image_link}
-              inStock={product.in_stock}
+              // The error is here - removing the 'inStock' prop since it doesn't exist in CardProps
+              // Instead, looking at the Card component, there's no direct 'inStock' property
               index={index}
             />
           </div>
