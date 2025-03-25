@@ -23,7 +23,8 @@ export const createStockMonitor = async (data: MonitorData) => {
         name: data.name,
         target_text: data.target_text,
         check_frequency: data.check_frequency || 30,
-        is_active: data.is_active !== undefined ? data.is_active : true
+        is_active: data.is_active !== undefined ? data.is_active : true,
+        user_id: (await supabase.auth.getUser()).data.user?.id
       })
       .select()
       .single();
@@ -82,6 +83,16 @@ export const deleteStockMonitor = async (id: string) => {
  */
 export const checkUrlWithBrightData = async (id: string, url: string, name: string) => {
   try {
+    // First validate that the URL is properly formatted
+    if (!url.startsWith('http')) {
+      url = 'https://' + url;
+    }
+    
+    // Make sure URL is properly encoded
+    const encodedUrl = encodeURIComponent(url);
+    
+    console.log(`Checking URL with Bright Data: ${url}`);
+    
     const response = await fetch('/api/bright-data-target-api', {
       method: 'POST',
       headers: {
@@ -89,14 +100,20 @@ export const checkUrlWithBrightData = async (id: string, url: string, name: stri
       },
       body: JSON.stringify({
         id,
-        url,
+        url: url, // Use the original URL, not encoded version for the payload
         monitorName: name
       }),
     });
 
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('API Error Response:', errorText);
+      throw new Error(`API error: ${response.status} ${errorText}`);
+    }
+    
     const data = await response.json();
     
-    if (!response.ok) {
+    if (!data.success) {
       throw new Error(data.error || 'Failed to check URL');
     }
     
@@ -155,6 +172,24 @@ export const toggleMonitorActive = async (id: string) => {
     return !monitor.is_active; // Return the new state
   } catch (error) {
     console.error('Error toggling monitor active state:', error);
+    throw error;
+  }
+};
+
+/**
+ * Fetches monitors from the database
+ */
+export const fetchMonitors = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('stock_monitors')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching monitors:', error);
     throw error;
   }
 };

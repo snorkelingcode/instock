@@ -16,7 +16,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { checkUrlWithBrightData, toggleMonitorActive, updateCheckFrequency, deleteStockMonitor } from "@/services/stockMonitorService";
+import { 
+  checkUrlWithBrightData, 
+  toggleMonitorActive, 
+  updateCheckFrequency, 
+  deleteStockMonitor,
+  fetchMonitors 
+} from "@/services/stockMonitorService";
 
 const InStockMonitor = () => {
   const { isAdmin } = useAuth();
@@ -34,18 +40,10 @@ const InStockMonitor = () => {
   const [activeFilter, setActiveFilter] = useState<string>('all');
 
   // Fetch monitors from the database
-  const fetchMonitors = async () => {
+  const loadMonitors = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('stock_monitors')
-        .select('*')
-        .order(sortField, { ascending: sortOrder === 'asc' });
-
-      if (error) {
-        throw error;
-      }
-
+      const data = await fetchMonitors();
       setMonitors(data || []);
     } catch (error) {
       console.error('Error fetching monitors:', error);
@@ -61,9 +59,9 @@ const InStockMonitor = () => {
 
   useEffect(() => {
     if (isAdmin) {
-      fetchMonitors();
+      loadMonitors();
     }
-  }, [isAdmin, sortField, sortOrder]);
+  }, [isAdmin]);
 
   // Function to handle refreshing a monitor
   const handleRefresh = async (id: string) => {
@@ -78,6 +76,7 @@ const InStockMonitor = () => {
       setRefreshingIds(prev => [...prev, id]);
 
       // Call the API to check the URL
+      console.log(`Refreshing monitor: ${id} - ${monitor.url}`);
       await checkUrlWithBrightData(id, monitor.url, monitor.name);
       
       // Show success toast
@@ -88,9 +87,9 @@ const InStockMonitor = () => {
       
       // Refresh monitors list after a delay to allow for processing
       setTimeout(() => {
-        fetchMonitors();
+        loadMonitors();
       }, 3000);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error refreshing monitor:', error);
       toast({
         title: "Error",
@@ -122,7 +121,7 @@ const InStockMonitor = () => {
       setMonitorToDelete(null);
       
       // Refresh the monitors list
-      fetchMonitors();
+      loadMonitors();
     } catch (error) {
       console.error('Error deleting monitor:', error);
       toast({
@@ -189,8 +188,8 @@ const InStockMonitor = () => {
   const filteredMonitors = monitors.filter(monitor => {
     // Apply search filter
     const matchesSearch = 
-      monitor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      monitor.url.toLowerCase().includes(searchQuery.toLowerCase());
+      monitor.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      monitor.url?.toLowerCase().includes(searchQuery.toLowerCase());
     
     // Apply status filter
     const matchesStatus = 
@@ -204,6 +203,33 @@ const InStockMonitor = () => {
       (activeFilter === 'paused' && !monitor.is_active);
     
     return matchesSearch && matchesStatus && matchesActive;
+  });
+
+  // Sort monitors based on sort field and order
+  const sortedMonitors = [...filteredMonitors].sort((a, b) => {
+    let valueA = a[sortField];
+    let valueB = b[sortField];
+    
+    // Handle null values
+    if (valueA === null) valueA = '';
+    if (valueB === null) valueB = '';
+    
+    // For date fields, convert to Date objects
+    if (sortField.includes('date') || sortField.includes('checked') || sortField.includes('created_at')) {
+      valueA = valueA ? new Date(valueA).getTime() : 0;
+      valueB = valueB ? new Date(valueB).getTime() : 0;
+    }
+    
+    // For string fields, convert to lowercase
+    if (typeof valueA === 'string') valueA = valueA.toLowerCase();
+    if (typeof valueB === 'string') valueB = valueB.toLowerCase();
+    
+    // Return comparison result
+    if (sortOrder === 'asc') {
+      return valueA < valueB ? -1 : valueA > valueB ? 1 : 0;
+    } else {
+      return valueA > valueB ? -1 : valueA < valueB ? 1 : 0;
+    }
   });
 
   // If not admin, show access denied
@@ -251,7 +277,7 @@ const InStockMonitor = () => {
         {showAddForm && (
           <AddMonitorForm
             onSuccess={() => {
-              fetchMonitors();
+              loadMonitors();
               setShowAddForm(false);
             }}
           />
@@ -358,7 +384,7 @@ const InStockMonitor = () => {
                 <Button 
                   variant="outline" 
                   size="sm"
-                  onClick={fetchMonitors}
+                  onClick={loadMonitors}
                   className="flex items-center gap-1"
                 >
                   <RefreshCw size={14} />
@@ -372,15 +398,15 @@ const InStockMonitor = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {loading ? (
             <p>Loading monitors...</p>
-          ) : filteredMonitors.length > 0 ? (
-            filteredMonitors.map(monitor => (
+          ) : sortedMonitors.length > 0 ? (
+            sortedMonitors.map(monitor => (
               <MonitoringItem
                 key={monitor.id}
                 id={monitor.id}
                 url={monitor.url}
                 name={monitor.name}
                 last_checked={monitor.last_checked}
-                status={monitor.status}
+                status={monitor.status || 'unknown'}
                 target_text={monitor.target_text}
                 is_active={monitor.is_active}
                 error_message={monitor.error_message}

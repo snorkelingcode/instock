@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -30,8 +29,8 @@ export interface MonitoringItemProps {
   status: "in-stock" | "out-of-stock" | "unknown" | "error" | "checking" | "pending";
   target_text?: string;
   is_active: boolean;
-  error_message?: string;
-  stock_status_reason?: string;
+  error_message?: string | null;
+  stock_status_reason?: string | null;
   isRefreshing?: boolean;
   check_frequency?: number;
   last_status_change?: string | null;
@@ -133,7 +132,7 @@ const MonitoringItem: React.FC<MonitoringItemProps> = ({
     }
   };
 
-  const formatLastChecked = () => {
+  const formatLastChecked = (last_checked?: string | null, is_active: boolean = false, status: string = '') => {
     if (!last_checked) return "Never";
     
     const date = new Date(last_checked);
@@ -153,7 +152,7 @@ const MonitoringItem: React.FC<MonitoringItemProps> = ({
             <p>{exactTime}</p>
             {is_active && status !== "checking" && status !== "pending" && (
               <p className="text-xs mt-1">
-                Next check: approximately {getNextCheckTime()}
+                Next check: approximately {getNextCheckTime(is_active, status, 30, 0)}
               </p>
             )}
           </TooltipContent>
@@ -162,7 +161,7 @@ const MonitoringItem: React.FC<MonitoringItemProps> = ({
     );
   };
 
-  const formatLastSeen = () => {
+  const formatLastSeen = (last_seen_in_stock?: string | null, status: string = '') => {
     if (!last_seen_in_stock) {
       return (
         <span className="flex items-center text-xs text-muted-foreground">
@@ -211,7 +210,7 @@ const MonitoringItem: React.FC<MonitoringItemProps> = ({
     );
   };
 
-  const getNextCheckTime = () => {
+  const getNextCheckTime = (is_active: boolean, status: string, frequency: number, consecutive_errors: number = 0) => {
     if (!is_active) return "paused";
     if (status === "checking" || status === "pending") return "in progress";
     
@@ -237,15 +236,15 @@ const MonitoringItem: React.FC<MonitoringItemProps> = ({
 
     let errorObj;
     try {
-      if (messageToShow.startsWith('{') && messageToShow.endsWith('}')) {
+      if (typeof messageToShow === 'string' && messageToShow.startsWith('{') && messageToShow.endsWith('}')) {
         errorObj = JSON.parse(messageToShow);
         return `${errorObj.message || errorObj.error || JSON.stringify(errorObj)}`;
       }
     } catch (e) {
-      // Not JSON
+      console.log("Error parsing JSON message:", e);
     }
 
-    if (messageToShow.length > 150) {
+    if (typeof messageToShow === 'string' && messageToShow.length > 150) {
       return (
         <TooltipProvider>
           <Tooltip>
@@ -263,7 +262,7 @@ const MonitoringItem: React.FC<MonitoringItemProps> = ({
     return messageToShow;
   };
 
-  const getStatusClass = () => {
+  const getStatusClass = (status: string) => {
     switch (status) {
       case "in-stock":
         return "border-green-500 border-2";
@@ -296,7 +295,7 @@ const MonitoringItem: React.FC<MonitoringItemProps> = ({
   };
 
   return (
-    <Card className={`w-full shadow-sm hover:shadow transition-shadow ${getStatusClass()}`}>
+    <Card className={`w-full shadow-sm hover:shadow transition-shadow ${getStatusClass(status)}`}>
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start">
           <CardTitle className="text-lg font-medium">{name}</CardTitle>
@@ -349,8 +348,8 @@ const MonitoringItem: React.FC<MonitoringItemProps> = ({
             <div className="flex flex-col gap-1">
               <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Status History</span>
               <div className="flex items-center space-x-3">
-                {formatLastChecked()}
-                {formatLastSeen()}
+                {formatLastChecked(last_checked, is_active, status)}
+                {formatLastSeen(last_seen_in_stock, status)}
               </div>
             </div>
             <TooltipProvider>
@@ -410,7 +409,7 @@ const MonitoringItem: React.FC<MonitoringItemProps> = ({
                     <span>4h</span>
                   </div>
                 </div>
-                <Button onClick={handleSaveFrequency} className="w-full">
+                <Button onClick={() => handleSaveFrequency()} className="w-full">
                   Save
                 </Button>
               </div>
@@ -442,3 +441,129 @@ const MonitoringItem: React.FC<MonitoringItemProps> = ({
 };
 
 export default MonitoringItem;
+
+const formatLastChecked = (last_checked?: string | null, is_active: boolean = false, status: string = '') => {
+  if (!last_checked) return "Never";
+  
+  const date = new Date(last_checked);
+  const timeAgo = formatDistanceToNow(date, { addSuffix: true });
+  const exactTime = format(date, "MMM d, yyyy h:mm a");
+  
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="flex items-center text-xs text-muted-foreground cursor-help">
+            <Clock size={12} className="mr-1" />
+            {timeAgo}
+          </span>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>{exactTime}</p>
+          {is_active && status !== "checking" && status !== "pending" && (
+            <p className="text-xs mt-1">
+              Next check: approximately {getNextCheckTime(is_active, status, 30, 0)}
+            </p>
+          )}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+};
+
+const formatLastSeen = (last_seen_in_stock?: string | null, status: string = '') => {
+  if (!last_seen_in_stock) {
+    return (
+      <span className="flex items-center text-xs text-muted-foreground">
+        <History size={12} className="mr-1" />
+        {status === "in-stock" ? "Currently in stock" : "Never seen in stock"}
+      </span>
+    );
+  }
+  
+  const date = new Date(last_seen_in_stock);
+  const timeAgo = formatDistanceToNow(date, { addSuffix: true });
+  const exactTime = format(date, "MMM d, yyyy h:mm a");
+  
+  if (status === "in-stock") {
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="flex items-center text-xs text-green-600 font-medium cursor-help">
+              <CheckCircle2 size={12} className="mr-1" />
+              Currently in stock
+            </span>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Confirmed in-stock: {exactTime}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
+  
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="flex items-center text-xs text-amber-600 font-medium cursor-help">
+            <History size={12} className="mr-1" />
+            Last in stock: {timeAgo}
+          </span>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>Last confirmed in-stock: {exactTime}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+};
+
+const getNextCheckTime = (is_active: boolean, status: string, frequency: number, consecutive_errors: number = 0) => {
+  if (!is_active) return "paused";
+  if (status === "checking" || status === "pending") return "in progress";
+  
+  let adjustedFrequency = frequency;
+  
+  if (status === "in-stock") {
+    adjustedFrequency = Math.max(adjustedFrequency, 60);
+  } else if (status === "error") {
+    const backoffFactor = Math.min(Math.pow(2, consecutive_errors - 1), 8);
+    adjustedFrequency = Math.min(adjustedFrequency * backoffFactor, 240);
+  } else if (status === "out-of-stock") {
+    adjustedFrequency = Math.min(adjustedFrequency, 15);
+  }
+  
+  return `${adjustedFrequency} minutes`;
+};
+
+const getStatusClass = (status: string) => {
+  switch (status) {
+    case "in-stock":
+      return "border-green-500 border-2";
+    case "checking":
+      return "border-blue-300 border";
+    case "pending":
+      return "border-amber-300 border";
+    case "error":
+      return "border-red-300";
+    case "out-of-stock":
+      return "border-red-200";
+    default:
+      return "";
+  }
+};
+
+const handleSaveFrequency = () => {
+  // Handled via props.onUpdateFrequency
+};
+
+const formatFrequency = (mins: number) => {
+  if (mins < 60) {
+    return `${mins} minutes`;
+  } else {
+    const hours = mins / 60;
+    return `${hours === 1 ? '1 hour' : `${hours} hours`}`;
+  }
+};

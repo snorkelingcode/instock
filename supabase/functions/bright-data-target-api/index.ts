@@ -34,7 +34,18 @@ Deno.serve(async (req) => {
     }
 
     // Get request body
-    const { id, url, monitorName } = await req.json();
+    let requestData;
+    try {
+      requestData = await req.json();
+    } catch (error) {
+      console.error('Failed to parse request body:', error);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid request format' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      );
+    }
+
+    const { id, url, monitorName } = requestData;
     console.log(`Received request to check: ${url}`);
 
     if (!url) {
@@ -46,14 +57,19 @@ Deno.serve(async (req) => {
 
     // Update the stock_monitors table to indicate check in progress
     if (id) {
-      await supabaseAdmin
-        .from('stock_monitors')
-        .update({
-          status: 'checking',
-          last_checked: new Date().toISOString(),
-          error_message: null,
-        })
-        .eq('id', id);
+      try {
+        await supabaseAdmin
+          .from('stock_monitors')
+          .update({
+            status: 'checking',
+            last_checked: new Date().toISOString(),
+            error_message: null,
+          })
+          .eq('id', id);
+      } catch (error) {
+        console.error('Error updating monitor status:', error);
+        // Continue with API call even if update fails
+      }
     }
 
     // Prepare the data for Bright Data Target API
@@ -66,19 +82,71 @@ Deno.serve(async (req) => {
       urls: [url]
     };
 
+    console.log('Sending request to Bright Data Target API');
+    
     // Call Bright Data Target API to collect data
-    const response = await fetch('https://api.brightdata.com/datasets/v3/trigger', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${BRIGHT_DATA_TARGET_API_TOKEN}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(payload)
-    });
+    let response;
+    try {
+      response = await fetch('https://api.brightdata.com/datasets/v3/trigger', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${BRIGHT_DATA_TARGET_API_TOKEN}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+    } catch (error) {
+      console.error('Network error calling Bright Data API:', error);
+      
+      // Update monitor with error status
+      if (id) {
+        await supabaseAdmin
+          .from('stock_monitors')
+          .update({
+            status: 'error',
+            last_checked: new Date().toISOString(),
+            error_message: `Network error: ${error.message}`,
+          })
+          .eq('id', id);
+      }
+      
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: `Network error: ${error.message}` 
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      );
+    }
 
     // Process API response
-    const apiData = await response.json();
-    console.log('Bright Data API response:', apiData);
+    let apiData;
+    try {
+      apiData = await response.json();
+      console.log('Bright Data API response:', apiData);
+    } catch (error) {
+      console.error('Error parsing Bright Data API response:', error);
+      
+      // Update monitor with error status
+      if (id) {
+        await supabaseAdmin
+          .from('stock_monitors')
+          .update({
+            status: 'error',
+            last_checked: new Date().toISOString(),
+            error_message: `Error parsing API response: ${error.message}`,
+          })
+          .eq('id', id);
+      }
+      
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: `Error parsing API response: ${error.message}` 
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      );
+    }
 
     if (!response.ok || !apiData.snapshot_id) {
       const errorMessage = apiData.message || 'Unknown error occurred';
@@ -141,7 +209,11 @@ Deno.serve(async (req) => {
       console.log('Created job to monitor Target API data:', jobData);
       
       // Start the background process to check for results
-      EdgeRuntime.waitUntil(checkResultsBackground(snapshotId, id, jobData.id));
+      try {
+        EdgeRuntime.waitUntil(checkResultsBackground(snapshotId, id, jobData.id));
+      } catch (error) {
+        console.error('Error starting background task:', error);
+      }
     }
 
     return new Response(
@@ -156,7 +228,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('Error in bright-data-target-api function:', error);
     return new Response(
-      JSON.stringify({ success: false, error: error.message }),
+      JSON.stringify({ success: false, error: error.message || 'An unexpected error occurred' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     );
   }
@@ -176,13 +248,17 @@ async function checkResultsBackground(snapshotId: string, monitorId: string | un
       attempts++;
       
       // Update job progress
-      await supabaseAdmin
-        .from('api_job_status')
-        .update({
-          progress: attempts / maxAttempts * 100,
-          status: 'fetching_data'
-        })
-        .eq('id', jobId);
+      try {
+        await supabaseAdmin
+          .from('api_job_status')
+          .update({
+            progress: attempts / maxAttempts * 100,
+            status: 'fetching_data'
+          })
+          .eq('id', jobId);
+      } catch (updateError) {
+        console.error('Error updating job progress:', updateError);
+      }
       
       try {
         // Check if results are ready
@@ -207,53 +283,76 @@ async function checkResultsBackground(snapshotId: string, monitorId: string | un
             if (monitorId) {
               const status = inStock ? 'in-stock' : 'out-of-stock';
               
-              await supabaseAdmin
-                .from('stock_monitors')
-                .update({
-                  status,
-                  last_checked: new Date().toISOString(),
-                  last_seen_in_stock: inStock ? new Date().toISOString() : undefined,
-                  stock_status_reason: `Product ${inStock ? 'is' : 'is not'} in stock according to Target API data`
-                })
-                .eq('id', monitorId);
+              try {
+                await supabaseAdmin
+                  .from('stock_monitors')
+                  .update({
+                    status,
+                    last_checked: new Date().toISOString(),
+                    last_seen_in_stock: inStock ? new Date().toISOString() : undefined,
+                    stock_status_reason: `Product ${inStock ? 'is' : 'is not'} in stock according to Target API data`
+                  })
+                  .eq('id', monitorId);
+              } catch (updateError) {
+                console.error('Error updating monitor status:', updateError);
+              }
             }
             
             // Complete the job
-            await supabaseAdmin
-              .from('api_job_status')
-              .update({
-                status: 'completed',
-                progress: 100,
-                completed_items: 1,
-                completed_at: new Date().toISOString()
-              })
-              .eq('id', jobId);
+            try {
+              await supabaseAdmin
+                .from('api_job_status')
+                .update({
+                  status: 'completed',
+                  progress: 100,
+                  completed_items: 1,
+                  completed_at: new Date().toISOString()
+                })
+                .eq('id', jobId);
+            } catch (updateError) {
+              console.error('Error completing job:', updateError);
+            }
           } else if (resultData.state === 'failed') {
             isComplete = true;
             
             // Update job status
-            await supabaseAdmin
-              .from('api_job_status')
-              .update({
-                status: 'failed',
-                error: resultData.error || 'Target API data collection failed',
-                completed_at: new Date().toISOString()
-              })
-              .eq('id', jobId);
+            try {
+              await supabaseAdmin
+                .from('api_job_status')
+                .update({
+                  status: 'failed',
+                  error: resultData.error || 'Target API data collection failed',
+                  completed_at: new Date().toISOString()
+                })
+                .eq('id', jobId);
+            } catch (updateError) {
+              console.error('Error updating job status to failed:', updateError);
+            }
               
             // Update monitor status
             if (monitorId) {
-              await supabaseAdmin
-                .from('stock_monitors')
-                .update({
-                  status: 'error',
-                  error_message: resultData.error || 'Target API data collection failed'
-                })
-                .eq('id', monitorId);
+              try {
+                await supabaseAdmin
+                  .from('stock_monitors')
+                  .update({
+                    status: 'error',
+                    error_message: resultData.error || 'Target API data collection failed'
+                  })
+                  .eq('id', monitorId);
+              } catch (updateError) {
+                console.error('Error updating monitor status to error:', updateError);
+              }
             }
           }
         } else {
           console.error(`Error checking results: ${checkResponse.status}`);
+          
+          try {
+            const errorText = await checkResponse.text();
+            console.error('Error response body:', errorText);
+          } catch (e) {
+            // Ignore error when trying to log error
+          }
         }
       } catch (error) {
         console.error('Error polling for results:', error);
@@ -268,48 +367,64 @@ async function checkResultsBackground(snapshotId: string, monitorId: string | un
     // If we exceeded max attempts
     if (!isComplete) {
       // Update job status
-      await supabaseAdmin
-        .from('api_job_status')
-        .update({
-          status: 'failed',
-          error: 'Timeout waiting for Target API results',
-          completed_at: new Date().toISOString()
-        })
-        .eq('id', jobId);
+      try {
+        await supabaseAdmin
+          .from('api_job_status')
+          .update({
+            status: 'failed',
+            error: 'Timeout waiting for Target API results',
+            completed_at: new Date().toISOString()
+          })
+          .eq('id', jobId);
+      } catch (updateError) {
+        console.error('Error updating job status on timeout:', updateError);
+      }
         
       // Update monitor status
       if (monitorId) {
-        await supabaseAdmin
-          .from('stock_monitors')
-          .update({
-            status: 'error',
-            error_message: 'Timeout waiting for Target API results'
-          })
-          .eq('id', monitorId);
+        try {
+          await supabaseAdmin
+            .from('stock_monitors')
+            .update({
+              status: 'error',
+              error_message: 'Timeout waiting for Target API results'
+            })
+            .eq('id', monitorId);
+        } catch (updateError) {
+          console.error('Error updating monitor status on timeout:', updateError);
+        }
       }
     }
   } catch (error) {
     console.error('Error in result checking background process:', error);
     
     // Update job status
-    await supabaseAdmin
-      .from('api_job_status')
-      .update({
-        status: 'failed',
-        error: `Error checking results: ${error.message}`,
-        completed_at: new Date().toISOString()
-      })
-      .eq('id', jobId);
+    try {
+      await supabaseAdmin
+        .from('api_job_status')
+        .update({
+          status: 'failed',
+          error: `Error checking results: ${error.message}`,
+          completed_at: new Date().toISOString()
+        })
+        .eq('id', jobId);
+    } catch (updateError) {
+      console.error('Error updating job status on exception:', updateError);
+    }
       
     // Update monitor status
     if (monitorId) {
-      await supabaseAdmin
-        .from('stock_monitors')
-        .update({
-          status: 'error',
-          error_message: `Error checking results: ${error.message}`
-        })
-        .eq('id', monitorId);
+      try {
+        await supabaseAdmin
+          .from('stock_monitors')
+          .update({
+            status: 'error',
+            error_message: `Error checking results: ${error.message}`
+          })
+          .eq('id', monitorId);
+      } catch (updateError) {
+        console.error('Error updating monitor status on exception:', updateError);
+      }
     }
   }
 }
@@ -327,6 +442,9 @@ function processTargetData(resultData: any): boolean {
     if (!productData) {
       return false;
     }
+    
+    // Debug log the product data
+    console.log('Processing product data:', JSON.stringify(productData, null, 2));
     
     // Check for "in stock" indicators (adjust based on actual Target API response structure)
     
