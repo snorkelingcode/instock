@@ -263,46 +263,7 @@ function checkStockStatus(html: string, domain: string, targetText?: string): St
       
       // For Target.com, we need additional checks since "Add to cart" appears even for out-of-stock items
       if (domain.includes('target.com')) {
-        // Check for Target-specific out-of-stock indicators even if target text was found
-        if (lowerHtml.includes('out of stock online') || 
-            lowerHtml.includes('out of stock at') || 
-            lowerHtml.includes('sold out') || 
-            lowerHtml.includes('temporarily out of stock')) {
-          status = 'out-of-stock';
-          reason = 'Found "out of stock" indicators on Target.com';
-          console.log('Target.com specific: Found out-of-stock indicators');
-          return { status, reason };
-        }
-        
-        // Check if the "Add to Cart" button is disabled
-        if (lowerHtml.includes('disabled') && lowerHtml.includes('add to cart')) {
-          status = 'out-of-stock';
-          reason = 'Target.com: "Add to Cart" button is disabled';
-          console.log('Target.com specific: Add to Cart button is disabled');
-          return { status, reason };
-        }
-        
-        // Look for shipping availability indicators
-        if (lowerHtml.includes('shipping not available')) {
-          status = 'out-of-stock';
-          reason = 'Target.com: "Shipping not available" was found';
-          console.log('Target.com specific: Shipping not available');
-          return { status, reason };
-        }
-        
-        // Check for positive in-stock indicators for Target
-        if ((lowerHtml.includes('shipping') && lowerHtml.includes('get it by')) || 
-            (lowerHtml.includes('pickup') && !lowerHtml.includes('not available'))) {
-          status = 'in-stock';
-          reason = 'Target.com: Found positive in-stock indicators (shipping/pickup available)';
-          console.log('Target.com specific: Found positive in-stock indicators');
-          return { status, reason };
-        }
-        
-        // Default to unknown for Target.com if no clear indicators
-        status = 'unknown';
-        reason = 'Target.com: Contradictory or unclear stock indicators';
-        return { status, reason };
+        return checkTargetStock(lowerHtml, targetText);
       }
       
       // For other sites, finding the target text is sufficient
@@ -312,44 +273,7 @@ function checkStockStatus(html: string, domain: string, targetText?: string): St
     
     // Domain-specific checks
     if (domain.includes('target.com')) {
-      // Check for out-of-stock indicators for Target
-      if (lowerHtml.includes('out of stock online') || 
-          lowerHtml.includes('out of stock at') || 
-          lowerHtml.includes('sold out') || 
-          lowerHtml.includes('temporarily out of stock')) {
-        status = 'out-of-stock';
-        reason = 'Target.com: Found "out of stock" text';
-        return { status, reason };
-      }
-      
-      // Check for "Add to Cart" button
-      if (lowerHtml.includes('add to cart')) {
-        // Check if it's disabled
-        if (lowerHtml.includes('disabled') && lowerHtml.includes('add to cart')) {
-          status = 'out-of-stock';
-          reason = 'Target.com: "Add to Cart" button is disabled';
-          return { status, reason };
-        }
-        
-        // Check for shipping availability
-        if (lowerHtml.includes('shipping') && lowerHtml.includes('get it by')) {
-          status = 'in-stock';
-          reason = 'Target.com: Product appears to be shippable';
-          return { status, reason };
-        }
-        
-        // Check for store pickup availability
-        if (lowerHtml.includes('pickup') && !lowerHtml.includes('not available')) {
-          status = 'in-stock';
-          reason = 'Target.com: Product appears to be available for pickup';
-          return { status, reason };
-        }
-        
-        // Couldn't determine clearly for Target
-        status = 'unknown';
-        reason = 'Target.com: Found "Add to Cart" but couldn't determine availability clearly';
-        return { status, reason };
-      }
+      return checkTargetStock(lowerHtml, targetText);
     }
     
     // Generic checks for all other sites if no domain-specific logic applied
@@ -404,4 +328,106 @@ function checkStockStatus(html: string, domain: string, targetText?: string): St
       reason: `Error analyzing page: ${error instanceof Error ? error.message : String(error)}` 
     };
   }
+}
+
+// Specific function to check Target.com stock status
+function checkTargetStock(lowerHtml: string, targetText?: string): StockCheckResult {
+  console.log("Running Target.com specific stock check...");
+  
+  // Check for "out of stock" badges and messages
+  if (lowerHtml.includes('out of stock online') || 
+      lowerHtml.includes('out of stock at') || 
+      lowerHtml.includes('sold out') || 
+      lowerHtml.includes('temporarily out of stock')) {
+    return { 
+      status: 'out-of-stock', 
+      reason: 'Target.com: Found explicit "out of stock" text' 
+    };
+  }
+  
+  // Look for "Qty" dropdown or quantity selector which indicates item is in stock
+  if (lowerHtml.includes('qty') || lowerHtml.includes('quantity')) {
+    // Check if the quantity selector is actually enabled
+    if (lowerHtml.includes('disabled') && 
+       (lowerHtml.includes('add to cart') || lowerHtml.includes('qty'))) {
+      return { 
+        status: 'out-of-stock', 
+        reason: 'Target.com: "Add to Cart" or quantity selector is disabled' 
+      };
+    }
+    
+    // Additional check for shipping availability
+    if (lowerHtml.includes('shipping not available')) {
+      return { 
+        status: 'out-of-stock', 
+        reason: 'Target.com: "Shipping not available" was found' 
+      };
+    }
+    
+    // If we found quantity selector and it's not disabled, item is likely in stock
+    return { 
+      status: 'in-stock', 
+      reason: 'Target.com: Quantity selector is present and enabled' 
+    };
+  }
+  
+  // Check for "Add to cart" button
+  if (lowerHtml.includes('add to cart')) {
+    // Check if it's disabled
+    if (lowerHtml.includes('disabled') && lowerHtml.includes('add to cart')) {
+      return { 
+        status: 'out-of-stock', 
+        reason: 'Target.com: "Add to Cart" button is disabled' 
+      };
+    }
+    
+    // Check for shipping availability
+    if (lowerHtml.includes('shipping') && lowerHtml.includes('get it by')) {
+      return { 
+        status: 'in-stock', 
+        reason: 'Target.com: Product appears to be shippable with delivery date' 
+      };
+    }
+    
+    // Check for store pickup availability
+    if (lowerHtml.includes('pickup') && !lowerHtml.includes('not available')) {
+      return { 
+        status: 'in-stock', 
+        reason: 'Target.com: Product appears to be available for pickup' 
+      };
+    }
+  }
+  
+  // Look for any shipping options as a positive indicator
+  if (lowerHtml.includes('shipping') && 
+     (lowerHtml.includes('arrives by') || lowerHtml.includes('get it by'))) {
+    return { 
+      status: 'in-stock', 
+      reason: 'Target.com: Shipping options with delivery dates are available' 
+    };
+  }
+  
+  // Check explicit "Only X left" or "X items left" messages
+  const stockCountRegex = /only\s+(\d+)\s+left|(\d+)\s+items?\s+left/i;
+  const stockCountMatch = lowerHtml.match(stockCountRegex);
+  if (stockCountMatch) {
+    return { 
+      status: 'in-stock', 
+      reason: `Target.com: Limited quantity available - "${stockCountMatch[0]}"` 
+    };
+  }
+  
+  // If we found the target text but couldn't determine stock status, return unknown
+  if (targetText && lowerHtml.includes(targetText.toLowerCase())) {
+    return { 
+      status: 'unknown', 
+      reason: `Target.com: Found target text "${targetText}" but couldn't determine stock status` 
+    };
+  }
+  
+  // If we couldn't determine status with Target-specific checks
+  return { 
+    status: 'unknown', 
+    reason: 'Target.com: Could not determine stock status from page content' 
+  };
 }
