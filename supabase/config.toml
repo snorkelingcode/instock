@@ -9,18 +9,13 @@ port = 8080
 site_url = "https://tcgupdates.com"
 additional_redirect_urls = ["https://www.tcgupdates.com"]
 enable_signup = true
-double_confirm_changes = true
-enable_confirmations = true
 
 [auth.email]
 enable_signup = true
 double_confirm_changes = true
 enable_confirmations = true
 
-[auth.external.email]
-enabled = true
-
-[smtp]
+[auth.email.smtp]
 sender_name = "TCG Updates"
 sender_email = "noreply@tcgupdates.com"
 
@@ -74,3 +69,6 @@ enabled = false
 
 [auth.external.zoom]
 enabled = false
+
+[auth.external.email]
+enabled = true
