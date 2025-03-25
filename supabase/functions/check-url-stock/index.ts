@@ -45,17 +45,25 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Build Scraper API URL
-    const scraperUrl = `http://api.scraperapi.com?api_key=${SCRAPER_API_KEY}&url=${encodeURIComponent(url)}&render=true`;
+    // Submit async job to Scraper API
+    console.log(`Submitting async job to Scraper API for URL: ${url}`);
+    const asyncJobResponse = await fetch('https://async.scraperapi.com/jobs', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        apiKey: SCRAPER_API_KEY,
+        url: url,
+        apiParams: {
+          render: true,
+        }
+      })
+    });
     
-    console.log(`Calling Scraper API for URL: ${url}`);
-
-    // Fetch the URL content via Scraper API
-    const fetchResponse = await fetch(scraperUrl);
-    
-    if (!fetchResponse.ok) {
-      const errorText = await fetchResponse.text();
-      console.error(`Scraper API Error (${fetchResponse.status}): ${errorText}`);
+    if (!asyncJobResponse.ok) {
+      const errorText = await asyncJobResponse.text();
+      console.error(`Scraper API Error (${asyncJobResponse.status}): ${errorText}`);
       
       // Update the stock_monitors table with error
       if (id) {
@@ -64,7 +72,7 @@ Deno.serve(async (req) => {
           .update({
             status: 'error',
             last_checked: new Date().toISOString(),
-            error_message: `Scraper API returned status ${fetchResponse.status}: ${errorText.substring(0, 500)}`,
+            error_message: `Failed to submit async job: ${errorText.substring(0, 500)}`,
             html_snapshot: `Error: ${errorText.substring(0, 1000)}`
           })
           .eq('id', id);
@@ -74,28 +82,103 @@ Deno.serve(async (req) => {
         JSON.stringify({ 
           success: false, 
           status: 'error',
-          error: `Scraper API error: ${fetchResponse.status}` 
+          error: `Scraper API error: ${asyncJobResponse.status}` 
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
       );
     }
     
-    const contentType = fetchResponse.headers.get('content-type') || '';
-    let htmlContent: string;
+    const jobData = await asyncJobResponse.json();
+    console.log(`Async job submitted successfully: ${JSON.stringify(jobData, null, 2)}`);
+    
+    // Poll for job completion (with timeout)
+    let jobResult = null;
+    let attempts = 0;
+    const maxAttempts = 10; // Max polling attempts
+    
+    // Update the monitor to "checking" status
+    if (id) {
+      await supabaseAdmin
+        .from('stock_monitors')
+        .update({
+          status: 'checking',
+          last_checked: new Date().toISOString(),
+          error_message: null,
+        })
+        .eq('id', id);
+    }
+    
+    // Poll for result with exponential backoff
+    while (attempts < maxAttempts) {
+      console.log(`Polling job status, attempt ${attempts + 1}/${maxAttempts}`);
+      attempts++;
+      
+      // Wait before polling (exponential backoff)
+      const waitTime = Math.min(2000 * Math.pow(1.5, attempts), 10000); // Cap at 10 seconds
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+      
+      const statusResponse = await fetch(jobData.statusUrl);
+      if (!statusResponse.ok) {
+        console.error(`Error checking job status: ${statusResponse.status}`);
+        continue;
+      }
+      
+      const statusData = await statusResponse.json();
+      console.log(`Job status: ${statusData.status}`);
+      
+      if (statusData.status === 'finished') {
+        jobResult = statusData;
+        break;
+      }
+      
+      if (statusData.status === 'failed') {
+        console.error(`Job failed: ${JSON.stringify(statusData)}`);
+        break;
+      }
+    }
+    
+    if (!jobResult) {
+      console.error('Job timed out or failed');
+      
+      // Update the stock_monitors table with timeout error
+      if (id) {
+        await supabaseAdmin
+          .from('stock_monitors')
+          .update({
+            status: 'error',
+            last_checked: new Date().toISOString(),
+            error_message: 'Scraper job timed out or failed',
+            html_snapshot: 'Error: Scraper job timed out or failed'
+          })
+          .eq('id', id);
+      }
+      
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          status: 'error',
+          error: 'Scraper job timed out or failed' 
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      );
+    }
+    
+    // Process the result
+    let htmlContent = '';
     let status: 'in-stock' | 'out-of-stock' | 'unknown' | 'error' = 'unknown';
     let errorMessage: string | null = null;
     
-    if (contentType.includes('text/html') || contentType.includes('application/xhtml+xml')) {
-      htmlContent = await fetchResponse.text();
+    if (jobResult.response && jobResult.response.body) {
+      htmlContent = jobResult.response.body;
       console.log(`Received HTML content (length: ${htmlContent.length})`);
       
       // Check stock status using the HTML content
       status = checkStockStatus(htmlContent, targetText);
       console.log(`Determined stock status: ${status}`);
     } else {
-      htmlContent = `Non-HTML content: ${contentType}`;
+      htmlContent = `Failed to get content: ${JSON.stringify(jobResult)}`;
       status = 'error';
-      errorMessage = `Unexpected content type: ${contentType}`;
+      errorMessage = 'Failed to get page content';
       console.error(errorMessage);
     }
 
