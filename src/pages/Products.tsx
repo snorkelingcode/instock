@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -153,7 +152,7 @@ const ProductsPage = () => {
         
         <h1 className="text-2xl font-bold mb-2">TCG Products</h1>
         <p className="text-gray-700 mb-6">
-          Find all TCG products with real-time stock information from major retailers. We track booster boxes, elite trainer boxes, special collections, and more.
+          Find all TCG products in stock. We track booster boxes, elite trainer boxes, special collections, and more.
         </p>
         
         {hasFeaturedProducts && (
@@ -165,7 +164,7 @@ const ProductsPage = () => {
         
         <h2 className="text-xl font-semibold mb-4 mt-12">All Products</h2>
         <p className="text-gray-700 mb-6">
-          Below are all TCG products currently tracked. Products shown as in-stock have been verified within the last 15 minutes.
+          View all available TCG products.
         </p>
         
         <CardGrid />
