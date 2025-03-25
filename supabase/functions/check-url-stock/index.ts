@@ -24,14 +24,23 @@ const supabaseAdmin = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 );
 
-// Scraper API key
-const SCRAPER_API_KEY = '2914c1d8b7396dc054cf2a5a72612576';
+// Get Scraper API key from environment variable
+const SCRAPER_API_KEY = Deno.env.get('SCRAPER_API_KEY') || '';
 
 Deno.serve(async (req) => {
   try {
     // Handle CORS
     const corsResponse = handleCors(req);
     if (corsResponse) return corsResponse;
+
+    // Validate Scraper API key
+    if (!SCRAPER_API_KEY) {
+      console.error('SCRAPER_API_KEY environment variable not set');
+      return new Response(
+        JSON.stringify({ success: false, error: 'API key configuration error' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      );
+    }
 
     // Get request body
     const { id, url, targetText } = await req.json();
@@ -44,6 +53,10 @@ Deno.serve(async (req) => {
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       );
     }
+
+    // Log the API key being used (only the last 4 characters for security)
+    const keyLastFour = SCRAPER_API_KEY.slice(-4);
+    console.log(`Using Scraper API key ending with: ${keyLastFour}`);
 
     // Submit async job to Scraper API
     console.log(`Submitting async job to Scraper API for URL: ${url}`);
