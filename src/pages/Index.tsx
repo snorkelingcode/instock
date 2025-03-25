@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { format, parseISO } from "date-fns";
 import { useNavigate } from "react-router-dom";
@@ -5,6 +6,7 @@ import { Shell } from "@/components/layout/Shell";
 import WelcomeCard from "@/components/home/WelcomeCard";
 import HowItWorksCard from "@/components/home/HowItWorksCard";
 import NewsPreview from "@/components/news/NewsPreview";
+import FeaturedNews from "@/components/news/FeaturedNews";
 import { useMetaTags } from "@/hooks/use-meta-tags";
 import { supabase } from "@/integrations/supabase/client";
 import { Article } from "@/types/article";
@@ -43,6 +45,7 @@ const Index = () => {
 
   const navigate = useNavigate();
   const [articles, setArticles] = useState<Article[]>([]);
+  const [featuredArticles, setFeaturedArticles] = useState<Article[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(0);
@@ -73,7 +76,28 @@ const Index = () => {
     }
   };
 
-  // Fetch articles with pagination
+  // Fetch featured articles once at component mount
+  useEffect(() => {
+    const fetchFeaturedArticles = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('articles')
+          .select('*')
+          .eq('published', true)
+          .eq('featured', true)
+          .order('published_at', { ascending: false });
+        
+        if (error) throw error;
+        setFeaturedArticles(data as Article[]);
+      } catch (error: any) {
+        console.error("Error fetching featured articles:", error);
+      }
+    };
+    
+    fetchFeaturedArticles();
+  }, []);
+
+  // Fetch non-featured articles with pagination
   useEffect(() => {
     fetchArticles();
   }, [page]);
@@ -90,7 +114,8 @@ const Index = () => {
         .from('articles')
         .select('*')
         .eq('published', true)
-        .order('updated_at', { ascending: false })
+        .eq('featured', false)
+        .order('published_at', { ascending: false })
         .range(from, to);
       
       if (error) throw error;
@@ -122,14 +147,56 @@ const Index = () => {
         <section className="mt-12 mb-16">
           <h2 className="text-3xl font-bold mb-6">Latest News</h2>
           
+          {/* Featured Articles */}
+          {featuredArticles.length > 0 && (
+            <div className="mb-10">
+              <h3 className="text-xl font-semibold mb-4">Featured Stories</h3>
+              <div className="grid grid-cols-1 gap-6 mb-8">
+                {featuredArticles.map((article) => (
+                  <FeaturedNews
+                    key={article.id}
+                    id={article.id}
+                    title={article.title}
+                    date={formatDate(article.published_at)}
+                    category={article.category}
+                    excerpt={article.excerpt}
+                    image={article.featured_image}
+                    video={article.featured_video}
+                    mediaType={article.media_type}
+                    onClick={() => handleArticleClick(article.id)}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+          
           {/* Regular Articles Grid */}
-          {articles.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {articles.map((article, index) => {
-                if (articles.length === index + 1) {
-                  return (
-                    <div ref={lastArticleRef} key={article.id}>
+          {articles.length > 0 && (
+            <>
+              {featuredArticles.length > 0 && <h3 className="text-xl font-semibold mb-4">More Stories</h3>}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {articles.map((article, index) => {
+                  if (articles.length === index + 1) {
+                    return (
+                      <div ref={lastArticleRef} key={article.id}>
+                        <NewsPreview
+                          id={article.id}
+                          title={article.title}
+                          date={formatDate(article.published_at)}
+                          category={article.category}
+                          excerpt={article.excerpt}
+                          featured={article.featured}
+                          image={article.featured_image}
+                          video={article.featured_video}
+                          mediaType={article.media_type}
+                          onClick={() => handleArticleClick(article.id)}
+                        />
+                      </div>
+                    );
+                  } else {
+                    return (
                       <NewsPreview
+                        key={article.id}
                         id={article.id}
                         title={article.title}
                         date={formatDate(article.published_at)}
@@ -141,28 +208,14 @@ const Index = () => {
                         mediaType={article.media_type}
                         onClick={() => handleArticleClick(article.id)}
                       />
-                    </div>
-                  );
-                } else {
-                  return (
-                    <NewsPreview
-                      key={article.id}
-                      id={article.id}
-                      title={article.title}
-                      date={formatDate(article.published_at)}
-                      category={article.category}
-                      excerpt={article.excerpt}
-                      featured={article.featured}
-                      image={article.featured_image}
-                      video={article.featured_video}
-                      mediaType={article.media_type}
-                      onClick={() => handleArticleClick(article.id)}
-                    />
-                  );
-                }
-              })}
-            </div>
-          ) : (
+                    );
+                  }
+                })}
+              </div>
+            </>
+          )}
+          
+          {articles.length === 0 && featuredArticles.length === 0 && (
             <div className="flex justify-center py-6">
               <p className="text-gray-500">No articles found.</p>
             </div>
