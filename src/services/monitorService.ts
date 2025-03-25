@@ -7,7 +7,7 @@ export interface MonitoringItem {
   name: string;
   url: string;
   target_text?: string;
-  status: "in-stock" | "out-of-stock" | "unknown" | "error";
+  status: "in-stock" | "out-of-stock" | "unknown" | "error" | "checking" | "pending";
   last_checked?: string | null;
   is_active: boolean;
   error_message?: string;
@@ -51,9 +51,13 @@ export const fetchMonitors = async (): Promise<MonitoringItem[]> => {
 };
 
 // Helper function to ensure valid status values
-const ensureValidStatus = (status: string): "in-stock" | "out-of-stock" | "unknown" | "error" => {
-  const validStatuses = ["in-stock", "out-of-stock", "unknown", "error"];
-  return validStatuses.includes(status) ? status as "in-stock" | "out-of-stock" | "unknown" | "error" : "unknown";
+const ensureValidStatus = (status: string): MonitoringItem["status"] => {
+  const validStatuses: Array<MonitoringItem["status"]> = [
+    "in-stock", "out-of-stock", "unknown", "error", "checking", "pending"
+  ];
+  return validStatuses.includes(status as MonitoringItem["status"]) 
+    ? status as MonitoringItem["status"]
+    : "unknown";
 };
 
 // Function to add a new monitor
@@ -164,7 +168,7 @@ export const updateCheckFrequency = async (
   }
 };
 
-// Function to trigger a stock check
+// Function to trigger a stock check using the Bright Data Target API
 export const triggerCheck = async (id: string): Promise<boolean> => {
   try {
     // Prevent duplicate checks
@@ -175,7 +179,6 @@ export const triggerCheck = async (id: string): Promise<boolean> => {
 
     console.log(`Starting check for monitor ID: ${id}`);
     checkInProgress[id] = true;
-    console.log(`Set checkInProgress[${id}] = true`);
 
     // Get the monitor to check
     const { data: monitorData, error: fetchError } = await supabase
@@ -198,20 +201,20 @@ export const triggerCheck = async (id: string): Promise<boolean> => {
 
     console.log(`Triggering check for monitor:`, monitor);
 
-    // Call the edge function to check the URL
+    // Call the edge function to check the URL using Bright Data Target API
     console.log(`Calling edge function for monitor ${id} with URL: ${monitor.url}`);
-    const { data, error } = await supabase.functions.invoke("check-url-stock", {
+    const { data, error } = await supabase.functions.invoke("bright-data-target-api", {
       body: {
         id: monitor.id,
         url: monitor.url,
-        targetText: monitor.target_text,
+        monitorName: monitor.name,
       },
     });
 
     console.log(`Edge function response:`, data);
 
     if (error) {
-      console.error("Error calling check-url-stock function:", error);
+      console.error("Error calling bright-data-target-api function:", error);
       
       // Update monitor with error status
       await supabase
@@ -219,7 +222,7 @@ export const triggerCheck = async (id: string): Promise<boolean> => {
         .update({
           status: "error",
           last_checked: new Date().toISOString(),
-          error_message: `Error calling stock check function: ${error.message}`,
+          error_message: `Error calling Target API check function: ${error.message}`,
           consecutive_errors: (monitor.consecutive_errors || 0) + 1,
         })
         .eq("id", id);
@@ -228,9 +231,9 @@ export const triggerCheck = async (id: string): Promise<boolean> => {
       return false;
     }
 
-    // The function handles updating the database directly
-    console.log(`Updated monitor data:`, data);
-    
+    // The API call initiated data collection but may take time to complete
+    // We'll rely on the background task in the edge function to update status
+
     // Get the latest monitor data to schedule next check
     const { data: updatedMonitorData } = await supabase
       .from("stock_monitors")
@@ -249,7 +252,7 @@ export const triggerCheck = async (id: string): Promise<boolean> => {
     }
     
     delete checkInProgress[id];
-    console.log(`Cleared checkInProgress for ${id} after successful check`);
+    console.log(`Cleared checkInProgress for ${id} after successful check initiation`);
     return true;
   } catch (error) {
     console.error("Error in triggerCheck:", error);
@@ -281,6 +284,10 @@ const scheduleNextCheck = (monitor: MonitoringItem) => {
   } else if (monitor.status === "out-of-stock") {
     // Check more frequently if out of stock (but respect the minimum setting)
     adjustedFrequency = Math.min(baseFrequency, 15);
+  } else if (monitor.status === "pending" || monitor.status === "checking") {
+    // Don't schedule next check yet, wait for current check to complete
+    console.log(`Monitor ${monitor.name} is ${monitor.status}, waiting for completion`);
+    return;
   }
   
   // Calculate next check time in milliseconds
@@ -298,7 +305,8 @@ const checkPendingMonitors = async () => {
   const { data: activeMonitorsData, error } = await supabase
     .from("stock_monitors")
     .select("*")
-    .eq("is_active", true);
+    .eq("is_active", true)
+    .not("status", "in", "('checking','pending')"); // Don't check monitors that are already being checked
     
   if (error || !activeMonitorsData) {
     console.error("Error fetching active monitors:", error);
@@ -313,7 +321,9 @@ const checkPendingMonitors = async () => {
   
   // Schedule any monitors that don't have a next check time
   activeMonitors.forEach((monitor: MonitoringItem) => {
-    if (!nextCheckTimes[monitor.id]) {
+    if (!nextCheckTimes[monitor.id] && 
+        monitor.status !== "checking" && 
+        monitor.status !== "pending") {
       scheduleNextCheck(monitor);
     }
   });
@@ -324,7 +334,9 @@ const checkPendingMonitors = async () => {
     
     if (nextCheck && nextCheck <= now) {
       // Only check if not already in progress
-      if (!checkInProgress[monitor.id]) {
+      if (!checkInProgress[monitor.id] && 
+          monitor.status !== "checking" && 
+          monitor.status !== "pending") {
         console.log(`Auto-checking monitor: ${monitor.name} (ID: ${monitor.id})`);
         await triggerCheck(monitor.id);
       }
@@ -387,10 +399,12 @@ export const setupMonitorRealtime = (onUpdate: (item: MonitoringItem) => void): 
         onUpdate(updatedItem);
         
         // Re-schedule if active and frequency has changed
-        if (updatedItem.is_active) {
+        if (updatedItem.is_active && 
+            updatedItem.status !== "checking" &&
+            updatedItem.status !== "pending") {
           scheduleNextCheck(updatedItem);
         } else {
-          // Remove from scheduling if not active
+          // Remove from scheduling if not active or in progress
           delete nextCheckTimes[updatedItem.id];
         }
       }

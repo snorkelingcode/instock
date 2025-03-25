@@ -1,10 +1,11 @@
+
 import React, { useState } from "react";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { 
   Eye, EyeOff, Trash2, RefreshCw, ExternalLink, AlertCircle, Clock, 
-  CheckCircle2, XCircle, Info, Bell, BellOff, Settings, History
+  CheckCircle2, XCircle, Info, Bell, BellOff, Settings, History, Loader2
 } from "lucide-react";
 import { 
   Tooltip,
@@ -26,7 +27,7 @@ export interface MonitoringItemProps {
   url: string;
   name: string;
   last_checked?: string | null;
-  status: "in-stock" | "out-of-stock" | "unknown" | "error";
+  status: "in-stock" | "out-of-stock" | "unknown" | "error" | "checking" | "pending";
   target_text?: string;
   is_active: boolean;
   error_message?: string;
@@ -78,6 +79,20 @@ const MonitoringItem: React.FC<MonitoringItemProps> = ({
           <Badge className="bg-red-500 flex items-center gap-1">
             <XCircle size={12} />
             Out of Stock
+          </Badge>
+        );
+      case "checking":
+        return (
+          <Badge variant="outline" className="bg-blue-100 text-blue-700 flex items-center gap-1">
+            <Loader2 size={12} className="animate-spin" />
+            Checking...
+          </Badge>
+        );
+      case "pending":
+        return (
+          <Badge variant="outline" className="bg-amber-100 text-amber-700 flex items-center gap-1">
+            <Clock size={12} />
+            Pending Results
           </Badge>
         );
       case "error":
@@ -136,7 +151,7 @@ const MonitoringItem: React.FC<MonitoringItemProps> = ({
           </TooltipTrigger>
           <TooltipContent>
             <p>{exactTime}</p>
-            {is_active && (
+            {is_active && status !== "checking" && status !== "pending" && (
               <p className="text-xs mt-1">
                 Next check: approximately {getNextCheckTime()}
               </p>
@@ -198,6 +213,7 @@ const MonitoringItem: React.FC<MonitoringItemProps> = ({
 
   const getNextCheckTime = () => {
     if (!is_active) return "paused";
+    if (status === "checking" || status === "pending") return "in progress";
     
     let adjustedFrequency = frequency;
     
@@ -226,6 +242,7 @@ const MonitoringItem: React.FC<MonitoringItemProps> = ({
         return `${errorObj.message || errorObj.error || JSON.stringify(errorObj)}`;
       }
     } catch (e) {
+      // Not JSON
     }
 
     if (messageToShow.length > 150) {
@@ -250,6 +267,10 @@ const MonitoringItem: React.FC<MonitoringItemProps> = ({
     switch (status) {
       case "in-stock":
         return "border-green-500 border-2";
+      case "checking":
+        return "border-blue-300 border";
+      case "pending":
+        return "border-amber-300 border";
       case "error":
         return "border-red-300";
       case "out-of-stock":
@@ -315,13 +336,13 @@ const MonitoringItem: React.FC<MonitoringItemProps> = ({
           {status !== "error" && stock_status_reason && (
             <div className="text-xs text-gray-600 mt-1 flex items-start gap-1">
               <Info size={12} className="mt-0.5 flex-shrink-0" />
-              <div>{stock_status_reason}</div>
+              <div>{formatErrorMessage()}</div>
             </div>
           )}
           
           <div className="text-xs text-blue-600 bg-blue-50 p-2 rounded flex items-start gap-1">
             <Info size={12} className="mt-0.5 flex-shrink-0" />
-            <div>Using Scraper API to bypass bot detection and access accurate stock information</div>
+            <div>Using Bright Data Target API for cost-effective stock monitoring at $0.0015 per check</div>
           </div>
           
           <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-900 rounded-md">
@@ -400,10 +421,10 @@ const MonitoringItem: React.FC<MonitoringItemProps> = ({
             variant="outline"
             size="sm"
             onClick={() => onRefresh?.(id)}
-            disabled={isRefreshing}
-            className={isRefreshing ? "opacity-50 cursor-not-allowed" : ""}
+            disabled={isRefreshing || status === "checking" || status === "pending"}
+            className={(isRefreshing || status === "checking" || status === "pending") ? "opacity-50 cursor-not-allowed" : ""}
           >
-            <RefreshCw size={16} className={isRefreshing ? "animate-spin" : ""} />
+            <RefreshCw size={16} className={(isRefreshing || status === "checking") ? "animate-spin" : ""} />
           </Button>
           
           <Button
