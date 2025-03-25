@@ -24,8 +24,10 @@ const supabaseAdmin = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 );
 
-// Get Scraper API key from environment variable
-const SCRAPER_API_KEY = Deno.env.get('SCRAPER_API_KEY') || '';
+// Get Bright Data credentials from environment variables
+const BRIGHT_DATA_USERNAME = Deno.env.get('BRIGHT_DATA_USERNAME') || '';
+const BRIGHT_DATA_PASSWORD = Deno.env.get('BRIGHT_DATA_PASSWORD') || '';
+const BRIGHT_DATA_ZONE = Deno.env.get('BRIGHT_DATA_ZONE') || 'unlocker';
 
 Deno.serve(async (req) => {
   try {
@@ -33,11 +35,11 @@ Deno.serve(async (req) => {
     const corsResponse = handleCors(req);
     if (corsResponse) return corsResponse;
 
-    // Validate Scraper API key
-    if (!SCRAPER_API_KEY) {
-      console.error('SCRAPER_API_KEY environment variable not set');
+    // Validate Bright Data credentials
+    if (!BRIGHT_DATA_USERNAME || !BRIGHT_DATA_PASSWORD) {
+      console.error('BRIGHT_DATA credentials not set in environment variables');
       return new Response(
-        JSON.stringify({ success: false, error: 'API key configuration error' }),
+        JSON.stringify({ success: false, error: 'API credentials configuration error' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
       );
     }
@@ -54,62 +56,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Log the API key being used (only the last 4 characters for security)
-    const keyLastFour = SCRAPER_API_KEY.slice(-4);
-    console.log(`Using Scraper API key ending with: ${keyLastFour}`);
-
-    // Submit async job to Scraper API
-    console.log(`Submitting async job to Scraper API for URL: ${url}`);
-    const asyncJobResponse = await fetch('https://async.scraperapi.com/jobs', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        apiKey: SCRAPER_API_KEY,
-        url: url,
-        apiParams: {
-          render: true,
-        }
-      })
-    });
-    
-    if (!asyncJobResponse.ok) {
-      const errorText = await asyncJobResponse.text();
-      console.error(`Scraper API Error (${asyncJobResponse.status}): ${errorText}`);
-      
-      // Update the stock_monitors table with error
-      if (id) {
-        await supabaseAdmin
-          .from('stock_monitors')
-          .update({
-            status: 'error',
-            last_checked: new Date().toISOString(),
-            error_message: `Failed to submit async job: ${errorText.substring(0, 500)}`,
-            html_snapshot: `Error: ${errorText.substring(0, 1000)}`
-          })
-          .eq('id', id);
-      }
-      
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          status: 'error',
-          error: `Scraper API error: ${asyncJobResponse.status}` 
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-      );
-    }
-    
-    const jobData = await asyncJobResponse.json();
-    console.log(`Async job submitted successfully: ${JSON.stringify(jobData, null, 2)}`);
-    
-    // Poll for job completion (with timeout)
-    let jobResult = null;
-    let attempts = 0;
-    const maxAttempts = 10; // Max polling attempts
-    
-    // Update the monitor to "checking" status
+    // Update the stock_monitors table to indicate check in progress
     if (id) {
       await supabaseAdmin
         .from('stock_monitors')
@@ -120,48 +67,50 @@ Deno.serve(async (req) => {
         })
         .eq('id', id);
     }
+
+    // Format auth for Bright Data
+    const auth = btoa(`${BRIGHT_DATA_USERNAME}:${BRIGHT_DATA_PASSWORD}`);
     
-    // Poll for result with exponential backoff
-    while (attempts < maxAttempts) {
-      console.log(`Polling job status, attempt ${attempts + 1}/${maxAttempts}`);
-      attempts++;
-      
-      // Wait before polling (exponential backoff)
-      const waitTime = Math.min(2000 * Math.pow(1.5, attempts), 10000); // Cap at 10 seconds
-      await new Promise(resolve => setTimeout(resolve, waitTime));
-      
-      const statusResponse = await fetch(jobData.statusUrl);
-      if (!statusResponse.ok) {
-        console.error(`Error checking job status: ${statusResponse.status}`);
-        continue;
-      }
-      
-      const statusData = await statusResponse.json();
-      console.log(`Job status: ${statusData.status}`);
-      
-      if (statusData.status === 'finished') {
-        jobResult = statusData;
-        break;
-      }
-      
-      if (statusData.status === 'failed') {
-        console.error(`Job failed: ${JSON.stringify(statusData)}`);
-        break;
-      }
-    }
+    // Build proxy URL for Bright Data Web Unlocker
+    const proxyUrl = `https://brd.superproxy.io:22225`;
     
-    if (!jobResult) {
-      console.error('Job timed out or failed');
+    // Set the proxy agent options for fetch
+    const proxyOptions = {
+      method: 'GET',
+      headers: {
+        'Authorization': `Basic ${auth}`,
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache',
+      },
+    };
+
+    // Create the special Bright Data URL with desired parameters
+    const brightDataUrl = new URL(proxyUrl);
+    brightDataUrl.searchParams.append('url', url);
+    brightDataUrl.searchParams.append('zone', BRIGHT_DATA_ZONE);
+    brightDataUrl.searchParams.append('render', 'true');
+    brightDataUrl.searchParams.append('wait_for', '2000');
+
+    console.log(`Fetching URL through Bright Data: ${url}`);
+    
+    const response = await fetch(brightDataUrl.toString(), proxyOptions);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Bright Data Error (${response.status}): ${errorText}`);
       
-      // Update the stock_monitors table with timeout error
+      // Update the stock_monitors table with error
       if (id) {
         await supabaseAdmin
           .from('stock_monitors')
           .update({
             status: 'error',
             last_checked: new Date().toISOString(),
-            error_message: 'Scraper job timed out or failed',
-            html_snapshot: 'Error: Scraper job timed out or failed'
+            error_message: `Failed to fetch: ${errorText.substring(0, 500)}`,
+            html_snapshot: `Error: ${errorText.substring(0, 1000)}`
           })
           .eq('id', id);
       }
@@ -170,21 +119,22 @@ Deno.serve(async (req) => {
         JSON.stringify({ 
           success: false, 
           status: 'error',
-          error: 'Scraper job timed out or failed' 
+          error: `Fetch error: ${response.status}` 
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
       );
     }
     
+    // Get HTML content
+    const htmlContent = await response.text();
+    console.log(`Received HTML content (length: ${htmlContent.length})`);
+    
     // Process the result
-    let htmlContent = '';
     let status: 'in-stock' | 'out-of-stock' | 'unknown' | 'error' = 'unknown';
     let errorMessage: string | null = null;
     let stockStatusReason: string | null = null;
     
-    if (jobResult.response && jobResult.response.body) {
-      htmlContent = jobResult.response.body;
-      console.log(`Received HTML content (length: ${htmlContent.length})`);
+    if (htmlContent) {
       console.log(`Analyzing HTML content for stock status`);
       
       // Extract domain from URL for site-specific checks
@@ -197,7 +147,6 @@ Deno.serve(async (req) => {
       stockStatusReason = result.reason;
       console.log(`Determined stock status: ${status}, reason: ${stockStatusReason}`);
     } else {
-      htmlContent = `Failed to get content: ${JSON.stringify(jobResult)}`;
       status = 'error';
       errorMessage = 'Failed to get page content';
       console.error(errorMessage);
@@ -254,9 +203,10 @@ interface StockCheckResult {
 function checkStockStatus(html: string, domain: string, targetText?: string): StockCheckResult {
   try {
     const lowerHtml = html.toLowerCase();
-    let status: 'in-stock' | 'out-of-stock' | 'unknown' | 'error' = 'unknown';
-    let reason: string | null = null;
-
+    
+    // Special debug logging for development
+    console.log(`Checking stock status for domain: ${domain}`);
+    
     // For Target.com, we need specific handling
     if (domain.includes('target.com')) {
       return checkTargetStock(html, lowerHtml, targetText);
@@ -265,9 +215,10 @@ function checkStockStatus(html: string, domain: string, targetText?: string): St
     // If target text is provided and found, use it as the primary indicator
     if (targetText && lowerHtml.includes(targetText.toLowerCase())) {
       console.log(`Found target text: "${targetText}"`);
-      reason = `Custom target text: "${targetText}" was found`;
-      status = 'in-stock';
-      return { status, reason };
+      return { 
+        status: 'in-stock', 
+        reason: `Custom target text: "${targetText}" was found` 
+      };
     }
     
     // Generic checks for all other sites
@@ -275,46 +226,64 @@ function checkStockStatus(html: string, domain: string, targetText?: string): St
     // Check for common out-of-stock indicators
     const outOfStockIndicators = [
       'out of stock',
+      'out-of-stock',
       'sold out',
       'currently unavailable',
       'no longer available',
-      'out-of-stock',
       'not available',
       'cannot be purchased',
       'back in stock soon',
-      'coming soon'
+      'coming soon',
+      'temporarily out of stock',
+      'temporarily unavailable'
     ];
     
     for (const indicator of outOfStockIndicators) {
       if (lowerHtml.includes(indicator)) {
-        status = 'out-of-stock';
-        reason = `Found out-of-stock indicator: "${indicator}"`;
-        return { status, reason };
+        return { 
+          status: 'out-of-stock', 
+          reason: `Found out-of-stock indicator: "${indicator}"` 
+        };
       }
     }
     
     // Check for common in-stock indicators
     const inStockIndicators = [
       'in stock',
+      'in-stock',
       'add to cart',
+      'add-to-cart',
       'buy now',
       'add to basket',
-      'add-to-cart',
       'addtocart',
       'available for purchase',
-      'available now'
+      'available now',
+      'get it by'
     ];
     
     for (const indicator of inStockIndicators) {
       if (lowerHtml.includes(indicator)) {
-        status = 'in-stock';
-        reason = `Found in-stock indicator: "${indicator}"`;
-        return { status, reason };
+        return { 
+          status: 'in-stock', 
+          reason: `Found in-stock indicator: "${indicator}"` 
+        };
       }
     }
     
+    // Check for price or quantity selectors which typically indicate in-stock
+    if ((lowerHtml.includes('price') || lowerHtml.includes('$')) && 
+        (lowerHtml.includes('quantity') || lowerHtml.includes('qty'))) {
+      return {
+        status: 'in-stock',
+        reason: 'Found price and quantity selectors'
+      };
+    }
+    
     // If we can't determine, return unknown
-    return { status: 'unknown', reason: 'No clear stock indicators found' };
+    return { 
+      status: 'unknown', 
+      reason: 'No clear stock indicators found' 
+    };
   } catch (error) {
     console.error("Error checking stock status:", error);
     return { 
@@ -324,161 +293,211 @@ function checkStockStatus(html: string, domain: string, targetText?: string): St
   }
 }
 
-// Specific function to check Target.com stock status
+// Specific function to check Target.com stock status with enhanced detection
 function checkTargetStock(originalHtml: string, lowerHtml: string, targetText?: string): StockCheckResult {
-  console.log("Running improved Target.com specific stock check...");
+  console.log("Running Target.com specific stock check...");
   
-  // Debug: Log all possible stock indicators
-  const debugKeywords = ["qty", "quantity", "in stock", "out of stock", "add to cart", "shipping", "pickup"];
-  debugKeywords.forEach(keyword => {
-    if (lowerHtml.includes(keyword)) {
-      console.log(`DEBUG: Found keyword "${keyword}" in the HTML`);
-    } else {
-      console.log(`DEBUG: Keyword "${keyword}" NOT found in the HTML`);
+  // Log key HTML sections for debugging
+  const extractAndLogSection = (startMarker: string, endMarker: string, label: string) => {
+    try {
+      if (lowerHtml.includes(startMarker)) {
+        const startIdx = lowerHtml.indexOf(startMarker);
+        const endIdx = lowerHtml.indexOf(endMarker, startIdx);
+        if (startIdx >= 0 && endIdx > startIdx) {
+          const section = lowerHtml.substring(startIdx, endIdx + endMarker.length);
+          console.log(`Found ${label} section (${section.length} chars)`);
+          return true;
+        }
+      }
+      return false;
+    } catch (e) {
+      console.log(`Error extracting ${label} section:`, e);
+      return false;
     }
-  });
+  };
   
-  // Check for explicit "in stock" text which is the strongest indicator
-  if (lowerHtml.includes('in stock at') || 
-      lowerHtml.includes('in stock online') || 
-      lowerHtml.includes('in store stock')) {
-    return { 
-      status: 'in-stock', 
-      reason: 'Target.com: Found explicit "in stock" text' 
-    };
+  // Log key sections for better debugging
+  extractAndLogSection('<button', '</button>', 'button');
+  extractAndLogSection('add to cart', '</button>', 'add to cart button');
+  extractAndLogSection('class="h-full pb-', '</div>', 'shipping section');
+  extractAndLogSection('shipping', '</div>', 'shipping text');
+  
+  // First check if the original HTML contains JSON-LD data
+  const jsonLdRegex = /<script type="application\/ld\+json">([\s\S]*?)<\/script>/gi;
+  const jsonMatches = [...originalHtml.matchAll(jsonLdRegex)];
+  
+  for (const match of jsonMatches) {
+    try {
+      const jsonData = JSON.parse(match[1]);
+      
+      // Check if it contains product information with stock status
+      if (jsonData && jsonData['@type'] === 'Product') {
+        console.log("Found Product JSON-LD data");
+        
+        if (jsonData.offers && jsonData.offers.availability) {
+          const availability = jsonData.offers.availability;
+          console.log(`Found availability in JSON-LD: ${availability}`);
+          
+          if (availability.includes('InStock')) {
+            return { 
+              status: 'in-stock', 
+              reason: 'Target.com: Product JSON-LD indicates in stock' 
+            };
+          } else if (availability.includes('OutOfStock')) {
+            return { 
+              status: 'out-of-stock', 
+              reason: 'Target.com: Product JSON-LD indicates out of stock' 
+            };
+          }
+        }
+      }
+    } catch (e) {
+      console.log("Error parsing JSON-LD:", e);
+    }
   }
   
-  // Check for explicit "out of stock" text
-  if (lowerHtml.includes('out of stock online') || 
-      lowerHtml.includes('out of stock at') || 
-      lowerHtml.includes('sold out') || 
-      lowerHtml.includes('temporarily out of stock')) {
-    return { 
-      status: 'out-of-stock', 
-      reason: 'Target.com: Found explicit "out of stock" text' 
-    };
+  // Check for explicit "in stock" text in different variations
+  const inStockPhrases = [
+    'in stock at',
+    'in stock online',
+    'in store stock',
+    'get it by',
+    'get it as soon as',
+    'shipping',
+    'delivery',
+    'pick up at'
+  ];
+  
+  for (const phrase of inStockPhrases) {
+    if (lowerHtml.includes(phrase)) {
+      console.log(`Found in-stock phrase: "${phrase}"`);
+      
+      // Check if this phrase is accompanied by a negative term
+      const nearText = lowerHtml.substring(
+        Math.max(0, lowerHtml.indexOf(phrase) - 50),
+        Math.min(lowerHtml.length, lowerHtml.indexOf(phrase) + phrase.length + 50)
+      );
+      
+      if (!nearText.includes('not available') && 
+          !nearText.includes('unavailable') && 
+          !nearText.includes('out of stock')) {
+        return { 
+          status: 'in-stock', 
+          reason: `Target.com: Found "${phrase}" text` 
+        };
+      }
+    }
   }
   
-  // Check if "Add to cart" button is enabled
-  if (lowerHtml.includes('add to cart')) {
-    // Check if it's disabled - disabled buttons usually have specific classes or attributes
-    if ((lowerHtml.includes('disabled') && lowerHtml.includes('add to cart')) ||
-        lowerHtml.includes('btn disabled') ||
-        lowerHtml.includes('button disabled') ||
-        lowerHtml.includes('button-disabled') ||
-        lowerHtml.includes('class="disabled')) {
+  // Check for out-of-stock phrases
+  const outOfStockPhrases = [
+    'out of stock online',
+    'out of stock at',
+    'sold out',
+    'temporarily out of stock',
+    'not available',
+    'unavailable',
+    'shipping not available',
+    'pickup not available'
+  ];
+  
+  for (const phrase of outOfStockPhrases) {
+    if (lowerHtml.includes(phrase)) {
+      console.log(`Found out-of-stock phrase: "${phrase}"`);
       return { 
         status: 'out-of-stock', 
-        reason: 'Target.com: "Add to Cart" button appears to be disabled' 
+        reason: `Target.com: Found "${phrase}" text` 
       };
-    }
-    
-    // If we found "add to cart" and it doesn't appear to be disabled
-    // let's check for delivery options as additional confirmation
-    if (lowerHtml.includes('shipping') && 
-       (lowerHtml.includes('get it by') || lowerHtml.includes('arrives by'))) {
-      return { 
-        status: 'in-stock', 
-        reason: 'Target.com: "Add to Cart" button is enabled and shipping is available' 
-      };
-    }
-    
-    // If we have "add to cart" but no clear shipping indicators, still consider it in stock
-    return { 
-      status: 'in-stock', 
-      reason: 'Target.com: "Add to Cart" button appears to be enabled' 
-    };
-  }
-  
-  // Check for both "qty" and "quantity" more aggressively
-  // Let's try different case variations and surrounding text patterns
-  const qtyPatterns = ['qty', 'Qty', 'QTY', 'quantity', 'Quantity', 'QUANTITY'];
-  let foundQtyPattern = false;
-  let qtyText = '';
-  
-  for (const pattern of qtyPatterns) {
-    if (originalHtml.includes(pattern)) {
-      foundQtyPattern = true;
-      qtyText = pattern;
-      console.log(`Found quantity indicator: "${pattern}"`);
-      break;
     }
   }
   
-  if (foundQtyPattern) {
-    // If quantity selector exists, check if it's disabled
-    if (lowerHtml.includes('disabled') && 
-       (lowerHtml.includes(qtyText.toLowerCase()) || lowerHtml.includes('add to cart'))) {
+  // Look specifically for the add to cart button
+  const addToCartIndex = lowerHtml.indexOf('add to cart');
+  if (addToCartIndex !== -1) {
+    // Extract the button HTML
+    const buttonStart = lowerHtml.lastIndexOf('<button', addToCartIndex);
+    const buttonEnd = lowerHtml.indexOf('</button>', addToCartIndex) + 9;
+    
+    if (buttonStart !== -1 && buttonEnd !== -1) {
+      const buttonHtml = lowerHtml.substring(buttonStart, buttonEnd);
+      console.log(`Found add to cart button: ${buttonHtml.length} chars`);
+      
+      // Check if the button is disabled
+      if (buttonHtml.includes('disabled') || 
+          buttonHtml.includes('aria-disabled="true"') ||
+          buttonHtml.includes('btn-disabled')) {
+        return { 
+          status: 'out-of-stock', 
+          reason: 'Target.com: "Add to Cart" button is disabled' 
+        };
+      } else {
+        return { 
+          status: 'in-stock', 
+          reason: 'Target.com: "Add to Cart" button is enabled' 
+        };
+      }
+    }
+  }
+  
+  // Check for quantity selector
+  const quantitySelectors = [
+    'quantity',
+    'qty',
+    'data-test="spinbox"'
+  ];
+  
+  for (const selector of quantitySelectors) {
+    if (lowerHtml.includes(selector)) {
+      console.log(`Found quantity selector: "${selector}"`);
+      
+      // Get surrounding context
+      const selectorIndex = lowerHtml.indexOf(selector);
+      const surroundingText = lowerHtml.substring(
+        Math.max(0, selectorIndex - 100),
+        Math.min(lowerHtml.length, selectorIndex + 100)
+      );
+      
+      // Check if disabled
+      if (surroundingText.includes('disabled')) {
+        return { 
+          status: 'out-of-stock', 
+          reason: `Target.com: Quantity selector is disabled` 
+        };
+      } else {
+        return { 
+          status: 'in-stock', 
+          reason: `Target.com: Quantity selector is present and enabled` 
+        };
+      }
+    }
+  }
+  
+  // Check for shipping options section
+  if (lowerHtml.includes('shipping')) {
+    if (lowerHtml.includes('shipping not available')) {
       return { 
         status: 'out-of-stock', 
-        reason: `Target.com: "${qtyText}" selector appears to be disabled` 
-      };
-    }
-    
-    // If quantity selector exists and doesn't appear disabled, it's likely in stock
-    return { 
-      status: 'in-stock', 
-      reason: `Target.com: "${qtyText}" selector is present and appears to be enabled` 
-    };
-  }
-  
-  // Check for delivery/pickup options as independent indicators
-  if (lowerHtml.includes('shipping') || lowerHtml.includes('delivery')) {
-    // Check for specific shipping date information
-    if (lowerHtml.includes('get it by') || 
-        lowerHtml.includes('arrives by') || 
-        lowerHtml.includes('delivery as soon as')) {
-      return { 
-        status: 'in-stock', 
-        reason: 'Target.com: Product has shipping/delivery options with dates' 
-      };
-    }
-    
-    // Check for shipping not available message
-    if (lowerHtml.includes('shipping not available') || 
-        lowerHtml.includes('delivery not available')) {
-      return { 
-        status: 'out-of-stock', 
-        reason: 'Target.com: Shipping/delivery is not available' 
-      };
-    }
-  }
-  
-  // Check for store pickup options
-  if (lowerHtml.includes('pickup')) {
-    if (lowerHtml.includes('pickup not available') || 
-        lowerHtml.includes('not available for pickup')) {
-      return { 
-        status: 'out-of-stock', 
-        reason: 'Target.com: Store pickup is not available' 
+        reason: 'Target.com: Shipping is not available' 
       };
     }
     
     if (lowerHtml.includes('ready within') || 
-        lowerHtml.includes('pick up today') || 
-        lowerHtml.includes('pick up by')) {
+        lowerHtml.includes('arrives by') || 
+        lowerHtml.includes('get it by')) {
       return { 
         status: 'in-stock', 
-        reason: 'Target.com: Store pickup is available with timeframe' 
+        reason: 'Target.com: Shipping/Delivery date is available' 
       };
     }
   }
   
-  // Check for "only X left" or similar limited quantity indicators
-  const stockCountRegex = /only\s+(\d+)\s+left|(\d+)\s+items?\s+left/i;
-  const stockCountMatch = lowerHtml.match(stockCountRegex);
-  if (stockCountMatch) {
+  // Check for Target's specific "only X left" indicators
+  const limitedStockRegex = /only\s+(\d+)\s+left|(\d+)\s+items?\s+left/i;
+  const limitedStockMatch = lowerHtml.match(limitedStockRegex);
+  if (limitedStockMatch) {
     return { 
       status: 'in-stock', 
-      reason: `Target.com: Limited quantity available - "${stockCountMatch[0]}"` 
-    };
-  }
-  
-  // Check for "Check stores" which often indicates online out-of-stock
-  if (lowerHtml.includes('check stores') && !lowerHtml.includes('add to cart')) {
-    return {
-      status: 'out-of-stock',
-      reason: 'Target.com: "Check stores" indicator without "Add to cart" option'
+      reason: `Target.com: Limited quantity available - "${limitedStockMatch[0]}"` 
     };
   }
   
@@ -499,17 +518,37 @@ function checkTargetStock(originalHtml: string, lowerHtml: string, targetText?: 
     };
   }
   
-  // Look for common Target stock messages that might be easily missed
-  if (lowerHtml.includes('on its way') ||
-      lowerHtml.includes('ready within') ||
-      lowerHtml.includes('buy it now')) {
+  // Additional Target-specific checks for the product page HTML structure
+  if (lowerHtml.includes('fulfillment-fulfillment-shipping')) {
     return {
       status: 'in-stock',
-      reason: 'Target.com: Found positive availability message'
+      reason: 'Target.com: Shipping fulfillment options are displayed'
     };
   }
   
-  // If we can't determine with certainty
+  // Check for "check stores" without "add to cart" which likely indicates out of stock online
+  if (lowerHtml.includes('check stores') && !lowerHtml.includes('add to cart')) {
+    return {
+      status: 'out-of-stock',
+      reason: 'Target.com: "Check stores" indicator without "Add to cart" option'
+    };
+  }
+  
+  // If we can't determine with certainty, but the page loaded
+  if (lowerHtml.includes('target.com') && lowerHtml.length > 10000) {
+    // If the page is a product page but we couldn't find clear stock status
+    if (lowerHtml.includes('product details') || lowerHtml.includes('product features')) {
+      // Check for product price - if price is shown prominently it's often in stock
+      if (lowerHtml.includes('current price $')) {
+        return {
+          status: 'in-stock',
+          reason: 'Target.com: Product page shows current price'
+        };
+      }
+    }
+  }
+  
+  // If we've gone through all checks and can't determine
   return { 
     status: 'unknown', 
     reason: 'Target.com: Could not determine stock status from page content with confidence' 
