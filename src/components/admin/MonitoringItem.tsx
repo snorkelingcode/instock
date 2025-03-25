@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,6 +30,7 @@ export interface MonitoringItemProps {
   target_text?: string;
   is_active: boolean;
   error_message?: string;
+  stock_status_reason?: string;
   isRefreshing?: boolean;
   check_frequency?: number;
   last_status_change?: string | null;
@@ -51,6 +51,7 @@ const MonitoringItem: React.FC<MonitoringItemProps> = ({
   target_text,
   is_active,
   error_message,
+  stock_status_reason,
   isRefreshing = false,
   check_frequency = 30, // Default to 30 minutes
   last_status_change,
@@ -63,7 +64,6 @@ const MonitoringItem: React.FC<MonitoringItemProps> = ({
 }) => {
   const [frequency, setFrequency] = useState(check_frequency);
   
-  // Status badge colors
   const getStatusBadge = () => {
     switch (status) {
       case "in-stock":
@@ -147,7 +147,6 @@ const MonitoringItem: React.FC<MonitoringItemProps> = ({
     );
   };
 
-  // Format last seen in stock time with more prominence
   const formatLastSeen = () => {
     if (!last_seen_in_stock) {
       return (
@@ -162,7 +161,6 @@ const MonitoringItem: React.FC<MonitoringItemProps> = ({
     const timeAgo = formatDistanceToNow(date, { addSuffix: true });
     const exactTime = format(date, "MMM d, yyyy h:mm a");
     
-    // For in-stock items, show "Currently in stock" instead of last seen time
     if (status === "in-stock") {
       return (
         <TooltipProvider>
@@ -181,7 +179,6 @@ const MonitoringItem: React.FC<MonitoringItemProps> = ({
       );
     }
     
-    // For out-of-stock items, show last seen time with more emphasis
     return (
       <TooltipProvider>
         <Tooltip>
@@ -199,60 +196,56 @@ const MonitoringItem: React.FC<MonitoringItemProps> = ({
     );
   };
 
-  // Calculate next check time based on status and check frequency
   const getNextCheckTime = () => {
     if (!is_active) return "paused";
     
     let adjustedFrequency = frequency;
     
-    // Adjust based on status
     if (status === "in-stock") {
-      adjustedFrequency = Math.max(adjustedFrequency, 60); // At least 60 min
+      adjustedFrequency = Math.max(adjustedFrequency, 60);
     } else if (status === "error") {
       const backoffFactor = Math.min(Math.pow(2, consecutive_errors - 1), 8);
       adjustedFrequency = Math.min(adjustedFrequency * backoffFactor, 240);
     } else if (status === "out-of-stock") {
-      adjustedFrequency = Math.min(adjustedFrequency, 15); // More frequent
+      adjustedFrequency = Math.min(adjustedFrequency, 15);
     }
     
     return `${adjustedFrequency} minutes`;
   };
 
-  // Format error message for display
   const formatErrorMessage = () => {
-    if (!error_message) return null;
+    if (!error_message && !stock_status_reason) return null;
 
-    // Try to parse if it's a JSON string
+    const messageToShow = error_message || stock_status_reason;
+    if (!messageToShow) return null;
+
     let errorObj;
     try {
-      if (error_message.startsWith('{') && error_message.endsWith('}')) {
-        errorObj = JSON.parse(error_message);
+      if (messageToShow.startsWith('{') && messageToShow.endsWith('}')) {
+        errorObj = JSON.parse(messageToShow);
         return `${errorObj.message || errorObj.error || JSON.stringify(errorObj)}`;
       }
     } catch (e) {
-      // Not a valid JSON, use as is
     }
 
-    // Return the raw error message, truncated if too long
-    if (error_message.length > 150) {
+    if (messageToShow.length > 150) {
       return (
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <span className="cursor-help">{error_message.substring(0, 147)}...</span>
+              <span className="cursor-help">{messageToShow.substring(0, 147)}...</span>
             </TooltipTrigger>
             <TooltipContent className="max-w-[350px] p-4 whitespace-pre-wrap">
-              {error_message}
+              {messageToShow}
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
       );
     }
     
-    return error_message;
+    return messageToShow;
   };
 
-  // Get a CSS class based on status
   const getStatusClass = () => {
     switch (status) {
       case "in-stock":
@@ -266,14 +259,12 @@ const MonitoringItem: React.FC<MonitoringItemProps> = ({
     }
   };
 
-  // Handle saving the new check frequency
   const handleSaveFrequency = () => {
     if (onUpdateFrequency) {
       onUpdateFrequency(id, frequency);
     }
   };
-  
-  // Format frequency display
+
   const formatFrequency = (mins: number) => {
     if (mins < 60) {
       return `${mins} minutes`;
@@ -321,21 +312,18 @@ const MonitoringItem: React.FC<MonitoringItemProps> = ({
             </div>
           )}
           
-          {/* Show explanation of status for non-error states */}
-          {status !== "error" && error_message && !error_message.includes("Error") && (
+          {status !== "error" && stock_status_reason && (
             <div className="text-xs text-gray-600 mt-1 flex items-start gap-1">
               <Info size={12} className="mt-0.5 flex-shrink-0" />
-              <div>{formatErrorMessage()}</div>
+              <div>{stock_status_reason}</div>
             </div>
           )}
           
-          {/* Note about Scraper API */}
           <div className="text-xs text-blue-600 bg-blue-50 p-2 rounded flex items-start gap-1">
             <Info size={12} className="mt-0.5 flex-shrink-0" />
             <div>Using Scraper API to bypass bot detection and access accurate stock information</div>
           </div>
           
-          {/* Make the last seen status more prominent */}
           <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-900 rounded-md">
             <div className="flex flex-col gap-1">
               <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Status History</span>

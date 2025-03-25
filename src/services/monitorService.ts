@@ -13,6 +13,7 @@ export interface MonitoringItem {
   last_checked: string | null;
   is_active: boolean;
   error_message?: string;
+  stock_status_reason?: string; // Add new property
   check_frequency?: number; // Minutes between checks
   last_status_change?: string | null;
   last_seen_in_stock?: string | null;
@@ -30,6 +31,7 @@ const convertToMonitoringItem = (item: any): MonitoringItem => {
     last_checked: item.last_checked,
     is_active: item.is_active,
     error_message: item.error_message,
+    stock_status_reason: item.stock_status_reason,
     check_frequency: item.check_frequency || 30, // Default to 30 minutes
     last_status_change: item.last_status_change,
     last_seen_in_stock: item.last_seen_in_stock,
