@@ -39,11 +39,21 @@ export const fetchMonitors = async (): Promise<MonitoringItem[]> => {
       return [];
     }
 
-    return data as MonitoringItem[];
+    // Cast the data to ensure status is typed correctly
+    return (data as any[]).map(item => ({
+      ...item,
+      status: ensureValidStatus(item.status)
+    })) as MonitoringItem[];
   } catch (error) {
     console.error("Error in fetchMonitors:", error);
     return [];
   }
+};
+
+// Helper function to ensure valid status values
+const ensureValidStatus = (status: string): "in-stock" | "out-of-stock" | "unknown" | "error" => {
+  const validStatuses = ["in-stock", "out-of-stock", "unknown", "error"];
+  return validStatuses.includes(status) ? status as "in-stock" | "out-of-stock" | "unknown" | "error" : "unknown";
 };
 
 // Function to add a new monitor
@@ -72,10 +82,16 @@ export const addMonitor = async (
       return null;
     }
 
-    // Trigger an immediate check
-    triggerCheck(data.id);
+    // Cast to the correct type
+    const monitor = {
+      ...data,
+      status: ensureValidStatus(data.status)
+    } as MonitoringItem;
 
-    return data as MonitoringItem;
+    // Trigger an immediate check
+    triggerCheck(monitor.id);
+
+    return monitor;
   } catch (error) {
     console.error("Error in addMonitor:", error);
     return null;
@@ -162,17 +178,23 @@ export const triggerCheck = async (id: string): Promise<boolean> => {
     console.log(`Set checkInProgress[${id}] = true`);
 
     // Get the monitor to check
-    const { data: monitor, error: fetchError } = await supabase
+    const { data: monitorData, error: fetchError } = await supabase
       .from("stock_monitors")
       .select("*")
       .eq("id", id)
       .single();
 
-    if (fetchError || !monitor) {
+    if (fetchError || !monitorData) {
       console.error("Error fetching monitor:", fetchError);
       delete checkInProgress[id];
       return false;
     }
+
+    // Cast to the correct type
+    const monitor = {
+      ...monitorData,
+      status: ensureValidStatus(monitorData.status)
+    } as MonitoringItem;
 
     console.log(`Triggering check for monitor:`, monitor);
 
@@ -210,13 +232,19 @@ export const triggerCheck = async (id: string): Promise<boolean> => {
     console.log(`Updated monitor data:`, data);
     
     // Get the latest monitor data to schedule next check
-    const { data: updatedMonitor } = await supabase
+    const { data: updatedMonitorData } = await supabase
       .from("stock_monitors")
       .select("*")
       .eq("id", id)
       .single();
       
-    if (updatedMonitor) {
+    if (updatedMonitorData) {
+      // Cast to the correct type
+      const updatedMonitor = {
+        ...updatedMonitorData,
+        status: ensureValidStatus(updatedMonitorData.status)
+      } as MonitoringItem;
+      
       scheduleNextCheck(updatedMonitor);
     }
     
@@ -267,15 +295,21 @@ const checkPendingMonitors = async () => {
   const now = Date.now();
   
   // Get all active monitors
-  const { data: activeMonitors, error } = await supabase
+  const { data: activeMonitorsData, error } = await supabase
     .from("stock_monitors")
     .select("*")
     .eq("is_active", true);
     
-  if (error || !activeMonitors) {
+  if (error || !activeMonitorsData) {
     console.error("Error fetching active monitors:", error);
     return;
   }
+  
+  // Cast the data to ensure status is typed correctly
+  const activeMonitors = (activeMonitorsData as any[]).map(item => ({
+    ...item,
+    status: ensureValidStatus(item.status)
+  })) as MonitoringItem[];
   
   // Schedule any monitors that don't have a next check time
   activeMonitors.forEach((monitor: MonitoringItem) => {
@@ -343,7 +377,13 @@ export const setupMonitorRealtime = (onUpdate: (item: MonitoringItem) => void): 
       
       // Process the update
       if (payload.new) {
-        const updatedItem = payload.new as MonitoringItem;
+        const updatedData = payload.new as any;
+        // Cast to the correct type
+        const updatedItem = {
+          ...updatedData,
+          status: ensureValidStatus(updatedData.status)
+        } as MonitoringItem;
+        
         onUpdate(updatedItem);
         
         // Re-schedule if active and frequency has changed
