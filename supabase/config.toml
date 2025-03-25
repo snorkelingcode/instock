@@ -17,7 +17,7 @@ enable_confirmations = true
 
 [auth.email.smtp]
 sender_name = "TCG Updates"
-sender_address = "noreply@tcgupdates.com"
+sender_email = "noreply@tcgupdates.com"
 
 [auth.external.apple]
 enabled = false
