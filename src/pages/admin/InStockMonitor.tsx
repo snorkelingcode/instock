@@ -312,7 +312,7 @@ const InStockMonitor = () => {
       <div className="container max-w-6xl py-8">
         <h1 className="text-3xl font-bold mb-2">In-Stock Monitor</h1>
         <p className="text-gray-600 mb-8">
-          Monitor product pages for stock availability changes
+          Monitor product pages for stock availability changes using Scraper API
         </p>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -343,11 +343,11 @@ const InStockMonitor = () => {
                 <div>
                   <h4 className="font-medium mb-2">How It Works</h4>
                   <ul className="text-sm space-y-2 text-gray-700">
+                    <li>• Using Scraper API to bypass site protections</li>
                     <li>• Each monitor has its own check frequency</li>
                     <li>• Out-of-stock items are checked more frequently</li>
                     <li>• In-stock items are checked less frequently</li>
                     <li>• Error retries use exponential backoff</li>
-                    <li>• Manual checks are always available</li>
                   </ul>
                 </div>
               </div>

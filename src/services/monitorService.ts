@@ -299,7 +299,7 @@ export const triggerCheck = async (monitorId: string): Promise<MonitoringItem | 
     console.log("Triggering check for monitor:", monitor);
     
     try {
-      // Call the edge function to check the URL status
+      // Call the edge function to check the URL status, now using Scraper API
       console.log(`Calling edge function for monitor ${monitorId} with URL: ${monitor.url}`);
       
       // Make sure to use the correctly formed function name and request body

@@ -329,6 +329,12 @@ const MonitoringItem: React.FC<MonitoringItemProps> = ({
             </div>
           )}
           
+          {/* Note about Scraper API */}
+          <div className="text-xs text-blue-600 bg-blue-50 p-2 rounded flex items-start gap-1">
+            <Info size={12} className="mt-0.5 flex-shrink-0" />
+            <div>Using Scraper API to bypass bot detection and access accurate stock information</div>
+          </div>
+          
           {/* Make the last seen status more prominent */}
           <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-900 rounded-md">
             <div className="flex flex-col gap-1">
