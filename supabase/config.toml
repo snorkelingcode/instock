@@ -1,4 +1,5 @@
 
+# Project ID should remain as the first line
 project_id = "etgkuasmqjidwtaxrfww"
 
 [api]
@@ -7,36 +8,69 @@ port = 8080
 [auth]
 site_url = "https://tcgupdates.com"
 additional_redirect_urls = ["https://www.tcgupdates.com"]
+enable_signup = true
+double_confirm_changes = true
+enable_confirmations = true
 
 [auth.email]
 enable_signup = true
 double_confirm_changes = true
 enable_confirmations = true
 
-[auth.external]
-apple.enabled = false
-azure.enabled = false
-bitbucket.enabled = false
-discord.enabled = false
-facebook.enabled = false
-github.enabled = false
-gitlab.enabled = false
-google.enabled = false
-keycloak.enabled = false
-linkedin.enabled = false
-notion.enabled = false
-spotify.enabled = false
-slack.enabled = false
-twitch.enabled = false
-twitter.enabled = false
-workos.enabled = false
-zoom.enabled = false
-
 [auth.external.email]
 enabled = true
-provider = "custom"
-url = "https://etgkuasmqjidwtaxrfww.supabase.co/functions/v1/custom-email"
 
-[auth.smtp]
+[smtp]
 sender_name = "TCG Updates"
 sender_email = "noreply@tcgupdates.com"
+
+[auth.external.apple]
+enabled = false
+
+[auth.external.azure]
+enabled = false
+
+[auth.external.bitbucket]
+enabled = false
+
+[auth.external.discord]
+enabled = false
+
+[auth.external.facebook]
+enabled = false
+
+[auth.external.github]
+enabled = false
+
+[auth.external.gitlab]
+enabled = false
+
+[auth.external.google]
+enabled = false
+
+[auth.external.keycloak]
+enabled = false
+
+[auth.external.linkedin]
+enabled = false
+
+[auth.external.notion]
+enabled = false
+
+[auth.external.spotify]
+enabled = false
+
+[auth.external.slack]
+enabled = false
+
+[auth.external.twitch]
+enabled = false
+
+[auth.external.twitter]
+enabled = false
+
+[auth.external.workos]
+enabled = false
+
+[auth.external.zoom]
+enabled = false
