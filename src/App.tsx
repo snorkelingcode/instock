@@ -30,6 +30,7 @@ import Forge from "./pages/Forge";
 import ManageModels from "./pages/admin/ManageModels";
 import ManageProducts from "./pages/admin/ManageProducts";
 import InStockMonitor from "./pages/admin/InStockMonitor";
+import UserManagement from "./pages/admin/UserManagement";
 
 const queryClient = new QueryClient();
 
@@ -122,6 +123,15 @@ const App = () => {
                 element={
                   <RequireAdmin>
                     <InStockMonitor />
+                  </RequireAdmin>
+                } 
+              />
+              
+              <Route 
+                path="/admin/users" 
+                element={
+                  <RequireAdmin>
+                    <UserManagement />
                   </RequireAdmin>
                 } 
               />
