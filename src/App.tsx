@@ -29,7 +29,6 @@ import ManagePokemonReleases from "./pages/admin/ManagePokemonReleases";
 import Forge from "./pages/Forge";
 import ManageModels from "./pages/admin/ManageModels";
 import ManageProducts from "./pages/admin/ManageProducts";
-import InStockMonitor from "./pages/admin/InStockMonitor";
 import UserManagement from "./pages/admin/UserManagement";
 
 const queryClient = new QueryClient();
@@ -114,15 +113,6 @@ const App = () => {
                 element={
                   <RequireAdmin>
                     <ManageProducts />
-                  </RequireAdmin>
-                } 
-              />
-              
-              <Route 
-                path="/admin/stock-monitor" 
-                element={
-                  <RequireAdmin>
-                    <InStockMonitor />
                   </RequireAdmin>
                 } 
               />
