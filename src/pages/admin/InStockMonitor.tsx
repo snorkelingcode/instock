@@ -1,473 +1,434 @@
 
 import React, { useState, useEffect } from "react";
-import Layout from "@/components/layout/Layout";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { 
-  Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle 
-} from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { 
-  PlusCircle, Search, Info, RefreshCw, AlertCircle, ShoppingCart, Tag
-} from "lucide-react";
-import AddMonitorForm from "@/components/admin/AddMonitorForm";
+import Layout from "@/components/layout/Layout";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import MonitoringItem from "@/components/admin/MonitoringItem";
-import { 
-  fetchMonitors, 
-  addMonitor, 
-  toggleMonitorStatus, 
-  deleteMonitor,
-  triggerCheck,
-  updateCheckFrequency,
-  initializeAutoChecks,
-  cleanupAutoChecks,
-  setupMonitorRealtime
-} from "@/services/monitorService";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import AddMonitorForm from "@/components/admin/AddMonitorForm";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ArrowDownAZ, ArrowUpZA, Filter, Info, Plus, RefreshCw, SearchIcon, SlidersHorizontal } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { checkUrlWithBrightData, toggleMonitorActive, updateCheckFrequency, deleteStockMonitor } from "@/services/stockMonitorService";
 
-// Define an interface for the monitoring items for type safety
-interface MonitoringItem {
-  id: string;
-  name: string;
-  url: string;
-  target_text?: string;
-  status: "in-stock" | "out-of-stock" | "unknown" | "error" | "checking" | "pending";
-  last_checked?: string | null;
-  is_active: boolean;
-  error_message?: string;
-  stock_status_reason?: string;
-  check_frequency?: number;
-  last_status_change?: string | null;
-  last_seen_in_stock?: string | null;
-  consecutive_errors?: number;
-}
-
-const InStockMonitor: React.FC = () => {
-  const [monitors, setMonitors] = useState<MonitoringItem[]>([]);
-  const [filteredMonitors, setFilteredMonitors] = useState<MonitoringItem[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState("all");
-  const [isAddFormOpen, setIsAddFormOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [refreshingIds, setRefreshingIds] = useState<string[]>([]);
-  const [deleteConfirmItem, setDeleteConfirmItem] = useState<string | null>(null);
+const InStockMonitor = () => {
+  const { isAdmin } = useAuth();
   const { toast } = useToast();
+  const [monitors, setMonitors] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+  const [monitorToDelete, setMonitorToDelete] = useState<string | null>(null);
+  const [refreshingIds, setRefreshingIds] = useState<string[]>([]);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [sortField, setSortField] = useState<string>('last_checked');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [activeFilter, setActiveFilter] = useState<string>('all');
 
-  useEffect(() => {
-    // Load monitors on initial render
-    loadMonitors();
-    
-    // Initialize auto-checks
-    const cleanup = initializeAutoChecks();
-    
-    // Set up realtime subscription
-    const channel = setupMonitorRealtime(handleRealtimeUpdate);
-    
-    // Clean up
-    return () => {
-      cleanup();
-      cleanupAutoChecks();
-      channel.unsubscribe();
-    };
-  }, []);
-  
-  // Handle realtime updates
-  const handleRealtimeUpdate = (updatedItem: MonitoringItem) => {
-    setMonitors(prev => {
-      const newMonitors = [...prev];
-      const index = newMonitors.findIndex(item => item.id === updatedItem.id);
-      if (index !== -1) {
-        newMonitors[index] = updatedItem;
-      }
-      return newMonitors;
-    });
-    
-    // Remove item from refreshing state if it was being refreshed
-    setRefreshingIds(prev => prev.filter(id => id !== updatedItem.id));
-  };
-
-  useEffect(() => {
-    // Filter and sort monitors based on search query and active tab
-    filterMonitors();
-  }, [monitors, searchQuery, activeTab]);
-
-  const loadMonitors = async () => {
-    setIsLoading(true);
+  // Fetch monitors from the database
+  const fetchMonitors = async () => {
     try {
-      const data = await fetchMonitors();
-      setMonitors(data);
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('stock_monitors')
+        .select('*')
+        .order(sortField, { ascending: sortOrder === 'asc' });
+
+      if (error) {
+        throw error;
+      }
+
+      setMonitors(data || []);
     } catch (error) {
-      console.error("Error loading monitors:", error);
+      console.error('Error fetching monitors:', error);
       toast({
         title: "Error",
-        description: "Failed to load monitors",
+        description: "Failed to load monitors. Please try again.",
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  const filterMonitors = () => {
-    let filtered = [...monitors];
-    
-    // Apply search filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        monitor => 
-          monitor.name.toLowerCase().includes(query) || 
-          monitor.url.toLowerCase().includes(query)
-      );
+  useEffect(() => {
+    if (isAdmin) {
+      fetchMonitors();
     }
-    
-    // Apply tab filter
-    switch (activeTab) {
-      case "in-stock":
-        filtered = filtered.filter(monitor => monitor.status === "in-stock");
-        break;
-      case "out-of-stock":
-        filtered = filtered.filter(monitor => monitor.status === "out-of-stock");
-        break;
-      case "errors":
-        filtered = filtered.filter(monitor => monitor.status === "error");
-        break;
-      case "active":
-        filtered = filtered.filter(monitor => monitor.is_active);
-        break;
-      case "inactive":
-        filtered = filtered.filter(monitor => !monitor.is_active);
-        break;
-      case "pending":
-        filtered = filtered.filter(monitor => 
-          monitor.status === "checking" || monitor.status === "pending");
-        break;
-      // "all" tab shows everything
-    }
-    
-    setFilteredMonitors(filtered);
-  };
+  }, [isAdmin, sortField, sortOrder]);
 
-  const handleAddMonitor = async (name: string, url: string, targetText?: string, frequency?: number) => {
-    try {
-      const newMonitor = await addMonitor(name, url, targetText, frequency);
-      if (newMonitor) {
-        setMonitors(prev => [newMonitor, ...prev]);
-        toast({
-          title: "Monitor Added",
-          description: `"${name}" has been added successfully`,
-        });
-        setIsAddFormOpen(false);
-      }
-    } catch (error) {
-      console.error("Error adding monitor:", error);
-      toast({
-        title: "Error",
-        description: "Failed to add monitor",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleToggleActive = async (id: string) => {
-    const monitor = monitors.find(m => m.id === id);
-    if (!monitor) return;
-    
-    try {
-      const success = await toggleMonitorStatus(id, !monitor.is_active);
-      if (success) {
-        setMonitors(prev => 
-          prev.map(m => m.id === id ? { ...m, is_active: !m.is_active } : m)
-        );
-        toast({
-          title: monitor.is_active ? "Monitoring Paused" : "Monitoring Activated",
-          description: `"${monitor.name}" is now ${monitor.is_active ? "paused" : "active"}`,
-        });
-      }
-    } catch (error) {
-      console.error("Error toggling monitor status:", error);
-      toast({
-        title: "Error",
-        description: "Failed to toggle monitor status",
-        variant: "destructive",
-      });
-    }
-  };
-
+  // Function to handle refreshing a monitor
   const handleRefresh = async (id: string) => {
-    setRefreshingIds(prev => [...prev, id]);
     try {
-      const success = await triggerCheck(id);
-      if (success) {
-        const monitor = monitors.find(m => m.id === id);
-        toast({
-          title: "Check Initiated",
-          description: `Check for "${monitor?.name}" has been initiated`,
-        });
-      } else {
-        setRefreshingIds(prev => prev.filter(itemId => itemId !== id));
-        toast({
-          title: "Check Failed",
-          description: "Failed to initiate check, please try again later",
-          variant: "destructive",
-        });
+      // Find the monitor
+      const monitor = monitors.find(m => m.id === id);
+      if (!monitor) {
+        throw new Error('Monitor not found');
       }
-    } catch (error) {
-      console.error("Error refreshing monitor:", error);
-      setRefreshingIds(prev => prev.filter(itemId => itemId !== id));
+
+      // Add to refreshing list
+      setRefreshingIds(prev => [...prev, id]);
+
+      // Call the API to check the URL
+      await checkUrlWithBrightData(id, monitor.url, monitor.name);
+      
+      // Show success toast
       toast({
-        title: "Error",
-        description: "Failed to refresh monitor",
-        variant: "destructive",
+        title: "Check Initiated",
+        description: "Stock check has been started. Results will update shortly.",
       });
-    }
-  };
-
-  const confirmDelete = (id: string) => {
-    setDeleteConfirmItem(id);
-  };
-
-  const handleDelete = async (id: string) => {
-    try {
-      const success = await deleteMonitor(id);
-      if (success) {
-        const monitor = monitors.find(m => m.id === id);
-        setMonitors(prev => prev.filter(m => m.id !== id));
-        toast({
-          title: "Monitor Deleted",
-          description: `"${monitor?.name}" has been deleted`,
-        });
-      }
+      
+      // Refresh monitors list after a delay to allow for processing
+      setTimeout(() => {
+        fetchMonitors();
+      }, 3000);
     } catch (error) {
-      console.error("Error deleting monitor:", error);
+      console.error('Error refreshing monitor:', error);
       toast({
         title: "Error",
-        description: "Failed to delete monitor",
+        description: error.message || "Failed to check URL. Please try again.",
         variant: "destructive",
       });
     } finally {
-      setDeleteConfirmItem(null);
+      // Remove from refreshing list after a delay
+      setTimeout(() => {
+        setRefreshingIds(prev => prev.filter(item => item !== id));
+      }, 3000);
     }
   };
-  
+
+  // Function to handle deleting a monitor
+  const handleDelete = async () => {
+    if (!monitorToDelete) return;
+    
+    try {
+      await deleteStockMonitor(monitorToDelete);
+      
+      toast({
+        title: "Monitor Deleted",
+        description: "The stock monitor has been deleted successfully.",
+      });
+      
+      // Close dialog and clear selected monitor
+      setOpenDeleteDialog(false);
+      setMonitorToDelete(null);
+      
+      // Refresh the monitors list
+      fetchMonitors();
+    } catch (error) {
+      console.error('Error deleting monitor:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete monitor. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Function to toggle active state
+  const handleToggleActive = async (id: string) => {
+    try {
+      const newState = await toggleMonitorActive(id);
+      
+      // Update the local state to reflect the change
+      setMonitors(prev => 
+        prev.map(monitor => 
+          monitor.id === id ? { ...monitor, is_active: newState } : monitor
+        )
+      );
+      
+      toast({
+        title: newState ? "Monitor Activated" : "Monitor Paused",
+        description: `The stock monitor is now ${newState ? 'active' : 'paused'}.`,
+      });
+    } catch (error) {
+      console.error('Error toggling monitor state:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update monitor status. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Function to update frequency
   const handleUpdateFrequency = async (id: string, frequency: number) => {
     try {
-      const success = await updateCheckFrequency(id, frequency);
-      if (success) {
-        setMonitors(prev => 
-          prev.map(m => m.id === id ? { ...m, check_frequency: frequency } : m)
-        );
-        toast({
-          title: "Frequency Updated",
-          description: `Check frequency updated to every ${frequency} minutes`,
-        });
-      }
+      await updateCheckFrequency(id, frequency);
+      
+      // Update the local state to reflect the change
+      setMonitors(prev => 
+        prev.map(monitor => 
+          monitor.id === id ? { ...monitor, check_frequency: frequency } : monitor
+        )
+      );
+      
+      toast({
+        title: "Frequency Updated",
+        description: `Check frequency updated to ${frequency} minutes.`,
+      });
     } catch (error) {
-      console.error("Error updating frequency:", error);
+      console.error('Error updating frequency:', error);
       toast({
         title: "Error",
-        description: "Failed to update check frequency",
+        description: "Failed to update check frequency. Please try again.",
         variant: "destructive",
       });
     }
   };
+
+  // Filter monitors based on search query and filters
+  const filteredMonitors = monitors.filter(monitor => {
+    // Apply search filter
+    const matchesSearch = 
+      monitor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      monitor.url.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    // Apply status filter
+    const matchesStatus = 
+      statusFilter === 'all' || 
+      monitor.status === statusFilter;
+    
+    // Apply active filter
+    const matchesActive = 
+      activeFilter === 'all' || 
+      (activeFilter === 'active' && monitor.is_active) || 
+      (activeFilter === 'paused' && !monitor.is_active);
+    
+    return matchesSearch && matchesStatus && matchesActive;
+  });
+
+  // If not admin, show access denied
+  if (!isAdmin) {
+    return (
+      <Layout>
+        <Alert variant="destructive" className="mb-6">
+          <AlertTitle>Access Denied</AlertTitle>
+          <AlertDescription>
+            You need admin privileges to access this page.
+          </AlertDescription>
+        </Alert>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
-      <div className="container max-w-6xl mx-auto py-6">
+      <div className="bg-white p-6 rounded-lg shadow-md mb-8">
         <div className="flex justify-between items-center mb-6">
-          <div>
-            <h1 className="text-3xl font-bold">In-Stock Monitor</h1>
-            <p className="text-muted-foreground">
-              Track product availability across multiple retailers
-            </p>
-          </div>
+          <h1 className="text-2xl font-bold">Stock Monitoring</h1>
           <Button 
-            onClick={() => setIsAddFormOpen(true)}
-            className="flex items-center"
+            onClick={() => setShowAddForm(!showAddForm)}
+            className="flex items-center gap-1"
           >
-            <PlusCircle className="mr-2 h-4 w-4" /> Add Monitor
+            {showAddForm ? 'Hide Form' : (
+              <>
+                <Plus size={16} />
+                Add Monitor
+              </>
+            )}
           </Button>
         </div>
-        
+
         <Alert className="mb-6 bg-blue-50 border-blue-200">
           <Info className="h-4 w-4 text-blue-600" />
-          <AlertTitle className="text-blue-800">Cost-Effective Monitoring</AlertTitle>
+          <AlertTitle className="text-blue-800">Using Bright Data Target API</AlertTitle>
           <AlertDescription className="text-blue-700">
-            We're now using the Bright Data Target API which costs only $0.0015 per check (vs $1.50 for Web Unlocker).
-            This system allows for efficient batch processing of product URLs with much higher reliability and accuracy.
+            This system uses Bright Data's Target API to reliably check product availability. 
+            Each check costs approximately $0.0015. Adjust the frequency to balance cost and 
+            timely notifications.
           </AlertDescription>
         </Alert>
-        
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold">Monitors</h2>
-            <div className="relative w-64">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search monitors..."
-                className="pl-8"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-          </div>
-          
-          <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="mb-4">
-              <TabsTrigger value="all">All</TabsTrigger>
-              <TabsTrigger value="in-stock">In Stock</TabsTrigger>
-              <TabsTrigger value="out-of-stock">Out of Stock</TabsTrigger>
-              <TabsTrigger value="pending">Pending</TabsTrigger>
-              <TabsTrigger value="errors">Errors</TabsTrigger>
-              <TabsTrigger value="active">Active</TabsTrigger>
-              <TabsTrigger value="inactive">Paused</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value={activeTab} className="mt-0">
-              {isLoading ? (
-                <div className="text-center py-12">
-                  <RefreshCw className="h-12 w-12 mx-auto mb-4 animate-spin text-muted-foreground" />
-                  <p>Loading monitors...</p>
-                </div>
-              ) : filteredMonitors.length === 0 ? (
-                <div className="text-center py-12 border border-dashed rounded-lg">
-                  <AlertCircle className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                  <h3 className="text-lg font-medium mb-2">No monitors found</h3>
-                  <p className="text-muted-foreground mb-4">
-                    {searchQuery ? 
-                      "No monitors match your search criteria" : 
-                      "Add a monitor to start tracking product availability"}
-                  </p>
-                  {!isAddFormOpen && (
-                    <Button onClick={() => setIsAddFormOpen(true)}>
-                      <PlusCircle className="mr-2 h-4 w-4" /> Add Monitor
-                    </Button>
-                  )}
-                </div>
-              ) : (
-                <div className="grid gap-4">
-                  {filteredMonitors.map((monitor) => (
-                    <MonitoringItem
-                      key={monitor.id}
-                      id={monitor.id}
-                      name={monitor.name}
-                      url={monitor.url}
-                      target_text={monitor.target_text}
-                      status={monitor.status}
-                      last_checked={monitor.last_checked}
-                      is_active={monitor.is_active}
-                      error_message={monitor.error_message}
-                      stock_status_reason={monitor.stock_status_reason}
-                      isRefreshing={refreshingIds.includes(monitor.id)}
-                      check_frequency={monitor.check_frequency}
-                      last_status_change={monitor.last_status_change}
-                      last_seen_in_stock={monitor.last_seen_in_stock}
-                      consecutive_errors={monitor.consecutive_errors}
-                      onToggleActive={handleToggleActive}
-                      onDelete={confirmDelete}
-                      onRefresh={handleRefresh}
-                      onUpdateFrequency={handleUpdateFrequency}
-                    />
-                  ))}
-                </div>
-              )}
-            </TabsContent>
-          </Tabs>
-        </div>
+
+        {showAddForm && (
+          <AddMonitorForm
+            onSuccess={() => {
+              fetchMonitors();
+              setShowAddForm(false);
+            }}
+          />
+        )}
         
         <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Tag className="mr-2 h-5 w-5" />
-              How to Use Target Specific Monitoring
-            </CardTitle>
+          <CardHeader className="pb-3">
+            <CardTitle>Filters & Search</CardTitle>
             <CardDescription>
-              Tips for effectively monitoring stock at Target and other retailers
+              Narrow down your monitors by different criteria
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <p>
-                Our system now uses Bright Data's Target-specific API, which is specialized for extracting product information from Target.com. It works with other retailers as well, but has enhanced capabilities specifically for Target.
-              </p>
-              
-              <div className="bg-gray-50 p-4 rounded-md">
-                <h3 className="font-medium mb-2 text-gray-900">Cost Savings</h3>
-                <p className="text-gray-700 mb-2">
-                  The new API costs only $0.0015 per check (compared to $1.50 per check with Web Unlocker), allowing for more frequent checks at 1/1000th of the cost.
-                </p>
-                <p className="text-gray-700">
-                  For example, checking 100 products each hour for a day would cost $3.60 with the old approach, but now only costs around $0.0036.
-                </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <div>
+                <label className="text-sm font-medium mb-1 block">Search</label>
+                <div className="relative">
+                  <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    placeholder="Search by name or URL..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
               </div>
               
-              <h3 className="font-medium">Adding New Monitors</h3>
-              <ol className="list-decimal pl-5 space-y-2">
-                <li>Click "Add Monitor" button</li>
-                <li>Enter a descriptive name for the product</li>
-                <li>Paste the product URL from Target.com or other retailer</li>
-                <li>Set your desired check frequency</li>
-                <li>Click "Save" to start monitoring</li>
-              </ol>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Status Filter</label>
+                <Select 
+                  value={statusFilter} 
+                  onValueChange={setStatusFilter}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Filter by status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    <SelectItem value="in-stock">In Stock</SelectItem>
+                    <SelectItem value="out-of-stock">Out of Stock</SelectItem>
+                    <SelectItem value="error">Error</SelectItem>
+                    <SelectItem value="checking">Checking</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="unknown">Unknown</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               
-              <div className="bg-amber-50 p-4 rounded-md border border-amber-100">
-                <h3 className="font-medium mb-2 flex items-center text-amber-800">
-                  <Info className="h-4 w-4 mr-2" />
-                  Important Notes
-                </h3>
-                <ul className="list-disc pl-5 space-y-1 text-amber-700">
-                  <li>Initial check may take 30-60 seconds to complete</li>
-                  <li>For Target.com URLs, you'll get the most accurate results</li>
-                  <li>The system auto-adjusts check frequency based on status</li>
-                  <li>Out-of-stock items are checked more frequently</li>
-                  <li>In-stock items are checked less frequently to save costs</li>
-                </ul>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Monitor Status</label>
+                <ToggleGroup 
+                  type="single" 
+                  value={activeFilter}
+                  onValueChange={(value) => value && setActiveFilter(value)}
+                  className="justify-start"
+                >
+                  <ToggleGroupItem value="all" aria-label="All">
+                    All
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="active" aria-label="Active">
+                    Active
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="paused" aria-label="Paused">
+                    Paused
+                  </ToggleGroupItem>
+                </ToggleGroup>
+              </div>
+            </div>
+            
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium">Sort by:</label>
+                <Select 
+                  value={sortField} 
+                  onValueChange={setSortField}
+                >
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Sort by" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="name">Name</SelectItem>
+                    <SelectItem value="last_checked">Last Checked</SelectItem>
+                    <SelectItem value="created_at">Created At</SelectItem>
+                    <SelectItem value="check_frequency">Check Frequency</SelectItem>
+                  </SelectContent>
+                </Select>
+                
+                <Button 
+                  variant="outline" 
+                  size="icon"
+                  onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                >
+                  {sortOrder === 'asc' ? 
+                    <ArrowUpZA className="h-4 w-4" /> : 
+                    <ArrowDownAZ className="h-4 w-4" />
+                  }
+                </Button>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <Badge variant="outline">
+                  {filteredMonitors.length} monitors
+                </Badge>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={fetchMonitors}
+                  className="flex items-center gap-1"
+                >
+                  <RefreshCw size={14} />
+                  Refresh
+                </Button>
               </div>
             </div>
           </CardContent>
-          <CardFooter className="border-t pt-4">
-            <div className="text-sm text-muted-foreground">
-              <p>Need help setting up your monitors? Contact support for assistance.</p>
-            </div>
-          </CardFooter>
         </Card>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {loading ? (
+            <p>Loading monitors...</p>
+          ) : filteredMonitors.length > 0 ? (
+            filteredMonitors.map(monitor => (
+              <MonitoringItem
+                key={monitor.id}
+                id={monitor.id}
+                url={monitor.url}
+                name={monitor.name}
+                last_checked={monitor.last_checked}
+                status={monitor.status}
+                target_text={monitor.target_text}
+                is_active={monitor.is_active}
+                error_message={monitor.error_message}
+                stock_status_reason={monitor.stock_status_reason}
+                check_frequency={monitor.check_frequency}
+                last_status_change={monitor.last_status_change}
+                last_seen_in_stock={monitor.last_seen_in_stock}
+                consecutive_errors={monitor.consecutive_errors}
+                isRefreshing={refreshingIds.includes(monitor.id)}
+                onToggleActive={handleToggleActive}
+                onDelete={(id) => {
+                  setMonitorToDelete(id);
+                  setOpenDeleteDialog(true);
+                }}
+                onRefresh={handleRefresh}
+                onUpdateFrequency={handleUpdateFrequency}
+              />
+            ))
+          ) : (
+            <div className="col-span-2 text-center py-10">
+              <p className="text-gray-500 mb-4">No stock monitors found</p>
+              <Button onClick={() => setShowAddForm(true)}>
+                Add Your First Monitor
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
       
-      {isAddFormOpen && (
-        <AddMonitorForm 
-          onSubmit={handleAddMonitor}
-          onCancel={() => setIsAddFormOpen(false)}
-        />
-      )}
-      
-      <AlertDialog open={deleteConfirmItem !== null} onOpenChange={() => setDeleteConfirmItem(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete this monitor and cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => deleteConfirmItem && handleDelete(deleteConfirmItem)}>
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={openDeleteDialog} onOpenChange={setOpenDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Deletion</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this stock monitor? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpenDeleteDialog(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDelete}>
               Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 };

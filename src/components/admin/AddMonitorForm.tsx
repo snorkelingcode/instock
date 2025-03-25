@@ -1,170 +1,184 @@
 
-import React from "react";
-import { z } from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-
-// Form schema
-const formSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  url: z.string().url("Please enter a valid URL"),
-  targetText: z.string().optional(),
-  frequency: z.coerce.number().min(5).max(240).default(30),
-});
-
-type FormValues = z.infer<typeof formSchema>;
+import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
+import { useToast } from "@/hooks/use-toast";
+import { createStockMonitor } from "@/services/stockMonitorService";
 
 interface AddMonitorFormProps {
-  onSubmit: (values: FormValues) => void;
+  onSuccess: () => void;
 }
 
-const frequencyOptions = [
-  { value: "5", label: "Every 5 minutes" },
-  { value: "15", label: "Every 15 minutes" },
-  { value: "30", label: "Every 30 minutes" },
-  { value: "60", label: "Every hour" },
-  { value: "120", label: "Every 2 hours" },
-  { value: "240", label: "Every 4 hours" },
-];
+const AddMonitorForm: React.FC<AddMonitorFormProps> = ({ onSuccess }) => {
+  const [url, setUrl] = useState("");
+  const [name, setName] = useState("");
+  const [targetText, setTargetText] = useState("");
+  const [frequency, setFrequency] = useState(30);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
 
-const AddMonitorForm: React.FC<AddMonitorFormProps> = ({ onSubmit }) => {
-  const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: "",
-      url: "",
-      targetText: "",
-      frequency: 30,
-    },
-  });
-
-  const handleSubmit = (values: FormValues) => {
-    onSubmit(values);
-    form.reset();
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!url) {
+      toast({
+        title: "URL is required",
+        description: "Please enter a valid URL to monitor",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!name) {
+      toast({
+        title: "Name is required",
+        description: "Please give this monitor a name",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    try {
+      setIsSubmitting(true);
+      
+      await createStockMonitor({
+        url,
+        name,
+        target_text: targetText,
+        check_frequency: frequency
+      });
+      
+      toast({
+        title: "Monitor Added",
+        description: "The stock monitor has been created successfully.",
+        variant: "default",
+      });
+      
+      // Reset form
+      setUrl("");
+      setName("");
+      setTargetText("");
+      setFrequency(30);
+      
+      // Notify parent component
+      onSuccess();
+    } catch (error) {
+      console.error("Error adding monitor:", error);
+      toast({
+        title: "Error",
+        description: "Failed to add monitor. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
+  const formatFrequency = (mins: number) => {
+    if (mins < 60) {
+      return `${mins} minutes`;
+    } else {
+      const hours = mins / 60;
+      return `${hours === 1 ? '1 hour' : `${hours} hours`}`;
+    }
   };
 
   return (
-    <Card>
+    <Card className="w-full mb-6">
       <CardHeader>
-        <CardTitle>Add URL to Monitor</CardTitle>
+        <CardTitle>Add New Stock Monitor</CardTitle>
+        <CardDescription>
+          Create a new product availability monitor using Bright Data's Target API
+        </CardDescription>
       </CardHeader>
-      <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Product name" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+      <form onSubmit={handleSubmit}>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="monitor-name">Monitor Name</Label>
+            <Input
+              id="monitor-name"
+              placeholder="PlayStation 5 Digital Edition"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
             />
-
-            <FormField
-              control={form.control}
-              name="url"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>URL</FormLabel>
-                  <FormControl>
-                    <Input placeholder="https://example.com/product" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="monitor-url">Product URL</Label>
+            <Input
+              id="monitor-url"
+              placeholder="https://www.target.com/p/item/-/A-12345"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              required
             />
-            
-            <Accordion type="single" collapsible>
-              <AccordionItem value="advanced">
-                <AccordionTrigger>Advanced Options</AccordionTrigger>
-                <AccordionContent>
-                  <div className="space-y-4 pt-2">
-                    <FormField
-                      control={form.control}
-                      name="targetText"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Target Text (Optional)</FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="e.g. Add to cart" 
-                              {...field} 
-                              value={field.value || ""}
-                            />
-                          </FormControl>
-                          <p className="text-xs text-muted-foreground">
-                            Specify text to look for on the page that indicates the item is in stock
-                          </p>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="frequency"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Check Frequency</FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            defaultValue={field.value.toString()}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select frequency" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {frequencyOptions.map(option => (
-                                <SelectItem key={option.value} value={option.value}>
-                                  {option.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <p className="text-xs text-muted-foreground">
-                            How often to check if this item is in stock
-                          </p>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
-
-            <Button type="submit" className="w-full">
-              Add Monitor
-            </Button>
-          </form>
-        </Form>
-      </CardContent>
+            <p className="text-xs text-muted-foreground">
+              Enter the full product URL (e.g., https://www.target.com/p/product/-/A-12345)
+            </p>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="monitor-text">Target Text (Optional)</Label>
+            <Input
+              id="monitor-text"
+              placeholder="Add to cart"
+              value={targetText}
+              onChange={(e) => setTargetText(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              Optional text to look for on the page as an indicator of availability
+            </p>
+          </div>
+          
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <Label htmlFor="check-frequency">Check Frequency</Label>
+              <span className="text-sm">{formatFrequency(frequency)}</span>
+            </div>
+            <Slider
+              id="check-frequency"
+              min={5}
+              max={240}
+              step={5}
+              value={[frequency]}
+              onValueChange={(values) => setFrequency(values[0])}
+              className="w-full"
+            />
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>5 min</span>
+              <span>1 hour</span>
+              <span>4 hours</span>
+            </div>
+            <p className="text-xs text-muted-foreground pt-2">
+              How often should this product be checked for availability changes
+            </p>
+          </div>
+          
+          <div className="pt-2">
+            <p className="text-xs text-blue-600 bg-blue-50 p-3 rounded">
+              Using Bright Data Target API costs approximately $0.0015 per check. With the default frequency of 
+              30 minutes, this monitor will cost about $0.07 per day or $2.16 per month.
+            </p>
+          </div>
+        </CardContent>
+        <CardFooter className="flex justify-between">
+          <Button type="button" variant="outline" onClick={() => {
+            setUrl("");
+            setName("");
+            setTargetText("");
+            setFrequency(30);
+          }}>
+            Reset
+          </Button>
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? "Adding..." : "Add Monitor"}
+          </Button>
+        </CardFooter>
+      </form>
     </Card>
   );
 };

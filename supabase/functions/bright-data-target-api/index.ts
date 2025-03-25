@@ -141,7 +141,7 @@ Deno.serve(async (req) => {
       console.log('Created job to monitor Target API data:', jobData);
       
       // Start the background process to check for results
-      checkResultsBackground(snapshotId, id, jobData.id);
+      EdgeRuntime.waitUntil(checkResultsBackground(snapshotId, id, jobData.id));
     }
 
     return new Response(
