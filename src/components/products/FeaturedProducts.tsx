@@ -1,8 +1,7 @@
-
 import React from "react";
 import { Card } from "@/components/landing/Card";
 import { Skeleton } from "@/components/ui/skeleton";
-import DiscoCardEffect from "@/components/ui/DiscoCardEffect";
+import DiscoCardEffect from "@/components/ui/DiscoCardEffect.tsx";
 
 interface Product {
   id: number;
@@ -15,7 +14,7 @@ interface Product {
   image_link?: string;
   in_stock?: boolean;
   featured?: boolean;
-  last_seen_in_stock?: string;  // This property is now properly defined to match the database schema
+  last_seen_in_stock?: string;
 }
 
 interface FeaturedProductsProps {
@@ -40,12 +39,10 @@ const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
   loading,
   emptyMessage = "No featured products found. Please check back later for updates."
 }) => {
-  // Only render the component when we have products or are loading
   if (!loading && products.length === 0) {
     return null;
   }
   
-  // Always render something - either skeletons or products
   const renderProducts = () => {
     if (loading) {
       return (
