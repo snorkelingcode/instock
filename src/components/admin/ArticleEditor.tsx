@@ -14,7 +14,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Article, ArticleFormData } from "@/types/article";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
-// Article categories
 const CATEGORIES = [
   "Product News",
   "Retailer Updates",
@@ -25,18 +24,12 @@ const CATEGORIES = [
   "New Release"
 ];
 
-// Function to extract YouTube video ID
 const extractYoutubeId = (url: string): string | null => {
-  // Match patterns like:
-  // https://www.youtube.com/watch?v=VIDEO_ID
-  // https://youtu.be/VIDEO_ID
-  // https://youtube.com/shorts/VIDEO_ID
   const regExp = /^.*(?:(?:youtu\.be\/|v\/|vi\/|u\/\w\/|embed\/|shorts\/)|(?:(?:watch)?\?v(?:i)?=|\&v(?:i)?=))([^#\&\?]*).*/;
   const match = url.match(regExp);
   return (match && match[1].length === 11) ? match[1] : null;
 };
 
-// Function to validate YouTube URL
 const isValidYoutubeUrl = (url: string): boolean => {
   return !!extractYoutubeId(url);
 };
@@ -69,7 +62,6 @@ const ArticleEditor = () => {
   const [youtubeError, setYoutubeError] = useState("");
 
   useEffect(() => {
-    // Redirect if not an admin
     if (!isLoading && !isAdmin) {
       toast({
         title: "Access Denied",
@@ -80,7 +72,6 @@ const ArticleEditor = () => {
       return;
     }
 
-    // Fetch article data if editing
     if (isEditing && id) {
       fetchArticle(id);
     }
@@ -98,7 +89,6 @@ const ArticleEditor = () => {
       if (error) throw error;
       
       if (data) {
-        // Set the YouTube URL if it exists
         if (data.featured_video) {
           setYoutubeUrl(data.featured_video);
         }
@@ -169,7 +159,6 @@ const ArticleEditor = () => {
   const handleFeaturedImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setFeaturedImageFile(e.target.files[0]);
-      // Create temporary URL for preview
       setFormData(prev => ({ 
         ...prev, 
         featured_image: URL.createObjectURL(e.target.files![0]),
@@ -183,7 +172,6 @@ const ArticleEditor = () => {
       const newFile = e.target.files[0];
       setAdditionalImageFiles(prev => [...prev, newFile]);
       
-      // Create temporary URL for preview
       const newImageUrl = URL.createObjectURL(newFile);
       setFormData(prev => ({
         ...prev,
@@ -218,7 +206,6 @@ const ArticleEditor = () => {
     }));
   };
 
-  // Function to upload an image and get its URL
   const uploadImage = async (file: File, path: string): Promise<string> => {
     const fileExt = file.name.split('.').pop();
     const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
@@ -252,7 +239,6 @@ const ArticleEditor = () => {
     setIsSaving(true);
     
     try {
-      // Upload images if provided
       let featuredImageUrl = formData.featured_image;
       let additionalImageUrls = [...(formData.additional_images || [])];
       
@@ -265,7 +251,6 @@ const ArticleEditor = () => {
           additionalImageFiles.map(file => uploadImage(file, 'additional'))
         );
         
-        // Filter out temporary blob URLs and append new URLs
         additionalImageUrls = [
           ...additionalImageUrls.filter(url => !url.startsWith('blob:')),
           ...newUrls
@@ -273,9 +258,9 @@ const ArticleEditor = () => {
       }
       
       const now = new Date().toISOString();
+      let savedArticleId: string | undefined;
       
       if (isEditing && id) {
-        // For updates, we need to get the current article data first to preserve dates
         const { data: currentArticle, error: fetchError } = await supabase
           .from('articles')
           .select('published, published_at, created_at')
@@ -284,10 +269,6 @@ const ArticleEditor = () => {
           
         if (fetchError) throw fetchError;
         
-        // Set published_at based on publishing status:
-        // 1. If newly published and wasn't published before, use created_at
-        // 2. If already published, keep the original published_at date
-        // 3. If unpublished, set to null
         const publishedAt = 
           !currentArticle.published && formData.published ? currentArticle.created_at :
           formData.published ? currentArticle.published_at :
@@ -312,10 +293,30 @@ const ArticleEditor = () => {
           .eq('id', id);
         
         if (error) throw error;
+        savedArticleId = id;
+        
+        if (formData.published) {
+          try {
+            const { notifyIndexNowSingleUrl } = await import('@/utils/indexNow');
+            notifyIndexNowSingleUrl({
+              id,
+              title: formData.title,
+              content: formData.content,
+              excerpt: formData.excerpt,
+              author_id: user.id,
+              category: formData.category,
+              featured: formData.featured,
+              published: formData.published,
+              created_at: currentArticle.created_at,
+              updated_at: now,
+              published_at: publishedAt
+            });
+          } catch (indexError) {
+            console.error("Failed to notify search engines:", indexError);
+          }
+        }
       } else {
-        // For new articles, set published_at to created_at if published is true
-        // Use the same timestamp for both created_at and published_at to ensure they match
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('articles')
           .insert([{
             title: formData.title,
@@ -332,9 +333,32 @@ const ArticleEditor = () => {
             created_at: now,
             updated_at: now,
             published_at: formData.published ? now : null
-          }]);
+          }])
+          .select('id');
         
         if (error) throw error;
+        savedArticleId = data?.[0]?.id;
+        
+        if (formData.published && savedArticleId) {
+          try {
+            const { notifyIndexNowSingleUrl } = await import('@/utils/indexNow');
+            notifyIndexNowSingleUrl({
+              id: savedArticleId,
+              title: formData.title,
+              content: formData.content,
+              excerpt: formData.excerpt,
+              author_id: user.id,
+              category: formData.category,
+              featured: formData.featured,
+              published: formData.published,
+              created_at: now,
+              updated_at: now,
+              published_at: now
+            });
+          } catch (indexError) {
+            console.error("Failed to notify search engines:", indexError);
+          }
+        }
       }
       
       toast({
@@ -344,7 +368,6 @@ const ArticleEditor = () => {
           : "Your article has been successfully created",
       });
       
-      // Redirect to article list
       navigate("/admin/articles");
     } catch (error: any) {
       console.error("Error saving article:", error);
@@ -362,7 +385,6 @@ const ArticleEditor = () => {
     return <div className="flex justify-center p-8">Loading article data...</div>;
   }
 
-  // Generate YouTube embed URL if available
   const youtubeEmbedUrl = formData.featured_video ? 
     `https://www.youtube.com/embed/${extractYoutubeId(formData.featured_video)}` : 
     '';

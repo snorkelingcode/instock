@@ -10,11 +10,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import Layout from "@/components/layout/Layout";
 import { useMetaTags } from "@/hooks/use-meta-tags";
 import { Article } from "@/types/article";
-import { Plus, PenSquare, Trash2, Eye, CalendarRange } from "lucide-react";
+import { Plus, PenSquare, Trash2, Eye, CalendarRange, RefreshCw } from "lucide-react";
 
 const AdminArticles = () => {
   const [articles, setArticles] = useState<Article[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubmittingUrls, setIsSubmittingUrls] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   const { isAdmin } = useAuth();
@@ -186,6 +187,46 @@ const AdminArticles = () => {
     navigate(`/article/${id}`);
   };
 
+  const submitToSearchEngines = async () => {
+    // Only submit published articles
+    const publishedArticles = articles.filter(article => article.published);
+    
+    if (publishedArticles.length === 0) {
+      toast({
+        title: "No Published Articles",
+        description: "There are no published articles to submit to search engines.",
+        variant: "warning",
+      });
+      return;
+    }
+    
+    setIsSubmittingUrls(true);
+    
+    try {
+      // Import dynamically to avoid issues if the file isn't loaded yet
+      const { notifyIndexNowBatch } = await import('@/utils/indexNow');
+      const result = await notifyIndexNowBatch(publishedArticles);
+      
+      if (result.success) {
+        toast({
+          title: "URLs Submitted",
+          description: `${publishedArticles.length} articles have been submitted to search engines.`,
+        });
+      } else {
+        throw new Error("Failed to submit URLs to search engines");
+      }
+    } catch (error: any) {
+      console.error("Error submitting to search engines:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to submit URLs to search engines",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmittingUrls(false);
+    }
+  };
+
   return (
     <Layout>
       <div className="container mx-auto py-8 px-4">
@@ -209,6 +250,16 @@ const AdminArticles = () => {
                 variant="outline"
               >
                 <CalendarRange className="h-4 w-4" /> Manage Pokémon Releases
+              </Button>
+              
+              <Button 
+                onClick={submitToSearchEngines}
+                className="gap-2"
+                variant="outline"
+                disabled={isSubmittingUrls}
+              >
+                <RefreshCw className={`h-4 w-4 ${isSubmittingUrls ? "animate-spin" : ""}`} /> 
+                {isSubmittingUrls ? "Submitting..." : "Submit to Search Engines"}
               </Button>
             </div>
           </CardContent>
