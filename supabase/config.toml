@@ -18,6 +18,7 @@ enable_confirmations = true
 [auth.email.smtp]
 sender_name = "TCG Updates"
 admin_email = "noreply@tcgupdates.com"
+host = "smtp.example.com"  # Adding the missing required field
 
 [auth.external.apple]
 enabled = false

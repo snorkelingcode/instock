@@ -195,7 +195,7 @@ const AdminArticles = () => {
       toast({
         title: "No Published Articles",
         description: "There are no published articles to submit to search engines.",
-        variant: "warning",
+        variant: "destructive",
       });
       return;
     }
