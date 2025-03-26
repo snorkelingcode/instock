@@ -13,10 +13,6 @@
     <script type="text/javascript">
       // Single Page Apps for GitHub Pages
       // MIT License
-      // This script checks to see if a redirect is present in the query string,
-      // converts it back into the correct url and adds it to the
-      // browser's history using window.history.replaceState(...),
-      // which won't cause the browser to attempt to load the new url.
       (function(l) {
         if (l.search[1] === '/' ) {
           var decoded = l.search.slice(1).split('&').map(function(s) { 
@@ -45,8 +41,8 @@
       
       .loader-container {
         position: relative;
-        width: 320px;
-        height: 320px;
+        width: 260px;
+        height: 260px;
         margin-bottom: 1rem;
       }
       
@@ -55,19 +51,9 @@
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        width: 160px;
+        width: 190px;
         height: auto;
         z-index: 10;
-      }
-      
-      .loader-spinner {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 320px;
-        height: auto;
-        animation: spin 2s linear infinite;
       }
       
       .loader-text {
@@ -75,12 +61,6 @@
         font-family: 'Inter', sans-serif;
         font-size: 1rem;
         color: #4a4a4a;
-      }
-      
-      @keyframes spin {
-        to {
-          transform: translate(-50%, -50%) rotate(360deg);
-        }
       }
       
       @keyframes fadeOut {
@@ -100,7 +80,6 @@
       <div class="initial-loader" id="initialLoader">
         <div class="loader-container">
           <img src="/lovable-uploads/28915015-7dd0-40cc-b4aa-2a7315e689fb.png" alt="TCG Updates" class="loader-logo" />
-          <img src="/lovable-uploads/d2ebd92a-d985-443a-aeef-7829896aad77.png" alt="Loading" class="loader-spinner" />
         </div>
         <div class="loader-text">Loading TCG updates...</div>
       </div>
