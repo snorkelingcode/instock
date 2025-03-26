@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -5,6 +6,7 @@ import Layout from "@/components/layout/Layout";
 import { CardGrid } from "@/components/landing/CardGrid";
 import FeaturedProducts from "@/components/products/FeaturedProducts";
 import AboutSection from "@/components/products/AboutSection";
+import RecentlySoldOut from "@/components/products/RecentlySoldOut";
 import { setCache, getCache } from "@/utils/cacheUtils";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { InfoIcon } from "lucide-react";
@@ -20,6 +22,7 @@ interface Product {
   image_link?: string;
   in_stock?: boolean;
   featured?: boolean;
+  last_seen_in_stock?: string;
 }
 
 // Job status interface
@@ -40,18 +43,22 @@ interface JobStatus {
 // Partition and cache keys
 const PRODUCTS_PARTITION = "products";
 const FEATURED_PRODUCTS_KEY = 'featuredProducts';
+const RECENTLY_SOLD_OUT_KEY = 'recentlySoldOutProducts';
 // Cache duration in milliseconds (e.g., 24 hours)
 const CACHE_DURATION_MINUTES = 24 * 60;
 
 const ProductsPage = () => {
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
+  const [recentlySoldOut, setRecentlySoldOut] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [soldOutLoading, setSoldOutLoading] = useState(true);
   const [activeJobs, setActiveJobs] = useState<JobStatus[]>([]);
   const { toast } = useToast();
   
   useEffect(() => {
     const fetchData = async () => {
       await fetchFeaturedProducts();
+      await fetchRecentlySoldOut();
       await fetchActiveJobs();
     };
     
@@ -132,8 +139,59 @@ const ProductsPage = () => {
     }
   };
   
+  const fetchRecentlySoldOut = async () => {
+    try {
+      setSoldOutLoading(true);
+      
+      // Check if we have cached recently sold out products
+      const cachedProducts = getCache<Product[]>(RECENTLY_SOLD_OUT_KEY, PRODUCTS_PARTITION);
+      
+      // If we have cached products, use them but still fetch fresh data in the background
+      if (cachedProducts) {
+        console.log("Using cached recently sold out products:", cachedProducts);
+        setRecentlySoldOut(cachedProducts);
+        setSoldOutLoading(false);
+      }
+      
+      // Always fetch fresh data from the database - only get products that have last_seen_in_stock value
+      console.log("Fetching fresh recently sold out products data");
+      const { data: soldOutData, error: soldOutError } = await supabase
+        .from('products')
+        .select('*')
+        .eq('in_stock', false)
+        .not('last_seen_in_stock', 'is', null)
+        .order('last_seen_in_stock', { ascending: false })
+        .limit(6);
+        
+      if (soldOutError) {
+        throw soldOutError;
+      }
+      
+      // Update state and cache with fresh data
+      if (soldOutData) {
+        console.log("Fresh recently sold out products:", soldOutData);
+        // Type-safe conversion to Product array
+        const typedSoldOut = soldOutData as Product[];
+        setRecentlySoldOut(typedSoldOut);
+        setCache(RECENTLY_SOLD_OUT_KEY, typedSoldOut, CACHE_DURATION_MINUTES, PRODUCTS_PARTITION);
+      }
+    } catch (error) {
+      console.error('Error fetching recently sold out products:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load recently sold out products",
+        variant: "destructive",
+      });
+      
+      // Leave previous state on error
+    } finally {
+      setSoldOutLoading(false);
+    }
+  };
+  
   // Check if there are featured products to show
   const hasFeaturedProducts = !loading && featuredProducts.length > 0;
+  const hasRecentlySoldOut = !soldOutLoading && recentlySoldOut.length > 0;
   
   return (
     <Layout>
@@ -168,6 +226,16 @@ const ProductsPage = () => {
         </p>
         
         <CardGrid />
+        
+        {hasRecentlySoldOut && (
+          <>
+            <h2 className="text-xl font-semibold mb-4 mt-12">Recently Sold Out</h2>
+            <p className="text-gray-700 mb-6">
+              These products were recently in stock but are now sold out. Check back later or sign up for notifications.
+            </p>
+            <RecentlySoldOut products={recentlySoldOut} loading={soldOutLoading} />
+          </>
+        )}
         
         <div className="mt-8 flex justify-center">
           {/* Pagination or load more button could go here */}

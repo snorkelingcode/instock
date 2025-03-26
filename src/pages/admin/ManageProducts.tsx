@@ -34,10 +34,12 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
-import { Pencil, Trash2, Plus } from "lucide-react";
+import { Pencil, Trash2, Plus, PackageX, Package } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { format, isValid, parseISO } from "date-fns";
 
 // Define Product interface
 interface Product {
@@ -51,15 +53,18 @@ interface Product {
   image_link?: string;
   in_stock?: boolean;
   featured?: boolean;
+  last_seen_in_stock?: string;
 }
 
 const ManageProducts = () => {
   const [products, setProducts] = useState<Product[]>([]);
+  const [recentlySoldOut, setRecentlySoldOut] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("in-stock");
   const { toast } = useToast();
 
   // Initialize form for adding/editing products
@@ -73,7 +78,8 @@ const ManageProducts = () => {
       listing_link: "",
       image_link: "",
       in_stock: true,
-      featured: false
+      featured: false,
+      last_seen_in_stock: undefined
     }
   });
 
@@ -93,7 +99,8 @@ const ManageProducts = () => {
         listing_link: selectedProduct.listing_link,
         image_link: selectedProduct.image_link || "",
         in_stock: selectedProduct.in_stock !== undefined ? selectedProduct.in_stock : true,
-        featured: selectedProduct.featured !== undefined ? selectedProduct.featured : false
+        featured: selectedProduct.featured !== undefined ? selectedProduct.featured : false,
+        last_seen_in_stock: selectedProduct.last_seen_in_stock
       });
     }
   }, [selectedProduct, isEditDialogOpen, form]);
@@ -101,13 +108,29 @@ const ManageProducts = () => {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      
+      // Fetch in-stock products
+      const { data: inStockData, error: inStockError } = await supabase
         .from('products')
         .select('*')
+        .eq('in_stock', true)
         .order('id', { ascending: true });
 
-      if (error) throw error;
-      setProducts(data || []);
+      if (inStockError) throw inStockError;
+      
+      // Fetch recently sold out products
+      const { data: soldOutData, error: soldOutError } = await supabase
+        .from('products')
+        .select('*')
+        .eq('in_stock', false)
+        .not('last_seen_in_stock', 'is', null)
+        .order('last_seen_in_stock', { ascending: false })
+        .limit(20);
+        
+      if (soldOutError) throw soldOutError;
+      
+      setProducts(inStockData || []);
+      setRecentlySoldOut(soldOutData || []);
     } catch (error: any) {
       console.error('Error fetching products:', error);
       toast({
@@ -156,7 +179,13 @@ const ManageProducts = () => {
       
       if (error) throw error;
       
-      setProducts(products.filter(p => p.id !== selectedProduct.id));
+      // Filter out the deleted product based on which list it's in
+      if (selectedProduct.in_stock) {
+        setProducts(products.filter(p => p.id !== selectedProduct.id));
+      } else {
+        setRecentlySoldOut(recentlySoldOut.filter(p => p.id !== selectedProduct.id));
+      }
+      
       toast({
         title: "Success",
         description: "Product deleted successfully",
@@ -173,6 +202,17 @@ const ManageProducts = () => {
 
   const onSubmit = async (formData: Omit<Product, 'id'>) => {
     try {
+      // Check if we're changing an in-stock product to out-of-stock
+      const isChangingToOutOfStock = 
+        selectedProduct && 
+        selectedProduct.in_stock === true && 
+        formData.in_stock === false;
+      
+      // If changing to out of stock, set the last_seen_in_stock to now
+      if (isChangingToOutOfStock) {
+        formData.last_seen_in_stock = new Date().toISOString();
+      }
+      
       if (selectedProduct && isEditDialogOpen) {
         // Update existing product
         const { error } = await supabase
@@ -182,14 +222,36 @@ const ManageProducts = () => {
         
         if (error) throw error;
         
-        setProducts(products.map(p => p.id === selectedProduct.id ? { ...formData, id: selectedProduct.id } : p));
+        // Determine which list to update
+        if (formData.in_stock) {
+          // Product is in-stock, should be in products list
+          setProducts(
+            products
+              .filter(p => p.id !== selectedProduct.id) // Remove from current list if it's there
+              .concat([{ ...formData, id: selectedProduct.id }]) // Add updated product
+          );
+          // Remove from recently sold out if it was there
+          setRecentlySoldOut(recentlySoldOut.filter(p => p.id !== selectedProduct.id));
+        } else {
+          // Product is out-of-stock, should be in recently sold out list if it has last_seen_in_stock
+          if (formData.last_seen_in_stock) {
+            setRecentlySoldOut(
+              recentlySoldOut
+                .filter(p => p.id !== selectedProduct.id) // Remove from current list if it's there
+                .concat([{ ...formData, id: selectedProduct.id }]) // Add updated product
+            );
+          }
+          // Remove from products list
+          setProducts(products.filter(p => p.id !== selectedProduct.id));
+        }
+        
         toast({
           title: "Success",
           description: "Product updated successfully",
         });
         setIsEditDialogOpen(false);
       } else {
-        // Add new product - explicitly don't include an id field
+        // Add new product
         const { data, error } = await supabase
           .from('products')
           .insert(formData)
@@ -198,7 +260,13 @@ const ManageProducts = () => {
         if (error) throw error;
         
         if (data && data.length > 0) {
-          setProducts([...products, data[0]]);
+          // Add to appropriate list based on in_stock status
+          if (data[0].in_stock) {
+            setProducts([...products, data[0]]);
+          } else if (data[0].last_seen_in_stock) {
+            setRecentlySoldOut([...recentlySoldOut, data[0]]);
+          }
+          
           toast({
             title: "Success",
             description: "Product added successfully",
@@ -216,6 +284,19 @@ const ManageProducts = () => {
     }
   };
 
+  const formatLastSeenDate = (dateString?: string) => {
+    if (!dateString) return "N/A";
+    
+    try {
+      const date = parseISO(dateString);
+      if (!isValid(date)) return "Invalid date";
+      return format(date, "MMM d, yyyy 'at' h:mm a");
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return "Invalid date";
+    }
+  };
+
   return (
     <RequireAdmin>
       <Layout>
@@ -228,73 +309,144 @@ const ManageProducts = () => {
               </Button>
             </CardHeader>
             <CardContent>
-              {loading ? (
-                <div className="text-center py-8">Loading products...</div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>ID</TableHead>
-                        <TableHead>Product Line</TableHead>
-                        <TableHead>Product</TableHead>
-                        <TableHead>Source</TableHead>
-                        <TableHead>Price</TableHead>
-                        <TableHead>MSRP</TableHead>
-                        <TableHead>Stock</TableHead>
-                        <TableHead>Featured</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {products.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={9} className="text-center h-24">
-                            No products found
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        products.map((product) => (
-                          <TableRow key={product.id}>
-                            <TableCell>{product.id}</TableCell>
-                            <TableCell>{product.product_line}</TableCell>
-                            <TableCell>{product.product}</TableCell>
-                            <TableCell>{product.source}</TableCell>
-                            <TableCell>${product.price.toFixed(2)}</TableCell>
-                            <TableCell>
-                              {product.msrp ? `$${product.msrp.toFixed(2)}` : 'N/A'}
-                            </TableCell>
-                            <TableCell>
-                              {product.in_stock === true ? "In Stock" : 
-                               product.in_stock === false ? "Out of Stock" : "Unknown"}
-                            </TableCell>
-                            <TableCell>
-                              {product.featured === true ? "Featured" : "Not Featured"}
-                            </TableCell>
-                            <TableCell className="text-right space-x-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleEdit(product)}
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleDelete(product)}
-                                className="text-red-500 hover:text-red-600"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </TableCell>
+              <Tabs defaultValue="in-stock" value={activeTab} onValueChange={setActiveTab}>
+                <TabsList className="mb-6">
+                  <TabsTrigger value="in-stock" className="flex items-center">
+                    <Package className="h-4 w-4 mr-2" />
+                    In Stock
+                  </TabsTrigger>
+                  <TabsTrigger value="sold-out" className="flex items-center">
+                    <PackageX className="h-4 w-4 mr-2" />
+                    Recently Sold Out
+                  </TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="in-stock">
+                  {loading ? (
+                    <div className="text-center py-8">Loading products...</div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>ID</TableHead>
+                            <TableHead>Product Line</TableHead>
+                            <TableHead>Product</TableHead>
+                            <TableHead>Source</TableHead>
+                            <TableHead>Price</TableHead>
+                            <TableHead>MSRP</TableHead>
+                            <TableHead>Featured</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
                           </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
+                        </TableHeader>
+                        <TableBody>
+                          {products.length === 0 ? (
+                            <TableRow>
+                              <TableCell colSpan={8} className="text-center h-24">
+                                No products found
+                              </TableCell>
+                            </TableRow>
+                          ) : (
+                            products.map((product) => (
+                              <TableRow key={product.id}>
+                                <TableCell>{product.id}</TableCell>
+                                <TableCell>{product.product_line}</TableCell>
+                                <TableCell>{product.product}</TableCell>
+                                <TableCell>{product.source}</TableCell>
+                                <TableCell>${product.price.toFixed(2)}</TableCell>
+                                <TableCell>
+                                  {product.msrp ? `$${product.msrp.toFixed(2)}` : 'N/A'}
+                                </TableCell>
+                                <TableCell>
+                                  {product.featured === true ? "Featured" : "Not Featured"}
+                                </TableCell>
+                                <TableCell className="text-right space-x-2">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleEdit(product)}
+                                  >
+                                    <Pencil className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleDelete(product)}
+                                    className="text-red-500 hover:text-red-600"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+                </TabsContent>
+                
+                <TabsContent value="sold-out">
+                  {loading ? (
+                    <div className="text-center py-8">Loading products...</div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>ID</TableHead>
+                            <TableHead>Product Line</TableHead>
+                            <TableHead>Product</TableHead>
+                            <TableHead>Source</TableHead>
+                            <TableHead>Price</TableHead>
+                            <TableHead>Last Seen In-Stock</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {recentlySoldOut.length === 0 ? (
+                            <TableRow>
+                              <TableCell colSpan={7} className="text-center h-24">
+                                No recently sold out products found
+                              </TableCell>
+                            </TableRow>
+                          ) : (
+                            recentlySoldOut.map((product) => (
+                              <TableRow key={product.id}>
+                                <TableCell>{product.id}</TableCell>
+                                <TableCell>{product.product_line}</TableCell>
+                                <TableCell>{product.product}</TableCell>
+                                <TableCell>{product.source}</TableCell>
+                                <TableCell>${product.price.toFixed(2)}</TableCell>
+                                <TableCell>
+                                  {formatLastSeenDate(product.last_seen_in_stock)}
+                                </TableCell>
+                                <TableCell className="text-right space-x-2">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleEdit(product)}
+                                  >
+                                    <Pencil className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleDelete(product)}
+                                    className="text-red-500 hover:text-red-600"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+                </TabsContent>
+              </Tabs>
             </CardContent>
           </Card>
 
@@ -447,6 +599,20 @@ const ManageProducts = () => {
                       </Label>
                     </div>
                   </div>
+                  
+                  {/* Last Seen In-Stock - read-only display */}
+                  {selectedProduct && selectedProduct.last_seen_in_stock && (
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label className="text-right">
+                        Last Seen In-Stock
+                      </Label>
+                      <div className="col-span-3">
+                        <p className="text-sm text-gray-600">
+                          {formatLastSeenDate(selectedProduct.last_seen_in_stock)}
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <DialogFooter>
                   <Button type="submit">Save Changes</Button>
