@@ -45,7 +45,7 @@ export const Card = ({
 
   return (
     <div
-      className="w-full max-w-[340px] h-full bg-white rounded-[10px] p-4 shadow-md flex flex-col"
+      className="w-full max-w-[340px] h-full bg-white p-4 shadow-md flex flex-col"
       style={{ minHeight: "480px" }}
     >
       {/* Product Image */}
@@ -106,7 +106,7 @@ export const Card = ({
           target="_blank"
           rel="noopener noreferrer"
           onClick={onListingClick}
-          className={`w-full block text-center py-[13px] px-[25px] rounded-[4px] font-semibold text-[14px] ${
+          className={`w-full block text-center py-[13px] px-[25px] font-semibold text-[14px] ${
             inStock 
               ? "bg-[#ea384c] hover:bg-[#d32f42] text-white" 
               : "bg-[#ea384c] hover:bg-[#d32f42] text-white opacity-90"
