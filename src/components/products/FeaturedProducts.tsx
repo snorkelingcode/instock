@@ -1,7 +1,8 @@
+
 import React from "react";
 import { Card } from "@/components/landing/Card";
 import { Skeleton } from "@/components/ui/skeleton";
-import DiscoCardEffect from "@/components/ui/DiscoCardEffect.tsx";
+import DiscoCardEffect from "@/components/ui/DiscoCardEffect";
 
 interface Product {
   id: number;
