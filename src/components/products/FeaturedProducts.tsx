@@ -14,7 +14,7 @@ interface Product {
   image_link?: string;
   in_stock?: boolean;
   featured?: boolean;
-  last_seen_in_stock?: string;
+  last_seen_in_stock?: string;  // Added this property to resolve TypeScript error
 }
 
 interface FeaturedProductsProps {
