@@ -2,9 +2,12 @@
 import { useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import Layout from "@/components/layout/Layout";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 const NotFound = () => {
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Log the attempted access to a non-existent route
@@ -13,18 +16,12 @@ const NotFound = () => {
       location.pathname
     );
     
-    // Add a meta tag to prevent ad serving on this page
-    const noAdsMetaTag = document.createElement('meta');
-    noAdsMetaTag.name = 'robots';
-    noAdsMetaTag.content = 'noindex, nofollow, noodp, noydir';
-    document.head.appendChild(noAdsMetaTag);
+    // Add meta tags to help search engines understand this is a 404 page
+    const noIndexMetaTag = document.createElement('meta');
+    noIndexMetaTag.name = 'robots';
+    noIndexMetaTag.content = 'noindex, nofollow';
+    document.head.appendChild(noIndexMetaTag);
     
-    // Also add a meta tag specifically for AdSense
-    const noAdsenseMetaTag = document.createElement('meta');
-    noAdsenseMetaTag.name = 'googlebot';
-    noAdsenseMetaTag.content = 'noindex';
-    document.head.appendChild(noAdsenseMetaTag);
-
     // Set status code for crawlers
     const statusCodeMeta = document.createElement('meta');
     statusCodeMeta.name = 'prerender-status-code';
@@ -33,9 +30,8 @@ const NotFound = () => {
     
     return () => {
       // Clean up meta tags when component unmounts
-      document.head.removeChild(noAdsMetaTag);
-      if (document.head.contains(noAdsenseMetaTag)) {
-        document.head.removeChild(noAdsenseMetaTag);
+      if (document.head.contains(noIndexMetaTag)) {
+        document.head.removeChild(noIndexMetaTag);
       }
       if (document.head.contains(statusCodeMeta)) {
         document.head.removeChild(statusCodeMeta);
@@ -43,9 +39,12 @@ const NotFound = () => {
     };
   }, [location.pathname]);
 
+  const handleGoHome = () => {
+    navigate('/');
+  };
+
   return (
     <Layout>
-      {/* Use Layout component but with a special class for 404 pages */}
       <div className="min-h-[60vh] flex items-center justify-center bg-gray-100">
         <div className="text-center bg-white p-8 rounded-lg shadow-md max-w-md">
           <h1 className="text-5xl font-bold mb-4 text-red-500">404</h1>
@@ -54,12 +53,12 @@ const NotFound = () => {
             We couldn't find the page you were looking for. It might have been removed,
             renamed, or didn't exist in the first place.
           </p>
-          <a 
-            href="/" 
-            className="text-white bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-md transition-colors inline-block"
+          <Button 
+            onClick={handleGoHome}
+            className="text-white bg-blue-600 hover:bg-blue-700 transition-colors"
           >
             Return to Home
-          </a>
+          </Button>
         </div>
       </div>
     </Layout>
