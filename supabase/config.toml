@@ -1,3 +1,4 @@
+
 # Project ID should remain as the first line
 project_id = "etgkuasmqjidwtaxrfww"
 
@@ -18,6 +19,7 @@ enable_confirmations = true
 sender_name = "TCG Updates"
 admin_email = "noreply@tcgupdates.com"
 host = "smtp.sendgrid.net"  # Updated to SendGrid's SMTP host
+port = 587  # Added the required SMTP port
 
 [auth.external.apple]
 enabled = false
