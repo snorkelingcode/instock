@@ -1,42 +1,91 @@
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { PackageX, Package as PackageIcon } from "lucide-react";
 
 interface CardProps {
-  productLine: string;
-  product: string;
-  source: string;
-  price: number;
+  productLine?: string;
+  product?: string;
+  source?: string;
+  price?: number;
   msrp?: number;
-  listingLink: string;
+  listingLink?: string;
   imageLink?: string;
   onListingClick?: () => void;
-  index: number;
+  index?: number;
   inStock?: boolean;
   lastSeenInStock?: string;
 }
 
-export const Card = ({
-  productLine,
-  product,
-  source,
+export const Card: React.FC<CardProps> = ({
+  productLine = "Product Line",
+  product = "Product",
+  source = "Source",
   price,
   msrp,
   listingLink,
   imageLink,
   onListingClick,
-  index,
+  index = 0,
   inStock = true,
   lastSeenInStock,
-}: CardProps) => {
-  const discount = msrp ? Math.round(((msrp - price) / msrp) * 100) : 0;
+}) => {
+  const [cardColor, setCardColor] = useState("");
+  const [isButtonHovered, setIsButtonHovered] = useState(false);
   
-  // Default image if none provided
-  const defaultImage = "https://via.placeholder.com/140x140?text=No+Image";
+  // Calculate discount percentage if MSRP is provided and price is less than MSRP
+  const discountPercentage = msrp && price && msrp > price
+    ? Math.round(((msrp - price) / msrp) * 100)
+    : null;
   
-  // Determine if discount is worth showing (> 0%)
-  const showDiscount = discount > 0;
-  
+  // Red shades array for the disco effect - matching DiscoCardEffect
+  const redColors = [
+    "#FF0000", // Pure red
+    "#DC143C", // Crimson
+    "#CD5C5C", // Indian Red
+    "#B22222", // Firebrick
+    "#A52A2A", // Brown
+    "#FF6347", // Tomato
+    "#FF4500", // OrangeRed
+    "#E34234", // Vermilion
+    "#C41E3A", // Cardinal
+    "#D70040"  // Crimson glory
+  ];
+
+  const getRandomColor = (currentColor: string) => {
+    const filteredColors = redColors.filter(color => color !== currentColor);
+    return filteredColors[Math.floor(Math.random() * filteredColors.length)];
+  };
+
+  useEffect(() => {
+    if (!cardColor) {
+      setCardColor(redColors[index % redColors.length]);
+      return;
+    }
+    
+    const animateCard = () => {
+      const newColor = getRandomColor(cardColor);
+      setCardColor(newColor);
+    };
+    
+    const intervalId = window.setInterval(
+      animateCard, 
+      Math.floor(Math.random() * 2000) + 5000
+    );
+    
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [cardColor, index]);
+
+  const handleClick = () => {
+    if (listingLink) {
+      window.open(listingLink, "_blank");
+    }
+    if (onListingClick) {
+      onListingClick();
+    }
+  };
+
   // Different button label based on stock status
   const buttonLabel = inStock ? "View Listing" : "View Details";
   
@@ -46,12 +95,16 @@ export const Card = ({
   return (
     <div
       className="w-full max-w-[340px] h-full bg-white p-4 shadow-md flex flex-col"
-      style={{ minHeight: "480px" }}
+      style={{ 
+        minHeight: "480px",
+        boxShadow: cardColor ? `0px 2px 15px 2px ${cardColor}40` : undefined,
+        border: cardColor ? `1px solid ${cardColor}60` : undefined,
+      }}
     >
       {/* Product Image */}
       <div className="flex justify-center items-center py-4">
         <img
-          src={imageLink || defaultImage}
+          src={imageLink || "https://via.placeholder.com/140x140?text=No+Image"}
           alt={product}
           className="w-[140px] h-[140px] object-contain"
           loading="lazy"
@@ -71,15 +124,15 @@ export const Card = ({
         {/* Price and MSRP */}
         <div className="flex items-baseline mt-1 mb-2">
           <div className="text-[18px] font-semibold text-[#111827]">
-            ${price.toFixed(2)}
+            ${price?.toFixed(2)}
           </div>
-          {showDiscount && msrp && (
+          {discountPercentage && msrp && (
             <>
               <div className="text-[14px] text-[#6B7280] line-through ml-2">
                 ${msrp.toFixed(2)}
               </div>
               <div className="text-[14px] text-[#10B981] ml-2">
-                {discount}% off
+                {discountPercentage}% off
               </div>
             </>
           )}
