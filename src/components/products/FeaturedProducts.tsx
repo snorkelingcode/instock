@@ -2,6 +2,7 @@
 import React from "react";
 import { Card } from "@/components/landing/Card";
 import { Skeleton } from "@/components/ui/skeleton";
+import DiscoCardEffect from "@/components/ui/DiscoCardEffect";
 
 interface Product {
   id: number;
@@ -62,18 +63,20 @@ const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
       <>
         {products.map((product, index) => (
           <div key={product.id} className="flex justify-center">
-            <Card 
-              productLine={product.product_line}
-              product={product.product}
-              source={product.source}
-              price={product.price}
-              msrp={product.msrp}
-              listingLink={product.listing_link}
-              imageLink={product.image_link}
-              inStock={product.in_stock !== false}
-              index={index}
-              lastSeenInStock={product.last_seen_in_stock}
-            />
+            <DiscoCardEffect index={index}>
+              <Card 
+                productLine={product.product_line}
+                product={product.product}
+                source={product.source}
+                price={product.price}
+                msrp={product.msrp}
+                listingLink={product.listing_link}
+                imageLink={product.image_link}
+                inStock={product.in_stock !== false}
+                index={index}
+                lastSeenInStock={product.last_seen_in_stock}
+              />
+            </DiscoCardEffect>
           </div>
         ))}
       </>

@@ -108,8 +108,8 @@ export const Card = ({
           onClick={onListingClick}
           className={`w-full block text-center py-[13px] px-[25px] rounded-[4px] font-semibold text-[14px] ${
             inStock 
-              ? "bg-blue-600 hover:bg-blue-700 text-white" 
-              : "bg-gray-200 hover:bg-gray-300 text-gray-800"
+              ? "bg-[#ea384c] hover:bg-[#d32f42] text-white" 
+              : "bg-[#ea384c] hover:bg-[#d32f42] text-white opacity-90"
           } transition-colors`}
         >
           {buttonLabel}
