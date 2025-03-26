@@ -39,4 +39,21 @@ const addSeoTags = () => {
 // Initialize SEO tags
 addSeoTags();
 
-createRoot(document.getElementById("root")!).render(<App />);
+// Function to remove the loader
+const removeLoader = () => {
+  const loader = document.getElementById('initialLoader');
+  if (loader) {
+    loader.classList.add('fade-out');
+    setTimeout(() => {
+      loader.remove();
+    }, 500); // Matches the fadeOut animation duration
+  }
+};
+
+// Render our app
+const root = createRoot(document.getElementById("root")!)
+root.render(<App />);
+
+// Remove the loader once the app has rendered
+// Using a small delay to ensure everything is loaded properly
+setTimeout(removeLoader, 800);
