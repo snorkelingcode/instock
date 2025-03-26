@@ -43,24 +43,35 @@
         z-index: 9999;
       }
       
+      .loader-container {
+        position: relative;
+        width: 200px;
+        height: 200px;
+        margin-bottom: 1rem;
+      }
+      
       .loader-logo {
-        width: 180px;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 120px;
         height: auto;
-        margin-bottom: 1.5rem;
+        z-index: 10;
       }
       
       .loader-spinner {
-        display: inline-block;
-        width: 50px;
-        height: 50px;
-        border: 3px solid rgba(234, 56, 77, 0.2);
-        border-radius: 50%;
-        border-top-color: #ea384d;
-        animation: spin 1s ease-in-out infinite;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 200px;
+        height: auto;
+        animation: spin 2s linear infinite;
       }
       
       .loader-text {
-        margin-top: 1rem;
+        margin-top: 0.5rem;
         font-family: 'Inter', sans-serif;
         font-size: 1rem;
         color: #4a4a4a;
@@ -68,7 +79,7 @@
       
       @keyframes spin {
         to {
-          transform: rotate(360deg);
+          transform: translate(-50%, -50%) rotate(360deg);
         }
       }
       
@@ -87,8 +98,10 @@
   <body>
     <div id="root">
       <div class="initial-loader" id="initialLoader">
-        <img src="/lovable-uploads/e60afbdf-2426-466b-ae0b-ebe03404efc4.png" alt="TCG Updates" class="loader-logo" />
-        <div class="loader-spinner"></div>
+        <div class="loader-container">
+          <img src="/lovable-uploads/28915015-7dd0-40cc-b4aa-2a7315e689fb.png" alt="TCG Updates" class="loader-logo" />
+          <img src="/lovable-uploads/d2ebd92a-d985-443a-aeef-7829896aad77.png" alt="Loading" class="loader-spinner" />
+        </div>
         <div class="loader-text">Loading TCG updates...</div>
       </div>
     </div>

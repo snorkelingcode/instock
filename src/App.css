@@ -20,3 +20,17 @@
     animation: logo-spin infinite 20s linear;
   }
 }
+
+/* Add custom animation for the loading spinner */
+@keyframes spin-slow {
+  from {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 2s linear infinite;
+}
