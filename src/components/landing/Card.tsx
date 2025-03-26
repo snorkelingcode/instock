@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { PackageX, Package as PackageIcon } from "lucide-react";
 
@@ -31,15 +30,12 @@ export const Card: React.FC<CardProps> = ({
 }) => {
   const [isButtonHovered, setIsButtonHovered] = useState(false);
   
-  // Calculate discount percentage if MSRP is provided and price is less than MSRP
   const discountPercentage = msrp && price && msrp > price
     ? Math.round(((msrp - price) / msrp) * 100)
     : null;
   
-  // Different button label based on stock status
   const buttonLabel = inStock ? "View Listing" : "View Details";
   
-  // Different icon based on stock status
   const StatusIcon = inStock ? PackageIcon : PackageX;
 
   const handleClick = () => {
@@ -60,7 +56,6 @@ export const Card: React.FC<CardProps> = ({
         minHeight: "480px",
       }}
     >
-      {/* Product Image */}
       <div className="w-[140px] h-[140px] mx-auto mt-6 overflow-hidden rounded-md bg-white">
         <img 
           src={imageLink || "https://via.placeholder.com/140x140?text=No+Image"} 
@@ -73,7 +68,6 @@ export const Card: React.FC<CardProps> = ({
         />
       </div>
 
-      {/* Product Details */}
       <div className="px-[41px] py-[15px]">
         <div className="text-xl text-[#1E1E1E] mb-[6px]">{productLine}</div>
         <div className="text-xl text-[#1E1E1E] mb-[6px]">{product}</div>
@@ -101,13 +95,11 @@ export const Card: React.FC<CardProps> = ({
           )}
         </div>
         
-        {/* Stock Status Indicator */}
         <div className={`flex items-center text-sm ${inStock ? 'text-green-600' : 'text-red-600'} mt-3`}>
           <StatusIcon className="h-4 w-4 mr-1" />
           <span>{inStock ? 'In Stock' : 'Out of Stock'}</span>
         </div>
         
-        {/* Last Seen In-Stock - Only show for out of stock items */}
         {!inStock && lastSeenInStock && (
           <div className="text-xs text-gray-500 mt-1">
             Last seen in stock: {lastSeenInStock}
@@ -115,7 +107,6 @@ export const Card: React.FC<CardProps> = ({
         )}
       </div>
 
-      {/* View Listing Button */}
       <button
         onClick={handleClick}
         onMouseEnter={() => setIsButtonHovered(true)}

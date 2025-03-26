@@ -1,9 +1,9 @@
-
 import React, { useState, useEffect } from "react";
 import { Card } from "./Card";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import DiscoCardEffect from "@/components/ui/DiscoCardEffect";
 
 interface Product {
   id: number;
@@ -133,19 +133,21 @@ export const CardGrid: React.FC = () => {
               
               return (
                 <div key={product.id} className="w-full max-w-[340px]">
-                  <Card 
-                    productLine={product.product_line}
-                    product={product.product}
-                    source={product.source}
-                    price={product.price}
-                    msrp={product.msrp}
-                    listingLink={product.listing_link}
-                    imageLink={product.image_link}
-                    onListingClick={() => handleListingClick(product.id)}
-                    index={cardIndex}
-                    inStock={product.in_stock !== false}
-                    lastSeenInStock={product.last_seen_in_stock}
-                  />
+                  <DiscoCardEffect index={cardIndex}>
+                    <Card 
+                      productLine={product.product_line}
+                      product={product.product}
+                      source={product.source}
+                      price={product.price}
+                      msrp={product.msrp}
+                      listingLink={product.listing_link}
+                      imageLink={product.image_link}
+                      onListingClick={() => handleListingClick(product.id)}
+                      index={cardIndex}
+                      inStock={product.in_stock !== false}
+                      lastSeenInStock={product.last_seen_in_stock}
+                    />
+                  </DiscoCardEffect>
                 </div>
               );
             })}

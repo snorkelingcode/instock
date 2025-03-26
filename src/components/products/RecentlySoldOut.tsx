@@ -1,8 +1,8 @@
-
 import React from "react";
 import { Card as ProductCard } from "@/components/landing/Card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format, isValid, parseISO } from "date-fns";
+import DiscoCardEffect from "@/components/ui/DiscoCardEffect";
 
 interface Product {
   id: number;
@@ -34,7 +34,6 @@ const SoldOutCardSkeleton = () => (
 );
 
 const RecentlySoldOut: React.FC<RecentlySoldOutProps> = ({ products, loading }) => {
-  // Set 3 items per row for all pages
   const itemsPerRow = 3;
   const itemRows = [];
   
@@ -42,7 +41,6 @@ const RecentlySoldOut: React.FC<RecentlySoldOutProps> = ({ products, loading }) 
     itemRows.push(products.slice(i, i + itemsPerRow));
   }
 
-  // Create skeleton layout for loading state
   const skeletonRows = [];
   for (let i = 0; i < 1; i++) {  // Just one row of skeletons
     const row = [];
@@ -72,7 +70,6 @@ const RecentlySoldOut: React.FC<RecentlySoldOutProps> = ({ products, loading }) 
       aria-label="Recently Sold Out"
     >
       {loading ? (
-        // Show skeleton UI while loading
         skeletonRows.map((row, rowIndex) => (
           <div 
             key={`skeleton-row-${rowIndex}`}
@@ -90,26 +87,26 @@ const RecentlySoldOut: React.FC<RecentlySoldOutProps> = ({ products, loading }) 
             className="flex justify-center gap-[19px] max-md:flex-col max-md:items-center w-full mx-auto"
           >
             {row.map((product, idx) => {
-              // Calculate a unique index for each card based on its position
               const cardIndex = rowIndex * itemsPerRow + idx;
               
               return (
                 <div key={product.id} className="w-full max-w-[340px]">
-                  <ProductCard 
-                    productLine={product.product_line}
-                    product={product.product}
-                    source={product.source}
-                    price={product.price}
-                    listingLink={product.listing_link}
-                    imageLink={product.image_link}
-                    index={cardIndex}
-                    inStock={false}
-                    lastSeenInStock={formatLastSeenDate(product.last_seen_in_stock)}
-                  />
+                  <DiscoCardEffect index={cardIndex}>
+                    <ProductCard 
+                      productLine={product.product_line}
+                      product={product.product}
+                      source={product.source}
+                      price={product.price}
+                      listingLink={product.listing_link}
+                      imageLink={product.image_link}
+                      index={cardIndex}
+                      inStock={false}
+                      lastSeenInStock={formatLastSeenDate(product.last_seen_in_stock)}
+                    />
+                  </DiscoCardEffect>
                 </div>
               );
             })}
-            {/* Fill empty spaces in the last row to maintain layout */}
             {rowIndex === itemRows.length - 1 && row.length < itemsPerRow && 
               Array(itemsPerRow - row.length).fill(0).map((_, i) => (
                 <div key={`empty-${i}`} className="w-[340px] h-[440px] invisible max-md:hidden" />
