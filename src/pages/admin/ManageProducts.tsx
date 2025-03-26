@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -52,7 +53,7 @@ interface Product {
   image_link?: string;
   in_stock?: boolean;
   featured?: boolean;
-  last_seen_in_stock?: string;
+  last_seen_in_stock?: string;  // Added this line to resolve the TypeScript error
 }
 
 const ManageProducts = () => {
