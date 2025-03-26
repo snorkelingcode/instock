@@ -1,6 +1,6 @@
 
 import React from "react";
-import { packageX, package as packageIcon } from "lucide-react";
+import { PackageX, Package as PackageIcon } from "lucide-react";
 
 interface CardProps {
   productLine: string;
@@ -41,7 +41,7 @@ export const Card = ({
   const buttonLabel = inStock ? "View Listing" : "View Details";
   
   // Different icon based on stock status
-  const StatusIcon = inStock ? packageIcon : packageX;
+  const StatusIcon = inStock ? PackageIcon : PackageX;
 
   return (
     <div

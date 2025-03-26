@@ -14,6 +14,7 @@ interface Product {
   image_link?: string;
   in_stock?: boolean;
   featured?: boolean;
+  last_seen_in_stock?: string;
 }
 
 interface FeaturedProductsProps {
@@ -69,9 +70,9 @@ const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
               msrp={product.msrp}
               listingLink={product.listing_link}
               imageLink={product.image_link}
-              // The error is here - removing the 'inStock' prop since it doesn't exist in CardProps
-              // Instead, looking at the Card component, there's no direct 'inStock' property
+              inStock={product.in_stock !== false}
               index={index}
+              lastSeenInStock={product.last_seen_in_stock}
             />
           </div>
         ))}
