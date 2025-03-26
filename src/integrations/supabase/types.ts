@@ -776,54 +776,6 @@ export type Database = {
         }
         Relationships: []
       }
-      stock_monitors: {
-        Row: {
-          check_frequency: number | null
-          consecutive_errors: number | null
-          created_at: string | null
-          error_message: string | null
-          id: string
-          is_active: boolean | null
-          last_checked: string | null
-          name: string
-          status: string | null
-          target_text: string | null
-          updated_at: string | null
-          url: string
-          user_id: string | null
-        }
-        Insert: {
-          check_frequency?: number | null
-          consecutive_errors?: number | null
-          created_at?: string | null
-          error_message?: string | null
-          id?: string
-          is_active?: boolean | null
-          last_checked?: string | null
-          name: string
-          status?: string | null
-          target_text?: string | null
-          updated_at?: string | null
-          url: string
-          user_id?: string | null
-        }
-        Update: {
-          check_frequency?: number | null
-          consecutive_errors?: number | null
-          created_at?: string | null
-          error_message?: string | null
-          id?: string
-          is_active?: boolean | null
-          last_checked?: string | null
-          name?: string
-          status?: string | null
-          target_text?: string | null
-          updated_at?: string | null
-          url?: string
-          user_id?: string | null
-        }
-        Relationships: []
-      }
       tcg_download_jobs: {
         Row: {
           completed_at: string | null

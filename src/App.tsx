@@ -31,6 +31,8 @@ import ManageModels from "./pages/admin/ManageModels";
 import ManageProducts from "./pages/admin/ManageProducts";
 import UserManagement from "./pages/admin/UserManagement";
 
+// Remove any stock monitor related imports (none found in this file)
+
 const queryClient = new QueryClient();
 
 const App = () => {
