@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -60,7 +59,15 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
         const formattedComments = commentsData.map(comment => {
           // For the current user, use their email from the session
           const isCurrentUser = user && comment.user_id === user.id;
-          const userEmail = isCurrentUser ? user.email : `user-${comment.user_id.substring(0, 8)}@example.com`;
+          
+          // Get email or extract username from email for display
+          let userEmail;
+          if (isCurrentUser && user.email) {
+            userEmail = user.email;
+          } else {
+            // Create a username from the user ID instead of showing the full ID
+            userEmail = `user${comment.user_id.substring(0, 4)}`;
+          }
           
           return {
             id: comment.id,
@@ -192,8 +199,21 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
     });
   };
   
-  const getUserInitials = (email: string) => {
-    return email.substring(0, 2).toUpperCase();
+  const getUserInitials = (identifier: string) => {
+    // If it looks like an email, get the first two characters of the first part
+    if (identifier.includes('@')) {
+      return identifier.split('@')[0].substring(0, 2).toUpperCase();
+    }
+    // Otherwise just take the first two chars of the identifier
+    return identifier.substring(0, 2).toUpperCase();
+  };
+  
+  const getDisplayName = (identifier: string) => {
+    // If it's an email, extract the username part
+    if (identifier.includes('@')) {
+      return identifier.split('@')[0];
+    }
+    return identifier;
   };
 
   const canDeleteComment = (commentUserId: string) => {
@@ -254,7 +274,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
                 <div className="flex-1">
                   <div className="flex flex-col sm:flex-row sm:justify-between sm:items-baseline">
                     <div className="flex items-center gap-2">
-                      <p className="font-medium">{comment.user_email}</p>
+                      <p className="font-medium">{getDisplayName(comment.user_email)}</p>
                       {user && user.id === comment.user_id && (
                         <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">You</span>
                       )}
