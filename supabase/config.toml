@@ -1,4 +1,3 @@
-
 # Project ID should remain as the first line
 project_id = "etgkuasmqjidwtaxrfww"
 
@@ -18,7 +17,7 @@ enable_confirmations = true
 [auth.email.smtp]
 sender_name = "TCG Updates"
 admin_email = "noreply@tcgupdates.com"
-host = "smtp.example.com"  # Adding the missing required field
+host = "smtp.sendgrid.net"  # Updated to SendGrid's SMTP host
 
 [auth.external.apple]
 enabled = false
