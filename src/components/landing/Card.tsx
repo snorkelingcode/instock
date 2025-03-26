@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { PackageX, Package as PackageIcon } from "lucide-react";
 
 interface CardProps {
@@ -53,10 +53,10 @@ export const Card: React.FC<CardProps> = ({
 
   return (
     <div
-      className="w-[340px] h-[480px] relative bg-white rounded-lg border border-rose-100 max-md:mb-5 transition-all duration-300 overflow-hidden"
+      className="w-[340px] h-[480px] relative bg-white rounded-lg border border-rose-100 transition-all duration-300 overflow-hidden"
       role="article"
       style={{
-        width: 'min(340px, 100%)', // Ensures card never exceeds container width
+        width: '340px', // Fixed width to ensure consistency
         minHeight: "480px",
       }}
     >

@@ -60,7 +60,7 @@ const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
     return (
       <>
         {products.map((product, index) => (
-          <div key={product.id} className="flex justify-center">
+          <div key={product.id} className="flex justify-center w-full">
             <DiscoCardEffect index={index}>
               <Card 
                 productLine={product.product_line}

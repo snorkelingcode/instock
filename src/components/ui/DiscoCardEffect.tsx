@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from "react";
+import React from "react";
 
 interface DiscoCardEffectProps {
   children: React.ReactNode;
@@ -12,12 +12,12 @@ const DiscoCardEffect: React.FC<DiscoCardEffectProps> = ({
   className = "",
   index = 0
 }) => {
-  // We're not using the disco effect anymore, just wrapping the children
   return (
     <div
-      className={`relative rounded-lg shadow-md hover:shadow-lg transition-all duration-300 ${className}`}
+      className={`relative rounded-lg transition-all duration-300 ${className}`}
       style={{
-        boxShadow: "0px 2px 8px rgba(234, 76, 76, 0.15)"
+        boxShadow: "0px 2px 12px rgba(234, 56, 76, 0.25)",
+        border: "1px solid rgba(234, 56, 76, 0.3)"
       }}
     >
       {children}
