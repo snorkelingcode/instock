@@ -25,7 +25,7 @@ interface FeaturedProductsProps {
 }
 
 const FeaturedProductSkeleton = () => (
-  <div className="flex flex-col space-y-3 p-4 w-full bg-white shadow-md">
+  <div className="flex flex-col space-y-3 p-4 w-full bg-white shadow-md rounded-lg">
     <Skeleton className="h-[140px] w-[140px] rounded-md mx-auto" />
     <Skeleton className="h-5 w-4/5" />
     <Skeleton className="h-5 w-3/5" />

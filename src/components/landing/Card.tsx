@@ -29,7 +29,6 @@ export const Card: React.FC<CardProps> = ({
   inStock = true,
   lastSeenInStock,
 }) => {
-  const [cardColor, setCardColor] = useState("");
   const [isButtonHovered, setIsButtonHovered] = useState(false);
   
   // Calculate discount percentage if MSRP is provided and price is less than MSRP
@@ -37,45 +36,11 @@ export const Card: React.FC<CardProps> = ({
     ? Math.round(((msrp - price) / msrp) * 100)
     : null;
   
-  // Red shades array for the disco effect - matching DiscoCardEffect
-  const redColors = [
-    "#FF0000", // Pure red
-    "#DC143C", // Crimson
-    "#CD5C5C", // Indian Red
-    "#B22222", // Firebrick
-    "#A52A2A", // Brown
-    "#FF6347", // Tomato
-    "#FF4500", // OrangeRed
-    "#E34234", // Vermilion
-    "#C41E3A", // Cardinal
-    "#D70040"  // Crimson glory
-  ];
-
-  const getRandomColor = (currentColor: string) => {
-    const filteredColors = redColors.filter(color => color !== currentColor);
-    return filteredColors[Math.floor(Math.random() * filteredColors.length)];
-  };
-
-  useEffect(() => {
-    if (!cardColor) {
-      setCardColor(redColors[index % redColors.length]);
-      return;
-    }
-    
-    const animateCard = () => {
-      const newColor = getRandomColor(cardColor);
-      setCardColor(newColor);
-    };
-    
-    const intervalId = window.setInterval(
-      animateCard, 
-      Math.floor(Math.random() * 2000) + 5000
-    );
-    
-    return () => {
-      window.clearInterval(intervalId);
-    };
-  }, [cardColor, index]);
+  // Different button label based on stock status
+  const buttonLabel = inStock ? "View Listing" : "View Details";
+  
+  // Different icon based on stock status
+  const StatusIcon = inStock ? PackageIcon : PackageX;
 
   const handleClick = () => {
     if (listingLink) {
@@ -86,19 +51,11 @@ export const Card: React.FC<CardProps> = ({
     }
   };
 
-  // Different button label based on stock status
-  const buttonLabel = inStock ? "View Listing" : "View Details";
-  
-  // Different icon based on stock status
-  const StatusIcon = inStock ? PackageIcon : PackageX;
-
   return (
     <div
-      className="w-[340px] h-[480px] relative bg-white max-md:mb-5 transition-all duration-1000 overflow-hidden"
+      className="w-[340px] h-[480px] relative bg-white rounded-lg border border-rose-100 max-md:mb-5 transition-all duration-300 overflow-hidden"
       role="article"
       style={{
-        boxShadow: cardColor ? `0px 2px 15px 2px ${cardColor}40` : undefined,
-        border: cardColor ? `1px solid ${cardColor}60` : undefined,
         width: 'min(340px, 100%)', // Ensures card never exceeds container width
         minHeight: "480px",
       }}
