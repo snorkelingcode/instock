@@ -246,50 +246,52 @@ export const marketDataService = {
         return [];
       }
 
-      // If no data from the database, return an empty array - we'll handle mocking in the component
-      if (!data || data.length === 0) {
+      // Process data if available
+      if (data && data.length > 0) {
+        console.log(`Found ${data.length} ${gradingService} market data records`);
+        
+        // Calculate total population and market cap for each card
+        const processedData = data.map(card => {
+          const totalPopulation = [
+            card.population_10,
+            card.population_9,
+            card.population_8,
+            card.population_7,
+            card.population_6,
+            card.population_5,
+            card.population_4,
+            card.population_3,
+            card.population_2,
+            card.population_1,
+            card.population_auth
+          ].reduce((sum, pop) => sum + (pop || 0), 0);
+
+          // Calculate market cap
+          let marketCap = 0;
+          if (card.population_10 && card.price_10) marketCap += card.population_10 * card.price_10;
+          if (card.population_9 && card.price_9) marketCap += card.population_9 * card.price_9;
+          if (card.population_8 && card.price_8) marketCap += card.population_8 * card.price_8;
+          if (card.population_7 && card.price_7) marketCap += card.population_7 * card.price_7;
+          if (card.population_6 && card.price_6) marketCap += card.population_6 * card.price_6;
+          if (card.population_5 && card.price_5) marketCap += card.population_5 * card.price_5;
+          if (card.population_4 && card.price_4) marketCap += card.population_4 * card.price_4;
+          if (card.population_3 && card.price_3) marketCap += card.population_3 * card.price_3;
+          if (card.population_2 && card.price_2) marketCap += card.population_2 * card.price_2;
+          if (card.population_1 && card.price_1) marketCap += card.population_1 * card.price_1;
+          if (card.population_auth && card.price_auth) marketCap += card.population_auth * card.price_auth;
+
+          return {
+            ...card,
+            total_population: totalPopulation,
+            market_cap: marketCap
+          };
+        });
+
+        return processedData;
+      } else {
         console.log(`No ${gradingService} market data found in database`);
         return [];
       }
-
-      // Calculate total population and market cap for each card
-      const processedData = data.map(card => {
-        const totalPopulation = [
-          card.population_10,
-          card.population_9,
-          card.population_8,
-          card.population_7,
-          card.population_6,
-          card.population_5,
-          card.population_4,
-          card.population_3,
-          card.population_2,
-          card.population_1,
-          card.population_auth
-        ].reduce((sum, pop) => sum + (pop || 0), 0);
-
-        // Calculate market cap
-        let marketCap = 0;
-        if (card.population_10 && card.price_10) marketCap += card.population_10 * card.price_10;
-        if (card.population_9 && card.price_9) marketCap += card.population_9 * card.price_9;
-        if (card.population_8 && card.price_8) marketCap += card.population_8 * card.price_8;
-        if (card.population_7 && card.price_7) marketCap += card.population_7 * card.price_7;
-        if (card.population_6 && card.price_6) marketCap += card.population_6 * card.price_6;
-        if (card.population_5 && card.price_5) marketCap += card.population_5 * card.price_5;
-        if (card.population_4 && card.price_4) marketCap += card.population_4 * card.price_4;
-        if (card.population_3 && card.price_3) marketCap += card.population_3 * card.price_3;
-        if (card.population_2 && card.price_2) marketCap += card.population_2 * card.price_2;
-        if (card.population_1 && card.price_1) marketCap += card.population_1 * card.price_1;
-        if (card.population_auth && card.price_auth) marketCap += card.population_auth * card.price_auth;
-
-        return {
-          ...card,
-          total_population: totalPopulation,
-          market_cap: marketCap
-        };
-      });
-
-      return processedData;
     } catch (error) {
       console.error("Unexpected error in getMarketDataByGradingService:", error);
       return [];

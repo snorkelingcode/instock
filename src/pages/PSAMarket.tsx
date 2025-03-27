@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -211,6 +212,7 @@ const PSAMarket: React.FC = () => {
       console.log("Fetched market data:", data);
       
       if (data.length === 0) {
+        console.log("No data found in database, generating mock data");
         const mockData = generateMockMarketData(10);
         console.log("Generated mock market data:", mockData);
         setMarketData(mockData);
@@ -222,6 +224,7 @@ const PSAMarket: React.FC = () => {
           setPopulationComparisonData(generatePopulationComparisonData(mockData[0]));
         }
       } else {
+        console.log("Using real market data from database");
         const dataWithUpdatedMarketCap = data.map(card => ({
           ...card,
           market_cap: calculateMarketCap(card)
