@@ -48,7 +48,7 @@ const generatePriceComparisonData = (card: MarketDataItem | null) => {
     return {
       grade: grade === 'Auth' ? 'Authentic' : `Grade ${grade}`,
       price: price,
-      formattedPrice: formatCurrency(price)
+      formattedPrice: price.toLocaleString()
     };
   }).filter(item => item.price > 0);
 };
@@ -83,15 +83,20 @@ const formatChartCurrency = (value?: number) => {
   if (value >= 1000) {
     return `$${(value / 1000).toFixed(2)}K`;
   }
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-  }).format(value);
+  return `$${value.toLocaleString()}`;
 };
 
 const formatNumber = (value?: number) => {
   if (value === undefined || value === null) return "N/A";
   return new Intl.NumberFormat('en-US').format(value);
+};
+
+const formatChartNumber = (value?: number) => {
+  if (value === undefined || value === null) return "N/A";
+  if (value >= 1000) {
+    return `${(value / 1000).toFixed(1)}K`;
+  }
+  return value.toLocaleString();
 };
 
 const generateChartData = (card: MarketDataItem | null) => {
@@ -520,7 +525,9 @@ const PSAMarket: React.FC = () => {
                               height={80}
                               interval={0}
                             />
-                            <YAxis />
+                            <YAxis 
+                              tickFormatter={(value) => formatChartCurrency(value)}
+                            />
                             <RechartsTooltip 
                               formatter={(value: any) => [`${formatCurrency(value)}`, 'Price']} 
                               labelFormatter={(label) => `${label}`}
@@ -529,7 +536,7 @@ const PSAMarket: React.FC = () => {
                             <Bar 
                               dataKey="price" 
                               name="Price" 
-                              fill="#82ca9d" 
+                              fill="#ea384c" 
                               label={{
                                 position: 'top',
                                 formatter: (value: any) => formatChartCurrency(value),
@@ -585,7 +592,9 @@ const PSAMarket: React.FC = () => {
                               height={80}
                               interval={0}
                             />
-                            <YAxis />
+                            <YAxis 
+                              tickFormatter={(value) => formatChartNumber(value)}
+                            />
                             <RechartsTooltip 
                               formatter={(value: any) => [`${formatNumber(value)}`, 'Population']} 
                               labelFormatter={(label) => `${label}`}
@@ -594,7 +603,7 @@ const PSAMarket: React.FC = () => {
                             <Bar 
                               dataKey="population" 
                               name="Population" 
-                              fill="#8884d8" 
+                              fill="#ea384c" 
                               label={{
                                 position: 'top',
                                 formatter: (value: any) => formatNumber(value),
