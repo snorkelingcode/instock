@@ -115,15 +115,27 @@ export const psaService = {
   
   // Search cards by category
   searchCardsByCategory: async (category: string, page: number = 1, pageSize: number = 20): Promise<{items: PSACard[], total: number}> => {
-    return psaService.searchCards({
-      sport: category,
-      language: "English",
-      page,
-      pageSize
-    });
+    try {
+      const result = await psaService.searchCards({
+        sport: category,
+        language: "English",
+        page,
+        pageSize
+      });
+      
+      // Enrich with market data (since the actual PSA API doesn't provide this)
+      if (result && result.items) {
+        result.items = psaService.enrichWithMarketData(result.items);
+      }
+      
+      return result;
+    } catch (error) {
+      console.error(`Error searching cards by category ${category}:`, error);
+      throw error;
+    }
   },
   
-  // Mock function to simulate market data since the actual API doesn't provide this
+  // Enrich with market data since the actual API doesn't provide this
   enrichWithMarketData: (cards: PSACard[]): PSACard[] => {
     return cards.map(card => ({
       ...card,

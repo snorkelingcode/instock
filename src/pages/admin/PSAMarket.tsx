@@ -13,22 +13,36 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { AreaChart, Area } from "recharts";
 import {
-  Search, RefreshCcw, ArrowUpDown,
+  RefreshCcw, ArrowUpDown,
   BarChart as BarChartIcon,
   DollarSign,
   Package,
-  TrendingUp
+  TrendingUp,
+  AlertCircle
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import psaService, { PSACard, PSASearchParams } from "@/services/psaService";
 
-// Mock data for charts
-const generateMockChartData = () => {
-  return Array.from({ length: 12 }, (_, i) => ({
-    name: new Date(2023, i, 1).toLocaleString('default', { month: 'short' }),
-    value: Math.floor(Math.random() * 10000),
-    volume: Math.floor(Math.random() * 500)
-  }));
+// Generate mock chart data based on a card's market data
+const generateChartData = (card: PSACard | null) => {
+  const basePrice = card?.marketData?.averagePrice || 1000;
+  const baseVolume = card?.marketData?.volume || 100;
+  
+  return Array.from({ length: 12 }, (_, i) => {
+    const month = new Date(2023, i, 1).toLocaleString('default', { month: 'short' });
+    // Create some variance in the price data
+    const variance = Math.random() * 0.4 - 0.2; // -20% to +20%
+    const price = Math.floor(basePrice * (1 + variance));
+    const volumeVariance = Math.random() * 0.6 - 0.3; // -30% to +30%
+    const volume = Math.floor(baseVolume * (1 + volumeVariance));
+    
+    return {
+      name: month,
+      value: price,
+      volume: volume
+    };
+  });
 };
 
 // Game category options
@@ -45,8 +59,9 @@ const PSAMarket: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [cards, setCards] = useState<PSACard[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>(GAME_CATEGORIES.POKEMON);
-  const [chartData] = useState(generateMockChartData());
+  const [chartData, setChartData] = useState<any[]>([]);
   const [selectedCard, setSelectedCard] = useState<PSACard | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
   
   useEffect(() => {
@@ -64,6 +79,13 @@ const PSAMarket: React.FC = () => {
     }
   }, [selectedCategory, token]);
   
+  useEffect(() => {
+    // Generate chart data when selected card changes
+    if (selectedCard) {
+      setChartData(generateChartData(selectedCard));
+    }
+  }, [selectedCard]);
+  
   const fetchCardsByCategory = async (category: string) => {
     if (!token) {
       toast({
@@ -76,47 +98,19 @@ const PSAMarket: React.FC = () => {
     
     try {
       setIsLoading(true);
+      setError(null);
       
-      // Prepare search parameters
-      const searchParams: PSASearchParams = {
-        sport: category,
-        page: 1,
-        pageSize: 20
-      };
+      const result = await psaService.searchCardsByCategory(category, 1, 20);
       
-      // In a real app, we would fetch real data like this:
-      // const result = await psaService.searchCards(searchParams);
-      // However, since we don't want to use the actual API limit, we'll use sample data:
-      
-      // Mock API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Generate sample data
-      const mockCards: PSACard[] = Array.from({ length: 15 }, (_, i) => ({
-        certNumber: `${10000000 + i}`,
-        certDate: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000).toISOString(),
-        grade: String(Math.floor(Math.random() * 3) + 8), // 8, 9, or 10
-        description: `${category} ${["Rare", "Holographic", "First Edition", "Limited"][Math.floor(Math.random() * 4)]} Card #${i + 1}`,
-        cardInfo: {
-          brand: ["Topps", "Panini", "Upper Deck", "Wizards of the Coast"][Math.floor(Math.random() * 4)],
-          year: String(2000 + Math.floor(Math.random() * 23)),
-          sport: category,
-          cardNumber: String(i + 1),
-          playerName: `${category} Character ${i + 1}`
-        },
-        popReport: {
-          totalPop: Math.floor(Math.random() * 5000) + 100,
-          popHigher: Math.floor(Math.random() * 100),
-          popSame: Math.floor(Math.random() * 1000),
-          popLower: Math.floor(Math.random() * 3000)
-        }
-      }));
-      
-      // Enrich with market data
-      const enrichedCards = psaService.enrichWithMarketData(mockCards);
+      if (result.items.length === 0) {
+        setError(`No cards found for category: ${category}`);
+        setCards([]);
+        setSelectedCard(null);
+        return;
+      }
       
       // Sort by market cap (highest to lowest)
-      const sortedCards = enrichedCards.sort((a, b) => 
+      const sortedCards = result.items.sort((a, b) => 
         (b.marketData?.marketCap || 0) - (a.marketData?.marketCap || 0)
       );
       
@@ -125,15 +119,19 @@ const PSAMarket: React.FC = () => {
       // Select the first card by default
       if (sortedCards.length > 0) {
         setSelectedCard(sortedCards[0]);
+        setChartData(generateChartData(sortedCards[0]));
       }
       
     } catch (error) {
       console.error("Search failed:", error);
+      setError(error instanceof Error ? error.message : "Failed to search cards");
       toast({
         title: "Search Error",
         description: error instanceof Error ? error.message : "Failed to search cards",
         variant: "destructive"
       });
+      setCards([]);
+      setSelectedCard(null);
     } finally {
       setIsLoading(false);
     }
@@ -151,6 +149,12 @@ const PSAMarket: React.FC = () => {
       if (selectedCategory) {
         fetchCardsByCategory(selectedCategory);
       }
+    }
+  };
+  
+  const handleRefresh = () => {
+    if (selectedCategory) {
+      fetchCardsByCategory(selectedCategory);
     }
   };
   
@@ -210,8 +214,11 @@ const PSAMarket: React.FC = () => {
         
         {/* Category Selection */}
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
             <CardTitle>Select Trading Card Game Category</CardTitle>
+            <Button variant="outline" size="icon" onClick={handleRefresh} disabled={isLoading}>
+              <RefreshCcw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+            </Button>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 gap-4">
@@ -234,6 +241,15 @@ const PSAMarket: React.FC = () => {
           </CardContent>
         </Card>
         
+        {/* Error alert */}
+        {error && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+        
         {/* Market Overview */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card>
@@ -251,7 +267,7 @@ const PSAMarket: React.FC = () => {
                 }
               </div>
               <p className="text-xs text-muted-foreground">
-                +20.1% from last month
+                {selectedCard ? 'Individual Card' : 'All Cards'}
               </p>
             </CardContent>
           </Card>
@@ -270,7 +286,7 @@ const PSAMarket: React.FC = () => {
                 }
               </div>
               <p className="text-xs text-muted-foreground">
-                +12.5% from last month
+                {selectedCard ? 'Individual Card' : 'All Cards'}
               </p>
             </CardContent>
           </Card>
@@ -289,7 +305,7 @@ const PSAMarket: React.FC = () => {
                 }
               </div>
               <p className="text-xs text-muted-foreground">
-                -3.2% from last month
+                {selectedCard ? 'Individual Card' : 'All Cards'}
               </p>
             </CardContent>
           </Card>
@@ -308,7 +324,7 @@ const PSAMarket: React.FC = () => {
                 }
               </div>
               <p className="text-xs text-muted-foreground">
-                +5.7% from last month
+                {selectedCard ? 'Individual Card' : 'All Cards'}
               </p>
             </CardContent>
           </Card>
@@ -381,11 +397,11 @@ const PSAMarket: React.FC = () => {
               </div>
             ) : (
               <div className="p-8 text-center">
-                <Search className="mx-auto h-12 w-12 text-muted-foreground" />
+                <AlertCircle className="mx-auto h-12 w-12 text-muted-foreground" />
                 <h3 className="mt-4 text-lg font-semibold">No cards found</h3>
                 <p className="text-sm text-muted-foreground">
                   {token ? 
-                    "Select a category to view PSA graded cards market data" :
+                    "No cards found for the selected category. Try another category or refresh." :
                     "Please save your PSA API token first to view data"
                   }
                 </p>
