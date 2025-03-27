@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -470,7 +469,7 @@ const PSAMarket: React.FC = () => {
                             <CartesianGrid strokeDasharray="3 3" />
                             <XAxis dataKey="name" />
                             <YAxis />
-                            <RechartsTooltip formatter={(value) => [`$${value}`, 'Price']} />
+                            <RechartsTooltip formatter={(value: any) => [`$${value}`, 'Price']} />
                             <Area type="monotone" dataKey="value" stroke="#8884d8" fill="#8884d8" />
                           </AreaChart>
                         </ResponsiveContainer>
@@ -518,7 +517,7 @@ const PSAMarket: React.FC = () => {
                             <CartesianGrid strokeDasharray="3 3" />
                             <XAxis dataKey="grade" />
                             <YAxis />
-                            <RechartsTooltip formatter={(value) => [formatNumber(value), 'Population']} />
+                            <RechartsTooltip formatter={(value: any) => [formatNumber(value), 'Population']} />
                             <Bar dataKey="value" fill="#82ca9d" />
                           </BarChart>
                         </ResponsiveContainer>
