@@ -11,7 +11,6 @@ import LoadingScreen from "@/components/ui/loading-screen";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from "recharts";
 import { ArrowUpDown, BarChartIcon, DollarSign, Package, TrendingUp, AlertCircle } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import psaService, { PSACard, PSASearchParams } from "@/services/psaService";
 import { MarketDataItem, marketDataService } from "@/services/marketDataService";
@@ -183,7 +182,6 @@ const PSAMarket: React.FC = () => {
   const [chartData, setChartData] = useState<any[]>([]);
   const [selectedCard, setSelectedCard] = useState<MarketDataItem | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [selectedGradingService, setSelectedGradingService] = useState<string>("PSA");
   const [priceComparisonData, setPriceComparisonData] = useState<any[]>([]);
   const [populationComparisonData, setPopulationComparisonData] = useState<any[]>([]);
   const { toast } = useToast();
@@ -211,10 +209,10 @@ const PSAMarket: React.FC = () => {
       setIsLoading(true);
       setError(null);
       
-      const data = await marketDataService.getMarketDataByGradingService(selectedGradingService);
+      const data = await marketDataService.getMarketDataByGradingService("PSA");
       
       if (data.length === 0) {
-        setError(`No market data found for ${selectedGradingService} graded cards.`);
+        setError(`No market data found for PSA graded cards.`);
         setMarketData([]);
         setSelectedCard(null);
         return;
@@ -264,12 +262,6 @@ const PSAMarket: React.FC = () => {
     setSelectedCard(card);
   };
   
-  const handleGradingServiceChange = (value: string) => {
-    setSelectedGradingService(value);
-    setSelectedCard(null);
-    fetchMarketData();
-  };
-  
   const calculateTotalMarketCap = () => {
     return marketData.reduce((sum, card) => sum + (card.market_cap || 0), 0);
   };
@@ -293,29 +285,6 @@ const PSAMarket: React.FC = () => {
         <div className="flex flex-row items-center justify-between">
           <h1 className="text-3xl font-bold mb-6">TCG Market Data</h1>
         </div>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0">
-            <CardTitle>Select Grading Service</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 gap-4">
-              <div>
-                <Label htmlFor="grading-service">Grading Service</Label>
-                <Select value={selectedGradingService} onValueChange={handleGradingServiceChange}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select a grading service" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="PSA">PSA</SelectItem>
-                    <SelectItem value="BGS" disabled className="text-muted-foreground">BGS (Coming Soon)</SelectItem>
-                    <SelectItem value="CGC" disabled className="text-muted-foreground">CGC (Coming Soon)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
         
         {error && (
           <Alert variant="destructive">
@@ -394,7 +363,7 @@ const PSAMarket: React.FC = () => {
                 <AlertCircle className="mx-auto h-12 w-12 text-muted-foreground" />
                 <h3 className="mt-4 text-lg font-semibold">No market data found</h3>
                 <p className="text-sm text-muted-foreground">
-                  No market data available for the selected grading service.
+                  No market data available for PSA graded cards.
                 </p>
               </div>
             )}
