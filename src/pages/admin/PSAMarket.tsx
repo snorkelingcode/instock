@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from "react";
-import Layout from "@/components/layout/Layout";  // Changed from { Layout } to default import
+import Layout from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
@@ -11,13 +12,14 @@ import LoadingScreen from "@/components/ui/loading-screen";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { AreaChart, Area } from "recharts";
-import { 
-  Search, RefreshCcw, ArrowUpDown, 
-  BarChart as BarChartIcon, 
-  DollarSign, 
-  Package, 
-  TrendingUp 
+import {
+  Search, RefreshCcw, ArrowUpDown,
+  BarChart as BarChartIcon,
+  DollarSign,
+  Package,
+  TrendingUp
 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import psaService, { PSACard, PSASearchParams } from "@/services/psaService";
 
 // Mock data for charts
@@ -29,18 +31,20 @@ const generateMockChartData = () => {
   }));
 };
 
+// Game category options
+const GAME_CATEGORIES = {
+  POKEMON: "Pokemon",
+  MTG: "Magic The Gathering",
+  YUGIOH: "Yu-Gi-Oh!",
+  LORCANA: "Disney Lorcana",
+  ONE_PIECE: "One Piece"
+};
+
 const PSAMarket: React.FC = () => {
   const [token, setToken] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [cards, setCards] = useState<PSACard[]>([]);
-  const [searchParams, setSearchParams] = useState<PSASearchParams>({
-    brand: "",
-    year: "",
-    sport: "",
-    playerName: "",
-    page: 1,
-    pageSize: 20
-  });
+  const [selectedCategory, setSelectedCategory] = useState<string>(GAME_CATEGORIES.POKEMON);
   const [chartData] = useState(generateMockChartData());
   const [selectedCard, setSelectedCard] = useState<PSACard | null>(null);
   const { toast } = useToast();
@@ -53,9 +57,14 @@ const PSAMarket: React.FC = () => {
     }
   }, []);
   
-  const handleSearchSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  useEffect(() => {
+    // When category changes, fetch data if token exists
+    if (token && selectedCategory) {
+      fetchCardsByCategory(selectedCategory);
+    }
+  }, [selectedCategory, token]);
+  
+  const fetchCardsByCategory = async (category: string) => {
     if (!token) {
       toast({
         title: "Authentication Required",
@@ -67,6 +76,14 @@ const PSAMarket: React.FC = () => {
     
     try {
       setIsLoading(true);
+      
+      // Prepare search parameters
+      const searchParams: PSASearchParams = {
+        sport: category,
+        page: 1,
+        pageSize: 20
+      };
+      
       // In a real app, we would fetch real data like this:
       // const result = await psaService.searchCards(searchParams);
       // However, since we don't want to use the actual API limit, we'll use sample data:
@@ -79,13 +96,13 @@ const PSAMarket: React.FC = () => {
         certNumber: `${10000000 + i}`,
         certDate: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000).toISOString(),
         grade: String(Math.floor(Math.random() * 3) + 8), // 8, 9, or 10
-        description: `${searchParams.year || "2020"} ${searchParams.brand || "Topps"} ${searchParams.playerName || "Sample Player"} #${searchParams.cardNumber || i + 1}`,
+        description: `${category} ${["Rare", "Holographic", "First Edition", "Limited"][Math.floor(Math.random() * 4)]} Card #${i + 1}`,
         cardInfo: {
-          brand: searchParams.brand || "Topps",
-          year: searchParams.year || "2020",
-          sport: searchParams.sport || "Baseball",
-          cardNumber: searchParams.cardNumber || String(i + 1),
-          playerName: searchParams.playerName || "Sample Player"
+          brand: ["Topps", "Panini", "Upper Deck", "Wizards of the Coast"][Math.floor(Math.random() * 4)],
+          year: String(2000 + Math.floor(Math.random() * 23)),
+          sport: category,
+          cardNumber: String(i + 1),
+          playerName: `${category} Character ${i + 1}`
         },
         popReport: {
           totalPop: Math.floor(Math.random() * 5000) + 100,
@@ -97,7 +114,19 @@ const PSAMarket: React.FC = () => {
       
       // Enrich with market data
       const enrichedCards = psaService.enrichWithMarketData(mockCards);
-      setCards(enrichedCards);
+      
+      // Sort by market cap (highest to lowest)
+      const sortedCards = enrichedCards.sort((a, b) => 
+        (b.marketData?.marketCap || 0) - (a.marketData?.marketCap || 0)
+      );
+      
+      setCards(sortedCards);
+      
+      // Select the first card by default
+      if (sortedCards.length > 0) {
+        setSelectedCard(sortedCards[0]);
+      }
+      
     } catch (error) {
       console.error("Search failed:", error);
       toast({
@@ -117,6 +146,11 @@ const PSAMarket: React.FC = () => {
         title: "Success",
         description: "PSA API token has been saved",
       });
+      
+      // Fetch data for the selected category immediately after saving token
+      if (selectedCategory) {
+        fetchCardsByCategory(selectedCategory);
+      }
     }
   };
   
@@ -135,6 +169,11 @@ const PSAMarket: React.FC = () => {
   
   const handleCardSelect = (card: PSACard) => {
     setSelectedCard(card);
+  };
+  
+  const handleCategoryChange = (value: string) => {
+    setSelectedCard(null);
+    setSelectedCategory(value);
   };
   
   return (
@@ -169,82 +208,29 @@ const PSAMarket: React.FC = () => {
           </CardContent>
         </Card>
         
-        {/* Search Form */}
+        {/* Category Selection */}
         <Card>
           <CardHeader>
-            <CardTitle>Search PSA Graded Cards</CardTitle>
+            <CardTitle>Select Trading Card Game Category</CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSearchSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <Label htmlFor="brand">Brand</Label>
-                  <Input
-                    id="brand"
-                    value={searchParams.brand}
-                    onChange={(e) => setSearchParams({...searchParams, brand: e.target.value})}
-                    placeholder="Topps, Panini, etc."
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="year">Year</Label>
-                  <Input
-                    id="year"
-                    value={searchParams.year}
-                    onChange={(e) => setSearchParams({...searchParams, year: e.target.value})}
-                    placeholder="2020, 1990, etc."
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="sport">Sport</Label>
-                  <Input
-                    id="sport"
-                    value={searchParams.sport}
-                    onChange={(e) => setSearchParams({...searchParams, sport: e.target.value})}
-                    placeholder="Baseball, Football, etc."
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="playerName">Player Name</Label>
-                  <Input
-                    id="playerName"
-                    value={searchParams.playerName}
-                    onChange={(e) => setSearchParams({...searchParams, playerName: e.target.value})}
-                    placeholder="Player name"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="cardNumber">Card Number</Label>
-                  <Input
-                    id="cardNumber"
-                    value={searchParams.cardNumber}
-                    onChange={(e) => setSearchParams({...searchParams, cardNumber: e.target.value})}
-                    placeholder="Card number"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="grade">Grade</Label>
-                  <Input
-                    id="grade"
-                    value={searchParams.grade}
-                    onChange={(e) => setSearchParams({...searchParams, grade: e.target.value})}
-                    placeholder="10, 9, 8, etc."
-                  />
-                </div>
+            <div className="grid grid-cols-1 gap-4">
+              <div>
+                <Label htmlFor="category">Game Category</Label>
+                <Select value={selectedCategory} onValueChange={handleCategoryChange}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select a category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={GAME_CATEGORIES.POKEMON}>{GAME_CATEGORIES.POKEMON}</SelectItem>
+                    <SelectItem value={GAME_CATEGORIES.MTG}>{GAME_CATEGORIES.MTG}</SelectItem>
+                    <SelectItem value={GAME_CATEGORIES.YUGIOH}>{GAME_CATEGORIES.YUGIOH}</SelectItem>
+                    <SelectItem value={GAME_CATEGORIES.LORCANA}>{GAME_CATEGORIES.LORCANA}</SelectItem>
+                    <SelectItem value={GAME_CATEGORIES.ONE_PIECE}>{GAME_CATEGORIES.ONE_PIECE}</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              <div className="flex justify-end">
-                <Button type="submit" className="w-full md:w-auto" disabled={isLoading}>
-                  {isLoading ? (
-                    <>Searching...</>
-                  ) : (
-                    <>
-                      <Search className="mr-2 h-4 w-4" />
-                      Search
-                    </>
-                  )}
-                </Button>
-              </div>
-            </form>
+            </div>
           </CardContent>
         </Card>
         
@@ -257,9 +243,11 @@ const PSAMarket: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {cards.length > 0 ? 
-                  formatCurrency(cards.reduce((sum, card) => sum + (card.marketData?.marketCap || 0), 0)) :
-                  "$0.00"
+                {selectedCard ? 
+                  formatCurrency(selectedCard.marketData?.marketCap) :
+                  cards.length > 0 ? 
+                    formatCurrency(cards.reduce((sum, card) => sum + (card.marketData?.marketCap || 0), 0)) :
+                    "$0.00"
                 }
               </div>
               <p className="text-xs text-muted-foreground">
@@ -274,9 +262,11 @@ const PSAMarket: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {cards.length > 0 ? 
-                  formatNumber(cards.reduce((sum, card) => sum + (card.marketData?.volume || 0), 0)) :
-                  "0"
+                {selectedCard ?
+                  formatNumber(selectedCard.marketData?.volume) :
+                  cards.length > 0 ? 
+                    formatNumber(cards.reduce((sum, card) => sum + (card.marketData?.volume || 0), 0)) :
+                    "0"
                 }
               </div>
               <p className="text-xs text-muted-foreground">
@@ -291,9 +281,11 @@ const PSAMarket: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {cards.length > 0 ? 
-                  formatCurrency(cards.reduce((sum, card) => sum + (card.marketData?.averagePrice || 0), 0) / cards.length) :
-                  "$0.00"
+                {selectedCard ?
+                  formatCurrency(selectedCard.marketData?.averagePrice) :
+                  cards.length > 0 ? 
+                    formatCurrency(cards.reduce((sum, card) => sum + (card.marketData?.averagePrice || 0), 0) / cards.length) :
+                    "$0.00"
                 }
               </div>
               <p className="text-xs text-muted-foreground">
@@ -308,9 +300,11 @@ const PSAMarket: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {cards.length > 0 ? 
-                  formatNumber(cards.reduce((sum, card) => sum + (card.popReport?.totalPop || 0), 0)) :
-                  "0"
+                {selectedCard ?
+                  formatNumber(selectedCard.popReport?.totalPop) :
+                  cards.length > 0 ? 
+                    formatNumber(cards.reduce((sum, card) => sum + (card.popReport?.totalPop || 0), 0)) :
+                    "0"
                 }
               </div>
               <p className="text-xs text-muted-foreground">
@@ -369,7 +363,7 @@ const PSAMarket: React.FC = () => {
                     {cards.map((card) => (
                       <TableRow 
                         key={card.certNumber}
-                        className="cursor-pointer hover:bg-muted"
+                        className={`cursor-pointer hover:bg-muted ${selectedCard?.certNumber === card.certNumber ? 'bg-muted' : ''}`}
                         onClick={() => handleCardSelect(card)}
                       >
                         <TableCell className="font-medium">{card.certNumber}</TableCell>
@@ -390,7 +384,10 @@ const PSAMarket: React.FC = () => {
                 <Search className="mx-auto h-12 w-12 text-muted-foreground" />
                 <h3 className="mt-4 text-lg font-semibold">No cards found</h3>
                 <p className="text-sm text-muted-foreground">
-                  Use the search form above to find PSA graded cards market data
+                  {token ? 
+                    "Select a category to view PSA graded cards market data" :
+                    "Please save your PSA API token first to view data"
+                  }
                 </p>
               </div>
             )}
@@ -424,11 +421,11 @@ const PSAMarket: React.FC = () => {
                       <p className="text-md">{selectedCard.cardInfo.year}</p>
                     </div>
                     <div>
-                      <h4 className="text-sm font-medium text-muted-foreground">Sport</h4>
+                      <h4 className="text-sm font-medium text-muted-foreground">Category</h4>
                       <p className="text-md">{selectedCard.cardInfo.sport}</p>
                     </div>
                     <div>
-                      <h4 className="text-sm font-medium text-muted-foreground">Player</h4>
+                      <h4 className="text-sm font-medium text-muted-foreground">Card Name</h4>
                       <p className="text-md">{selectedCard.cardInfo.playerName}</p>
                     </div>
                   </div>

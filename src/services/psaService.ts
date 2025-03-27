@@ -41,6 +41,7 @@ export interface PSASearchParams {
   grade?: string;
   page?: number;
   pageSize?: number;
+  language?: string;
 }
 
 // Service for PSA API calls
@@ -97,13 +98,29 @@ export const psaService = {
   
   // Search for cards
   searchCards: async (params: PSASearchParams): Promise<{items: PSACard[], total: number}> => {
+    // Always ensure we're searching for English cards
+    const searchParams: PSASearchParams = {
+      ...params,
+      language: "English"
+    };
+    
     // Create query string from params
-    const queryParams = Object.entries(params)
+    const queryParams = Object.entries(searchParams)
       .filter(([_, value]) => value !== undefined && value !== "")
       .map(([key, value]) => `${key}=${encodeURIComponent(String(value))}`)
       .join("&");
     
     return psaService.callApi<{items: PSACard[], total: number}>(`/cert/search?${queryParams}`);
+  },
+  
+  // Search cards by category
+  searchCardsByCategory: async (category: string, page: number = 1, pageSize: number = 20): Promise<{items: PSACard[], total: number}> => {
+    return psaService.searchCards({
+      sport: category,
+      language: "English",
+      page,
+      pageSize
+    });
   },
   
   // Mock function to simulate market data since the actual API doesn't provide this
