@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";  // Changed from { Layout } to default import
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -139,7 +138,7 @@ const PSAMarket: React.FC = () => {
   };
   
   return (
-    <Layout title="PSA Market">
+    <Layout>
       <div className="container mx-auto py-6 space-y-6">
         <h1 className="text-3xl font-bold mb-6">PSA Market</h1>
         
