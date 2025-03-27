@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
@@ -10,7 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import LoadingScreen from "@/components/ui/loading-screen";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from "recharts";
-import { ArrowUpDown, BarChartIcon, DollarSign, Package, TrendingUp, AlertCircle } from "lucide-react";
+import { ArrowUpDown, BarChartIcon, DollarSign, Package, TrendingUp, AlertCircle, ExternalLink } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import psaService, { PSACard, PSASearchParams } from "@/services/psaService";
 import { MarketDataItem, marketDataService } from "@/services/marketDataService";
@@ -187,6 +188,7 @@ const PSAMarket: React.FC = () => {
   const [populationComparisonData, setPopulationComparisonData] = useState<any[]>([]);
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
   
   useEffect(() => {
     const savedToken = psaService.getToken();
@@ -322,6 +324,10 @@ const PSAMarket: React.FC = () => {
     setSelectedCard(card);
   };
   
+  const handleViewCardDetails = (card: MarketDataItem) => {
+    navigate(`/psa-market/${card.id}`, { state: { card } });
+  };
+  
   const calculateTotalMarketCap = () => {
     return marketData.reduce((sum, card) => sum + (card.market_cap || 0), 0);
   };
@@ -440,8 +446,16 @@ const PSAMarket: React.FC = () => {
         
         {selectedCard && (
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row justify-between items-center">
               <CardTitle>{selectedCard.card_name}</CardTitle>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="flex items-center gap-1"
+                onClick={() => handleViewCardDetails(selectedCard)}
+              >
+                View Details <ExternalLink className="h-4 w-4 ml-1" />
+              </Button>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

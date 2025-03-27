@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -30,6 +31,7 @@ import ManageModels from "./pages/admin/ManageModels";
 import ManageProducts from "./pages/admin/ManageProducts";
 import UserManagement from "./pages/admin/UserManagement";
 import PSAMarket from "./pages/PSAMarket";
+import PSACardDetails from "./pages/PSACardDetails";
 import ManageMarket from "./pages/admin/ManageMarket";
 
 const queryClient = new QueryClient();
@@ -50,6 +52,7 @@ const App = () => {
               <Route path="/news" element={<News />} />
               <Route path="/market" element={<PSAMarket />} />
               <Route path="/psa-market" element={<PSAMarket />} /> {/* Keep both routes for backward compatibility */}
+              <Route path="/psa-market/:id" element={<PSACardDetails />} />
               <Route path="/article/:id" element={<ArticleDetails />} />
               <Route path="/privacy" element={<PrivacyPolicy />} />
               <Route path="/terms" element={<TermsOfService />} />
