@@ -354,90 +354,6 @@ const PSAMarket: React.FC = () => {
           </Alert>
         )}
         
-        <Card>
-          <CardHeader>
-            <CardTitle>Market Data</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            {isLoading ? (
-              <div className="p-4">
-                <LoadingScreen message="Fetching market data..." />
-              </div>
-            ) : marketData.length > 0 ? (
-              <div className="overflow-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-16 text-center">Rank</TableHead>
-                      <TableHead>Card Name</TableHead>
-                      <TableHead className={isMobile ? "hidden sm:table-cell" : ""}>
-                        <div className="flex items-center">
-                          Market Cap
-                          <ArrowUpDown className="ml-2 h-4 w-4" />
-                        </div>
-                      </TableHead>
-                      <TableHead className={isMobile ? "hidden sm:table-cell" : ""}>Population</TableHead>
-                      <TableHead>
-                        <div className="flex items-center">
-                          {isMobile ? "Price" : "Highest Price"}
-                          <ArrowUpDown className="ml-2 h-4 w-4" />
-                        </div>
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {marketData.map((card, index) => (
-                      <TableRow 
-                        key={card.id}
-                        className={`cursor-pointer hover:bg-muted ${selectedCard?.id === card.id ? 'bg-muted' : ''}`}
-                        onClick={() => handleCardSelect(card)}
-                      >
-                        <TableCell className="font-medium text-center">{index + 1}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            {card.card_image && (
-                              <img 
-                                src={card.card_image} 
-                                alt={card.card_name} 
-                                className="w-8 h-8 rounded-sm object-contain" 
-                              />
-                            )}
-                            {!card.card_image && (
-                              <div className="w-8 h-8 bg-gray-100 rounded-sm flex items-center justify-center text-gray-400">
-                                <BarChartIcon className="w-4 h-4" />
-                              </div>
-                            )}
-                            <span className="line-clamp-2">
-                              {card.card_name}
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell className={`font-semibold ${isMobile ? "hidden sm:table-cell" : ""}`}>
-                          {formatCurrency(card.market_cap)}
-                        </TableCell>
-                        <TableCell className={isMobile ? "hidden sm:table-cell" : ""}>
-                          {formatNumber(card.total_population)}
-                        </TableCell>
-                        <TableCell className="font-semibold">
-                          {formatCurrency(getHighestPrice(card))}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            ) : (
-              <div className="p-8 text-center">
-                <AlertCircle className="mx-auto h-12 w-12 text-muted-foreground" />
-                <h3 className="mt-4 text-lg font-semibold">No market data found</h3>
-                <p className="text-sm text-muted-foreground">
-                  No market data available for PSA graded cards.
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-        
         {selectedCard && (
           <Card>
             <CardHeader>
@@ -659,6 +575,92 @@ const PSAMarket: React.FC = () => {
                     </TabsContent>
                   </Tabs>
                 </div>
+              </div>
+              
+              <div className="mt-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Market Data</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    {isLoading ? (
+                      <div className="p-4">
+                        <LoadingScreen message="Fetching market data..." />
+                      </div>
+                    ) : marketData.length > 0 ? (
+                      <div className="overflow-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead className="w-16 text-center">Rank</TableHead>
+                              <TableHead>Card Name</TableHead>
+                              <TableHead className={isMobile ? "hidden sm:table-cell" : ""}>
+                                <div className="flex items-center">
+                                  Market Cap
+                                  <ArrowUpDown className="ml-2 h-4 w-4" />
+                                </div>
+                              </TableHead>
+                              <TableHead className={isMobile ? "hidden sm:table-cell" : ""}>Population</TableHead>
+                              <TableHead>
+                                <div className="flex items-center">
+                                  {isMobile ? "Price" : "Highest Price"}
+                                  <ArrowUpDown className="ml-2 h-4 w-4" />
+                                </div>
+                              </TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {marketData.map((card, index) => (
+                              <TableRow 
+                                key={card.id}
+                                className={`cursor-pointer hover:bg-muted ${selectedCard?.id === card.id ? 'bg-muted' : ''}`}
+                                onClick={() => handleCardSelect(card)}
+                              >
+                                <TableCell className="font-medium text-center">{index + 1}</TableCell>
+                                <TableCell>
+                                  <div className="flex items-center gap-2">
+                                    {card.card_image && (
+                                      <img 
+                                        src={card.card_image} 
+                                        alt={card.card_name} 
+                                        className="w-8 h-8 rounded-sm object-contain" 
+                                      />
+                                    )}
+                                    {!card.card_image && (
+                                      <div className="w-8 h-8 bg-gray-100 rounded-sm flex items-center justify-center text-gray-400">
+                                        <BarChartIcon className="w-4 h-4" />
+                                      </div>
+                                    )}
+                                    <span className="line-clamp-2">
+                                      {card.card_name}
+                                    </span>
+                                  </div>
+                                </TableCell>
+                                <TableCell className={`font-semibold ${isMobile ? "hidden sm:table-cell" : ""}`}>
+                                  {formatCurrency(card.market_cap)}
+                                </TableCell>
+                                <TableCell className={isMobile ? "hidden sm:table-cell" : ""}>
+                                  {formatNumber(card.total_population)}
+                                </TableCell>
+                                <TableCell className="font-semibold">
+                                  {formatCurrency(getHighestPrice(card))}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    ) : (
+                      <div className="p-8 text-center">
+                        <AlertCircle className="mx-auto h-12 w-12 text-muted-foreground" />
+                        <h3 className="mt-4 text-lg font-semibold">No market data found</h3>
+                        <p className="text-sm text-muted-foreground">
+                          No market data available for PSA graded cards.
+                        </p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
               </div>
               
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
