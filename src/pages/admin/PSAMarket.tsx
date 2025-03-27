@@ -1,8 +1,10 @@
-
 import React, { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import LoadingScreen from "@/components/ui/loading-screen";
@@ -10,8 +12,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from "recharts";
 import { ArrowUpDown, BarChartIcon, DollarSign, Package, TrendingUp, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import psaService, { PSACard, PSASearchParams } from "@/services/psaService";
 import { MarketDataItem, marketDataService } from "@/services/marketDataService";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 const GAME_CATEGORIES = {
   POKEMON: "Pokemon",
@@ -172,6 +175,7 @@ const calculateMarketCap = (data: MarketDataItem): number => {
 };
 
 const PSAMarket: React.FC = () => {
+  const [token, setToken] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [marketData, setMarketData] = useState<MarketDataItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>(GAME_CATEGORIES.POKEMON);
@@ -181,8 +185,14 @@ const PSAMarket: React.FC = () => {
   const [priceComparisonData, setPriceComparisonData] = useState<any[]>([]);
   const [populationComparisonData, setPopulationComparisonData] = useState<any[]>([]);
   const { toast } = useToast();
+  const { isAdmin } = useAuth();
   
   useEffect(() => {
+    const savedToken = psaService.getToken();
+    if (savedToken) {
+      setToken(savedToken);
+    }
+    
     fetchMarketData();
   }, []);
   
@@ -199,124 +209,53 @@ const PSAMarket: React.FC = () => {
       setIsLoading(true);
       setError(null);
       
-      console.log("Fetching market data for PSA");
+      const data = await marketDataService.getMarketDataByGradingService("PSA");
       
-      // Direct query to Supabase - more reliable than the service in some cases
-      const { data: directData, error: directError } = await supabase
-        .from('market_data')
-        .select('*')
-        .eq('grading_service', 'PSA');
-      
-      if (directError) {
-        throw directError;
+      if (data.length === 0) {
+        setError(`No market data found for PSA graded cards.`);
+        setMarketData([]);
+        setSelectedCard(null);
+        return;
       }
       
-      console.log("Direct data fetch result:", directData);
+      const dataWithUpdatedMarketCap = data.map(card => ({
+        ...card,
+        market_cap: calculateMarketCap(card)
+      }));
       
-      if (directData && directData.length > 0) {
-        const dataWithUpdatedMarketCap = directData.map(card => ({
-          ...card,
-          market_cap: calculateMarketCap(card)
-        }));
-        
-        const sortedData = [...dataWithUpdatedMarketCap].sort((a, b) => 
-          (b.market_cap || 0) - (a.market_cap || 0)
-        );
-        
-        setMarketData(sortedData);
-        
-        if (sortedData.length > 0 && !selectedCard) {
-          setSelectedCard(sortedData[0]);
-          setChartData(generateChartData(sortedData[0]));
-          setPriceComparisonData(generatePriceComparisonData(sortedData[0]));
-          setPopulationComparisonData(generatePopulationComparisonData(sortedData[0]));
-        }
-      } else {
-        console.log("No market data found, fetching from service as fallback");
-        const serviceData = await marketDataService.getMarketDataByGradingService("PSA");
-        console.log("Service data fetch result:", serviceData);
-        
-        if (serviceData.length > 0) {
-          const dataWithUpdatedMarketCap = serviceData.map(card => ({
-            ...card,
-            market_cap: calculateMarketCap(card)
-          }));
-          
-          const sortedData = [...dataWithUpdatedMarketCap].sort((a, b) => 
-            (b.market_cap || 0) - (a.market_cap || 0)
-          );
-          
-          setMarketData(sortedData);
-          
-          if (sortedData.length > 0 && !selectedCard) {
-            setSelectedCard(sortedData[0]);
-            setChartData(generateChartData(sortedData[0]));
-            setPriceComparisonData(generatePriceComparisonData(sortedData[0]));
-            setPopulationComparisonData(generatePopulationComparisonData(sortedData[0]));
-          }
-        }
+      const sortedData = [...dataWithUpdatedMarketCap].sort((a, b) => 
+        (b.market_cap || 0) - (a.market_cap || 0)
+      );
+      
+      setMarketData(sortedData);
+      
+      if (sortedData.length > 0 && !selectedCard) {
+        setSelectedCard(sortedData[0]);
+        setChartData(generateChartData(sortedData[0]));
+        setPriceComparisonData(generatePriceComparisonData(sortedData[0]));
+        setPopulationComparisonData(generatePopulationComparisonData(sortedData[0]));
       }
     } catch (error) {
       console.error("Error fetching market data:", error);
-      setError("Failed to load market data. Please try again later.");
+      setError(error instanceof Error ? error.message : "Failed to fetch market data");
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to fetch market data",
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
     }
   };
   
-  const createMockMarketData = (): MarketDataItem[] => {
-    // Creating sample mock data for display when real data is not available
-    const mockCards: MarketDataItem[] = [
-      {
-        id: "1",
-        card_name: "Charizard 1st Edition Base Set",
-        grading_service: "PSA",
-        price_10: 350000,
-        price_9: 20000,
-        price_8: 5000,
-        price_7: 1500,
-        population_10: 120,
-        population_9: 670,
-        population_8: 1240,
-        population_7: 980,
-        total_population: 3010,
-        market_cap: 42000000,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      },
-      {
-        id: "2",
-        card_name: "Blastoise 1st Edition Base Set",
-        grading_service: "PSA",
-        price_10: 15000,
-        price_9: 5000,
-        price_8: 2000,
-        population_10: 40,
-        population_9: 350,
-        population_8: 870,
-        total_population: 1260,
-        market_cap: 2400000,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      },
-      {
-        id: "3",
-        card_name: "Venusaur 1st Edition Base Set",
-        grading_service: "PSA",
-        price_10: 12000,
-        price_9: 4500,
-        price_8: 1800,
-        population_10: 35,
-        population_9: 320,
-        population_8: 790,
-        total_population: 1145,
-        market_cap: 2000000,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      }
-    ];
-    
-    return mockCards;
+  const handleTokenSave = () => {
+    if (token) {
+      psaService.setToken(token);
+      toast({
+        title: "Success",
+        description: "PSA API token has been saved",
+      });
+    }
   };
   
   const handleCardSelect = (card: MarketDataItem) => {
