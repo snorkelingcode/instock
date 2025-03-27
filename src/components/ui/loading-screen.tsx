@@ -15,6 +15,8 @@ const LoadingScreen: React.FC<LoadingScreenProps> = ({
   
   useEffect(() => {
     // Simulate loading progress
+    setProgress(1); // Start with a small value to show immediate progress
+    
     const interval = setInterval(() => {
       setProgress(prev => {
         // Slow down as we approach 100%

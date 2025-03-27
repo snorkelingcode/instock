@@ -12,9 +12,12 @@ document.head.appendChild(interFont);
 // Animate the progress bar
 const animateProgressBar = () => {
   const progressBar = document.getElementById('initialProgressBar');
-  let width = 0;
+  let width = 1; // Start with a small width to show immediate progress
   
   if (progressBar) {
+    // Set initial width immediately
+    progressBar.style.width = width + '%';
+    
     const interval = setInterval(() => {
       if (width >= 99) {
         clearInterval(interval);
@@ -28,8 +31,14 @@ const animateProgressBar = () => {
   }
 };
 
-// Start animating the progress bar
-animateProgressBar();
+// Start animating the progress bar immediately
+document.addEventListener('DOMContentLoaded', () => {
+  animateProgressBar();
+});
+// Also try to run it immediately in case DOMContentLoaded already fired
+if (document.readyState === 'interactive' || document.readyState === 'complete') {
+  animateProgressBar();
+}
 
 // Render our app
 const root = createRoot(document.getElementById("root")!)
