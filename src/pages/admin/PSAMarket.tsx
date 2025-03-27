@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import LoadingScreen from "@/components/ui/loading-screen";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from "recharts";
 import { AreaChart, Area } from "recharts";
 import {
   RefreshCcw, ArrowUpDown,
@@ -36,6 +37,58 @@ const GAME_CATEGORIES = {
   ONE_PIECE: "One Piece"
 };
 
+// Generate price comparison data for each grade
+const generatePriceComparisonData = (card: MarketDataItem | null) => {
+  if (!card) return [];
+  
+  const grades = [10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 'Auth'];
+  
+  return grades.map(grade => {
+    const gradeKey = grade === 'Auth' ? 'auth' : grade;
+    const price = card[`price_${gradeKey}` as keyof MarketDataItem] as number || 0;
+    
+    return {
+      grade: grade === 'Auth' ? 'Authentic' : `Grade ${grade}`,
+      price: price,
+      formattedPrice: formatCurrency(price)
+    };
+  }).filter(item => item.price > 0);
+};
+
+// Generate population comparison data for each grade
+const generatePopulationComparisonData = (card: MarketDataItem | null) => {
+  if (!card) return [];
+  
+  const grades = [10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 'Auth'];
+  
+  return grades.map(grade => {
+    const gradeKey = grade === 'Auth' ? 'auth' : grade;
+    const population = card[`population_${gradeKey}` as keyof MarketDataItem] as number || 0;
+    
+    return {
+      grade: grade === 'Auth' ? 'Authentic' : `Grade ${grade}`,
+      population: population,
+      formattedPopulation: formatNumber(population)
+    };
+  }).filter(item => item.population > 0);
+};
+
+// Format currency helper function
+const formatCurrency = (value?: number) => {
+  if (value === undefined || value === null) return "N/A";
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+  }).format(value);
+};
+
+// Format number helper function  
+const formatNumber = (value?: number) => {
+  if (value === undefined || value === null) return "N/A";
+  return new Intl.NumberFormat('en-US').format(value);
+};
+
+// Generate historical price data (mock data for now)
 const generateChartData = (card: MarketDataItem | null) => {
   if (!card) return [];
   
@@ -86,6 +139,8 @@ const PSAMarket: React.FC = () => {
   const [selectedCard, setSelectedCard] = useState<MarketDataItem | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selectedGradingService, setSelectedGradingService] = useState<string>("PSA");
+  const [priceComparisonData, setPriceComparisonData] = useState<any[]>([]);
+  const [populationComparisonData, setPopulationComparisonData] = useState<any[]>([]);
   const { toast } = useToast();
   const { isAdmin } = useAuth();
   
@@ -102,6 +157,8 @@ const PSAMarket: React.FC = () => {
   useEffect(() => {
     if (selectedCard) {
       setChartData(generateChartData(selectedCard));
+      setPriceComparisonData(generatePriceComparisonData(selectedCard));
+      setPopulationComparisonData(generatePopulationComparisonData(selectedCard));
     }
   }, [selectedCard]);
   
@@ -129,6 +186,8 @@ const PSAMarket: React.FC = () => {
       if (sortedData.length > 0 && !selectedCard) {
         setSelectedCard(sortedData[0]);
         setChartData(generateChartData(sortedData[0]));
+        setPriceComparisonData(generatePriceComparisonData(sortedData[0]));
+        setPopulationComparisonData(generatePopulationComparisonData(sortedData[0]));
       }
     } catch (error) {
       console.error("Error fetching market data:", error);
@@ -155,19 +214,6 @@ const PSAMarket: React.FC = () => {
   
   const handleRefresh = () => {
     fetchMarketData();
-  };
-  
-  const formatCurrency = (value?: number) => {
-    if (value === undefined || value === null) return "N/A";
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(value);
-  };
-  
-  const formatNumber = (value?: number) => {
-    if (value === undefined || value === null) return "N/A";
-    return new Intl.NumberFormat('en-US').format(value);
   };
   
   const handleCardSelect = (card: MarketDataItem) => {
@@ -455,77 +501,115 @@ const PSAMarket: React.FC = () => {
                       <TabsTrigger value="population">Population Analysis</TabsTrigger>
                     </TabsList>
                     <TabsContent value="price">
-                      <div className="h-[300px] mt-4">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <AreaChart
-                            data={chartData}
-                            margin={{
-                              top: 10,
-                              right: 30,
-                              left: 0,
-                              bottom: 0,
-                            }}
-                          >
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="name" />
-                            <YAxis />
-                            <RechartsTooltip formatter={(value: any) => [`$${value}`, 'Price']} />
-                            <Area type="monotone" dataKey="value" stroke="#8884d8" fill="#8884d8" />
-                          </AreaChart>
-                        </ResponsiveContainer>
-                      </div>
-                      
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-6">
-                        {[10, 9, 8, 7, 6, 5, 4, 3, 2, 1].map(grade => (
-                          <div key={`price-${grade}`}>
-                            <h4 className="text-sm font-medium text-muted-foreground">Price (Grade {grade})</h4>
-                            <p className="text-md">
-                              {formatCurrency(selectedCard[`price_${grade}` as keyof MarketDataItem] as number)}
-                            </p>
-                          </div>
-                        ))}
-                        <div>
-                          <h4 className="text-sm font-medium text-muted-foreground">Price (Authentic)</h4>
-                          <p className="text-md">{formatCurrency(selectedCard.price_auth)}</p>
-                        </div>
-                      </div>
-                    </TabsContent>
-                    <TabsContent value="population">
-                      <div className="h-[300px] mt-4">
+                      <div className="h-[350px] mt-4">
                         <ResponsiveContainer width="100%" height="100%">
                           <BarChart
-                            data={[
-                              { grade: '10', value: selectedCard.population_10 || 0 },
-                              { grade: '9', value: selectedCard.population_9 || 0 },
-                              { grade: '8', value: selectedCard.population_8 || 0 },
-                              { grade: '7', value: selectedCard.population_7 || 0 },
-                              { grade: '6', value: selectedCard.population_6 || 0 },
-                              { grade: '5', value: selectedCard.population_5 || 0 },
-                              { grade: '4', value: selectedCard.population_4 || 0 },
-                              { grade: '3', value: selectedCard.population_3 || 0 },
-                              { grade: '2', value: selectedCard.population_2 || 0 },
-                              { grade: '1', value: selectedCard.population_1 || 0 },
-                              { grade: 'A', value: selectedCard.population_auth || 0 },
-                            ]}
+                            data={priceComparisonData}
                             margin={{
-                              top: 5,
+                              top: 20,
                               right: 30,
                               left: 20,
-                              bottom: 5,
+                              bottom: 70,
                             }}
+                            barSize={30}
                           >
                             <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="grade" />
+                            <XAxis 
+                              dataKey="grade" 
+                              angle={-45} 
+                              textAnchor="end" 
+                              height={80}
+                              interval={0}
+                            />
                             <YAxis />
-                            <RechartsTooltip formatter={(value: any) => [formatNumber(value), 'Population']} />
-                            <Bar dataKey="value" fill="#82ca9d" />
+                            <RechartsTooltip 
+                              formatter={(value: any) => [`${formatCurrency(value)}`, 'Price']} 
+                              labelFormatter={(label) => `${label}`}
+                            />
+                            <Legend />
+                            <Bar 
+                              dataKey="price" 
+                              name="Price" 
+                              fill="#82ca9d" 
+                              label={{
+                                position: 'top',
+                                formatter: (value: any) => formatCurrency(value),
+                                fontSize: 11,
+                                fill: '#666',
+                              }}
+                            />
                           </BarChart>
                         </ResponsiveContainer>
                       </div>
                       
                       <div className="mt-6">
-                        <h4 className="text-sm font-medium text-muted-foreground">Population Highlights</h4>
-                        <div className="grid grid-cols-2 gap-4 mt-2">
+                        <h4 className="text-sm font-medium text-muted-foreground mb-2">Price Highlights</h4>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-sm font-semibold">Highest Grade Price</p>
+                            <p className="text-md">
+                              {selectedCard.price_10 ? formatCurrency(selectedCard.price_10) : 'N/A'}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold">Price Difference (10 to 9)</p>
+                            {selectedCard.price_10 && selectedCard.price_9 ? (
+                              <p className="text-md">
+                                {formatCurrency(selectedCard.price_10 - selectedCard.price_9)} 
+                                ({Math.round(((selectedCard.price_10 / selectedCard.price_9) - 1) * 100)}%)
+                              </p>
+                            ) : (
+                              <p className="text-md">N/A</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </TabsContent>
+                    <TabsContent value="population">
+                      <div className="h-[350px] mt-4">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart
+                            data={populationComparisonData}
+                            margin={{
+                              top: 20,
+                              right: 30,
+                              left: 20,
+                              bottom: 70,
+                            }}
+                            barSize={30}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis 
+                              dataKey="grade" 
+                              angle={-45} 
+                              textAnchor="end" 
+                              height={80}
+                              interval={0}
+                            />
+                            <YAxis />
+                            <RechartsTooltip 
+                              formatter={(value: any) => [`${formatNumber(value)}`, 'Population']} 
+                              labelFormatter={(label) => `${label}`}
+                            />
+                            <Legend />
+                            <Bar 
+                              dataKey="population" 
+                              name="Population" 
+                              fill="#8884d8" 
+                              label={{
+                                position: 'top',
+                                formatter: (value: any) => formatNumber(value),
+                                fontSize: 11,
+                                fill: '#666',
+                              }}
+                            />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                      
+                      <div className="mt-6">
+                        <h4 className="text-sm font-medium text-muted-foreground mb-2">Population Highlights</h4>
+                        <div className="grid grid-cols-2 gap-4">
                           <div>
                             <p className="text-sm font-semibold">Highest Population Grade</p>
                             {(() => {
