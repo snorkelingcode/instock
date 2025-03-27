@@ -1,9 +1,8 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
 export interface MarketDataItem {
-  id?: string;
+  id: string;
   card_name: string;
   grading_service: string;
   population_10?: number;
@@ -17,7 +16,6 @@ export interface MarketDataItem {
   population_2?: number;
   population_1?: number;
   population_auth?: number;
-  total_population?: number;
   price_10?: number;
   price_9?: number;
   price_8?: number;
@@ -29,35 +27,77 @@ export interface MarketDataItem {
   price_2?: number;
   price_1?: number;
   price_auth?: number;
-  market_cap?: number;
   card_image?: string;
+  market_cap?: number;
+  total_population?: number;
   created_at?: string;
   updated_at?: string;
 }
 
 export const marketDataService = {
-  // Get all market data entries
+  // Get all market data
   getMarketData: async (): Promise<MarketDataItem[]> => {
     try {
+      console.log("Fetching all market data");
       const { data, error } = await supabase
-        .from('market_data')
-        .select('*')
-        .order('card_name', { ascending: true });
-      
-      if (error) throw error;
-      
-      return data || [];
-    } catch (error) {
-      console.error('Error fetching market data:', error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to fetch market data",
-        variant: "destructive",
+        .from("market_data")
+        .select("*")
+        .order("card_name", { ascending: true });
+
+      if (error) {
+        console.error("Error fetching market data:", error);
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive",
+        });
+        return [];
+      }
+
+      // Calculate total population for each card
+      const processedData = data.map(card => {
+        const totalPopulation = [
+          card.population_10,
+          card.population_9,
+          card.population_8,
+          card.population_7,
+          card.population_6,
+          card.population_5,
+          card.population_4,
+          card.population_3,
+          card.population_2,
+          card.population_1,
+          card.population_auth
+        ].reduce((sum, pop) => sum + (pop || 0), 0);
+
+        // Calculate market cap
+        let marketCap = 0;
+        if (card.population_10 && card.price_10) marketCap += card.population_10 * card.price_10;
+        if (card.population_9 && card.price_9) marketCap += card.population_9 * card.price_9;
+        if (card.population_8 && card.price_8) marketCap += card.population_8 * card.price_8;
+        if (card.population_7 && card.price_7) marketCap += card.population_7 * card.price_7;
+        if (card.population_6 && card.price_6) marketCap += card.population_6 * card.price_6;
+        if (card.population_5 && card.price_5) marketCap += card.population_5 * card.price_5;
+        if (card.population_4 && card.price_4) marketCap += card.population_4 * card.price_4;
+        if (card.population_3 && card.price_3) marketCap += card.population_3 * card.price_3;
+        if (card.population_2 && card.price_2) marketCap += card.population_2 * card.price_2;
+        if (card.population_1 && card.price_1) marketCap += card.population_1 * card.price_1;
+        if (card.population_auth && card.price_auth) marketCap += card.population_auth * card.price_auth;
+
+        return {
+          ...card,
+          total_population: totalPopulation,
+          market_cap: marketCap
+        };
       });
+
+      return processedData;
+    } catch (error) {
+      console.error("Unexpected error in getMarketData:", error);
       return [];
     }
   },
-  
+
   // Get market data by ID
   getMarketDataById: async (id: string): Promise<MarketDataItem | null> => {
     try {
@@ -80,7 +120,7 @@ export const marketDataService = {
       return null;
     }
   },
-  
+
   // Create a new market data entry
   createMarketData: async (marketData: MarketDataItem): Promise<string | null> => {
     try {
@@ -119,7 +159,7 @@ export const marketDataService = {
       return null;
     }
   },
-  
+
   // Update an existing market data entry
   updateMarketData: async (id: string, marketData: MarketDataItem): Promise<boolean> => {
     try {
@@ -157,7 +197,7 @@ export const marketDataService = {
       return false;
     }
   },
-  
+
   // Delete a market data entry
   deleteMarketData: async (id: string): Promise<boolean> => {
     try {
@@ -188,22 +228,63 @@ export const marketDataService = {
   // Get market data by grading service
   getMarketDataByGradingService: async (gradingService: string): Promise<MarketDataItem[]> => {
     try {
+      console.log(`Fetching market data for ${gradingService}`);
       const { data, error } = await supabase
-        .from('market_data')
-        .select('*')
-        .eq('grading_service', gradingService)
-        .order('card_name', { ascending: true });
-      
-      if (error) throw error;
-      
-      return data || [];
-    } catch (error) {
-      console.error(`Error fetching market data for grading service ${gradingService}:`, error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to fetch market data",
-        variant: "destructive",
+        .from("market_data")
+        .select("*")
+        .eq("grading_service", gradingService)
+        .order("card_name", { ascending: true });
+
+      if (error) {
+        console.error(`Error fetching ${gradingService} market data:`, error);
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive",
+        });
+        return [];
+      }
+
+      // Calculate total population and market cap for each card
+      const processedData = data.map(card => {
+        const totalPopulation = [
+          card.population_10,
+          card.population_9,
+          card.population_8,
+          card.population_7,
+          card.population_6,
+          card.population_5,
+          card.population_4,
+          card.population_3,
+          card.population_2,
+          card.population_1,
+          card.population_auth
+        ].reduce((sum, pop) => sum + (pop || 0), 0);
+
+        // Calculate market cap
+        let marketCap = 0;
+        if (card.population_10 && card.price_10) marketCap += card.population_10 * card.price_10;
+        if (card.population_9 && card.price_9) marketCap += card.population_9 * card.price_9;
+        if (card.population_8 && card.price_8) marketCap += card.population_8 * card.price_8;
+        if (card.population_7 && card.price_7) marketCap += card.population_7 * card.price_7;
+        if (card.population_6 && card.price_6) marketCap += card.population_6 * card.price_6;
+        if (card.population_5 && card.price_5) marketCap += card.population_5 * card.price_5;
+        if (card.population_4 && card.price_4) marketCap += card.population_4 * card.price_4;
+        if (card.population_3 && card.price_3) marketCap += card.population_3 * card.price_3;
+        if (card.population_2 && card.price_2) marketCap += card.population_2 * card.price_2;
+        if (card.population_1 && card.price_1) marketCap += card.population_1 * card.price_1;
+        if (card.population_auth && card.price_auth) marketCap += card.population_auth * card.price_auth;
+
+        return {
+          ...card,
+          total_population: totalPopulation,
+          market_cap: marketCap
+        };
       });
+
+      return processedData;
+    } catch (error) {
+      console.error("Unexpected error in getMarketDataByGradingService:", error);
       return [];
     }
   }

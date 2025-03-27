@@ -48,7 +48,7 @@ export interface PSASearchParams {
 export const psaService = {
   // Get access token from localStorage
   getToken: () => {
-    return localStorage.getItem("psa_access_token");
+    return localStorage.getItem("psa_access_token") || "";
   },
   
   // Save access token to localStorage
@@ -60,10 +60,6 @@ export const psaService = {
   callApi: async <T>(endpoint: string, method: string = "GET", body?: any): Promise<T> => {
     const token = psaService.getToken();
     
-    if (!token) {
-      throw new Error("No PSA access token found. Please set your token first.");
-    }
-    
     try {
       console.log(`Calling PSA API via edge function: ${PSA_PROXY_URL}${endpoint}`);
       
@@ -71,13 +67,19 @@ export const psaService = {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
       
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      };
+      
+      // Only add the token if it exists
+      if (token) {
+        headers["psa-token"] = token;
+      }
+      
       const response = await fetch(`${PSA_PROXY_URL}${endpoint}`, {
         method,
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json",
-          "psa-token": token // Pass the token in a custom header
-        },
+        headers,
         body: body ? JSON.stringify(body) : undefined,
         signal: controller.signal
       });
