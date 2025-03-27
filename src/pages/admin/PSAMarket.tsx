@@ -14,7 +14,6 @@ import { ArrowUpDown, BarChartIcon, DollarSign, Package, TrendingUp, AlertCircle
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import psaService, { PSACard, PSASearchParams } from "@/services/psaService";
 import { MarketDataItem, marketDataService } from "@/services/marketDataService";
-import { useAuth } from "@/contexts/AuthContext";
 
 const GAME_CATEGORIES = {
   POKEMON: "Pokemon",
@@ -185,7 +184,6 @@ const PSAMarket: React.FC = () => {
   const [priceComparisonData, setPriceComparisonData] = useState<any[]>([]);
   const [populationComparisonData, setPopulationComparisonData] = useState<any[]>([]);
   const { toast } = useToast();
-  const { isAdmin } = useAuth();
   
   useEffect(() => {
     const savedToken = psaService.getToken();
