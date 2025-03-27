@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import { Layout } from "@/components/layout/Layout";
+import Layout from "@/components/layout/Layout";  // Changed from { Layout } to default import
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
