@@ -30,6 +30,7 @@ import Forge from "./pages/Forge";
 import ManageModels from "./pages/admin/ManageModels";
 import ManageProducts from "./pages/admin/ManageProducts";
 import UserManagement from "./pages/admin/UserManagement";
+import PSAMarket from "./pages/admin/PSAMarket";
 
 // Remove any stock monitor related imports (none found in this file)
 
@@ -124,6 +125,15 @@ const App = () => {
                 element={
                   <RequireAdmin>
                     <UserManagement />
+                  </RequireAdmin>
+                } 
+              />
+              
+              <Route 
+                path="/admin/psa-market" 
+                element={
+                  <RequireAdmin>
+                    <PSAMarket />
                   </RequireAdmin>
                 } 
               />
