@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,7 +36,6 @@ const GAME_CATEGORIES = {
   ONE_PIECE: "One Piece"
 };
 
-// Generate price comparison data for each grade
 const generatePriceComparisonData = (card: MarketDataItem | null) => {
   if (!card) return [];
   
@@ -55,7 +53,6 @@ const generatePriceComparisonData = (card: MarketDataItem | null) => {
   }).filter(item => item.price > 0);
 };
 
-// Generate population comparison data for each grade
 const generatePopulationComparisonData = (card: MarketDataItem | null) => {
   if (!card) return [];
   
@@ -73,7 +70,6 @@ const generatePopulationComparisonData = (card: MarketDataItem | null) => {
   }).filter(item => item.population > 0);
 };
 
-// Format currency helper function
 const formatCurrency = (value?: number) => {
   if (value === undefined || value === null) return "N/A";
   return new Intl.NumberFormat('en-US', {
@@ -82,13 +78,22 @@ const formatCurrency = (value?: number) => {
   }).format(value);
 };
 
-// Format number helper function  
+const formatChartCurrency = (value?: number) => {
+  if (value === undefined || value === null) return "N/A";
+  if (value >= 1000) {
+    return `$${(value / 1000).toFixed(2)}K`;
+  }
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+  }).format(value);
+};
+
 const formatNumber = (value?: number) => {
   if (value === undefined || value === null) return "N/A";
   return new Intl.NumberFormat('en-US').format(value);
 };
 
-// Generate historical price data (mock data for now)
 const generateChartData = (card: MarketDataItem | null) => {
   if (!card) return [];
   
@@ -110,7 +115,6 @@ const generateChartData = (card: MarketDataItem | null) => {
   });
 };
 
-// Helper function to calculate average price
 const calculateAveragePrice = (data: MarketDataItem): number | null => {
   let totalPrice = 0;
   let priceCount = 0;
@@ -150,7 +154,6 @@ const PSAMarket: React.FC = () => {
       setToken(savedToken);
     }
     
-    // Fetch initial market data
     fetchMarketData();
   }, []);
   
@@ -176,7 +179,6 @@ const PSAMarket: React.FC = () => {
         return;
       }
       
-      // Sort by market cap descending
       const sortedData = [...data].sort((a, b) => 
         (b.market_cap || 0) - (a.market_cap || 0)
       );
@@ -226,17 +228,14 @@ const PSAMarket: React.FC = () => {
     fetchMarketData();
   };
   
-  // Calculate total market cap for selected cards
   const calculateTotalMarketCap = () => {
     return marketData.reduce((sum, card) => sum + (card.market_cap || 0), 0);
   };
   
-  // Calculate total population for selected cards
   const calculateTotalPopulation = () => {
     return marketData.reduce((sum, card) => sum + (card.total_population || 0), 0);
   };
   
-  // Calculate average price for selected cards
   const calculateOverallAveragePrice = () => {
     const totalValue = marketData.reduce((sum, card) => {
       const avgPrice = calculateAveragePrice(card) || 0;
@@ -533,7 +532,7 @@ const PSAMarket: React.FC = () => {
                               fill="#82ca9d" 
                               label={{
                                 position: 'top',
-                                formatter: (value: any) => formatCurrency(value),
+                                formatter: (value: any) => formatChartCurrency(value),
                                 fontSize: 11,
                                 fill: '#666',
                               }}
