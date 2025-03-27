@@ -20,8 +20,9 @@ sender_name = "TCG Updates"
 admin_email = "noreply@tcgupdates.com"
 host = "smtp.sendgrid.net"
 port = 587
-user = "apikey" # Required for SendGrid SMTP API
-password = "" # Set to empty as we'll use API key instead of password
+user = "apikey"
+# Password is intentionally omitted as it should be configured via the Supabase dashboard
+# instead of in the config file
 
 [auth.external.apple]
 enabled = false
