@@ -1,8 +1,8 @@
 
 import { toast } from "@/hooks/use-toast";
 
-// PSA API base URL
-const PSA_API_BASE_URL = "https://api.psacard.com/api";
+// PSA API proxy URL (using Supabase Edge Function)
+const PSA_PROXY_URL = "https://etgkuasmqjidwtaxrfww.supabase.co/functions/v1/psa-proxy";
 
 // Types for PSA API responses
 export interface PSACard {
@@ -56,7 +56,7 @@ export const psaService = {
     localStorage.setItem("psa_access_token", token);
   },
   
-  // Generic function to make API calls to PSA
+  // Generic function to make API calls to PSA via our edge function
   callApi: async <T>(endpoint: string, method: string = "GET", body?: any): Promise<T> => {
     const token = psaService.getToken();
     
@@ -65,31 +65,31 @@ export const psaService = {
     }
     
     try {
-      console.log(`Calling PSA API: ${PSA_API_BASE_URL}${endpoint}`);
+      console.log(`Calling PSA API via edge function: ${PSA_PROXY_URL}${endpoint}`);
       
       // Add a timeout to the fetch request
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
       
-      // Try with 'no-cors' mode to handle CORS issues
-      const response = await fetch(`${PSA_API_BASE_URL}${endpoint}`, {
+      const response = await fetch(`${PSA_PROXY_URL}${endpoint}`, {
         method,
         headers: {
-          "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json",
-          "Accept": "application/json"
+          "Accept": "application/json",
+          "psa-token": token // Pass the token in a custom header
         },
         body: body ? JSON.stringify(body) : undefined,
-        signal: controller.signal,
-        mode: 'no-cors' // Add no-cors mode to bypass CORS restrictions
+        signal: controller.signal
       });
       
       clearTimeout(timeoutId);
       
-      // With 'no-cors' mode, we can't actually access the response content
-      // So we'll need to fall back to mock data
-      console.warn("Using no-cors mode - limited response access. Falling back to mock data.");
-      throw new Error("CORS restrictions prevented accessing the real API data");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `API returned ${response.status}: ${response.statusText}`);
+      }
+      
+      return await response.json();
       
     } catch (error) {
       console.error("PSA API call failed:", error);
@@ -103,14 +103,12 @@ export const psaService = {
         throw new Error("Request timed out");
       }
       
-      // Only show toast for errors that aren't CORS-related
-      if (!(error instanceof Error && error.message === "CORS restrictions prevented accessing the real API data")) {
-        toast({
-          title: "API Error",
-          description: error instanceof Error ? error.message : "Failed to fetch data from PSA",
-          variant: "destructive"
-        });
-      }
+      toast({
+        title: "API Error",
+        description: error instanceof Error ? error.message : "Failed to fetch data from PSA",
+        variant: "destructive"
+      });
+      
       throw error;
     }
   },
@@ -124,6 +122,7 @@ export const psaService = {
       
       // Generate a mock card with the requested cert number
       const mockCard = psaService.generateMockCard(certNumber);
+      console.log(`Using mock data for cert number ${certNumber}`, mockCard);
       return mockCard;
     }
   },
@@ -146,6 +145,7 @@ export const psaService = {
       return await psaService.callApi<{items: PSACard[], total: number}>(`/cert/items?${queryParams}`);
     } catch (error) {
       console.error(`Error searching cards with params ${JSON.stringify(params)}:`, error);
+      console.log("Using mock data for search", params);
       
       // Fall back to mock data
       return psaService.getMockCardsByCategory(params.sport || "Pokemon", params.page || 1, params.pageSize || 20);
@@ -156,10 +156,22 @@ export const psaService = {
   searchCardsByCategory: async (category: string, page: number = 1, pageSize: number = 20): Promise<{items: PSACard[], total: number}> => {
     console.log(`Searching cards for category: ${category}, page: ${page}, pageSize: ${pageSize}`);
     
-    // For demo purposes, always use mock data due to CORS limitations
-    // In a real application, you would need a backend proxy or serverless function
-    console.info("Due to CORS limitations, using mock data for PSA API");
-    return psaService.getMockCardsByCategory(category, page, pageSize);
+    try {
+      const result = await psaService.searchCards({
+        sport: category,
+        page,
+        pageSize
+      });
+      
+      console.log(`Found ${result.items.length} cards for ${category}`);
+      return result;
+    } catch (error) {
+      console.error(`Error searching cards for category ${category}:`, error);
+      console.log(`Using mock data for category ${category}`);
+      
+      // Fall back to mock data
+      return psaService.getMockCardsByCategory(category, page, pageSize);
+    }
   },
   
   // Generate a single mock card
