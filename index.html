@@ -56,30 +56,6 @@
         z-index: 10;
       }
       
-      .loader-text {
-        margin-top: 0.5rem;
-        font-family: 'Inter', sans-serif;
-        font-size: 1rem;
-        color: #4a4a4a;
-      }
-      
-      .progress-container {
-        width: 240px;
-        height: 6px;
-        background-color: #e2e2e2;
-        border-radius: 3px;
-        margin-top: 1rem;
-        overflow: hidden;
-      }
-      
-      .progress-bar {
-        height: 100%;
-        background-color: #9b87f5;
-        width: 0%;
-        border-radius: 3px;
-        transition: width 0.3s ease-out;
-      }
-      
       @keyframes fadeOut {
         to {
           opacity: 0;
@@ -97,10 +73,6 @@
       <div class="initial-loader" id="initialLoader">
         <div class="loader-container">
           <img src="/lovable-uploads/3ef7392a-c45d-4acd-bbdf-15d852b86297.png" alt="TCG Updates" class="loader-logo" />
-        </div>
-        <div class="loader-text">Loading TCG updates...</div>
-        <div class="progress-container">
-          <div class="progress-bar" id="initialProgressBar"></div>
         </div>
       </div>
     </div>
