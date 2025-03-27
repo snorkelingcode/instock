@@ -319,6 +319,105 @@ export type Database = {
         }
         Relationships: []
       }
+      market_data: {
+        Row: {
+          card_image: string | null
+          card_name: string
+          created_at: string | null
+          grading_service: string
+          id: string
+          market_cap: number | null
+          population_1: number | null
+          population_10: number | null
+          population_2: number | null
+          population_3: number | null
+          population_4: number | null
+          population_5: number | null
+          population_6: number | null
+          population_7: number | null
+          population_8: number | null
+          population_9: number | null
+          population_auth: number | null
+          price_1: number | null
+          price_10: number | null
+          price_2: number | null
+          price_3: number | null
+          price_4: number | null
+          price_5: number | null
+          price_6: number | null
+          price_7: number | null
+          price_8: number | null
+          price_9: number | null
+          price_auth: number | null
+          total_population: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          card_image?: string | null
+          card_name: string
+          created_at?: string | null
+          grading_service: string
+          id?: string
+          market_cap?: number | null
+          population_1?: number | null
+          population_10?: number | null
+          population_2?: number | null
+          population_3?: number | null
+          population_4?: number | null
+          population_5?: number | null
+          population_6?: number | null
+          population_7?: number | null
+          population_8?: number | null
+          population_9?: number | null
+          population_auth?: number | null
+          price_1?: number | null
+          price_10?: number | null
+          price_2?: number | null
+          price_3?: number | null
+          price_4?: number | null
+          price_5?: number | null
+          price_6?: number | null
+          price_7?: number | null
+          price_8?: number | null
+          price_9?: number | null
+          price_auth?: number | null
+          total_population?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          card_image?: string | null
+          card_name?: string
+          created_at?: string | null
+          grading_service?: string
+          id?: string
+          market_cap?: number | null
+          population_1?: number | null
+          population_10?: number | null
+          population_2?: number | null
+          population_3?: number | null
+          population_4?: number | null
+          population_5?: number | null
+          population_6?: number | null
+          population_7?: number | null
+          population_8?: number | null
+          population_9?: number | null
+          population_auth?: number | null
+          price_1?: number | null
+          price_10?: number | null
+          price_2?: number | null
+          price_3?: number | null
+          price_4?: number | null
+          price_5?: number | null
+          price_6?: number | null
+          price_7?: number | null
+          price_8?: number | null
+          price_9?: number | null
+          price_auth?: number | null
+          total_population?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       mtg_cards: {
         Row: {
           artist: string | null

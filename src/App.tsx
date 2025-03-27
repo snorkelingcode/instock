@@ -31,8 +31,7 @@ import ManageModels from "./pages/admin/ManageModels";
 import ManageProducts from "./pages/admin/ManageProducts";
 import UserManagement from "./pages/admin/UserManagement";
 import PSAMarket from "./pages/admin/PSAMarket";
-
-// Remove any stock monitor related imports (none found in this file)
+import ManageMarket from "./pages/admin/ManageMarket";
 
 const queryClient = new QueryClient();
 
@@ -134,6 +133,15 @@ const App = () => {
                 element={
                   <RequireAdmin>
                     <PSAMarket />
+                  </RequireAdmin>
+                } 
+              />
+              
+              <Route 
+                path="/admin/manage-market" 
+                element={
+                  <RequireAdmin>
+                    <ManageMarket />
                   </RequireAdmin>
                 } 
               />
