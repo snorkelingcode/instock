@@ -66,23 +66,51 @@ export const psaService = {
     
     try {
       console.log(`Calling PSA API: ${PSA_API_BASE_URL}${endpoint}`);
+      
+      // Add a timeout to the fetch request
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+      
       const response = await fetch(`${PSA_API_BASE_URL}${endpoint}`, {
         method,
         headers: {
           "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          "Accept": "application/json"
         },
-        body: body ? JSON.stringify(body) : undefined
+        body: body ? JSON.stringify(body) : undefined,
+        signal: controller.signal
       });
       
+      clearTimeout(timeoutId);
+      
       if (!response.ok) {
-        const error = await response.text();
-        throw new Error(`PSA API error: ${error}`);
+        const errorText = await response.text();
+        console.error("PSA API Response Error:", {
+          status: response.status,
+          statusText: response.statusText,
+          errorText
+        });
+        throw new Error(`PSA API error: ${errorText}`);
       }
       
-      return await response.json() as T;
+      try {
+        return await response.json() as T;
+      } catch (jsonError) {
+        console.error("Failed to parse JSON response:", jsonError);
+        throw new Error("Failed to parse API response");
+      }
     } catch (error) {
       console.error("PSA API call failed:", error);
+      if (error instanceof DOMException && error.name === "AbortError") {
+        toast({
+          title: "Request Timeout",
+          description: "The API request timed out. Please try again later.",
+          variant: "destructive"
+        });
+        throw new Error("Request timed out");
+      }
+      
       toast({
         title: "API Error",
         description: error instanceof Error ? error.message : "Failed to fetch data from PSA",
@@ -94,7 +122,12 @@ export const psaService = {
   
   // Get card by cert number - Updated endpoint format
   getCardByCertNumber: async (certNumber: string): Promise<PSACard> => {
-    return psaService.callApi<PSACard>(`/cert/${certNumber}`);
+    try {
+      return await psaService.callApi<PSACard>(`/cert/${certNumber}`);
+    } catch (error) {
+      console.error(`Error getting card by cert number ${certNumber}:`, error);
+      throw error;
+    }
   },
   
   // Search for cards - Updated endpoint format
@@ -111,11 +144,17 @@ export const psaService = {
       .map(([key, value]) => `${key}=${encodeURIComponent(String(value))}`)
       .join("&");
     
-    return psaService.callApi<{items: PSACard[], total: number}>(`/cert/items?${queryParams}`);
+    try {
+      return await psaService.callApi<{items: PSACard[], total: number}>(`/cert/items?${queryParams}`);
+    } catch (error) {
+      console.error(`Error searching cards with params ${JSON.stringify(params)}:`, error);
+      throw error;
+    }
   },
   
   // Search cards by category - Updated to match new endpoint structure
   searchCardsByCategory: async (category: string, page: number = 1, pageSize: number = 20): Promise<{items: PSACard[], total: number}> => {
+    console.log(`Searching cards for category: ${category}, page: ${page}, pageSize: ${pageSize}`);
     try {
       // For demo purposes, if we encounter API issues, fall back to mock data
       try {
@@ -126,6 +165,12 @@ export const psaService = {
           pageSize
         });
         
+        // If the API returns results but doesn't include market data, add it
+        if (result && result.items && result.items.length > 0) {
+          result.items = psaService.enrichWithMarketData(result.items);
+        }
+        
+        console.log(`API returned ${result.items.length} items for ${category}`);
         return result;
       } catch (apiError) {
         console.warn("Using mock data due to API error:", apiError);
@@ -167,7 +212,8 @@ export const psaService = {
     // Sort by random market cap
     const mockCardsWithMarketData = psaService.enrichWithMarketData(mockCards)
       .sort((a, b) => (b.marketData?.marketCap || 0) - (a.marketData?.marketCap || 0));
-      
+    
+    console.log(`Generated ${mockCardsWithMarketData.length} mock cards for ${category}`);
     return {
       items: mockCardsWithMarketData,
       total: 100 // Mock total
