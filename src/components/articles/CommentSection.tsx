@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -14,7 +15,7 @@ interface Comment {
   content: string;
   created_at: string;
   user_id: string;
-  user_email: string;
+  display_user_id?: string; // Added this optional field
 }
 
 interface CommentSectionProps {
@@ -51,22 +52,18 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
 
       if (commentsError) throw commentsError;
 
-      // If we have comments, fetch user emails separately
+      // If we have comments, process them to include display_user_id where possible
       if (commentsData && commentsData.length > 0) {
-        // Since we can't directly query auth.users, we'll use the session user for the current user
-        // and use placeholders for other users
-        
         const formattedComments = commentsData.map(comment => {
-          // For the current user, use their email from the session
+          // For the current user, use their display_user_id from auth session
           const isCurrentUser = user && comment.user_id === user.id;
+          let displayUserId;
           
-          // Get email or extract username from email for display
-          let userEmail;
-          if (isCurrentUser && user.email) {
-            userEmail = user.email;
+          if (isCurrentUser && user.user_metadata?.display_user_id) {
+            displayUserId = user.user_metadata.display_user_id;
           } else {
-            // Create a username from the user ID instead of showing the full ID
-            userEmail = `user${comment.user_id.substring(0, 4)}`;
+            // Create a generic username from the user ID instead of showing email
+            displayUserId = `user${comment.user_id.substring(0, 4)}`;
           }
           
           return {
@@ -74,7 +71,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
             content: comment.content,
             created_at: comment.created_at,
             user_id: comment.user_id,
-            user_email: userEmail || "Anonymous User"
+            display_user_id: displayUserId
           };
         });
         
@@ -200,20 +197,8 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
   };
   
   const getUserInitials = (identifier: string) => {
-    // If it looks like an email, get the first two characters of the first part
-    if (identifier.includes('@')) {
-      return identifier.split('@')[0].substring(0, 2).toUpperCase();
-    }
-    // Otherwise just take the first two chars of the identifier
+    // Take first two characters of the identifier
     return identifier.substring(0, 2).toUpperCase();
-  };
-  
-  const getDisplayName = (identifier: string) => {
-    // If it's an email, extract the username part
-    if (identifier.includes('@')) {
-      return identifier.split('@')[0];
-    }
-    return identifier;
   };
 
   const canDeleteComment = (commentUserId: string) => {
@@ -268,13 +253,13 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
               <div className="flex items-start gap-3 mb-2">
                 <Avatar className="h-8 w-8 bg-red-100">
                   <AvatarFallback className="bg-red-100 text-red-600">
-                    {getUserInitials(comment.user_email)}
+                    {getUserInitials(comment.display_user_id || 'User')}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1">
                   <div className="flex flex-col sm:flex-row sm:justify-between sm:items-baseline">
                     <div className="flex items-center gap-2">
-                      <p className="font-medium">{getDisplayName(comment.user_email)}</p>
+                      <p className="font-medium">{comment.display_user_id}</p>
                       {user && user.id === comment.user_id && (
                         <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">You</span>
                       )}
