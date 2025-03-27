@@ -168,6 +168,14 @@ const Navigation = () => {
                         </SheetClose>
                         <SheetClose asChild>
                           <Link
+                            to="/admin/psa-market"
+                            className="py-3 px-6 text-red-600 font-medium border-b border-gray-200 hover:bg-red-50 transition-colors text-left"
+                          >
+                            PSA Market
+                          </Link>
+                        </SheetClose>
+                        <SheetClose asChild>
+                          <Link
                             to="/sets/sync"
                             className="py-3 px-6 text-red-600 font-medium border-b border-gray-200 hover:bg-red-50 transition-colors text-left"
                           >
@@ -270,6 +278,11 @@ const Navigation = () => {
                     <DropdownMenuItem>
                       <Link to="/admin/products" className="w-full">
                         Manage Products
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                      <Link to="/admin/psa-market" className="w-full">
+                        PSA Market
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem>
