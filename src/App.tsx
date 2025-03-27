@@ -29,7 +29,7 @@ import Forge from "./pages/Forge";
 import ManageModels from "./pages/admin/ManageModels";
 import ManageProducts from "./pages/admin/ManageProducts";
 import UserManagement from "./pages/admin/UserManagement";
-import PSAMarket from "./pages/admin/PSAMarket";
+import PSAMarket from "./pages/PSAMarket";
 import ManageMarket from "./pages/admin/ManageMarket";
 
 const queryClient = new QueryClient();
@@ -49,7 +49,7 @@ const App = () => {
               <Route path="/products" element={<Products />} />
               <Route path="/news" element={<News />} />
               <Route path="/market" element={<PSAMarket />} />
-              <Route path="/psa-market" element={<PSAMarket />} /> {/* Add back the original route as well */}
+              <Route path="/psa-market" element={<PSAMarket />} /> {/* Keep both routes for backward compatibility */}
               <Route path="/article/:id" element={<ArticleDetails />} />
               <Route path="/privacy" element={<PrivacyPolicy />} />
               <Route path="/terms" element={<TermsOfService />} />
@@ -129,7 +129,6 @@ const App = () => {
                 } 
               />
               
-              {/* Made PSAMarket accessible to all users by removing RequireAdmin wrapper */}
               <Route path="/admin/psa-market" element={<PSAMarket />} />
               
               <Route 
