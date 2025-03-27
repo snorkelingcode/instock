@@ -61,6 +61,13 @@ const generatePopulationComparisonData = (card: MarketDataItem | null) => {
 
 const formatCurrency = (value?: number) => {
   if (value === undefined || value === null) return "N/A";
+  if (value < 1000) {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      maximumFractionDigits: 0
+    }).format(value);
+  }
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
@@ -74,7 +81,7 @@ const formatChartCurrency = (value?: number) => {
   } else if (value >= 1000) {
     return `$${(value / 1000).toFixed(2)}K`;
   }
-  return `$${value.toLocaleString()}`;
+  return `$${Math.round(value)}`;
 };
 
 const formatNumber = (value?: number) => {
