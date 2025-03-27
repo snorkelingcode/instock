@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -129,7 +128,6 @@ const App = () => {
                 } 
               />
               
-              {/* The Market page is now fully accessible to all users without authentication */}
               <Route path="/admin/psa-market" element={<PSAMarket />} />
               
               <Route 
