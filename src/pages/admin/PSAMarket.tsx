@@ -294,8 +294,8 @@ const PSAMarket: React.FC = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="PSA">PSA</SelectItem>
-                    <SelectItem value="BGS">BGS</SelectItem>
-                    <SelectItem value="CGC">CGC</SelectItem>
+                    <SelectItem value="BGS" disabled className="text-muted-foreground">BGS (Coming Soon)</SelectItem>
+                    <SelectItem value="CGC" disabled className="text-muted-foreground">CGC (Coming Soon)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -449,7 +449,7 @@ const PSAMarket: React.FC = () => {
         {selectedCard && (
           <Card>
             <CardHeader>
-              <CardTitle>Card Details: {selectedCard.card_name}</CardTitle>
+              <CardTitle>{selectedCard.card_name}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
