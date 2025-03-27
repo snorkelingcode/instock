@@ -128,14 +128,8 @@ const App = () => {
                 } 
               />
               
-              <Route 
-                path="/admin/psa-market" 
-                element={
-                  <RequireAdmin>
-                    <PSAMarket />
-                  </RequireAdmin>
-                } 
-              />
+              {/* Made PSAMarket accessible to all users by removing RequireAdmin wrapper */}
+              <Route path="/admin/psa-market" element={<PSAMarket />} />
               
               <Route 
                 path="/admin/manage-market" 

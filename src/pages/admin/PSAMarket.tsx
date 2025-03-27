@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -689,6 +690,66 @@ const PSAMarket: React.FC = () => {
                     </TabsContent>
                   </Tabs>
                 </div>
+              </div>
+              
+              {/* Added grid here as requested */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total Market Cap</CardTitle>
+                    <DollarSign className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      {formatCurrency(selectedCard.market_cap)}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Individual Card
+                    </p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Highest Price</CardTitle>
+                    <BarChartIcon className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      {formatCurrency(getHighestPrice(selectedCard))}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Individual Card
+                    </p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total Cards</CardTitle>
+                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      {formatNumber(marketData.length)}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Unique cards tracked
+                    </p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total Population</CardTitle>
+                    <Package className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      {formatNumber(selectedCard.total_population)}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Individual Card
+                    </p>
+                  </CardContent>
+                </Card>
               </div>
             </CardContent>
           </Card>
