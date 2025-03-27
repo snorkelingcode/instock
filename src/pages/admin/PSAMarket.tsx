@@ -10,22 +10,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import LoadingScreen from "@/components/ui/loading-screen";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from "recharts";
-import { AreaChart, Area } from "recharts";
-import {
-  RefreshCcw, ArrowUpDown,
-  BarChart as BarChartIcon,
-  DollarSign,
-  Package,
-  TrendingUp,
-  AlertCircle,
-  Info,
-  ExternalLink
-} from "lucide-react";
+import { RefreshCcw, ArrowUpDown, BarChart as BarChartIcon, DollarSign, Package, TrendingUp, AlertCircle } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import psaService, { PSACard, PSASearchParams } from "@/services/psaService";
 import { MarketDataItem, marketDataService } from "@/services/marketDataService";
-import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
 const GAME_CATEGORIES = {
@@ -259,23 +248,7 @@ const PSAMarket: React.FC = () => {
       <div className="container mx-auto py-6 space-y-6">
         <div className="flex flex-row items-center justify-between">
           <h1 className="text-3xl font-bold mb-6">TCG Market Data</h1>
-          {isAdmin && (
-            <Link to="/admin/manage-market">
-              <Button variant="outline" className="mb-6">
-                <ExternalLink className="mr-2 h-4 w-4" />
-                Manage Market Data
-              </Button>
-            </Link>
-          )}
         </div>
-        
-        <Alert className="bg-blue-50 border-blue-200">
-          <Info className="h-4 w-4 text-blue-600" />
-          <AlertTitle className="text-blue-800">TCG Market Analytics</AlertTitle>
-          <AlertDescription className="text-blue-700">
-            View and analyze market data for trading card games. This data is sourced from our database and provides insights into card populations and pricing trends.
-          </AlertDescription>
-        </Alert>
         
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0">
