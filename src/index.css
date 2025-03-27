@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -98,4 +99,36 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Mobile-specific optimization styles */
+@media (max-width: 640px) {
+  .container {
+    @apply px-3;
+  }
+  
+  .card-title {
+    @apply text-base;
+  }
+  
+  /* Better table display on mobile */
+  .recharts-text.recharts-cartesian-axis-tick-value {
+    font-size: 10px;
+  }
+  
+  /* Make sure chart labels don't overlap */
+  .recharts-label {
+    font-size: 9px;
+  }
+}
+
+/* Fix table overflow on mobile */
+.overflow-auto {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Make chart labels more visible */
+.recharts-cartesian-axis-tick-value {
+  fill: #555;
+  font-weight: 500;
 }

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,6 +14,8 @@ import { ArrowUpDown, BarChartIcon, DollarSign, Package, TrendingUp, AlertCircle
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import psaService, { PSACard, PSASearchParams } from "@/services/psaService";
 import { MarketDataItem, marketDataService } from "@/services/marketDataService";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Grid } from "@/components/ui/grid";
 
 const GAME_CATEGORIES = {
   POKEMON: "Pokemon",
@@ -185,6 +186,7 @@ const PSAMarket: React.FC = () => {
   const [priceComparisonData, setPriceComparisonData] = useState<any[]>([]);
   const [populationComparisonData, setPopulationComparisonData] = useState<any[]>([]);
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   
   useEffect(() => {
     const savedToken = psaService.getToken();
@@ -264,7 +266,6 @@ const PSAMarket: React.FC = () => {
   };
   
   const generateMockMarketData = (count: number): MarketDataItem[] => {
-    // Use these placeholder images that actually exist
     const placeholderImages = [
       "https://images.unsplash.com/photo-1488590528505-98d2b5aba04b",
       "https://images.unsplash.com/photo-1518770660439-4636190af475",
@@ -363,22 +364,22 @@ const PSAMarket: React.FC = () => {
                 <LoadingScreen message="Fetching market data..." />
               </div>
             ) : marketData.length > 0 ? (
-              <div className="overflow-x-auto">
+              <div className="overflow-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-16 text-center">Rank</TableHead>
                       <TableHead>Card Name</TableHead>
-                      <TableHead>
+                      <TableHead className={isMobile ? "hidden sm:table-cell" : ""}>
                         <div className="flex items-center">
                           Market Cap
                           <ArrowUpDown className="ml-2 h-4 w-4" />
                         </div>
                       </TableHead>
-                      <TableHead>Population</TableHead>
+                      <TableHead className={isMobile ? "hidden sm:table-cell" : ""}>Population</TableHead>
                       <TableHead>
                         <div className="flex items-center">
-                          Highest Price
+                          {isMobile ? "Price" : "Highest Price"}
                           <ArrowUpDown className="ml-2 h-4 w-4" />
                         </div>
                       </TableHead>
@@ -406,12 +407,20 @@ const PSAMarket: React.FC = () => {
                                 <BarChartIcon className="w-4 h-4" />
                               </div>
                             )}
-                            {card.card_name}
+                            <span className="line-clamp-2">
+                              {card.card_name}
+                            </span>
                           </div>
                         </TableCell>
-                        <TableCell className="font-semibold">{formatCurrency(card.market_cap)}</TableCell>
-                        <TableCell>{formatNumber(card.total_population)}</TableCell>
-                        <TableCell>{formatCurrency(getHighestPrice(card))}</TableCell>
+                        <TableCell className={`font-semibold ${isMobile ? "hidden sm:table-cell" : ""}`}>
+                          {formatCurrency(card.market_cap)}
+                        </TableCell>
+                        <TableCell className={isMobile ? "hidden sm:table-cell" : ""}>
+                          {formatNumber(card.total_population)}
+                        </TableCell>
+                        <TableCell className="font-semibold">
+                          {formatCurrency(getHighestPrice(card))}
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -500,20 +509,24 @@ const PSAMarket: React.FC = () => {
                               top: 20,
                               right: 30,
                               left: 20,
-                              bottom: 70,
+                              bottom: isMobile ? 90 : 70,
                             }}
-                            barSize={30}
+                            barSize={isMobile ? 20 : 30}
                           >
                             <CartesianGrid strokeDasharray="3 3" />
                             <XAxis 
                               dataKey="grade" 
                               angle={-45} 
                               textAnchor="end" 
-                              height={80}
+                              height={isMobile ? 90 : 80}
                               interval={0}
+                              fontSize={isMobile ? 10 : 12}
+                              tickMargin={isMobile ? 15 : 5}
                             />
                             <YAxis 
                               tickFormatter={(value) => formatChartCurrency(value)}
+                              width={isMobile ? 60 : 80}
+                              fontSize={isMobile ? 10 : 12}
                             />
                             <RechartsTooltip 
                               formatter={(value: any) => [`${formatCurrency(value)}`, 'Price']} 
@@ -530,11 +543,11 @@ const PSAMarket: React.FC = () => {
                                   if (value >= 100000) {
                                     return `${Math.round(value / 1000)}K`;
                                   } else if (value >= 1000) {
-                                    return `${(value / 1000).toFixed(2)}K`;
+                                    return `${(value / 1000).toFixed(1)}K`;
                                   }
                                   return value.toLocaleString();
                                 },
-                                fontSize: 11,
+                                fontSize: isMobile ? 9 : 11,
                                 fill: '#666',
                               }}
                             />
@@ -544,7 +557,7 @@ const PSAMarket: React.FC = () => {
                       
                       <div className="mt-6">
                         <h4 className="text-sm font-medium text-muted-foreground mb-2">Price Highlights</h4>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div>
                             <p className="text-sm font-semibold">Highest Grade Price</p>
                             <p className="text-md">
@@ -556,7 +569,9 @@ const PSAMarket: React.FC = () => {
                             {selectedCard.price_10 && selectedCard.price_9 ? (
                               <p className="text-md">
                                 {formatCurrency(selectedCard.price_10 - selectedCard.price_9)} 
-                                ({Math.round(((selectedCard.price_10 / selectedCard.price_9) - 1) * 100)}%)
+                                <span className="whitespace-nowrap">
+                                  ({Math.round(((selectedCard.price_10 / selectedCard.price_9) - 1) * 100)}%)
+                                </span>
                               </p>
                             ) : (
                               <p className="text-md">N/A</p>
@@ -574,20 +589,24 @@ const PSAMarket: React.FC = () => {
                               top: 20,
                               right: 30,
                               left: 20,
-                              bottom: 70,
+                              bottom: isMobile ? 90 : 70,
                             }}
-                            barSize={30}
+                            barSize={isMobile ? 20 : 30}
                           >
                             <CartesianGrid strokeDasharray="3 3" />
                             <XAxis 
                               dataKey="grade" 
                               angle={-45} 
                               textAnchor="end" 
-                              height={80}
+                              height={isMobile ? 90 : 80}
                               interval={0}
+                              fontSize={isMobile ? 10 : 12}
+                              tickMargin={isMobile ? 15 : 5}
                             />
                             <YAxis 
                               tickFormatter={(value) => formatChartNumber(value)}
+                              width={isMobile ? 60 : 80}
+                              fontSize={isMobile ? 10 : 12}
                             />
                             <RechartsTooltip 
                               formatter={(value: any) => [`${formatNumber(value)}`, 'Population']} 
@@ -601,7 +620,7 @@ const PSAMarket: React.FC = () => {
                               label={{
                                 position: 'top',
                                 formatter: (value: any) => formatNumber(value),
-                                fontSize: 11,
+                                fontSize: isMobile ? 9 : 11,
                                 fill: '#666',
                               }}
                             />
@@ -611,7 +630,7 @@ const PSAMarket: React.FC = () => {
                       
                       <div className="mt-6">
                         <h4 className="text-sm font-medium text-muted-foreground mb-2">Population Highlights</h4>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div>
                             <p className="text-sm font-semibold">Highest Population Grade</p>
                             {(() => {
@@ -642,14 +661,14 @@ const PSAMarket: React.FC = () => {
                 </div>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Total Market Cap</CardTitle>
                     <DollarSign className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">
+                    <div className="text-xl sm:text-2xl font-bold">
                       {formatCurrency(selectedCard.market_cap)}
                     </div>
                     <p className="text-xs text-muted-foreground">
@@ -663,7 +682,7 @@ const PSAMarket: React.FC = () => {
                     <BarChartIcon className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">
+                    <div className="text-xl sm:text-2xl font-bold">
                       {formatCurrency(getHighestPrice(selectedCard))}
                     </div>
                     <p className="text-xs text-muted-foreground">
@@ -677,7 +696,7 @@ const PSAMarket: React.FC = () => {
                     <TrendingUp className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">
+                    <div className="text-xl sm:text-2xl font-bold">
                       {formatNumber(marketData.length)}
                     </div>
                     <p className="text-xs text-muted-foreground">
@@ -691,7 +710,7 @@ const PSAMarket: React.FC = () => {
                     <Package className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">
+                    <div className="text-xl sm:text-2xl font-bold">
                       {formatNumber(selectedCard.total_population)}
                     </div>
                     <p className="text-xs text-muted-foreground">
