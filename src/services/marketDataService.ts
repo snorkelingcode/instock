@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
@@ -40,8 +39,8 @@ export const marketDataService = {
     try {
       console.log("Fetching all market data");
       
-      // Print the Supabase URL to verify connection
-      console.log("Supabase URL:", supabase.supabaseUrl);
+      // Using URL from environment for debugging
+      console.log("Using Supabase service to fetch data");
       
       const { data, error } = await supabase
         .from("market_data")
@@ -224,16 +223,10 @@ export const marketDataService = {
   getMarketDataByGradingService: async (gradingService: string): Promise<MarketDataItem[]> => {
     try {
       console.log(`Fetching market data for ${gradingService}`);
-      console.log("Supabase URL:", supabase.supabaseUrl);
+      console.log("Using Supabase client for query");
       
-      // First, check if table exists by querying the information schema
-      const { data: tableCheck, error: tableError } = await supabase
-        .from('pg_tables')
-        .select('*')
-        .eq('tablename', 'market_data')
-        .eq('schemaname', 'public');
-      
-      console.log('Table check result:', { tableCheck, tableError });
+      // Check if the market_data table exists by attempting to count rows
+      console.log("Checking for market_data table existence");
       
       const { data, error } = await supabase
         .from("market_data")
