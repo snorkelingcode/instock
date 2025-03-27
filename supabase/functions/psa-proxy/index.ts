@@ -4,17 +4,23 @@ import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 // PSA API base URL
 const PSA_API_BASE_URL = "https://api.psacard.com/api";
 
-// CORS headers to allow requests from our frontend
+// CORS headers to allow requests from any origin
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, psa-token",
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
 };
 
 serve(async (req) => {
-  // Handle CORS preflight requests
+  console.log(`PSA proxy received ${req.method} request to ${req.url}`);
+  
+  // Handle CORS preflight requests - must return 200 OK for OPTIONS
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    console.log("Handling OPTIONS preflight request");
+    return new Response(null, { 
+      status: 200,
+      headers: corsHeaders 
+    });
   }
   
   try {
@@ -37,6 +43,7 @@ serve(async (req) => {
     const psaToken = req.headers.get("psa-token");
     
     if (!psaToken) {
+      console.error("PSA token is missing from request");
       return new Response(
         JSON.stringify({ error: "PSA token is required" }),
         { 
@@ -49,7 +56,7 @@ serve(async (req) => {
     console.log(`Proxying request to PSA API: ${PSA_API_BASE_URL}${endpoint}${query}`);
     
     // Set up request options
-    const fetchOptions: RequestInit = {
+    const fetchOptions = {
       method: req.method,
       headers: {
         "Authorization": `Bearer ${psaToken}`,
@@ -74,6 +81,8 @@ serve(async (req) => {
     
     // Get the response data
     const data = await response.json();
+    
+    console.log(`PSA API responded with status ${response.status}`);
     
     // Return the response with CORS headers
     return new Response(
