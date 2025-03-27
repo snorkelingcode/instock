@@ -18,8 +18,10 @@ enable_confirmations = true
 [auth.email.smtp]
 sender_name = "TCG Updates"
 admin_email = "noreply@tcgupdates.com"
-host = "smtp.sendgrid.net"  # Updated to SendGrid's SMTP host
-port = 587  # Added the required SMTP port
+host = "smtp.sendgrid.net"
+port = 587
+user = "apikey" # Required for SendGrid SMTP API
+password = "" # Set to empty as we'll use API key instead of password
 
 [auth.external.apple]
 enabled = false
