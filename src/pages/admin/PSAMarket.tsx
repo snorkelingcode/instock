@@ -81,9 +81,9 @@ const formatCurrency = (value?: number) => {
 const formatChartCurrency = (value?: number) => {
   if (value === undefined || value === null) return "N/A";
   if (value >= 1000) {
-    return `$${(value / 1000).toFixed(2)}K`;
+    return `${(value / 1000).toFixed(2)}K`;
   }
-  return `$${value.toLocaleString()}`;
+  return value.toLocaleString();
 };
 
 const formatNumber = (value?: number) => {
