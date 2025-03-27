@@ -129,9 +129,6 @@ const App = () => {
                 } 
               />
               
-              {/* Made PSAMarket accessible to all users by removing RequireAdmin wrapper */}
-              <Route path="/admin/psa-market" element={<PSAMarket />} />
-              
               <Route 
                 path="/admin/manage-market" 
                 element={
