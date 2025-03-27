@@ -129,7 +129,7 @@ const App = () => {
                 } 
               />
               
-              {/* Made PSAMarket accessible to all users by removing RequireAdmin wrapper */}
+              {/* The Market page is now fully accessible to all users without authentication */}
               <Route path="/admin/psa-market" element={<PSAMarket />} />
               
               <Route 
