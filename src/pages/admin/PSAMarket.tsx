@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,23 +17,22 @@ import {
   DollarSign,
   Package,
   TrendingUp,
-  AlertCircle
+  AlertCircle,
+  Info
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import psaService, { PSACard, PSASearchParams } from "@/services/psaService";
 
-// Generate mock chart data based on a card's market data
 const generateChartData = (card: PSACard | null) => {
   const basePrice = card?.marketData?.averagePrice || 1000;
   const baseVolume = card?.marketData?.volume || 100;
   
   return Array.from({ length: 12 }, (_, i) => {
     const month = new Date(2023, i, 1).toLocaleString('default', { month: 'short' });
-    // Create some variance in the price data
-    const variance = Math.random() * 0.4 - 0.2; // -20% to +20%
+    const variance = Math.random() * 0.4 - 0.2;
     const price = Math.floor(basePrice * (1 + variance));
-    const volumeVariance = Math.random() * 0.6 - 0.3; // -30% to +30%
+    const volumeVariance = Math.random() * 0.6 - 0.3;
     const volume = Math.floor(baseVolume * (1 + volumeVariance));
     
     return {
@@ -45,7 +43,6 @@ const generateChartData = (card: PSACard | null) => {
   });
 };
 
-// Game category options
 const GAME_CATEGORIES = {
   POKEMON: "Pokemon",
   MTG: "Magic The Gathering",
@@ -62,10 +59,10 @@ const PSAMarket: React.FC = () => {
   const [chartData, setChartData] = useState<any[]>([]);
   const [selectedCard, setSelectedCard] = useState<PSACard | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [usingMockData, setUsingMockData] = useState<boolean>(true);
   const { toast } = useToast();
   
   useEffect(() => {
-    // Load token from localStorage
     const savedToken = psaService.getToken();
     if (savedToken) {
       setToken(savedToken);
@@ -73,14 +70,12 @@ const PSAMarket: React.FC = () => {
   }, []);
   
   useEffect(() => {
-    // When category changes, fetch data if token exists
     if (token && selectedCategory) {
       fetchCardsByCategory(selectedCategory);
     }
   }, [selectedCategory, token]);
   
   useEffect(() => {
-    // Generate chart data when selected card changes
     if (selectedCard) {
       setChartData(generateChartData(selectedCard));
     }
@@ -99,27 +94,35 @@ const PSAMarket: React.FC = () => {
     try {
       setIsLoading(true);
       setError(null);
+      setUsingMockData(false);
       
-      const result = await psaService.searchCardsByCategory(category, 1, 20);
-      
-      if (result.items.length === 0) {
-        setError(`No cards found for category: ${category}`);
-        setCards([]);
-        setSelectedCard(null);
-        return;
-      }
-      
-      // Sort by market cap (highest to lowest)
-      const sortedCards = result.items.sort((a, b) => 
-        (b.marketData?.marketCap || 0) - (a.marketData?.marketCap || 0)
-      );
-      
-      setCards(sortedCards);
-      
-      // Select the first card by default
-      if (sortedCards.length > 0) {
-        setSelectedCard(sortedCards[0]);
-        setChartData(generateChartData(sortedCards[0]));
+      try {
+        const result = await psaService.searchCardsByCategory(category, 1, 20);
+        
+        setUsingMockData(true);
+        
+        if (result.items.length === 0) {
+          setError(`No cards found for category: ${category}`);
+          setCards([]);
+          setSelectedCard(null);
+          return;
+        }
+        
+        const sortedCards = result.items.sort((a, b) => 
+          (b.marketData?.marketCap || 0) - (a.marketData?.marketCap || 0)
+        );
+        
+        setCards(sortedCards);
+        
+        if (sortedCards.length > 0) {
+          setSelectedCard(sortedCards[0]);
+          setChartData(generateChartData(sortedCards[0]));
+        }
+      } catch (error) {
+        setUsingMockData(true);
+        console.error("Search failed:", error);
+        setError(error instanceof Error ? error.message : "Failed to search cards");
+        throw error;
       }
       
     } catch (error) {
@@ -145,7 +148,6 @@ const PSAMarket: React.FC = () => {
         description: "PSA API token has been saved",
       });
       
-      // Fetch data for the selected category immediately after saving token
       if (selectedCategory) {
         fetchCardsByCategory(selectedCategory);
       }
@@ -185,7 +187,15 @@ const PSAMarket: React.FC = () => {
       <div className="container mx-auto py-6 space-y-6">
         <h1 className="text-3xl font-bold mb-6">PSA Market</h1>
         
-        {/* API Token Setup */}
+        <Alert className="bg-blue-50 border-blue-200">
+          <Info className="h-4 w-4 text-blue-600" />
+          <AlertTitle className="text-blue-800">Demo Mode Active</AlertTitle>
+          <AlertDescription className="text-blue-700">
+            Due to Cross-Origin Resource Sharing (CORS) restrictions, this demo is using simulated data.
+            In a production environment, you would need a backend proxy or serverless function to access the PSA API.
+          </AlertDescription>
+        </Alert>
+        
         <Card>
           <CardHeader>
             <CardTitle>PSA API Authentication</CardTitle>
@@ -207,12 +217,11 @@ const PSAMarket: React.FC = () => {
               </div>
             </div>
             <p className="text-sm text-muted-foreground mt-2">
-              Limited to 100 API calls per day. This token is stored locally and is not shared.
+              For demo purposes, any token value will work. In a real integration, you would need a valid PSA API token.
             </p>
           </CardContent>
         </Card>
         
-        {/* Category Selection */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0">
             <CardTitle>Select Trading Card Game Category</CardTitle>
@@ -241,7 +250,6 @@ const PSAMarket: React.FC = () => {
           </CardContent>
         </Card>
         
-        {/* Error alert */}
         {error && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
@@ -250,7 +258,6 @@ const PSAMarket: React.FC = () => {
           </Alert>
         )}
         
-        {/* Market Overview */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -330,7 +337,6 @@ const PSAMarket: React.FC = () => {
           </Card>
         </div>
         
-        {/* Cards Data Table */}
         <Card>
           <CardHeader>
             <CardTitle>PSA Graded Cards Market Data</CardTitle>
@@ -410,7 +416,6 @@ const PSAMarket: React.FC = () => {
           </CardContent>
         </Card>
         
-        {/* Card Detail & Charts Section */}
         {selectedCard && (
           <Card>
             <CardHeader>
