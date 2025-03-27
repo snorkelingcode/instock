@@ -264,6 +264,15 @@ const PSAMarket: React.FC = () => {
   };
   
   const generateMockMarketData = (count: number): MarketDataItem[] => {
+    // Use these placeholder images that actually exist
+    const placeholderImages = [
+      "https://images.unsplash.com/photo-1488590528505-98d2b5aba04b",
+      "https://images.unsplash.com/photo-1518770660439-4636190af475",
+      "https://images.unsplash.com/photo-1461749280684-dccba630e2f6",
+      "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d",
+      "https://images.unsplash.com/photo-1649972904349-6e44c42644a7"
+    ];
+    
     return Array.from({ length: count }, (_, i) => {
       const pokemonNames = [
         "Charizard", "Pikachu", "Blastoise", "Venusaur", "Mewtwo", 
@@ -293,7 +302,7 @@ const PSAMarket: React.FC = () => {
         price_9: price9,
         total_population: totalPopulation,
         market_cap: marketCap,
-        card_image: `https://images.pokemontcg.io/${Math.random().toString(36).substring(2, 8)}/1.png`
+        card_image: placeholderImages[i % placeholderImages.length]
       };
     });
   };
