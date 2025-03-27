@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
@@ -36,7 +35,6 @@ export interface MarketDataItem {
 }
 
 export const marketDataService = {
-  // Get all market data
   getMarketData: async (): Promise<MarketDataItem[]> => {
     try {
       console.log("Fetching all market data");
@@ -55,7 +53,6 @@ export const marketDataService = {
         return [];
       }
 
-      // Calculate total population for each card
       const processedData = data.map(card => {
         const totalPopulation = [
           card.population_10,
@@ -71,7 +68,6 @@ export const marketDataService = {
           card.population_auth
         ].reduce((sum, pop) => sum + (pop || 0), 0);
 
-        // Calculate market cap
         let marketCap = 0;
         if (card.population_10 && card.price_10) marketCap += card.population_10 * card.price_10;
         if (card.population_9 && card.price_9) marketCap += card.population_9 * card.price_9;
@@ -99,7 +95,6 @@ export const marketDataService = {
     }
   },
 
-  // Get market data by ID
   getMarketDataById: async (id: string): Promise<MarketDataItem | null> => {
     try {
       const { data, error } = await supabase
@@ -122,13 +117,10 @@ export const marketDataService = {
     }
   },
 
-  // Create a new market data entry
   createMarketData: async (marketData: MarketDataItem): Promise<string | null> => {
     try {
-      // Calculate total population
       marketData.total_population = calculateTotalPopulation(marketData);
       
-      // Calculate market cap if all necessary data is present
       if (marketData.total_population) {
         const avgPrice = calculateAveragePrice(marketData);
         if (avgPrice) {
@@ -161,13 +153,10 @@ export const marketDataService = {
     }
   },
 
-  // Update an existing market data entry
   updateMarketData: async (id: string, marketData: MarketDataItem): Promise<boolean> => {
     try {
-      // Calculate total population
       marketData.total_population = calculateTotalPopulation(marketData);
       
-      // Calculate market cap if all necessary data is present
       if (marketData.total_population) {
         const avgPrice = calculateAveragePrice(marketData);
         if (avgPrice) {
@@ -199,7 +188,6 @@ export const marketDataService = {
     }
   },
 
-  // Delete a market data entry
   deleteMarketData: async (id: string): Promise<boolean> => {
     try {
       const { error } = await supabase
@@ -226,15 +214,17 @@ export const marketDataService = {
     }
   },
 
-  // Get market data by grading service
   getMarketDataByGradingService: async (gradingService: string): Promise<MarketDataItem[]> => {
     try {
       console.log(`Fetching market data for ${gradingService}`);
+      
       const { data, error } = await supabase
         .from("market_data")
         .select("*")
-        .eq("grading_service", gradingService)
+        .ilike("grading_service", gradingService)
         .order("card_name", { ascending: true });
+
+      console.log('Raw Supabase Query Result:', { data, error });
 
       if (error) {
         console.error(`Error fetching ${gradingService} market data:`, error);
@@ -246,11 +236,9 @@ export const marketDataService = {
         return [];
       }
 
-      // Process data if available
       if (data && data.length > 0) {
         console.log(`Found ${data.length} ${gradingService} market data records`);
         
-        // Calculate total population and market cap for each card
         const processedData = data.map(card => {
           const totalPopulation = [
             card.population_10,
@@ -266,7 +254,6 @@ export const marketDataService = {
             card.population_auth
           ].reduce((sum, pop) => sum + (pop || 0), 0);
 
-          // Calculate market cap
           let marketCap = 0;
           if (card.population_10 && card.price_10) marketCap += card.population_10 * card.price_10;
           if (card.population_9 && card.price_9) marketCap += card.population_9 * card.price_9;
@@ -299,7 +286,6 @@ export const marketDataService = {
   }
 };
 
-// Helper function to calculate total population
 function calculateTotalPopulation(data: MarketDataItem): number {
   return (
     (data.population_10 || 0) +
@@ -316,7 +302,6 @@ function calculateTotalPopulation(data: MarketDataItem): number {
   );
 }
 
-// Helper function to calculate average price
 function calculateAveragePrice(data: MarketDataItem): number | null {
   let totalPrice = 0;
   let priceCount = 0;
