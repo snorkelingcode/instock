@@ -50,7 +50,6 @@ export const CardGrid: React.FC = () => {
           throw error;
         }
 
-        // Add a slight delay before setting products to ensure smooth transition
         setTimeout(() => {
           setProducts(data || []);
           setLoading(false);
@@ -73,7 +72,6 @@ export const CardGrid: React.FC = () => {
     console.log(`Listing ${index + 1} clicked`);
   };
 
-  // Create fallback cards if no products are available
   const displayProducts = products.length > 0 ? products : Array.from({ length: 5 }, (_, i) => ({
     id: i,
     product_line: "Pokémon",
@@ -86,14 +84,12 @@ export const CardGrid: React.FC = () => {
     in_stock: true
   }));
 
-  // Set 3 items per row for all pages
   const itemsPerRow = 3;
   const itemRows = [];
   for (let i = 0; i < displayProducts.length; i += itemsPerRow) {
     itemRows.push(displayProducts.slice(i, i + itemsPerRow));
   }
 
-  // Create skeleton layout
   const skeletonRows = [];
   for (let i = 0; i < 2; i++) {
     const row = [];
@@ -105,16 +101,15 @@ export const CardGrid: React.FC = () => {
 
   return (
     <div 
-      className="flex flex-col gap-8 mx-auto max-w-[1200px]" 
+      className="flex flex-col gap-6 mx-auto max-w-[1200px] px-4" 
       role="region" 
       aria-label="Product listings"
     >
       {loading ? (
-        // Show skeleton UI while loading
         skeletonRows.map((row, rowIndex) => (
           <div 
             key={`skeleton-row-${rowIndex}`}
-            className="flex justify-center gap-[19px] max-md:flex-col max-md:items-center w-full mx-auto"
+            className="grid grid-cols-1 md:grid-cols-3 gap-6 justify-center w-full"
           >
             {row.map((_, idx) => (
               <CardSkeleton key={`skeleton-${rowIndex}-${idx}`} />
@@ -125,14 +120,13 @@ export const CardGrid: React.FC = () => {
         itemRows.map((row, rowIndex) => (
           <div 
             key={`row-${rowIndex}`}
-            className="flex justify-center gap-[19px] max-md:flex-col max-md:items-center w-full mx-auto"
+            className="grid grid-cols-1 md:grid-cols-3 gap-6 justify-center w-full"
           >
             {row.map((product, idx) => {
-              // Calculate a unique index for each card based on its position
               const cardIndex = rowIndex * itemsPerRow + idx;
               
               return (
-                <div key={product.id} className="w-full max-w-[340px]">
+                <div key={product.id} className="flex justify-center w-full">
                   <DiscoCardEffect index={cardIndex}>
                     <Card 
                       productLine={product.product_line}
@@ -151,10 +145,9 @@ export const CardGrid: React.FC = () => {
                 </div>
               );
             })}
-            {/* Fill empty spaces in the last row to maintain layout */}
             {rowIndex === itemRows.length - 1 && row.length < itemsPerRow && 
               Array(itemsPerRow - row.length).fill(0).map((_, i) => (
-                <div key={`empty-${i}`} className="w-[340px] h-[440px] invisible max-md:hidden" />
+                <div key={`empty-${i}`} className="invisible" />
               ))
             }
           </div>

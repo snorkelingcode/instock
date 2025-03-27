@@ -1,7 +1,7 @@
+
 import React from "react";
-import { Card as ProductCard } from "@/components/landing/Card";
+import { Card } from "@/components/landing/Card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { format, isValid, parseISO } from "date-fns";
 import DiscoCardEffect from "@/components/ui/DiscoCardEffect";
 
 interface Product {
@@ -65,7 +65,7 @@ const RecentlySoldOut: React.FC<RecentlySoldOutProps> = ({ products, loading }) 
 
   return (
     <div 
-      className="flex flex-col gap-8 mx-auto max-w-[1200px]" 
+      className="flex flex-col gap-6 mx-auto max-w-[1200px] px-4" 
       role="region" 
       aria-label="Recently Sold Out"
     >
@@ -73,7 +73,7 @@ const RecentlySoldOut: React.FC<RecentlySoldOutProps> = ({ products, loading }) 
         skeletonRows.map((row, rowIndex) => (
           <div 
             key={`skeleton-row-${rowIndex}`}
-            className="flex justify-center gap-[19px] max-md:flex-col max-md:items-center w-full mx-auto"
+            className="grid grid-cols-1 md:grid-cols-3 gap-6 justify-center w-full"
           >
             {row.map((_, idx) => (
               <SoldOutCardSkeleton key={`skeleton-${rowIndex}-${idx}`} />
@@ -84,15 +84,15 @@ const RecentlySoldOut: React.FC<RecentlySoldOutProps> = ({ products, loading }) 
         itemRows.map((row, rowIndex) => (
           <div 
             key={`row-${rowIndex}`}
-            className="flex justify-center gap-[19px] max-md:flex-col max-md:items-center w-full mx-auto"
+            className="grid grid-cols-1 md:grid-cols-3 gap-6 justify-center w-full"
           >
             {row.map((product, idx) => {
               const cardIndex = rowIndex * itemsPerRow + idx;
               
               return (
-                <div key={product.id} className="w-full max-w-[340px]">
+                <div key={product.id} className="flex justify-center w-full">
                   <DiscoCardEffect index={cardIndex}>
-                    <ProductCard 
+                    <Card 
                       productLine={product.product_line}
                       product={product.product}
                       source={product.source}
@@ -109,7 +109,7 @@ const RecentlySoldOut: React.FC<RecentlySoldOutProps> = ({ products, loading }) 
             })}
             {rowIndex === itemRows.length - 1 && row.length < itemsPerRow && 
               Array(itemsPerRow - row.length).fill(0).map((_, i) => (
-                <div key={`empty-${i}`} className="w-[340px] h-[440px] invisible max-md:hidden" />
+                <div key={`empty-${i}`} className="invisible" />
               ))
             }
           </div>
