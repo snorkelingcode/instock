@@ -10,7 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import LoadingScreen from "@/components/ui/loading-screen";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from "recharts";
-import { RefreshCcw, ArrowUpDown, BarChart as BarChartIcon, DollarSign, Package, TrendingUp, AlertCircle } from "lucide-react";
+import { RefreshCcw, ArrowUpDown, BarChartIcon, DollarSign, Package, TrendingUp, AlertCircle } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import psaService, { PSACard, PSASearchParams } from "@/services/psaService";
@@ -139,6 +139,42 @@ const calculateAveragePrice = (data: MarketDataItem): number | null => {
   return priceCount > 0 ? totalPrice / priceCount : null;
 };
 
+const getHighestPrice = (data: MarketDataItem): number | null => {
+  const priceList = [
+    data.price_10,
+    data.price_9,
+    data.price_8,
+    data.price_7,
+    data.price_6,
+    data.price_5,
+    data.price_4,
+    data.price_3,
+    data.price_2,
+    data.price_1,
+    data.price_auth
+  ].filter(price => price !== null && price !== undefined) as number[];
+  
+  return priceList.length > 0 ? Math.max(...priceList) : null;
+};
+
+const calculateMarketCap = (data: MarketDataItem): number => {
+  let totalValue = 0;
+  
+  if (data.population_10 && data.price_10) totalValue += data.population_10 * data.price_10;
+  if (data.population_9 && data.price_9) totalValue += data.population_9 * data.price_9;
+  if (data.population_8 && data.price_8) totalValue += data.population_8 * data.price_8;
+  if (data.population_7 && data.price_7) totalValue += data.population_7 * data.price_7;
+  if (data.population_6 && data.price_6) totalValue += data.population_6 * data.price_6;
+  if (data.population_5 && data.price_5) totalValue += data.population_5 * data.price_5;
+  if (data.population_4 && data.price_4) totalValue += data.population_4 * data.price_4;
+  if (data.population_3 && data.price_3) totalValue += data.population_3 * data.price_3;
+  if (data.population_2 && data.price_2) totalValue += data.population_2 * data.price_2;
+  if (data.population_1 && data.price_1) totalValue += data.population_1 * data.price_1;
+  if (data.population_auth && data.price_auth) totalValue += data.population_auth * data.price_auth;
+  
+  return totalValue;
+};
+
 const PSAMarket: React.FC = () => {
   const [token, setToken] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -184,7 +220,12 @@ const PSAMarket: React.FC = () => {
         return;
       }
       
-      const sortedData = [...data].sort((a, b) => 
+      const dataWithUpdatedMarketCap = data.map(card => ({
+        ...card,
+        market_cap: calculateMarketCap(card)
+      }));
+      
+      const sortedData = [...dataWithUpdatedMarketCap].sort((a, b) => 
         (b.market_cap || 0) - (a.market_cap || 0)
       );
       
@@ -217,10 +258,6 @@ const PSAMarket: React.FC = () => {
         description: "PSA API token has been saved",
       });
     }
-  };
-  
-  const handleRefresh = () => {
-    fetchMarketData();
   };
   
   const handleCardSelect = (card: MarketDataItem) => {
@@ -260,9 +297,6 @@ const PSAMarket: React.FC = () => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0">
             <CardTitle>Select Grading Service</CardTitle>
-            <Button variant="outline" size="icon" onClick={handleRefresh} disabled={isLoading}>
-              <RefreshCcw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-            </Button>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 gap-4">
@@ -311,7 +345,7 @@ const PSAMarket: React.FC = () => {
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Average Price</CardTitle>
+              <CardTitle className="text-sm font-medium">Highest Price</CardTitle>
               <BarChartIcon className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -319,12 +353,12 @@ const PSAMarket: React.FC = () => {
                 {isLoading ? 
                   <Skeleton className="h-8 w-32" /> :
                   selectedCard ?
-                    formatCurrency(calculateAveragePrice(selectedCard)) :
+                    formatCurrency(getHighestPrice(selectedCard)) :
                     formatCurrency(calculateOverallAveragePrice())
                 }
               </div>
               <p className="text-xs text-muted-foreground">
-                {selectedCard ? 'Individual Card' : 'All Cards'}
+                {selectedCard ? 'Individual Card' : 'All Cards Average'}
               </p>
             </CardContent>
           </Card>
@@ -380,35 +414,37 @@ const PSAMarket: React.FC = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Card Name</TableHead>
-                      <TableHead>Grading Service</TableHead>
-                      <TableHead>Population</TableHead>
-                      <TableHead>
-                        <div className="flex items-center">
-                          Avg Price
-                          <ArrowUpDown className="ml-2 h-4 w-4" />
-                        </div>
-                      </TableHead>
+                      <TableHead>Rank</TableHead>
                       <TableHead>
                         <div className="flex items-center">
                           Market Cap
                           <ArrowUpDown className="ml-2 h-4 w-4" />
                         </div>
                       </TableHead>
+                      <TableHead>Card Name</TableHead>
+                      <TableHead>Grading Service</TableHead>
+                      <TableHead>Population</TableHead>
+                      <TableHead>
+                        <div className="flex items-center">
+                          Highest Price
+                          <ArrowUpDown className="ml-2 h-4 w-4" />
+                        </div>
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {marketData.map((card) => (
+                    {marketData.map((card, index) => (
                       <TableRow 
                         key={card.id}
                         className={`cursor-pointer hover:bg-muted ${selectedCard?.id === card.id ? 'bg-muted' : ''}`}
                         onClick={() => handleCardSelect(card)}
                       >
-                        <TableCell className="font-medium">{card.card_name}</TableCell>
+                        <TableCell className="font-medium">{index + 1}</TableCell>
+                        <TableCell className="font-semibold">{formatCurrency(card.market_cap)}</TableCell>
+                        <TableCell>{card.card_name}</TableCell>
                         <TableCell>{card.grading_service}</TableCell>
                         <TableCell>{formatNumber(card.total_population)}</TableCell>
-                        <TableCell>{formatCurrency(calculateAveragePrice(card))}</TableCell>
-                        <TableCell>{formatCurrency(card.market_cap)}</TableCell>
+                        <TableCell>{formatCurrency(getHighestPrice(card))}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
