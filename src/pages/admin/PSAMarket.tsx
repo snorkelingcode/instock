@@ -10,7 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import LoadingScreen from "@/components/ui/loading-screen";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from "recharts";
-import { RefreshCcw, ArrowUpDown, BarChartIcon, DollarSign, Package, TrendingUp, AlertCircle } from "lucide-react";
+import { ArrowUpDown, BarChartIcon, DollarSign, Package, TrendingUp, AlertCircle } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import psaService, { PSACard, PSASearchParams } from "@/services/psaService";
@@ -414,7 +414,7 @@ const PSAMarket: React.FC = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Rank</TableHead>
+                      <TableHead className="w-16 text-center">Rank</TableHead>
                       <TableHead>
                         <div className="flex items-center">
                           Market Cap
@@ -439,9 +439,25 @@ const PSAMarket: React.FC = () => {
                         className={`cursor-pointer hover:bg-muted ${selectedCard?.id === card.id ? 'bg-muted' : ''}`}
                         onClick={() => handleCardSelect(card)}
                       >
-                        <TableCell className="font-medium">{index + 1}</TableCell>
+                        <TableCell className="font-medium text-center">{index + 1}</TableCell>
                         <TableCell className="font-semibold">{formatCurrency(card.market_cap)}</TableCell>
-                        <TableCell>{card.card_name}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {card.card_image && (
+                              <img 
+                                src={card.card_image} 
+                                alt={card.card_name} 
+                                className="w-8 h-8 rounded-sm object-contain" 
+                              />
+                            )}
+                            {!card.card_image && (
+                              <div className="w-8 h-8 bg-gray-100 rounded-sm flex items-center justify-center text-gray-400">
+                                <BarChartIcon className="w-4 h-4" />
+                              </div>
+                            )}
+                            {card.card_name}
+                          </div>
+                        </TableCell>
                         <TableCell>{card.grading_service}</TableCell>
                         <TableCell>{formatNumber(card.total_population)}</TableCell>
                         <TableCell>{formatCurrency(getHighestPrice(card))}</TableCell>
