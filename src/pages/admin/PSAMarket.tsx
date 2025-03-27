@@ -39,7 +39,7 @@ const GAME_CATEGORIES = {
 const generatePriceComparisonData = (card: MarketDataItem | null) => {
   if (!card) return [];
   
-  const grades = [10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 'Auth'];
+  const grades = ['Auth', 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
   
   return grades.map(grade => {
     const gradeKey = grade === 'Auth' ? 'auth' : grade;
@@ -56,7 +56,7 @@ const generatePriceComparisonData = (card: MarketDataItem | null) => {
 const generatePopulationComparisonData = (card: MarketDataItem | null) => {
   if (!card) return [];
   
-  const grades = [10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 'Auth'];
+  const grades = ['Auth', 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
   
   return grades.map(grade => {
     const gradeKey = grade === 'Auth' ? 'auth' : grade;
@@ -543,7 +543,14 @@ const PSAMarket: React.FC = () => {
                               fill="#ea384c" 
                               label={{
                                 position: 'top',
-                                formatter: (value: any) => formatChartCurrency(value),
+                                formatter: (value: any) => {
+                                  if (value >= 100000) {
+                                    return `${Math.round(value / 1000)}K`;
+                                  } else if (value >= 1000) {
+                                    return `${(value / 1000).toFixed(2)}K`;
+                                  }
+                                  return value.toLocaleString();
+                                },
                                 fontSize: 11,
                                 fill: '#666',
                               }}
