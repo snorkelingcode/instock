@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -87,6 +86,14 @@ const Navigation = () => {
                 </SheetClose>
                 <SheetClose asChild>
                   <Link
+                    to="/market"
+                    className="py-3 px-6 text-red-600 font-medium border-b border-gray-200 hover:bg-red-50 transition-colors text-left"
+                  >
+                    Market
+                  </Link>
+                </SheetClose>
+                <SheetClose asChild>
+                  <Link
                     to="/sets"
                     className="py-3 px-6 text-red-600 font-medium border-b border-gray-200 hover:bg-red-50 transition-colors text-left"
                   >
@@ -168,14 +175,6 @@ const Navigation = () => {
                         </SheetClose>
                         <SheetClose asChild>
                           <Link
-                            to="/admin/psa-market"
-                            className="py-3 px-6 text-red-600 font-medium border-b border-gray-200 hover:bg-red-50 transition-colors text-left"
-                          >
-                            PSA Market
-                          </Link>
-                        </SheetClose>
-                        <SheetClose asChild>
-                          <Link
                             to="/admin/manage-market"
                             className="py-3 px-6 text-red-600 font-medium border-b border-gray-200 hover:bg-red-50 transition-colors text-left"
                           >
@@ -229,6 +228,9 @@ const Navigation = () => {
           </Link>
           <Link to="/news" className="hover:text-red-200 transition-colors">
             News
+          </Link>
+          <Link to="/market" className="hover:text-red-200 transition-colors">
+            Market
           </Link>
           <Link to="/sets" className="hover:text-red-200 transition-colors">
             Sets
@@ -286,11 +288,6 @@ const Navigation = () => {
                     <DropdownMenuItem>
                       <Link to="/admin/products" className="w-full">
                         Manage Products
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <Link to="/admin/psa-market" className="w-full">
-                        PSA Market
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem>
