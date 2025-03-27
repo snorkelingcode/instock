@@ -340,14 +340,13 @@ const PSAMarket: React.FC = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-16 text-center">Rank</TableHead>
+                      <TableHead>Card Name</TableHead>
                       <TableHead>
                         <div className="flex items-center">
                           Market Cap
                           <ArrowUpDown className="ml-2 h-4 w-4" />
                         </div>
                       </TableHead>
-                      <TableHead>Card Name</TableHead>
-                      <TableHead>Grading Service</TableHead>
                       <TableHead>Population</TableHead>
                       <TableHead>
                         <div className="flex items-center">
@@ -365,7 +364,6 @@ const PSAMarket: React.FC = () => {
                         onClick={() => handleCardSelect(card)}
                       >
                         <TableCell className="font-medium text-center">{index + 1}</TableCell>
-                        <TableCell className="font-semibold">{formatCurrency(card.market_cap)}</TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
                             {card.card_image && (
@@ -383,7 +381,7 @@ const PSAMarket: React.FC = () => {
                             {card.card_name}
                           </div>
                         </TableCell>
-                        <TableCell>{card.grading_service}</TableCell>
+                        <TableCell className="font-semibold">{formatCurrency(card.market_cap)}</TableCell>
                         <TableCell>{formatNumber(card.total_population)}</TableCell>
                         <TableCell>{formatCurrency(getHighestPrice(card))}</TableCell>
                       </TableRow>
