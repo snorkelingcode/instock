@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +11,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
 import { ArrowUpDown, BarChartIcon, DollarSign, Package, TrendingUp, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { MarketDataItem, marketDataService } from "@/services/marketDataService";
+import { supabase } from "@/integrations/supabase/client";
 
 const GAME_CATEGORIES = {
   POKEMON: "Pokemon",
@@ -198,47 +200,65 @@ const PSAMarket: React.FC = () => {
       setError(null);
       
       console.log("Fetching market data for PSA");
-      const data = await marketDataService.getMarketDataByGradingService("PSA");
-      console.log("Fetched market data:", data);
       
-      if (data.length === 0) {
-        console.log("No market data found");
-        // Creating mock data if no real data exists
-        const mockData = createMockMarketData();
-        setMarketData(mockData);
-        setSelectedCard(mockData[0]);
-        setChartData(generateChartData(mockData[0]));
-        setPriceComparisonData(generatePriceComparisonData(mockData[0]));
-        setPopulationComparisonData(generatePopulationComparisonData(mockData[0]));
-        return;
+      // Direct query to Supabase - more reliable than the service in some cases
+      const { data: directData, error: directError } = await supabase
+        .from('market_data')
+        .select('*')
+        .eq('grading_service', 'PSA');
+      
+      if (directError) {
+        throw directError;
       }
       
-      const dataWithUpdatedMarketCap = data.map(card => ({
-        ...card,
-        market_cap: calculateMarketCap(card)
-      }));
+      console.log("Direct data fetch result:", directData);
       
-      const sortedData = [...dataWithUpdatedMarketCap].sort((a, b) => 
-        (b.market_cap || 0) - (a.market_cap || 0)
-      );
-      
-      setMarketData(sortedData);
-      
-      if (sortedData.length > 0 && !selectedCard) {
-        setSelectedCard(sortedData[0]);
-        setChartData(generateChartData(sortedData[0]));
-        setPriceComparisonData(generatePriceComparisonData(sortedData[0]));
-        setPopulationComparisonData(generatePopulationComparisonData(sortedData[0]));
+      if (directData && directData.length > 0) {
+        const dataWithUpdatedMarketCap = directData.map(card => ({
+          ...card,
+          market_cap: calculateMarketCap(card)
+        }));
+        
+        const sortedData = [...dataWithUpdatedMarketCap].sort((a, b) => 
+          (b.market_cap || 0) - (a.market_cap || 0)
+        );
+        
+        setMarketData(sortedData);
+        
+        if (sortedData.length > 0 && !selectedCard) {
+          setSelectedCard(sortedData[0]);
+          setChartData(generateChartData(sortedData[0]));
+          setPriceComparisonData(generatePriceComparisonData(sortedData[0]));
+          setPopulationComparisonData(generatePopulationComparisonData(sortedData[0]));
+        }
+      } else {
+        console.log("No market data found, fetching from service as fallback");
+        const serviceData = await marketDataService.getMarketDataByGradingService("PSA");
+        console.log("Service data fetch result:", serviceData);
+        
+        if (serviceData.length > 0) {
+          const dataWithUpdatedMarketCap = serviceData.map(card => ({
+            ...card,
+            market_cap: calculateMarketCap(card)
+          }));
+          
+          const sortedData = [...dataWithUpdatedMarketCap].sort((a, b) => 
+            (b.market_cap || 0) - (a.market_cap || 0)
+          );
+          
+          setMarketData(sortedData);
+          
+          if (sortedData.length > 0 && !selectedCard) {
+            setSelectedCard(sortedData[0]);
+            setChartData(generateChartData(sortedData[0]));
+            setPriceComparisonData(generatePriceComparisonData(sortedData[0]));
+            setPopulationComparisonData(generatePopulationComparisonData(sortedData[0]));
+          }
+        }
       }
     } catch (error) {
       console.error("Error fetching market data:", error);
-      // If there's an error, create mock data
-      const mockData = createMockMarketData();
-      setMarketData(mockData);
-      setSelectedCard(mockData[0]);
-      setChartData(generateChartData(mockData[0]));
-      setPriceComparisonData(generatePriceComparisonData(mockData[0]));
-      setPopulationComparisonData(generatePopulationComparisonData(mockData[0]));
+      setError("Failed to load market data. Please try again later.");
     } finally {
       setIsLoading(false);
     }
