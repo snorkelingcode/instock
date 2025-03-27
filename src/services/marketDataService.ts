@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
@@ -242,6 +243,12 @@ export const marketDataService = {
           description: error.message,
           variant: "destructive",
         });
+        return [];
+      }
+
+      // If no data from the database, return an empty array - we'll handle mocking in the component
+      if (!data || data.length === 0) {
+        console.log(`No ${gradingService} market data found in database`);
         return [];
       }
 
