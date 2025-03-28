@@ -16,6 +16,14 @@ import psaService, { PSACard, PSASearchParams } from "@/services/psaService";
 import { MarketDataItem, marketDataService } from "@/services/marketDataService";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Grid } from "@/components/ui/grid";
+import { 
+  Pagination, 
+  PaginationContent, 
+  PaginationItem, 
+  PaginationLink, 
+  PaginationNext, 
+  PaginationPrevious 
+} from "@/components/ui/pagination";
 
 const GAME_CATEGORIES = {
   POKEMON: "Pokemon",
@@ -175,6 +183,49 @@ const calculateMarketCap = (data: MarketDataItem): number => {
   return totalValue;
 };
 
+const generateMockMarketData = (count: number): MarketDataItem[] => {
+  const placeholderImages = [
+    "https://images.unsplash.com/photo-1488590528505-98d2b5aba04b",
+    "https://images.unsplash.com/photo-1518770660439-4636190af475",
+    "https://images.unsplash.com/photo-1461749280684-dccba630e2f6",
+    "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d",
+    "https://images.unsplash.com/photo-1649972904349-6e44c42644a7"
+  ];
+  
+  return Array.from({ length: count }, (_, i) => {
+    const pokemonNames = [
+      "Charizard", "Pikachu", "Blastoise", "Venusaur", "Mewtwo", 
+      "Mew", "Lugia", "Ho-Oh", "Rayquaza", "Umbreon"
+    ];
+    
+    const cardName = `${pokemonNames[i % pokemonNames.length]} ${["Holo", "Vmax", "GX", "EX", "Full Art"][Math.floor(Math.random() * 5)]}`;
+    
+    const population10 = Math.floor(Math.random() * 500) + 10;
+    const population9 = Math.floor(Math.random() * 1000) + 100;
+    const price10 = Math.floor(Math.random() * 10000) + 1000;
+    const price9 = Math.floor(Math.random() * 5000) + 500;
+    
+    const totalPopulation = population10 + population9 + 
+      Math.floor(Math.random() * 3000) + 500;
+    
+    const marketCap = (population10 * price10) + (population9 * price9) + 
+      Math.floor(Math.random() * 5000000);
+      
+    return {
+      id: `mock-${i}`,
+      card_name: cardName,
+      grading_service: "PSA",
+      population_10: population10,
+      population_9: population9,
+      price_10: price10,
+      price_9: price9,
+      total_population: totalPopulation,
+      market_cap: marketCap,
+      card_image: placeholderImages[i % placeholderImages.length]
+    };
+  });
+};
+
 const PSAMarket: React.FC = () => {
   const [token, setToken] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -185,6 +236,9 @@ const PSAMarket: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [priceComparisonData, setPriceComparisonData] = useState<any[]>([]);
   const [populationComparisonData, setPopulationComparisonData] = useState<any[]>([]);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [totalCards, setTotalCards] = useState<number>(0);
+  const cardsPerPage = 15;
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const navigate = useNavigate();
@@ -216,9 +270,10 @@ const PSAMarket: React.FC = () => {
       
       if (data.length === 0) {
         console.log("No data found in database, generating mock data");
-        const mockData = generateMockMarketData(10);
+        const mockData = generateMockMarketData(30);
         console.log("Generated mock market data:", mockData);
         setMarketData(mockData);
+        setTotalCards(mockData.length);
         
         if (mockData.length > 0) {
           setSelectedCard(mockData[0]);
@@ -238,6 +293,7 @@ const PSAMarket: React.FC = () => {
         );
         
         setMarketData(sortedData);
+        setTotalCards(sortedData.length);
         
         if (sortedData.length > 0 && !selectedCard) {
           setSelectedCard(sortedData[0]);
@@ -249,9 +305,10 @@ const PSAMarket: React.FC = () => {
     } catch (error) {
       console.error("Error fetching market data:", error);
       
-      const mockData = generateMockMarketData(10);
+      const mockData = generateMockMarketData(30);
       console.log("Generated fallback mock market data due to error:", mockData);
       setMarketData(mockData);
+      setTotalCards(mockData.length);
       
       if (mockData.length > 0) {
         setSelectedCard(mockData[0]);
@@ -266,48 +323,14 @@ const PSAMarket: React.FC = () => {
     }
   };
   
-  const generateMockMarketData = (count: number): MarketDataItem[] => {
-    const placeholderImages = [
-      "https://images.unsplash.com/photo-1488590528505-98d2b5aba04b",
-      "https://images.unsplash.com/photo-1518770660439-4636190af475",
-      "https://images.unsplash.com/photo-1461749280684-dccba630e2f6",
-      "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d",
-      "https://images.unsplash.com/photo-1649972904349-6e44c42644a7"
-    ];
-    
-    return Array.from({ length: count }, (_, i) => {
-      const pokemonNames = [
-        "Charizard", "Pikachu", "Blastoise", "Venusaur", "Mewtwo", 
-        "Mew", "Lugia", "Ho-Oh", "Rayquaza", "Umbreon"
-      ];
-      
-      const cardName = `${pokemonNames[i % pokemonNames.length]} ${["Holo", "Vmax", "GX", "EX", "Full Art"][Math.floor(Math.random() * 5)]}`;
-      
-      const population10 = Math.floor(Math.random() * 500) + 10;
-      const population9 = Math.floor(Math.random() * 1000) + 100;
-      const price10 = Math.floor(Math.random() * 10000) + 1000;
-      const price9 = Math.floor(Math.random() * 5000) + 500;
-      
-      const totalPopulation = population10 + population9 + 
-        Math.floor(Math.random() * 3000) + 500;
-      
-      const marketCap = (population10 * price10) + (population9 * price9) + 
-        Math.floor(Math.random() * 5000000);
-        
-      return {
-        id: `mock-${i}`,
-        card_name: cardName,
-        grading_service: "PSA",
-        population_10: population10,
-        population_9: population9,
-        price_10: price10,
-        price_9: price9,
-        total_population: totalPopulation,
-        market_cap: marketCap,
-        card_image: placeholderImages[i % placeholderImages.length]
-      };
-    });
-  };
+  const indexOfLastCard = currentPage * cardsPerPage;
+  const indexOfFirstCard = indexOfLastCard - cardsPerPage;
+  const currentCards = marketData.slice(indexOfFirstCard, indexOfLastCard);
+  const totalPages = Math.ceil(marketData.length / cardsPerPage);
+  
+  const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
+  const nextPage = () => setCurrentPage(prev => Math.min(prev + 1, totalPages));
+  const prevPage = () => setCurrentPage(prev => Math.max(prev - 1, 1));
   
   const handleTokenSave = () => {
     if (token) {
@@ -360,8 +383,11 @@ const PSAMarket: React.FC = () => {
         )}
         
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Market Data</CardTitle>
+            <div className="text-sm text-muted-foreground">
+              Tracking {totalCards} cards
+            </div>
           </CardHeader>
           <CardContent className="p-0">
             {isLoading ? (
@@ -391,13 +417,13 @@ const PSAMarket: React.FC = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {marketData.map((card, index) => (
+                    {currentCards.map((card, index) => (
                       <TableRow 
                         key={card.id}
                         className="cursor-pointer hover:bg-muted"
                         onClick={() => handleViewCardDetails(card)}
                       >
-                        <TableCell className="font-medium text-center">{index + 1}</TableCell>
+                        <TableCell className="font-medium text-center">{indexOfFirstCard + index + 1}</TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
                             {card.card_image && (
@@ -433,6 +459,39 @@ const PSAMarket: React.FC = () => {
                     ))}
                   </TableBody>
                 </Table>
+                
+                {totalPages > 1 && (
+                  <div className="py-4 px-2">
+                    <Pagination>
+                      <PaginationContent>
+                        <PaginationItem>
+                          <PaginationPrevious 
+                            onClick={prevPage} 
+                            className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                          />
+                        </PaginationItem>
+                        
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map(number => (
+                          <PaginationItem key={number}>
+                            <PaginationLink 
+                              onClick={() => paginate(number)}
+                              isActive={currentPage === number}
+                            >
+                              {number}
+                            </PaginationLink>
+                          </PaginationItem>
+                        ))}
+                        
+                        <PaginationItem>
+                          <PaginationNext 
+                            onClick={nextPage} 
+                            className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                          />
+                        </PaginationItem>
+                      </PaginationContent>
+                    </Pagination>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="p-8 text-center">
