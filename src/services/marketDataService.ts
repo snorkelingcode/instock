@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
@@ -33,6 +32,11 @@ export interface MarketDataItem {
   total_population?: number;
   created_at?: string;
   updated_at?: string;
+  language?: string;
+  year?: string;
+  franchise?: string;
+  series?: string;
+  card_set?: string;
 }
 
 export const marketDataService = {
