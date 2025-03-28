@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import LoadingScreen from "@/components/ui/loading-screen";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowUpDown, BarChartIcon, AlertCircle, FilterIcon } from "lucide-react";
+import { ArrowUpDown, BarChartIcon, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { 
   Select,
@@ -56,7 +56,8 @@ const GAME_CATEGORIES = {
   ONE_PIECE: "One Piece"
 };
 
-const LANGUAGE_OPTIONS = ["English", "Japanese", "Korean", "Chinese", "German", "French", "Italian", "Spanish", "Portuguese"];
+const LANGUAGE_OPTIONS = ["English", "Japanese"];
+const COMING_SOON_LANGUAGES = ["Chinese", "Korean"];
 const YEAR_OPTIONS = Array.from({ length: 25 }, (_, i) => (2023 - i).toString());
 const FRANCHISE_OPTIONS = Object.values(GAME_CATEGORIES);
 const SET_OPTIONS = {
@@ -281,7 +282,7 @@ const PSAMarket: React.FC = () => {
   const [populationComparisonData, setPopulationComparisonData] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [totalCards, setTotalCards] = useState<number>(0);
-  const [filtersOpen, setFiltersOpen] = useState<boolean>(false);
+  const [yearInput, setYearInput] = useState<string>("");
   const [filters, setFilters] = useState({
     language: "any",
     year: "any",
@@ -445,6 +446,12 @@ const PSAMarket: React.FC = () => {
     }
   };
   
+  const handleYearInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setYearInput(value);
+    handleFilterChange('year', value || 'any');
+  };
+  
   const indexOfLastCard = currentPage * cardsPerPage;
   const indexOfFirstCard = indexOfLastCard - cardsPerPage;
   const currentCards = filteredData.slice(indexOfFirstCard, indexOfLastCard);
@@ -494,16 +501,6 @@ const PSAMarket: React.FC = () => {
       <div className="container mx-auto py-6 space-y-6">
         <div className="flex flex-row items-center justify-between">
           <h1 className="text-3xl font-bold mb-6">TCG Market Data</h1>
-          
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex items-center gap-2"
-            onClick={() => setFiltersOpen(!filtersOpen)}
-          >
-            <FilterIcon className="h-4 w-4" />
-            Filters
-          </Button>
         </div>
         
         {error && (
@@ -514,90 +511,91 @@ const PSAMarket: React.FC = () => {
           </Alert>
         )}
 
-        {filtersOpen && (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="text-lg">Filter Options</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="language-filter">Language</Label>
-                  <Select 
-                    value={filters.language} 
-                    onValueChange={(value) => handleFilterChange('language', value)}
-                  >
-                    <SelectTrigger id="language-filter">
-                      <SelectValue placeholder="Select Language" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="any">Any Language</SelectItem>
-                      {LANGUAGE_OPTIONS.filter(lang => lang && lang.trim() !== "").map(lang => (
-                        <SelectItem key={lang} value={lang}>{lang}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="year-filter">Year</Label>
-                  <Select 
-                    value={filters.year} 
-                    onValueChange={(value) => handleFilterChange('year', value)}
-                  >
-                    <SelectTrigger id="year-filter">
-                      <SelectValue placeholder="Select Year" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="any">Any Year</SelectItem>
-                      {YEAR_OPTIONS.filter(year => year && year.trim() !== "").map(year => (
-                        <SelectItem key={year} value={year}>{year}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="franchise-filter">Franchise</Label>
-                  <Select 
-                    value={filters.franchise} 
-                    onValueChange={(value) => handleFilterChange('franchise', value)}
-                  >
-                    <SelectTrigger id="franchise-filter">
-                      <SelectValue placeholder="Select Franchise" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="any">Any Franchise</SelectItem>
-                      {FRANCHISE_OPTIONS.filter(franchise => franchise && franchise.trim() !== "").map(franchise => (
-                        <SelectItem key={franchise} value={franchise}>{franchise}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="set-filter">Set</Label>
-                  <Select 
-                    value={filters.set} 
-                    onValueChange={(value) => handleFilterChange('set', value)}
-                    disabled={!filters.franchise || filters.franchise === "any"}
-                  >
-                    <SelectTrigger id="set-filter">
-                      <SelectValue placeholder="Select Set" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="any">Any Set</SelectItem>
-                      {filters.franchise && filters.franchise !== "any" && 
-                        SET_OPTIONS[filters.franchise as keyof typeof SET_OPTIONS]?.filter(set => set && set.trim() !== "").map(set => (
-                          <SelectItem key={set} value={set}>{set}</SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="text-lg">Filter Options</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="language-filter">Language</Label>
+                <Select 
+                  value={filters.language} 
+                  onValueChange={(value) => handleFilterChange('language', value)}
+                >
+                  <SelectTrigger id="language-filter">
+                    <SelectValue placeholder="Select Language" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="any">Any Language</SelectItem>
+                    {LANGUAGE_OPTIONS.filter(lang => lang && lang.trim() !== "").map(lang => (
+                      <SelectItem key={lang} value={lang}>{lang}</SelectItem>
+                    ))}
+                    {COMING_SOON_LANGUAGES.map(lang => (
+                      <SelectItem key={lang} value={`${lang}-disabled`} disabled>
+                        {lang} (Coming Soon)
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-            </CardContent>
-          </Card>
-        )}
+              
+              <div className="space-y-2">
+                <Label htmlFor="year-filter">Year</Label>
+                <Input
+                  id="year-filter"
+                  type="text"
+                  placeholder="Enter year..."
+                  value={yearInput}
+                  onChange={handleYearInputChange}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="franchise-filter">Franchise</Label>
+                <Select 
+                  value={filters.franchise} 
+                  onValueChange={(value) => handleFilterChange('franchise', value)}
+                >
+                  <SelectTrigger id="franchise-filter">
+                    <SelectValue placeholder="Select Franchise" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="any">Any Franchise</SelectItem>
+                    <SelectItem value={GAME_CATEGORIES.POKEMON}>{GAME_CATEGORIES.POKEMON}</SelectItem>
+                    {Object.values(GAME_CATEGORIES)
+                      .filter(franchise => franchise !== GAME_CATEGORIES.POKEMON)
+                      .map(franchise => (
+                        <SelectItem key={franchise} value={`${franchise}-disabled`} disabled>
+                          {franchise} (Coming Soon)
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="set-filter">Set</Label>
+                <Select 
+                  value={filters.set} 
+                  onValueChange={(value) => handleFilterChange('set', value)}
+                  disabled={!filters.franchise || filters.franchise === "any" || filters.franchise !== GAME_CATEGORIES.POKEMON}
+                >
+                  <SelectTrigger id="set-filter">
+                    <SelectValue placeholder="Select Set" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="any">Any Set</SelectItem>
+                    {filters.franchise === GAME_CATEGORIES.POKEMON && 
+                      SET_OPTIONS[GAME_CATEGORIES.POKEMON]?.filter(set => set && set.trim() !== "").map(set => (
+                        <SelectItem key={set} value={set}>{set}</SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
         
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
@@ -624,7 +622,9 @@ const PSAMarket: React.FC = () => {
                           <ArrowUpDown className="ml-2 h-4 w-4" />
                         </div>
                       </TableHead>
-                      <TableHead className={isMobile ? "hidden sm:table-cell" : ""}>Population</TableHead>
+                      <TableHead className={isMobile ? "hidden sm:table-cell" : ""}>
+                        Population
+                      </TableHead>
                       <TableHead>
                         <div className="flex items-center">
                           {isMobile ? "Market Cap" : "Highest Price"}
