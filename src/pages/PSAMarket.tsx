@@ -384,7 +384,7 @@ const PSAMarket: React.FC = () => {
                       <TableHead className={isMobile ? "hidden sm:table-cell" : ""}>Population</TableHead>
                       <TableHead>
                         <div className="flex items-center">
-                          {isMobile ? "Price" : "Highest Price"}
+                          {isMobile ? "Market Cap" : "Highest Price"}
                           <ArrowUpDown className="ml-2 h-4 w-4" />
                         </div>
                       </TableHead>
@@ -424,7 +424,10 @@ const PSAMarket: React.FC = () => {
                           {formatNumber(card.total_population)}
                         </TableCell>
                         <TableCell className="font-semibold">
-                          {formatCurrency(getHighestPrice(card))}
+                          {isMobile 
+                            ? formatCurrency(card.market_cap) 
+                            : formatCurrency(getHighestPrice(card))
+                          }
                         </TableCell>
                       </TableRow>
                     ))}
