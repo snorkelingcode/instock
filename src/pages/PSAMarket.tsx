@@ -48,73 +48,7 @@ import {
   PaginationPrevious 
 } from "@/components/ui/pagination";
 
-const GAME_CATEGORIES = {
-  POKEMON: "Pokemon",
-  MTG: "Magic The Gathering",
-  YUGIOH: "Yu-Gi-Oh!",
-  LORCANA: "Disney Lorcana",
-  ONE_PIECE: "One Piece"
-};
-
-const LANGUAGE_OPTIONS = ["English", "Japanese"];
-const COMING_SOON_LANGUAGES = ["Chinese", "Korean"];
-const YEAR_OPTIONS = Array.from({ length: 25 }, (_, i) => (2023 - i).toString());
-const FRANCHISE_OPTIONS = Object.values(GAME_CATEGORIES);
-const SET_OPTIONS = {
-  "Pokemon": ["Scarlet & Violet", "Sword & Shield", "Sun & Moon", "XY", "Black & White", "HeartGold & SoulSilver", "Platinum", "Diamond & Pearl"],
-  "Magic The Gathering": ["The Lost Caverns of Ixalan", "Wilds of Eldraine", "March of the Machine", "Phyrexia: All Will Be One", "The Brothers' War"],
-  "Yu-Gi-Oh!": ["Phantom Rage", "Eternity Code", "Ignition Assault", "Chaos Impact", "Rising Rampage"],
-  "Disney Lorcana": ["Rise of the Floodborn", "The First Chapter", "Into the Inklands"],
-  "One Piece": ["Romance Dawn", "Paramount War", "Pillars of Strength", "Kingdoms of Intrigue"]
-};
-
-// Update the constants section
-const SERIES_OPTIONS = {
-  "Pokemon": [
-    "Scarlet & Violet", 
-    "Sword & Shield", 
-    "Sun & Moon", 
-    "XY", 
-    "Black & White", 
-    "HeartGold & SoulSilver", 
-    "Platinum", 
-    "Diamond & Pearl"
-  ]
-};
-
-const generatePriceComparisonData = (card: MarketDataItem | null) => {
-  if (!card) return [];
-  
-  const grades = ['Auth', 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-  
-  return grades.map(grade => {
-    const gradeKey = grade === 'Auth' ? 'auth' : grade;
-    const price = card[`price_${gradeKey}` as keyof MarketDataItem] as number || 0;
-    
-    return {
-      grade: grade === 'Auth' ? 'Authentic' : `Grade ${grade}`,
-      price: price,
-      formattedPrice: price.toLocaleString()
-    };
-  }).filter(item => item.price > 0);
-};
-
-const generatePopulationComparisonData = (card: MarketDataItem | null) => {
-  if (!card) return [];
-  
-  const grades = ['Auth', 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-  
-  return grades.map(grade => {
-    const gradeKey = grade === 'Auth' ? 'auth' : grade;
-    const population = card[`population_${gradeKey}` as keyof MarketDataItem] as number || 0;
-    
-    return {
-      grade: grade === 'Auth' ? 'Authentic' : `Grade ${grade}`,
-      population: population,
-      formattedPopulation: formatNumber(population)
-    };
-  }).filter(item => item.population > 0);
-};
+// Remove static category constants as we'll generate them dynamically
 
 const formatCurrency = (value?: number) => {
   if (value === undefined || value === null) return "N/A";
@@ -154,6 +88,40 @@ const formatChartNumber = (value?: number) => {
     return `${(value / 1000).toFixed(1)}K`;
   }
   return value.toLocaleString();
+};
+
+const generatePriceComparisonData = (card: MarketDataItem | null) => {
+  if (!card) return [];
+  
+  const grades = ['Auth', 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+  
+  return grades.map(grade => {
+    const gradeKey = grade === 'Auth' ? 'auth' : grade;
+    const price = card[`price_${gradeKey}` as keyof MarketDataItem] as number || 0;
+    
+    return {
+      grade: grade === 'Auth' ? 'Authentic' : `Grade ${grade}`,
+      price: price,
+      formattedPrice: price.toLocaleString()
+    };
+  }).filter(item => item.price > 0);
+};
+
+const generatePopulationComparisonData = (card: MarketDataItem | null) => {
+  if (!card) return [];
+  
+  const grades = ['Auth', 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+  
+  return grades.map(grade => {
+    const gradeKey = grade === 'Auth' ? 'auth' : grade;
+    const population = card[`population_${gradeKey}` as keyof MarketDataItem] as number || 0;
+    
+    return {
+      grade: grade === 'Auth' ? 'Authentic' : `Grade ${grade}`,
+      population: population,
+      formattedPopulation: formatNumber(population)
+    };
+  }).filter(item => item.population > 0);
 };
 
 const generateChartData = (card: MarketDataItem | null) => {
@@ -234,61 +202,11 @@ const calculateMarketCap = (data: MarketDataItem): number => {
   return totalValue;
 };
 
-const generateMockMarketData = (count: number): MarketDataItem[] => {
-  const placeholderImages = [
-    "https://images.unsplash.com/photo-1488590528505-98d2b5aba04b",
-    "https://images.unsplash.com/photo-1518770660439-4636190af475",
-    "https://images.unsplash.com/photo-1461749280684-dccba630e2f6",
-    "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d",
-    "https://images.unsplash.com/photo-1649972904349-6e44c42644a7"
-  ];
-  
-  const years = YEAR_OPTIONS.slice(0, 10);
-  const sets = SET_OPTIONS["Pokemon"];
-  
-  return Array.from({ length: count }, (_, i) => {
-    const pokemonNames = [
-      "Charizard", "Pikachu", "Blastoise", "Venusaur", "Mewtwo", 
-      "Mew", "Lugia", "Ho-Oh", "Rayquaza", "Umbreon"
-    ];
-    
-    const randomYear = years[Math.floor(Math.random() * years.length)];
-    const randomSet = sets[Math.floor(Math.random() * sets.length)];
-    
-    const cardName = `${pokemonNames[i % pokemonNames.length]} ${randomSet} ${randomYear} ${["Holo", "Vmax", "GX", "EX", "Full Art"][Math.floor(Math.random() * 5)]}`;
-    
-    const population10 = Math.floor(Math.random() * 500) + 10;
-    const population9 = Math.floor(Math.random() * 1000) + 100;
-    const price10 = Math.floor(Math.random() * 10000) + 1000;
-    const price9 = Math.floor(Math.random() * 5000) + 500;
-    
-    const totalPopulation = population10 + population9 + 
-      Math.floor(Math.random() * 3000) + 500;
-    
-    const marketCap = (population10 * price10) + (population9 * price9) + 
-      Math.floor(Math.random() * 5000000);
-      
-    return {
-      id: `mock-${i}`,
-      card_name: cardName,
-      grading_service: "PSA",
-      population_10: population10,
-      population_9: population9,
-      price_10: price10,
-      price_9: price9,
-      total_population: totalPopulation,
-      market_cap: marketCap,
-      card_image: placeholderImages[i % placeholderImages.length]
-    };
-  });
-};
-
 const PSAMarket: React.FC = () => {
   const [token, setToken] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [marketData, setMarketData] = useState<MarketDataItem[]>([]);
   const [filteredData, setFilteredData] = useState<MarketDataItem[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string>(GAME_CATEGORIES.POKEMON);
   const [chartData, setChartData] = useState<any[]>([]);
   const [selectedCard, setSelectedCard] = useState<MarketDataItem | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -304,6 +222,16 @@ const PSAMarket: React.FC = () => {
     series: "any",
     set: "any"
   });
+  
+  // New state for dynamic filter options
+  const [filterOptions, setFilterOptions] = useState({
+    languages: ["any"],
+    years: ["any"],
+    franchises: ["any"],
+    series: ["any"],
+    sets: ["any"]
+  });
+  
   const cardsPerPage = 15;
   const { toast } = useToast();
   const isMobile = useIsMobile();
@@ -330,6 +258,57 @@ const PSAMarket: React.FC = () => {
     applyFilters();
   }, [marketData, filters]);
   
+  // Extract year from card name - assumed to be the first 4-digit number
+  const extractYearFromCardName = (cardName: string): string | null => {
+    const yearMatch = cardName.match(/\b(19|20)\d{2}\b/);
+    return yearMatch ? yearMatch[0] : null;
+  };
+  
+  // Generate filter options from market data
+  const generateFilterOptions = (data: MarketDataItem[]) => {
+    const languages = ["any"];
+    const years = ["any"];
+    const franchises = ["any"];
+    const seriesOptions = ["any"];
+    const sets = ["any"];
+    
+    data.forEach(card => {
+      // Add language if it exists and is not already in the list
+      if (card.language && !languages.includes(card.language)) {
+        languages.push(card.language);
+      }
+      
+      // Add year from card name if not already in the list
+      const year = card.year || extractYearFromCardName(card.card_name);
+      if (year && !years.includes(year)) {
+        years.push(year);
+      }
+      
+      // Add franchise if it exists and is not already in the list
+      if (card.franchise && !franchises.includes(card.franchise)) {
+        franchises.push(card.franchise);
+      }
+      
+      // Add series if it exists and is not already in the list
+      if (card.series && !seriesOptions.includes(card.series)) {
+        seriesOptions.push(card.series);
+      }
+      
+      // Add set if it exists and is not already in the list
+      if (card.card_set && !sets.includes(card.card_set)) {
+        sets.push(card.card_set);
+      }
+    });
+    
+    setFilterOptions({
+      languages,
+      years,
+      franchises,
+      series: seriesOptions,
+      sets
+    });
+  };
+  
   const fetchMarketData = async () => {
     try {
       setIsLoading(true);
@@ -339,30 +318,25 @@ const PSAMarket: React.FC = () => {
       console.log("Fetched market data:", data);
       
       if (data.length === 0) {
-        console.log("No data found in database, generating mock data");
-        const mockData = generateMockMarketData(30);
-        console.log("Generated mock market data:", mockData);
-        setMarketData(mockData);
-        setFilteredData(mockData);
-        setTotalCards(mockData.length);
-        
-        if (mockData.length > 0) {
-          setSelectedCard(mockData[0]);
-          setChartData(generateChartData(mockData[0]));
-          setPriceComparisonData(generatePriceComparisonData(mockData[0]));
-          setPopulationComparisonData(generatePopulationComparisonData(mockData[0]));
-        }
+        console.log("No data found in database, no need to generate mock data as we want real data only");
+        setMarketData([]);
+        setFilteredData([]);
+        setTotalCards(0);
       } else {
         console.log("Using real market data from database");
         const dataWithUpdatedMarketCap = data.map(card => {
           // Ensure total_population and market_cap are set if not already
           const totalPopulation = card.total_population || calculateTotalPopulation(card);
           const marketCap = card.market_cap || calculateMarketCap(card);
+          
+          // Extract year from card name if not already set
+          const year = card.year || extractYearFromCardName(card.card_name);
 
           return {
             ...card,
             total_population: totalPopulation,
-            market_cap: marketCap
+            market_cap: marketCap,
+            year: year
           };
         });
         
@@ -374,6 +348,9 @@ const PSAMarket: React.FC = () => {
         setFilteredData(sortedData);
         setTotalCards(sortedData.length);
         
+        // Generate filter options based on the actual data
+        generateFilterOptions(sortedData);
+        
         if (sortedData.length > 0 && !selectedCard) {
           setSelectedCard(sortedData[0]);
           setChartData(generateChartData(sortedData[0]));
@@ -384,20 +361,11 @@ const PSAMarket: React.FC = () => {
     } catch (error) {
       console.error("Error fetching market data:", error);
       
-      const mockData = generateMockMarketData(30);
-      console.log("Generated fallback mock market data due to error:", mockData);
-      setMarketData(mockData);
-      setFilteredData(mockData);
-      setTotalCards(mockData.length);
+      setMarketData([]);
+      setFilteredData([]);
+      setTotalCards(0);
       
-      if (mockData.length > 0) {
-        setSelectedCard(mockData[0]);
-        setChartData(generateChartData(mockData[0]));
-        setPriceComparisonData(generatePriceComparisonData(mockData[0]));
-        setPopulationComparisonData(generatePopulationComparisonData(mockData[0]));
-      }
-      
-      setError(error instanceof Error ? error.message : "Failed to fetch market data, showing sample data instead");
+      setError(error instanceof Error ? error.message : "Failed to fetch market data");
     } finally {
       setIsLoading(false);
     }
@@ -442,9 +410,10 @@ const PSAMarket: React.FC = () => {
     }
     
     if (filters.year && filters.year !== "any") {
-      filtered = filtered.filter(card => 
-        card.year === filters.year
-      );
+      filtered = filtered.filter(card => {
+        const cardYear = card.year || extractYearFromCardName(card.card_name);
+        return cardYear === filters.year;
+      });
     }
     
     if (filters.franchise && filters.franchise !== "any") {
@@ -551,27 +520,32 @@ const PSAMarket: React.FC = () => {
                     <SelectValue placeholder="Select Language" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="any">Any Language</SelectItem>
-                    <SelectItem value="English">English</SelectItem>
-                    <SelectItem value="Japanese">Japanese</SelectItem>
-                    <SelectItem value="Chinese" disabled>Chinese (Coming Soon)</SelectItem>
-                    <SelectItem value="Korean" disabled>Korean (Coming Soon)</SelectItem>
+                    {filterOptions.languages.map(language => (
+                      <SelectItem key={language} value={language}>
+                        {language === "any" ? "Any Language" : language}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
               
               <div className="space-y-2">
                 <Label htmlFor="year-filter">Year</Label>
-                <Input
-                  id="year-filter"
-                  type="text"
-                  placeholder="Enter year..."
-                  value={filters.year === "any" ? "" : filters.year}
-                  onChange={(e) => {
-                    const value = e.target.value || "any";
-                    handleFilterChange('year', value);
-                  }}
-                />
+                <Select 
+                  value={filters.year} 
+                  onValueChange={(value) => handleFilterChange('year', value)}
+                >
+                  <SelectTrigger id="year-filter">
+                    <SelectValue placeholder="Select Year" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filterOptions.years.map(year => (
+                      <SelectItem key={year} value={year}>
+                        {year === "any" ? "Any Year" : year}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               
               <div className="space-y-2">
@@ -584,12 +558,11 @@ const PSAMarket: React.FC = () => {
                     <SelectValue placeholder="Select Franchise" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="any">Any Franchise</SelectItem>
-                    <SelectItem value="Pokemon">Pokemon</SelectItem>
-                    <SelectItem value="Magic The Gathering" disabled>Magic The Gathering (Coming Soon)</SelectItem>
-                    <SelectItem value="Yu-Gi-Oh!" disabled>Yu-Gi-Oh! (Coming Soon)</SelectItem>
-                    <SelectItem value="Disney Lorcana" disabled>Disney Lorcana (Coming Soon)</SelectItem>
-                    <SelectItem value="One Piece" disabled>One Piece (Coming Soon)</SelectItem>
+                    {filterOptions.franchises.map(franchise => (
+                      <SelectItem key={franchise} value={franchise}>
+                        {franchise === "any" ? "Any Franchise" : franchise}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -599,16 +572,23 @@ const PSAMarket: React.FC = () => {
                 <Select 
                   value={filters.series} 
                   onValueChange={(value) => handleFilterChange('series', value)}
-                  disabled={filters.franchise !== "Pokemon"}
+                  disabled={filters.franchise === "any"}
                 >
                   <SelectTrigger id="series-filter">
                     <SelectValue placeholder="Select Series" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="any">Any Series</SelectItem>
-                    {filters.franchise === "Pokemon" && 
-                      SERIES_OPTIONS["Pokemon"].map(series => (
-                        <SelectItem key={series} value={series}>{series}</SelectItem>
+                    {filterOptions.series
+                      .filter(series => series === "any" || 
+                        marketData.some(card => 
+                          card.series === series && 
+                          (filters.franchise === "any" || card.franchise === filters.franchise)
+                        )
+                      )
+                      .map(series => (
+                        <SelectItem key={series} value={series}>
+                          {series === "any" ? "Any Series" : series}
+                        </SelectItem>
                       ))
                     }
                   </SelectContent>
@@ -620,17 +600,24 @@ const PSAMarket: React.FC = () => {
                 <Select 
                   value={filters.set} 
                   onValueChange={(value) => handleFilterChange('set', value)}
-                  disabled={filters.franchise !== "Pokemon"}
+                  disabled={filters.franchise === "any"}
                 >
                   <SelectTrigger id="set-filter">
                     <SelectValue placeholder="Select Set" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="any">Any Set</SelectItem>
-                    {filters.franchise === "Pokemon" && SET_OPTIONS[GAME_CATEGORIES.POKEMON]
-                      ?.filter(set => set && set.trim() !== "")
+                    {filterOptions.sets
+                      .filter(set => set === "any" || 
+                        marketData.some(card => 
+                          card.card_set === set && 
+                          (filters.franchise === "any" || card.franchise === filters.franchise) &&
+                          (filters.series === "any" || card.series === filters.series)
+                        )
+                      )
                       .map(set => (
-                        <SelectItem key={set} value={set}>{set}</SelectItem>
+                        <SelectItem key={set} value={set}>
+                          {set === "any" ? "Any Set" : set}
+                        </SelectItem>
                       ))
                     }
                   </SelectContent>
