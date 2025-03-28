@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -11,8 +10,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { MarketDataItem, marketDataService } from "@/services/marketDataService";
 import LoadingScreen from "@/components/ui/loading-screen";
+import { Grid } from "@/components/ui/grid";
 
-// Import utility functions from PSAMarket or create a shared utility file
 const formatCurrency = (value?: number) => {
   if (value === undefined || value === null) return "N/A";
   if (value < 1000) {
@@ -112,8 +111,6 @@ const PSACardDetails: React.FC = () => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   
-  // We can get the card from location state if we came from the PSAMarket page
-  // or we can fetch it from the API if the user navigated directly to this page
   const [card, setCard] = useState<MarketDataItem | null>(
     location.state?.card || null
   );
@@ -193,7 +190,7 @@ const PSACardDetails: React.FC = () => {
     <Layout>
       <div className="container mx-auto py-6 space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
+          <div className="w-full">
             <Button 
               variant="outline" 
               onClick={() => navigate("/psa-market")}
@@ -201,14 +198,14 @@ const PSACardDetails: React.FC = () => {
             >
               <ArrowLeft className="mr-2 h-4 w-4" /> Back to Market
             </Button>
-            <h1 className="text-2xl sm:text-3xl font-bold">{card.card_name}</h1>
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold break-words line-clamp-2 md:line-clamp-none">{card.card_name}</h1>
           </div>
         </div>
         
         <Card>
           <CardHeader>
             <CardTitle>Card Details</CardTitle>
-            <CardDescription>
+            <CardDescription className="break-words">
               Detailed market information for {card.card_name}
             </CardDescription>
           </CardHeader>
@@ -230,10 +227,10 @@ const PSACardDetails: React.FC = () => {
                     <CardTitle className="text-lg">Card Information</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <h4 className="text-sm font-medium text-muted-foreground">Card Name</h4>
-                        <p className="text-md font-medium">{card.card_name}</p>
+                        <p className="text-md font-medium break-words">{card.card_name}</p>
                       </div>
                       <div>
                         <h4 className="text-sm font-medium text-muted-foreground">Grading Service</h4>
@@ -245,7 +242,9 @@ const PSACardDetails: React.FC = () => {
                       </div>
                       <div>
                         <h4 className="text-sm font-medium text-muted-foreground">Market Cap</h4>
-                        <p className="text-md font-medium">{formatCurrency(card.market_cap)}</p>
+                        <p className="text-md font-medium truncate" title={formatCurrency(card.market_cap)}>
+                          {formatCurrency(card.market_cap)}
+                        </p>
                       </div>
                     </div>
                   </CardContent>
@@ -275,14 +274,14 @@ const PSACardDetails: React.FC = () => {
               </div>
               
               <div className="space-y-6">
-                <div className="grid grid-cols-2 gap-4">
+                <Grid className="grid-cols-1 sm:grid-cols-2 gap-4">
                   <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                       <CardTitle className="text-sm font-medium">Market Cap</CardTitle>
                       <DollarSign className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl font-bold">
+                      <div className="text-lg sm:text-xl lg:text-2xl font-bold truncate" title={formatCurrency(card.market_cap)}>
                         {formatCurrency(card.market_cap)}
                       </div>
                       <p className="text-xs text-muted-foreground">
@@ -296,7 +295,7 @@ const PSACardDetails: React.FC = () => {
                       <BarChartIcon className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl font-bold">
+                      <div className="text-lg sm:text-xl lg:text-2xl font-bold truncate" title={formatCurrency(getHighestPrice(card))}>
                         {formatCurrency(getHighestPrice(card))}
                       </div>
                       <p className="text-xs text-muted-foreground">
@@ -310,7 +309,7 @@ const PSACardDetails: React.FC = () => {
                       <Package className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl font-bold">
+                      <div className="text-lg sm:text-xl lg:text-2xl font-bold truncate" title={formatNumber(card.total_population)}>
                         {formatNumber(card.total_population)}
                       </div>
                       <p className="text-xs text-muted-foreground">
@@ -324,7 +323,7 @@ const PSACardDetails: React.FC = () => {
                       <TrendingUp className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl font-bold">
+                      <div className="text-lg sm:text-xl lg:text-2xl font-bold">
                         {((card.population_10 || 0) / (card.total_population || 1) * 100).toFixed(2)}%
                       </div>
                       <p className="text-xs text-muted-foreground">
@@ -332,7 +331,7 @@ const PSACardDetails: React.FC = () => {
                       </p>
                     </CardContent>
                   </Card>
-                </div>
+                </Grid>
                 
                 <Card>
                   <CardContent className="pt-6">
@@ -401,7 +400,7 @@ const PSACardDetails: React.FC = () => {
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                               <p className="text-sm font-semibold">Highest Grade Price</p>
-                              <p className="text-md">
+                              <p className="text-md truncate" title={card.price_10 ? formatCurrency(card.price_10) : 'N/A'}>
                                 {card.price_10 ? formatCurrency(card.price_10) : 'N/A'}
                               </p>
                             </div>
@@ -409,7 +408,9 @@ const PSACardDetails: React.FC = () => {
                               <p className="text-sm font-semibold">Price Difference (10 to 9)</p>
                               {card.price_10 && card.price_9 ? (
                                 <p className="text-md">
-                                  {formatCurrency(card.price_10 - card.price_9)} 
+                                  <span className="truncate block" title={formatCurrency(card.price_10 - card.price_9)}>
+                                    {formatCurrency(card.price_10 - card.price_9)}
+                                  </span>
                                   <span className="whitespace-nowrap">
                                     ({Math.round(((card.price_10 / card.price_9) - 1) * 100)}%)
                                   </span>
@@ -483,7 +484,7 @@ const PSACardDetails: React.FC = () => {
                                 }, 10);
                                 
                                 return (
-                                  <p className="text-md">
+                                  <p className="text-md break-words">
                                     Grade {highestGrade} ({formatNumber(card[`population_${highestGrade}` as keyof MarketDataItem] as number)})
                                   </p>
                                 );
