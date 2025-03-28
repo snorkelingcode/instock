@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import { useToast } from "@/hooks/use-toast";
@@ -45,6 +46,12 @@ const marketDataSchema = z.object({
   price_1: z.number().optional(),
   price_auth: z.number().optional(),
   card_image: z.string().optional(),
+  // Add the new fields to the schema
+  language: z.string().optional(),
+  year: z.string().optional(),
+  franchise: z.string().optional(),
+  series: z.string().optional(),
+  card_set: z.string().optional(),
 });
 
 type MarketDataFormValues = z.infer<typeof marketDataSchema>;
@@ -87,6 +94,12 @@ const ManageMarket: React.FC = () => {
       price_1: 0,
       price_auth: 0,
       card_image: "",
+      // Add default values for the new fields
+      language: "English",
+      year: "",
+      franchise: "Pokemon",
+      series: "",
+      card_set: "",
     },
   });
 
@@ -122,6 +135,12 @@ const ManageMarket: React.FC = () => {
         price_1: selectedItem.price_1 || 0,
         price_auth: selectedItem.price_auth || 0,
         card_image: selectedItem.card_image || "",
+        // Include the new fields in the form reset
+        language: selectedItem.language || "English",
+        year: selectedItem.year || "",
+        franchise: selectedItem.franchise || "Pokemon",
+        series: selectedItem.series || "",
+        card_set: selectedItem.card_set || "",
       });
     } else {
       form.reset({
@@ -150,6 +169,12 @@ const ManageMarket: React.FC = () => {
         price_1: 0,
         price_auth: 0,
         card_image: "",
+        // Include the new fields in the form reset with default values
+        language: "English",
+        year: "",
+        franchise: "Pokemon",
+        series: "",
+        card_set: "",
       });
     }
   }, [selectedItem, form]);
@@ -457,6 +482,77 @@ const ManageMarket: React.FC = () => {
                     render={({ field }) => (
                       <FormItem className="col-span-2">
                         <FormLabel>Card Image URL</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Add new form fields for card metadata */}
+                  <FormField
+                    control={form.control}
+                    name="language"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Language</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="year"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Year</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="franchise"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Franchise</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="series"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Series</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="card_set"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Card Set</FormLabel>
                         <FormControl>
                           <Input {...field} />
                         </FormControl>
