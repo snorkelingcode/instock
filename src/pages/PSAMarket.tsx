@@ -10,8 +10,31 @@ import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import LoadingScreen from "@/components/ui/loading-screen";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowUpDown, BarChartIcon, AlertCircle } from "lucide-react";
+import { ArrowUpDown, BarChartIcon, AlertCircle, FilterIcon } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
 import psaService, { PSACard, PSASearchParams } from "@/services/psaService";
 import { MarketDataItem, marketDataService } from "@/services/marketDataService";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -31,6 +54,17 @@ const GAME_CATEGORIES = {
   YUGIOH: "Yu-Gi-Oh!",
   LORCANA: "Disney Lorcana",
   ONE_PIECE: "One Piece"
+};
+
+const LANGUAGE_OPTIONS = ["English", "Japanese", "Korean", "Chinese", "German", "French", "Italian", "Spanish", "Portuguese"];
+const YEAR_OPTIONS = Array.from({ length: 25 }, (_, i) => (2023 - i).toString());
+const FRANCHISE_OPTIONS = Object.values(GAME_CATEGORIES);
+const SET_OPTIONS = {
+  "Pokemon": ["Scarlet & Violet", "Sword & Shield", "Sun & Moon", "XY", "Black & White", "HeartGold & SoulSilver", "Platinum", "Diamond & Pearl"],
+  "Magic The Gathering": ["The Lost Caverns of Ixalan", "Wilds of Eldraine", "March of the Machine", "Phyrexia: All Will Be One", "The Brothers' War"],
+  "Yu-Gi-Oh!": ["Phantom Rage", "Eternity Code", "Ignition Assault", "Chaos Impact", "Rising Rampage"],
+  "Disney Lorcana": ["Rise of the Floodborn", "The First Chapter", "Into the Inklands"],
+  "One Piece": ["Romance Dawn", "Paramount War", "Pillars of Strength", "Kingdoms of Intrigue"]
 };
 
 const generatePriceComparisonData = (card: MarketDataItem | null) => {
@@ -192,13 +226,19 @@ const generateMockMarketData = (count: number): MarketDataItem[] => {
     "https://images.unsplash.com/photo-1649972904349-6e44c42644a7"
   ];
   
+  const years = YEAR_OPTIONS.slice(0, 10);
+  const sets = SET_OPTIONS["Pokemon"];
+  
   return Array.from({ length: count }, (_, i) => {
     const pokemonNames = [
       "Charizard", "Pikachu", "Blastoise", "Venusaur", "Mewtwo", 
       "Mew", "Lugia", "Ho-Oh", "Rayquaza", "Umbreon"
     ];
     
-    const cardName = `${pokemonNames[i % pokemonNames.length]} ${["Holo", "Vmax", "GX", "EX", "Full Art"][Math.floor(Math.random() * 5)]}`;
+    const randomYear = years[Math.floor(Math.random() * years.length)];
+    const randomSet = sets[Math.floor(Math.random() * sets.length)];
+    
+    const cardName = `${pokemonNames[i % pokemonNames.length]} ${randomSet} ${randomYear} ${["Holo", "Vmax", "GX", "EX", "Full Art"][Math.floor(Math.random() * 5)]}`;
     
     const population10 = Math.floor(Math.random() * 500) + 10;
     const population9 = Math.floor(Math.random() * 1000) + 100;
@@ -230,6 +270,7 @@ const PSAMarket: React.FC = () => {
   const [token, setToken] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [marketData, setMarketData] = useState<MarketDataItem[]>([]);
+  const [filteredData, setFilteredData] = useState<MarketDataItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>(GAME_CATEGORIES.POKEMON);
   const [chartData, setChartData] = useState<any[]>([]);
   const [selectedCard, setSelectedCard] = useState<MarketDataItem | null>(null);
@@ -238,6 +279,13 @@ const PSAMarket: React.FC = () => {
   const [populationComparisonData, setPopulationComparisonData] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [totalCards, setTotalCards] = useState<number>(0);
+  const [filtersOpen, setFiltersOpen] = useState<boolean>(false);
+  const [filters, setFilters] = useState({
+    language: "English",
+    year: "",
+    franchise: GAME_CATEGORIES.POKEMON,
+    set: ""
+  });
   const cardsPerPage = 15;
   const { toast } = useToast();
   const isMobile = useIsMobile();
@@ -259,6 +307,10 @@ const PSAMarket: React.FC = () => {
       setPopulationComparisonData(generatePopulationComparisonData(selectedCard));
     }
   }, [selectedCard]);
+
+  useEffect(() => {
+    applyFilters();
+  }, [marketData, filters]);
   
   const fetchMarketData = async () => {
     try {
@@ -323,10 +375,49 @@ const PSAMarket: React.FC = () => {
     }
   };
   
+  const applyFilters = () => {
+    let filtered = [...marketData];
+    
+    if (filters.language) {
+    }
+    
+    if (filters.year) {
+      filtered = filtered.filter(card => {
+        const cardYear = card.card_name?.includes(filters.year) || false;
+        return cardYear;
+      });
+    }
+    
+    if (filters.franchise) {
+      filtered = filtered.filter(card => {
+        return card.card_name?.includes(filters.franchise.split(" ")[0]) || false;
+      });
+    }
+    
+    if (filters.set) {
+      filtered = filtered.filter(card => {
+        const cardSet = card.card_name?.includes(filters.set) || false;
+        return cardSet;
+      });
+    }
+    
+    setFilteredData(filtered);
+    setTotalCards(filtered.length);
+    setCurrentPage(1);
+  };
+  
+  const handleFilterChange = (filterType: string, value: string) => {
+    setFilters(prev => ({ ...prev, [filterType]: value }));
+    
+    if (filterType === 'franchise') {
+      setFilters(prev => ({ ...prev, [filterType]: value, set: '' }));
+    }
+  };
+  
   const indexOfLastCard = currentPage * cardsPerPage;
   const indexOfFirstCard = indexOfLastCard - cardsPerPage;
-  const currentCards = marketData.slice(indexOfFirstCard, indexOfLastCard);
-  const totalPages = Math.ceil(marketData.length / cardsPerPage);
+  const currentCards = filteredData.slice(indexOfFirstCard, indexOfLastCard);
+  const totalPages = Math.ceil(filteredData.length / cardsPerPage);
   
   const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
   const nextPage = () => setCurrentPage(prev => Math.min(prev + 1, totalPages));
@@ -351,27 +442,37 @@ const PSAMarket: React.FC = () => {
   };
   
   const calculateTotalMarketCap = () => {
-    return marketData.reduce((sum, card) => sum + (card.market_cap || 0), 0);
+    return filteredData.reduce((sum, card) => sum + (card.market_cap || 0), 0);
   };
   
   const calculateTotalPopulation = () => {
-    return marketData.reduce((sum, card) => sum + (card.total_population || 0), 0);
+    return filteredData.reduce((sum, card) => sum + (card.total_population || 0), 0);
   };
   
   const calculateOverallAveragePrice = () => {
-    const totalValue = marketData.reduce((sum, card) => {
+    const totalValue = filteredData.reduce((sum, card) => {
       const avgPrice = calculateAveragePrice(card) || 0;
       return sum + avgPrice;
     }, 0);
     
-    return marketData.length > 0 ? totalValue / marketData.length : 0;
+    return filteredData.length > 0 ? totalValue / filteredData.length : 0;
   };
-  
+
   return (
     <Layout>
       <div className="container mx-auto py-6 space-y-6">
         <div className="flex flex-row items-center justify-between">
           <h1 className="text-3xl font-bold mb-6">TCG Market Data</h1>
+          
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-2"
+            onClick={() => setFiltersOpen(!filtersOpen)}
+          >
+            <FilterIcon className="h-4 w-4" />
+            Filters
+          </Button>
         </div>
         
         {error && (
@@ -380,6 +481,88 @@ const PSAMarket: React.FC = () => {
             <AlertTitle>Error</AlertTitle>
             <AlertDescription>{error}</AlertDescription>
           </Alert>
+        )}
+
+        {filtersOpen && (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="text-lg">Filter Options</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="language-filter">Language</Label>
+                  <Select 
+                    value={filters.language} 
+                    onValueChange={(value) => handleFilterChange('language', value)}
+                  >
+                    <SelectTrigger id="language-filter">
+                      <SelectValue placeholder="Select Language" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {LANGUAGE_OPTIONS.map(lang => (
+                        <SelectItem key={lang} value={lang}>{lang}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="year-filter">Year</Label>
+                  <Select 
+                    value={filters.year} 
+                    onValueChange={(value) => handleFilterChange('year', value)}
+                  >
+                    <SelectTrigger id="year-filter">
+                      <SelectValue placeholder="Select Year" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Any Year</SelectItem>
+                      {YEAR_OPTIONS.map(year => (
+                        <SelectItem key={year} value={year}>{year}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="franchise-filter">Franchise</Label>
+                  <Select 
+                    value={filters.franchise} 
+                    onValueChange={(value) => handleFilterChange('franchise', value)}
+                  >
+                    <SelectTrigger id="franchise-filter">
+                      <SelectValue placeholder="Select Franchise" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {FRANCHISE_OPTIONS.map(franchise => (
+                        <SelectItem key={franchise} value={franchise}>{franchise}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="set-filter">Set</Label>
+                  <Select 
+                    value={filters.set} 
+                    onValueChange={(value) => handleFilterChange('set', value)}
+                    disabled={!filters.franchise}
+                  >
+                    <SelectTrigger id="set-filter">
+                      <SelectValue placeholder="Select Set" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Any Set</SelectItem>
+                      {filters.franchise && SET_OPTIONS[filters.franchise as keyof typeof SET_OPTIONS]?.map(set => (
+                        <SelectItem key={set} value={set}>{set}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         )}
         
         <Card>
@@ -394,7 +577,7 @@ const PSAMarket: React.FC = () => {
               <div className="p-4">
                 <LoadingScreen message="Fetching market data..." />
               </div>
-            ) : marketData.length > 0 ? (
+            ) : filteredData.length > 0 ? (
               <div className="overflow-auto">
                 <Table>
                   <TableHeader>

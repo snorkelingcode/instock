@@ -1,3 +1,4 @@
+
 import { toast } from "@/hooks/use-toast";
 
 // PSA API proxy URL (using Supabase Edge Function)
@@ -41,6 +42,8 @@ export interface PSASearchParams {
   page?: number;
   pageSize?: number;
   language?: string;
+  set?: string;
+  franchise?: string;
 }
 
 // Service for PSA API calls
@@ -133,7 +136,7 @@ export const psaService = {
     // Always ensure we're searching for English cards
     const searchParams: PSASearchParams = {
       ...params,
-      language: "English"
+      language: params.language || "English"
     };
     
     // Create query string from params
@@ -149,19 +152,20 @@ export const psaService = {
       console.log("Using mock data for search", params);
       
       // Fall back to mock data
-      return psaService.getMockCardsByCategory(params.sport || "Pokemon", params.page || 1, params.pageSize || 20);
+      return psaService.getMockCardsByCategory(params.sport || params.franchise || "Pokemon", params.page || 1, params.pageSize || 20);
     }
   },
   
   // Search cards by category
-  searchCardsByCategory: async (category: string, page: number = 1, pageSize: number = 20): Promise<{items: PSACard[], total: number}> => {
-    console.log(`Searching cards for category: ${category}, page: ${page}, pageSize: ${pageSize}`);
+  searchCardsByCategory: async (category: string, page: number = 1, pageSize: number = 20, filters?: PSASearchParams): Promise<{items: PSACard[], total: number}> => {
+    console.log(`Searching cards for category: ${category}, page: ${page}, pageSize: ${pageSize}, filters:`, filters);
     
     try {
       const result = await psaService.searchCards({
         sport: category,
         page,
-        pageSize
+        pageSize,
+        ...filters
       });
       
       console.log(`Found ${result.items.length} cards for ${category}`);
