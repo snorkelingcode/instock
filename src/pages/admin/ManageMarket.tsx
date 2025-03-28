@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import { useToast } from "@/hooks/use-toast";
@@ -20,7 +19,6 @@ import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import LoadingScreen from "@/components/ui/loading-screen";
 
-// Validation schema for market data form
 const marketDataSchema = z.object({
   card_name: z.string().min(1, "Card name is required"),
   grading_service: z.string().min(1, "Grading service is required"),
@@ -61,7 +59,6 @@ const ManageMarket: React.FC = () => {
   const { toast } = useToast();
   const { user, isAdmin } = useAuth();
 
-  // Form for adding/editing market data
   const form = useForm<MarketDataFormValues>({
     resolver: zodResolver(marketDataSchema),
     defaultValues: {
@@ -98,7 +95,6 @@ const ManageMarket: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    // When selected item changes, reset form with its values
     if (selectedItem) {
       form.reset({
         card_name: selectedItem.card_name,
@@ -169,7 +165,6 @@ const ManageMarket: React.FC = () => {
         data = await marketDataService.getMarketDataByGradingService(activeTab);
       }
       
-      // Ensure all required calculated fields exist
       const processedData = data.map(card => ({
         ...card,
         total_population: card.total_population || calculateTotalPopulation(card),
@@ -189,7 +184,6 @@ const ManageMarket: React.FC = () => {
     }
   };
 
-  // Helper function to calculate total population
   const calculateTotalPopulation = (card: MarketDataItem): number => {
     return (
       (card.population_10 || 0) +
@@ -206,7 +200,6 @@ const ManageMarket: React.FC = () => {
     );
   };
 
-  // Helper function to calculate market cap
   const calculateMarketCap = (card: MarketDataItem): number => {
     let totalValue = 0;
     
@@ -416,7 +409,6 @@ const ManageMarket: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Edit/Add Dialog */}
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
           <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>

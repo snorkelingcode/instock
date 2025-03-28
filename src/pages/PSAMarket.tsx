@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -284,10 +283,10 @@ const PSAMarket: React.FC = () => {
   const [totalCards, setTotalCards] = useState<number>(0);
   const [filtersOpen, setFiltersOpen] = useState<boolean>(false);
   const [filters, setFilters] = useState({
-    language: "",
-    year: "",
-    franchise: "",
-    set: ""
+    language: "any",
+    year: "any",
+    franchise: "any",
+    set: "any"
   });
   const cardsPerPage = 15;
   const { toast } = useToast();
@@ -388,7 +387,6 @@ const PSAMarket: React.FC = () => {
     }
   };
   
-  // Helper function to calculate total population for a card
   const calculateTotalPopulation = (card: MarketDataItem): number => {
     return (
       (card.population_10 || 0) +
@@ -408,25 +406,26 @@ const PSAMarket: React.FC = () => {
   const applyFilters = () => {
     let filtered = [...marketData];
     
-    // Only apply filters if they are actually set
-    if (filters.language && filters.language.trim() !== "") {
-      // Apply language filter if needed
+    if (filters.language && filters.language !== "any") {
+      filtered = filtered.filter(card => {
+        return card.card_name?.includes(filters.language) || false;
+      });
     }
     
-    if (filters.year && filters.year.trim() !== "") {
+    if (filters.year && filters.year !== "any") {
       filtered = filtered.filter(card => {
         const cardYear = card.card_name?.includes(filters.year) || false;
         return cardYear;
       });
     }
     
-    if (filters.franchise && filters.franchise.trim() !== "") {
+    if (filters.franchise && filters.franchise !== "any") {
       filtered = filtered.filter(card => {
         return card.card_name?.includes(filters.franchise.split(" ")[0]) || false;
       });
     }
     
-    if (filters.set && filters.set.trim() !== "") {
+    if (filters.set && filters.set !== "any") {
       filtered = filtered.filter(card => {
         const cardSet = card.card_name?.includes(filters.set) || false;
         return cardSet;
@@ -442,7 +441,7 @@ const PSAMarket: React.FC = () => {
     setFilters(prev => ({ ...prev, [filterType]: value }));
     
     if (filterType === 'franchise') {
-      setFilters(prev => ({ ...prev, [filterType]: value, set: '' }));
+      setFilters(prev => ({ ...prev, [filterType]: value, set: 'any' }));
     }
   };
   
@@ -532,7 +531,7 @@ const PSAMarket: React.FC = () => {
                       <SelectValue placeholder="Select Language" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Any Language</SelectItem>
+                      <SelectItem value="any">Any Language</SelectItem>
                       {LANGUAGE_OPTIONS.filter(lang => lang && lang.trim() !== "").map(lang => (
                         <SelectItem key={lang} value={lang}>{lang}</SelectItem>
                       ))}
@@ -550,7 +549,7 @@ const PSAMarket: React.FC = () => {
                       <SelectValue placeholder="Select Year" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Any Year</SelectItem>
+                      <SelectItem value="any">Any Year</SelectItem>
                       {YEAR_OPTIONS.filter(year => year && year.trim() !== "").map(year => (
                         <SelectItem key={year} value={year}>{year}</SelectItem>
                       ))}
@@ -568,7 +567,7 @@ const PSAMarket: React.FC = () => {
                       <SelectValue placeholder="Select Franchise" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Any Franchise</SelectItem>
+                      <SelectItem value="any">Any Franchise</SelectItem>
                       {FRANCHISE_OPTIONS.filter(franchise => franchise && franchise.trim() !== "").map(franchise => (
                         <SelectItem key={franchise} value={franchise}>{franchise}</SelectItem>
                       ))}
@@ -581,16 +580,17 @@ const PSAMarket: React.FC = () => {
                   <Select 
                     value={filters.set} 
                     onValueChange={(value) => handleFilterChange('set', value)}
-                    disabled={!filters.franchise}
+                    disabled={!filters.franchise || filters.franchise === "any"}
                   >
                     <SelectTrigger id="set-filter">
                       <SelectValue placeholder="Select Set" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Any Set</SelectItem>
-                      {filters.franchise && SET_OPTIONS[filters.franchise as keyof typeof SET_OPTIONS]?.filter(set => set && set.trim() !== "").map(set => (
-                        <SelectItem key={set} value={set}>{set}</SelectItem>
-                      ))}
+                      <SelectItem value="any">Any Set</SelectItem>
+                      {filters.franchise && filters.franchise !== "any" && 
+                        SET_OPTIONS[filters.franchise as keyof typeof SET_OPTIONS]?.filter(set => set && set.trim() !== "").map(set => (
+                          <SelectItem key={set} value={set}>{set}</SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -727,4 +727,3 @@ const PSAMarket: React.FC = () => {
 };
 
 export default PSAMarket;
-
