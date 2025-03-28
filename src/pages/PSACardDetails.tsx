@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -336,7 +335,6 @@ const PSACardDetails: React.FC = () => {
                 
                 <Card>
                   <CardContent className="pt-6">
-                    {/* Improved tab styling for mobile */}
                     <Tabs defaultValue="price">
                       <TabsList className="grid w-full grid-cols-2">
                         <TabsTrigger value="price" className="text-xs sm:text-sm whitespace-normal h-auto py-2">Price Analysis</TabsTrigger>
@@ -366,7 +364,6 @@ const PSACardDetails: React.FC = () => {
                                 tickMargin={isMobile ? 18 : 5}
                                 tickSize={isMobile ? 5 : 10}
                                 tickFormatter={(value) => {
-                                  // Shorten grade text on mobile
                                   if (isMobile) {
                                     if (value === "Authentic") return "Auth";
                                     return value.replace("Grade ", "G");
@@ -378,7 +375,6 @@ const PSACardDetails: React.FC = () => {
                                 tickFormatter={(value) => formatChartCurrency(value)}
                                 width={isMobile ? 65 : 80}
                                 fontSize={isMobile ? 8 : 12}
-                                // Increase the number of ticks for better readability
                                 tickCount={isMobile ? 4 : 6}
                               />
                               <RechartsTooltip 
@@ -391,7 +387,7 @@ const PSACardDetails: React.FC = () => {
                                 dataKey="price" 
                                 name="Price" 
                                 fill="#ea384c" 
-                                label={{
+                                label={isMobile ? null : {
                                   position: 'top',
                                   formatter: (value: any) => {
                                     if (value >= 1000000) {
@@ -404,7 +400,7 @@ const PSACardDetails: React.FC = () => {
                                     }
                                     return value.toLocaleString();
                                   },
-                                  fontSize: isMobile ? 8 : 11,
+                                  fontSize: 11,
                                   fill: '#666',
                                   offset: 5,
                                 }}
@@ -464,7 +460,6 @@ const PSACardDetails: React.FC = () => {
                                 tickMargin={isMobile ? 18 : 5}
                                 tickSize={isMobile ? 5 : 10}
                                 tickFormatter={(value) => {
-                                  // Shorten grade text on mobile
                                   if (isMobile) {
                                     if (value === "Authentic") return "Auth";
                                     return value.replace("Grade ", "G");
@@ -476,7 +471,6 @@ const PSACardDetails: React.FC = () => {
                                 tickFormatter={(value) => formatChartNumber(value)}
                                 width={isMobile ? 65 : 80}
                                 fontSize={isMobile ? 8 : 12}
-                                // Increase the number of ticks for better readability
                                 tickCount={isMobile ? 4 : 6}
                               />
                               <RechartsTooltip 
@@ -489,7 +483,7 @@ const PSACardDetails: React.FC = () => {
                                 dataKey="population" 
                                 name="Population" 
                                 fill="#ea384c"
-                                label={{
+                                label={isMobile ? null : {
                                   position: 'top',
                                   formatter: (value: any) => {
                                     if (value >= 1000) {
@@ -497,7 +491,7 @@ const PSACardDetails: React.FC = () => {
                                     }
                                     return value;
                                   },
-                                  fontSize: isMobile ? 8 : 11,
+                                  fontSize: 11,
                                   fill: '#666',
                                   offset: 5,
                                 }}
