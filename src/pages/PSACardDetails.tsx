@@ -366,7 +366,7 @@ const PSACardDetails: React.FC = () => {
                                 tickFormatter={(value) => {
                                   if (isMobile) {
                                     if (value === "Authentic") return "Auth";
-                                    return value.replace("Grade ", "G");
+                                    return value.replace("Grade ", "");
                                   }
                                   return value;
                                 }}
@@ -462,7 +462,7 @@ const PSACardDetails: React.FC = () => {
                                 tickFormatter={(value) => {
                                   if (isMobile) {
                                     if (value === "Authentic") return "Auth";
-                                    return value.replace("Grade ", "G");
+                                    return value.replace("Grade ", "");
                                   }
                                   return value;
                                 }}
