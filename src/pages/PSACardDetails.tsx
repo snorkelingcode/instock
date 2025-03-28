@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -335,10 +336,11 @@ const PSACardDetails: React.FC = () => {
                 
                 <Card>
                   <CardContent className="pt-6">
+                    {/* Improved tab styling for mobile */}
                     <Tabs defaultValue="price">
                       <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="price">Price Analysis</TabsTrigger>
-                        <TabsTrigger value="population">Population Analysis</TabsTrigger>
+                        <TabsTrigger value="price" className="text-xs sm:text-sm whitespace-normal h-auto py-2">Price Analysis</TabsTrigger>
+                        <TabsTrigger value="population" className="text-xs sm:text-sm whitespace-normal h-auto py-2">Population Analysis</TabsTrigger>
                       </TabsList>
                       <TabsContent value="price">
                         <div className="h-[350px] mt-4">
@@ -347,32 +349,44 @@ const PSACardDetails: React.FC = () => {
                               data={priceComparisonData}
                               margin={{
                                 top: 20,
-                                right: 30,
-                                left: 20,
-                                bottom: isMobile ? 90 : 70,
+                                right: isMobile ? 10 : 30,
+                                left: isMobile ? 10 : 20,
+                                bottom: isMobile ? 100 : 70,
                               }}
-                              barSize={isMobile ? 20 : 30}
+                              barSize={isMobile ? 15 : 30}
                             >
                               <CartesianGrid strokeDasharray="3 3" />
                               <XAxis 
                                 dataKey="grade" 
                                 angle={-45} 
                                 textAnchor="end" 
-                                height={isMobile ? 90 : 80}
+                                height={isMobile ? 100 : 80}
                                 interval={0}
-                                fontSize={isMobile ? 10 : 12}
-                                tickMargin={isMobile ? 15 : 5}
+                                fontSize={isMobile ? 8 : 12}
+                                tickMargin={isMobile ? 18 : 5}
+                                tickSize={isMobile ? 5 : 10}
+                                tickFormatter={(value) => {
+                                  // Shorten grade text on mobile
+                                  if (isMobile) {
+                                    if (value === "Authentic") return "Auth";
+                                    return value.replace("Grade ", "G");
+                                  }
+                                  return value;
+                                }}
                               />
                               <YAxis 
                                 tickFormatter={(value) => formatChartCurrency(value)}
-                                width={isMobile ? 60 : 80}
-                                fontSize={isMobile ? 10 : 12}
+                                width={isMobile ? 65 : 80}
+                                fontSize={isMobile ? 8 : 12}
+                                // Increase the number of ticks for better readability
+                                tickCount={isMobile ? 4 : 6}
                               />
                               <RechartsTooltip 
                                 formatter={(value: any) => [`${formatCurrency(value)}`, 'Price']} 
                                 labelFormatter={(label) => `${label}`}
+                                contentStyle={{ fontSize: isMobile ? 10 : 12 }}
                               />
-                              <Legend />
+                              <Legend wrapperStyle={{ fontSize: isMobile ? 10 : 12 }}/>
                               <Bar 
                                 dataKey="price" 
                                 name="Price" 
@@ -380,15 +394,19 @@ const PSACardDetails: React.FC = () => {
                                 label={{
                                   position: 'top',
                                   formatter: (value: any) => {
+                                    if (value >= 1000000) {
+                                      return `$${Math.round(value / 1000000)}M`;
+                                    } 
                                     if (value >= 100000) {
-                                      return `${Math.round(value / 1000)}K`;
+                                      return `$${Math.round(value / 1000)}K`;
                                     } else if (value >= 1000) {
-                                      return `${(value / 1000).toFixed(1)}K`;
+                                      return `$${(value / 1000).toFixed(1)}K`;
                                     }
                                     return value.toLocaleString();
                                   },
-                                  fontSize: isMobile ? 9 : 11,
+                                  fontSize: isMobile ? 8 : 11,
                                   fill: '#666',
+                                  offset: 5,
                                 }}
                               />
                             </BarChart>
@@ -411,7 +429,7 @@ const PSACardDetails: React.FC = () => {
                                   <span className="truncate block" title={formatCurrency(card.price_10 - card.price_9)}>
                                     {formatCurrency(card.price_10 - card.price_9)}
                                   </span>
-                                  <span className="whitespace-nowrap">
+                                  <span className="whitespace-nowrap text-xs sm:text-sm">
                                     ({Math.round(((card.price_10 / card.price_9) - 1) * 100)}%)
                                   </span>
                                 </p>
@@ -429,41 +447,59 @@ const PSACardDetails: React.FC = () => {
                               data={populationComparisonData}
                               margin={{
                                 top: 20,
-                                right: 30,
-                                left: 20,
-                                bottom: isMobile ? 90 : 70,
+                                right: isMobile ? 10 : 30,
+                                left: isMobile ? 10 : 20,
+                                bottom: isMobile ? 100 : 70,
                               }}
-                              barSize={isMobile ? 20 : 30}
+                              barSize={isMobile ? 15 : 30}
                             >
                               <CartesianGrid strokeDasharray="3 3" />
                               <XAxis 
                                 dataKey="grade" 
                                 angle={-45} 
                                 textAnchor="end" 
-                                height={isMobile ? 90 : 80}
+                                height={isMobile ? 100 : 80}
                                 interval={0}
-                                fontSize={isMobile ? 10 : 12}
-                                tickMargin={isMobile ? 15 : 5}
+                                fontSize={isMobile ? 8 : 12}
+                                tickMargin={isMobile ? 18 : 5}
+                                tickSize={isMobile ? 5 : 10}
+                                tickFormatter={(value) => {
+                                  // Shorten grade text on mobile
+                                  if (isMobile) {
+                                    if (value === "Authentic") return "Auth";
+                                    return value.replace("Grade ", "G");
+                                  }
+                                  return value;
+                                }}
                               />
                               <YAxis 
                                 tickFormatter={(value) => formatChartNumber(value)}
-                                width={isMobile ? 60 : 80}
-                                fontSize={isMobile ? 10 : 12}
+                                width={isMobile ? 65 : 80}
+                                fontSize={isMobile ? 8 : 12}
+                                // Increase the number of ticks for better readability
+                                tickCount={isMobile ? 4 : 6}
                               />
                               <RechartsTooltip 
                                 formatter={(value: any) => [`${formatNumber(value)}`, 'Population']} 
                                 labelFormatter={(label) => `${label}`}
+                                contentStyle={{ fontSize: isMobile ? 10 : 12 }}
                               />
-                              <Legend />
+                              <Legend wrapperStyle={{ fontSize: isMobile ? 10 : 12 }}/>
                               <Bar 
                                 dataKey="population" 
                                 name="Population" 
-                                fill="#ea384c" 
+                                fill="#ea384c"
                                 label={{
                                   position: 'top',
-                                  formatter: (value: any) => formatNumber(value),
-                                  fontSize: isMobile ? 9 : 11,
+                                  formatter: (value: any) => {
+                                    if (value >= 1000) {
+                                      return `${Math.round(value / 1000)}K`;
+                                    }
+                                    return value;
+                                  },
+                                  fontSize: isMobile ? 8 : 11,
                                   fill: '#666',
+                                  offset: 5,
                                 }}
                               />
                             </BarChart>
