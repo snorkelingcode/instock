@@ -203,8 +203,8 @@ const PokemonSetDetails = () => {
         const typesSet = new Set<string>();
         
         sortedCards.forEach(card => {
-          if (card.rarity) raritiesSet.add(card.rarity);
-          if (card.types) card.types.forEach(type => typesSet.add(type));
+          if (card.rarity && card.rarity.trim() !== "") raritiesSet.add(card.rarity);
+          if (card.types) card.types.filter(type => type && type.trim() !== "").forEach(type => typesSet.add(type));
         });
         
         setUniqueRarities(Array.from(raritiesSet));

@@ -47,7 +47,7 @@ const PokemonSets = () => {
   useEffect(() => {
     if (sets && sets.length > 0) {
       const seriesArray = Array.from(new Set(sets.map(set => set.series))).sort();
-      setUniqueSeries(seriesArray);
+      setUniqueSeries(seriesArray.filter(series => series && series.trim() !== ""));
     }
   }, [sets]);
 

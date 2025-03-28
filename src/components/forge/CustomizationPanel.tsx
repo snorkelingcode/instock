@@ -60,7 +60,7 @@ const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
               <SelectValue placeholder="Select model type" />
             </SelectTrigger>
             <SelectContent>
-              {modelTypes.map((type) => (
+              {modelTypes.filter(type => type.trim() !== '').map((type) => (
                 <SelectItem key={type} value={type}>
                   {type.replace(/-/g, ' ')}
                 </SelectItem>
