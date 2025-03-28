@@ -323,9 +323,12 @@ export type Database = {
         Row: {
           card_image: string | null
           card_name: string
+          card_set: string | null
           created_at: string | null
+          franchise: string | null
           grading_service: string
           id: string
+          language: string | null
           market_cap: number | null
           population_1: number | null
           population_10: number | null
@@ -349,15 +352,20 @@ export type Database = {
           price_8: number | null
           price_9: number | null
           price_auth: number | null
+          series: string | null
           total_population: number | null
           updated_at: string | null
+          year: string | null
         }
         Insert: {
           card_image?: string | null
           card_name: string
+          card_set?: string | null
           created_at?: string | null
+          franchise?: string | null
           grading_service: string
           id?: string
+          language?: string | null
           market_cap?: number | null
           population_1?: number | null
           population_10?: number | null
@@ -381,15 +389,20 @@ export type Database = {
           price_8?: number | null
           price_9?: number | null
           price_auth?: number | null
+          series?: string | null
           total_population?: number | null
           updated_at?: string | null
+          year?: string | null
         }
         Update: {
           card_image?: string | null
           card_name?: string
+          card_set?: string | null
           created_at?: string | null
+          franchise?: string | null
           grading_service?: string
           id?: string
+          language?: string | null
           market_cap?: number | null
           population_1?: number | null
           population_10?: number | null
@@ -413,8 +426,10 @@ export type Database = {
           price_8?: number | null
           price_9?: number | null
           price_auth?: number | null
+          series?: string | null
           total_population?: number | null
           updated_at?: string | null
+          year?: string | null
         }
         Relationships: []
       }

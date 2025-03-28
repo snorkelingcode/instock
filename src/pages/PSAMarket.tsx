@@ -68,6 +68,20 @@ const SET_OPTIONS = {
   "One Piece": ["Romance Dawn", "Paramount War", "Pillars of Strength", "Kingdoms of Intrigue"]
 };
 
+// Update the constants section
+const SERIES_OPTIONS = {
+  "Pokemon": [
+    "Scarlet & Violet", 
+    "Sword & Shield", 
+    "Sun & Moon", 
+    "XY", 
+    "Black & White", 
+    "HeartGold & SoulSilver", 
+    "Platinum", 
+    "Diamond & Pearl"
+  ]
+};
+
 const generatePriceComparisonData = (card: MarketDataItem | null) => {
   if (!card) return [];
   
@@ -287,6 +301,7 @@ const PSAMarket: React.FC = () => {
     language: "any",
     year: "any",
     franchise: "any",
+    series: "any",
     set: "any"
   });
   const cardsPerPage = 15;
@@ -403,47 +418,56 @@ const PSAMarket: React.FC = () => {
       (card.population_auth || 0)
     );
   };
+
+  const handleFilterChange = (filterType: string, value: string) => {
+    setFilters(prev => ({ ...prev, [filterType]: value }));
+    
+    if (filterType === 'franchise') {
+      setFilters(prev => ({ 
+        ...prev, 
+        [filterType]: value, 
+        series: 'any',
+        set: 'any' 
+      }));
+    }
+  };
   
   const applyFilters = () => {
     let filtered = [...marketData];
     
     if (filters.language && filters.language !== "any") {
-      filtered = filtered.filter(card => {
-        return card.card_name?.includes(filters.language) || false;
-      });
+      filtered = filtered.filter(card => 
+        card.language === filters.language
+      );
     }
     
     if (filters.year && filters.year !== "any") {
-      filtered = filtered.filter(card => {
-        const cardYear = card.card_name?.includes(filters.year) || false;
-        return cardYear;
-      });
+      filtered = filtered.filter(card => 
+        card.year === filters.year
+      );
     }
     
     if (filters.franchise && filters.franchise !== "any") {
-      filtered = filtered.filter(card => {
-        return card.card_name?.includes(filters.franchise.split(" ")[0]) || false;
-      });
+      filtered = filtered.filter(card => 
+        card.franchise === filters.franchise
+      );
+    }
+    
+    if (filters.series && filters.series !== "any") {
+      filtered = filtered.filter(card => 
+        card.series === filters.series
+      );
     }
     
     if (filters.set && filters.set !== "any") {
-      filtered = filtered.filter(card => {
-        const cardSet = card.card_name?.includes(filters.set) || false;
-        return cardSet;
-      });
+      filtered = filtered.filter(card => 
+        card.card_set === filters.set
+      );
     }
     
     setFilteredData(filtered);
     setTotalCards(filtered.length);
     setCurrentPage(1);
-  };
-  
-  const handleFilterChange = (filterType: string, value: string) => {
-    setFilters(prev => ({ ...prev, [filterType]: value }));
-    
-    if (filterType === 'franchise') {
-      setFilters(prev => ({ ...prev, [filterType]: value, set: 'any' }));
-    }
   };
   
   const handleYearInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -516,7 +540,7 @@ const PSAMarket: React.FC = () => {
             <CardTitle className="text-lg">Filter Options</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="language-filter">Language</Label>
                 <Select 
@@ -528,14 +552,10 @@ const PSAMarket: React.FC = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="any">Any Language</SelectItem>
-                    {LANGUAGE_OPTIONS.filter(lang => lang && lang.trim() !== "").map(lang => (
-                      <SelectItem key={lang} value={lang}>{lang}</SelectItem>
-                    ))}
-                    {COMING_SOON_LANGUAGES.map(lang => (
-                      <SelectItem key={lang} value={`${lang}-disabled`} disabled>
-                        {lang} (Coming Soon)
-                      </SelectItem>
-                    ))}
+                    <SelectItem value="English">English</SelectItem>
+                    <SelectItem value="Japanese">Japanese</SelectItem>
+                    <SelectItem value="Chinese" disabled>Chinese (Coming Soon)</SelectItem>
+                    <SelectItem value="Korean" disabled>Korean (Coming Soon)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -546,8 +566,11 @@ const PSAMarket: React.FC = () => {
                   id="year-filter"
                   type="text"
                   placeholder="Enter year..."
-                  value={yearInput}
-                  onChange={handleYearInputChange}
+                  value={filters.year === "any" ? "" : filters.year}
+                  onChange={(e) => {
+                    const value = e.target.value || "any";
+                    handleFilterChange('year', value);
+                  }}
                 />
               </div>
               
@@ -562,14 +585,32 @@ const PSAMarket: React.FC = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="any">Any Franchise</SelectItem>
-                    <SelectItem value={GAME_CATEGORIES.POKEMON}>{GAME_CATEGORIES.POKEMON}</SelectItem>
-                    {Object.values(GAME_CATEGORIES)
-                      .filter(franchise => franchise !== GAME_CATEGORIES.POKEMON)
-                      .map(franchise => (
-                        <SelectItem key={franchise} value={`${franchise}-disabled`} disabled>
-                          {franchise} (Coming Soon)
-                        </SelectItem>
-                      ))}
+                    <SelectItem value="Pokemon">Pokemon</SelectItem>
+                    <SelectItem value="Magic The Gathering" disabled>Magic The Gathering (Coming Soon)</SelectItem>
+                    <SelectItem value="Yu-Gi-Oh!" disabled>Yu-Gi-Oh! (Coming Soon)</SelectItem>
+                    <SelectItem value="Disney Lorcana" disabled>Disney Lorcana (Coming Soon)</SelectItem>
+                    <SelectItem value="One Piece" disabled>One Piece (Coming Soon)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="series-filter">Series</Label>
+                <Select 
+                  value={filters.series} 
+                  onValueChange={(value) => handleFilterChange('series', value)}
+                  disabled={filters.franchise !== "Pokemon"}
+                >
+                  <SelectTrigger id="series-filter">
+                    <SelectValue placeholder="Select Series" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="any">Any Series</SelectItem>
+                    {filters.franchise === "Pokemon" && 
+                      SERIES_OPTIONS["Pokemon"].map(series => (
+                        <SelectItem key={series} value={series}>{series}</SelectItem>
+                      ))
+                    }
                   </SelectContent>
                 </Select>
               </div>
@@ -579,17 +620,19 @@ const PSAMarket: React.FC = () => {
                 <Select 
                   value={filters.set} 
                   onValueChange={(value) => handleFilterChange('set', value)}
-                  disabled={!filters.franchise || filters.franchise === "any" || filters.franchise !== GAME_CATEGORIES.POKEMON}
+                  disabled={filters.franchise !== "Pokemon"}
                 >
                   <SelectTrigger id="set-filter">
                     <SelectValue placeholder="Select Set" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="any">Any Set</SelectItem>
-                    {filters.franchise === GAME_CATEGORIES.POKEMON && 
-                      SET_OPTIONS[GAME_CATEGORIES.POKEMON]?.filter(set => set && set.trim() !== "").map(set => (
+                    {filters.franchise === "Pokemon" && SET_OPTIONS[GAME_CATEGORIES.POKEMON]
+                      ?.filter(set => set && set.trim() !== "")
+                      .map(set => (
                         <SelectItem key={set} value={set}>{set}</SelectItem>
-                      ))}
+                      ))
+                    }
                   </SelectContent>
                 </Select>
               </div>
