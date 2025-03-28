@@ -418,21 +418,18 @@ const PSACardDetails: React.FC = () => {
                                 {card.price_10 ? formatCurrency(card.price_10) : 'N/A'}
                               </p>
                             </div>
-                            <div>
-                              <p className="text-sm font-semibold">Price Difference (10 to 9)</p>
-                              {card.price_10 && card.price_9 ? (
-                                <p className="text-md">
-                                  <span className="truncate block" title={formatCurrency(card.price_10 - card.price_9)}>
-                                    {formatCurrency(card.price_10 - card.price_9)}
-                                  </span>
-                                  <span className="whitespace-nowrap text-xs sm:text-sm">
-                                    ({Math.round(((card.price_10 / card.price_9) - 1) * 100)}%)
-                                  </span>
-                                </p>
-                              ) : (
-                                <p className="text-md">N/A</p>
-                              )}
-                            </div>
+                            {card.price_10 && card.price_9 ? (
+                              <p className="text-md">
+                                <span className="truncate block" title={formatCurrency(card.price_10 - card.price_9)}>
+                                  {formatCurrency(card.price_10 - card.price_9)}
+                                </span>
+                                <span className="whitespace-nowrap text-xs sm:text-sm">
+                                  {` (${Math.round(((card.price_10 / card.price_9) - 1) * 100)}%)`}
+                                </span>
+                              </p>
+                            ) : (
+                              <p className="text-md">N/A</p>
+                            )}
                           </div>
                         </div>
                       </TabsContent>
