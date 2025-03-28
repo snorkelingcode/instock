@@ -169,7 +169,14 @@ const ManageMarket: React.FC = () => {
         data = await marketDataService.getMarketDataByGradingService(activeTab);
       }
       
-      setMarketData(data);
+      // Ensure all required calculated fields exist
+      const processedData = data.map(card => ({
+        ...card,
+        total_population: card.total_population || calculateTotalPopulation(card),
+        market_cap: card.market_cap || calculateMarketCap(card)
+      }));
+      
+      setMarketData(processedData);
     } catch (error) {
       console.error("Error fetching market data:", error);
       toast({
@@ -180,6 +187,42 @@ const ManageMarket: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Helper function to calculate total population
+  const calculateTotalPopulation = (card: MarketDataItem): number => {
+    return (
+      (card.population_10 || 0) +
+      (card.population_9 || 0) +
+      (card.population_8 || 0) +
+      (card.population_7 || 0) +
+      (card.population_6 || 0) +
+      (card.population_5 || 0) +
+      (card.population_4 || 0) +
+      (card.population_3 || 0) +
+      (card.population_2 || 0) +
+      (card.population_1 || 0) +
+      (card.population_auth || 0)
+    );
+  };
+
+  // Helper function to calculate market cap
+  const calculateMarketCap = (card: MarketDataItem): number => {
+    let totalValue = 0;
+    
+    if (card.population_10 && card.price_10) totalValue += card.population_10 * card.price_10;
+    if (card.population_9 && card.price_9) totalValue += card.population_9 * card.price_9;
+    if (card.population_8 && card.price_8) totalValue += card.population_8 * card.price_8;
+    if (card.population_7 && card.price_7) totalValue += card.population_7 * card.price_7;
+    if (card.population_6 && card.price_6) totalValue += card.population_6 * card.price_6;
+    if (card.population_5 && card.price_5) totalValue += card.population_5 * card.price_5;
+    if (card.population_4 && card.price_4) totalValue += card.population_4 * card.price_4;
+    if (card.population_3 && card.price_3) totalValue += card.population_3 * card.price_3;
+    if (card.population_2 && card.price_2) totalValue += card.population_2 * card.price_2;
+    if (card.population_1 && card.price_1) totalValue += card.population_1 * card.price_1;
+    if (card.population_auth && card.price_auth) totalValue += card.population_auth * card.price_auth;
+    
+    return totalValue;
   };
 
   const handleCreateSubmit = async (values: MarketDataFormValues) => {

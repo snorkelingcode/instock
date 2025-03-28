@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -50,6 +51,44 @@ const formatChartNumber = (value?: number) => {
     return `${(value / 1000).toFixed(1)}K`;
   }
   return value.toLocaleString();
+};
+
+// Helper function to calculate total population for a card
+const calculateTotalPopulation = (card: MarketDataItem): number => {
+  return (
+    (card.population_10 || 0) +
+    (card.population_9 || 0) +
+    (card.population_8 || 0) +
+    (card.population_7 || 0) +
+    (card.population_6 || 0) +
+    (card.population_5 || 0) +
+    (card.population_4 || 0) +
+    (card.population_3 || 0) +
+    (card.population_2 || 0) +
+    (card.population_1 || 0) +
+    (card.population_auth || 0)
+  );
+};
+
+// Helper function to calculate market cap
+const calculateMarketCap = (card: MarketDataItem): number => {
+  if (card.market_cap) return card.market_cap;
+  
+  let totalValue = 0;
+  
+  if (card.population_10 && card.price_10) totalValue += card.population_10 * card.price_10;
+  if (card.population_9 && card.price_9) totalValue += card.population_9 * card.price_9;
+  if (card.population_8 && card.price_8) totalValue += card.population_8 * card.price_8;
+  if (card.population_7 && card.price_7) totalValue += card.population_7 * card.price_7;
+  if (card.population_6 && card.price_6) totalValue += card.population_6 * card.price_6;
+  if (card.population_5 && card.price_5) totalValue += card.population_5 * card.price_5;
+  if (card.population_4 && card.price_4) totalValue += card.population_4 * card.price_4;
+  if (card.population_3 && card.price_3) totalValue += card.population_3 * card.price_3;
+  if (card.population_2 && card.price_2) totalValue += card.population_2 * card.price_2;
+  if (card.population_1 && card.price_1) totalValue += card.population_1 * card.price_1;
+  if (card.population_auth && card.price_auth) totalValue += card.population_auth * card.price_auth;
+  
+  return totalValue;
 };
 
 const getHighestPrice = (data: MarketDataItem): number | null => {
@@ -122,8 +161,15 @@ const PSACardDetails: React.FC = () => {
     if (!card && id) {
       fetchCardData(id);
     } else if (card) {
-      setPriceComparisonData(generatePriceComparisonData(card));
-      setPopulationComparisonData(generatePopulationComparisonData(card));
+      // Ensure card has total_population and market_cap
+      const enhancedCard = {
+        ...card,
+        total_population: card.total_population || calculateTotalPopulation(card),
+        market_cap: card.market_cap || calculateMarketCap(card)
+      };
+      setCard(enhancedCard);
+      setPriceComparisonData(generatePriceComparisonData(enhancedCard));
+      setPopulationComparisonData(generatePopulationComparisonData(enhancedCard));
     }
   }, [card, id]);
   
@@ -133,9 +179,16 @@ const PSACardDetails: React.FC = () => {
       const fetchedCard = await marketDataService.getMarketDataById(cardId);
       
       if (fetchedCard) {
-        setCard(fetchedCard);
-        setPriceComparisonData(generatePriceComparisonData(fetchedCard));
-        setPopulationComparisonData(generatePopulationComparisonData(fetchedCard));
+        // Ensure card has total_population and market_cap
+        const enhancedCard = {
+          ...fetchedCard,
+          total_population: fetchedCard.total_population || calculateTotalPopulation(fetchedCard),
+          market_cap: fetchedCard.market_cap || calculateMarketCap(fetchedCard)
+        };
+        
+        setCard(enhancedCard);
+        setPriceComparisonData(generatePriceComparisonData(enhancedCard));
+        setPopulationComparisonData(generatePopulationComparisonData(enhancedCard));
       } else {
         toast({
           title: "Error",
@@ -185,6 +238,11 @@ const PSACardDetails: React.FC = () => {
       </Layout>
     );
   }
+  
+  // Calculate gem rate safely
+  const gemRate = card.total_population && card.total_population > 0 && card.population_10
+    ? ((card.population_10 / card.total_population) * 100).toFixed(2)
+    : "0.00";
   
   return (
     <Layout>
@@ -324,7 +382,7 @@ const PSACardDetails: React.FC = () => {
                     </CardHeader>
                     <CardContent>
                       <div className="text-lg sm:text-xl lg:text-2xl font-bold">
-                        {((card.population_10 || 0) / (card.total_population || 1) * 100).toFixed(2)}%
+                        {gemRate}%
                       </div>
                       <p className="text-xs text-muted-foreground">
                         PSA 10 percentage
@@ -341,73 +399,79 @@ const PSACardDetails: React.FC = () => {
                         <TabsTrigger value="population" className="text-xs sm:text-sm whitespace-normal h-auto py-2">Population Analysis</TabsTrigger>
                       </TabsList>
                       <TabsContent value="price">
-                        <div className="h-[400px] w-full mt-4">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <BarChart
-                              data={priceComparisonData}
-                              margin={{
-                                top: 20,
-                                right: isMobile ? 5 : 20,
-                                left: isMobile ? 5 : 15,
-                                bottom: isMobile ? 100 : 70,
-                              }}
-                              barSize={isMobile ? 20 : 35}
-                            >
-                              <CartesianGrid strokeDasharray="3 3" />
-                              <XAxis 
-                                dataKey="grade" 
-                                angle={-45} 
-                                textAnchor="end" 
-                                height={isMobile ? 100 : 80}
-                                interval={0}
-                                fontSize={isMobile ? 8 : 12}
-                                tickMargin={isMobile ? 18 : 5}
-                                tickSize={isMobile ? 5 : 10}
-                                tickFormatter={(value) => {
-                                  if (isMobile) {
-                                    if (value === "Authentic") return "Auth";
-                                    return value.replace("Grade ", "");
-                                  }
-                                  return value;
+                        {priceComparisonData.length > 0 ? (
+                          <div className="h-[400px] w-full mt-4">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <BarChart
+                                data={priceComparisonData}
+                                margin={{
+                                  top: 20,
+                                  right: isMobile ? 5 : 20,
+                                  left: isMobile ? 5 : 15,
+                                  bottom: isMobile ? 100 : 70,
                                 }}
-                              />
-                              <YAxis 
-                                tickFormatter={(value) => formatChartCurrency(value)}
-                                width={isMobile ? 65 : 80}
-                                fontSize={isMobile ? 8 : 12}
-                                tickCount={isMobile ? 4 : 6}
-                              />
-                              <RechartsTooltip 
-                                formatter={(value: any) => [`${formatCurrency(value)}`, 'Price']} 
-                                labelFormatter={(label) => `${label}`}
-                                contentStyle={{ fontSize: isMobile ? 10 : 12 }}
-                              />
-                              <Legend wrapperStyle={{ fontSize: isMobile ? 10 : 12 }}/>
-                              <Bar 
-                                dataKey="price" 
-                                name="Price" 
-                                fill="#ea384c" 
-                                label={isMobile ? null : {
-                                  position: 'top',
-                                  formatter: (value: any) => {
-                                    if (value >= 1000000) {
-                                      return `$${Math.round(value / 1000000)}M`;
-                                    } 
-                                    if (value >= 100000) {
-                                      return `$${Math.round(value / 1000)}K`;
-                                    } else if (value >= 1000) {
-                                      return `$${(value / 1000).toFixed(1)}K`;
+                                barSize={isMobile ? 20 : 35}
+                              >
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis 
+                                  dataKey="grade" 
+                                  angle={-45} 
+                                  textAnchor="end" 
+                                  height={isMobile ? 100 : 80}
+                                  interval={0}
+                                  fontSize={isMobile ? 8 : 12}
+                                  tickMargin={isMobile ? 18 : 5}
+                                  tickSize={isMobile ? 5 : 10}
+                                  tickFormatter={(value) => {
+                                    if (isMobile) {
+                                      if (value === "Authentic") return "Auth";
+                                      return value.replace("Grade ", "");
                                     }
-                                    return value.toLocaleString();
-                                  },
-                                  fontSize: 11,
-                                  fill: '#666',
-                                  offset: 5,
-                                }}
-                              />
-                            </BarChart>
-                          </ResponsiveContainer>
-                        </div>
+                                    return value;
+                                  }}
+                                />
+                                <YAxis 
+                                  tickFormatter={(value) => formatChartCurrency(value)}
+                                  width={isMobile ? 65 : 80}
+                                  fontSize={isMobile ? 8 : 12}
+                                  tickCount={isMobile ? 4 : 6}
+                                />
+                                <RechartsTooltip 
+                                  formatter={(value: any) => [`${formatCurrency(value)}`, 'Price']} 
+                                  labelFormatter={(label) => `${label}`}
+                                  contentStyle={{ fontSize: isMobile ? 10 : 12 }}
+                                />
+                                <Legend wrapperStyle={{ fontSize: isMobile ? 10 : 12 }}/>
+                                <Bar 
+                                  dataKey="price" 
+                                  name="Price" 
+                                  fill="#ea384c" 
+                                  label={isMobile ? null : {
+                                    position: 'top',
+                                    formatter: (value: any) => {
+                                      if (value >= 1000000) {
+                                        return `$${Math.round(value / 1000000)}M`;
+                                      } 
+                                      if (value >= 100000) {
+                                        return `$${Math.round(value / 1000)}K`;
+                                      } else if (value >= 1000) {
+                                        return `$${(value / 1000).toFixed(1)}K`;
+                                      }
+                                      return value.toLocaleString();
+                                    },
+                                    fontSize: 11,
+                                    fill: '#666',
+                                    offset: 5,
+                                  }}
+                                />
+                              </BarChart>
+                            </ResponsiveContainer>
+                          </div>
+                        ) : (
+                          <div className="text-center py-12">
+                            <p>No price data available for this card.</p>
+                          </div>
+                        )}
                         
                         <div className="mt-6">
                           <h4 className="text-sm font-medium text-muted-foreground mb-2">Price Highlights</h4>
@@ -434,68 +498,74 @@ const PSACardDetails: React.FC = () => {
                         </div>
                       </TabsContent>
                       <TabsContent value="population">
-                        <div className="h-[400px] w-full mt-4">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <BarChart
-                              data={populationComparisonData}
-                              margin={{
-                                top: 20,
-                                right: isMobile ? 5 : 20,
-                                left: isMobile ? 5 : 15,
-                                bottom: isMobile ? 100 : 70,
-                              }}
-                              barSize={isMobile ? 20 : 35}
-                            >
-                              <CartesianGrid strokeDasharray="3 3" />
-                              <XAxis 
-                                dataKey="grade" 
-                                angle={-45} 
-                                textAnchor="end" 
-                                height={isMobile ? 100 : 80}
-                                interval={0}
-                                fontSize={isMobile ? 8 : 12}
-                                tickMargin={isMobile ? 18 : 5}
-                                tickSize={isMobile ? 5 : 10}
-                                tickFormatter={(value) => {
-                                  if (isMobile) {
-                                    if (value === "Authentic") return "Auth";
-                                    return value.replace("Grade ", "");
-                                  }
-                                  return value;
+                        {populationComparisonData.length > 0 ? (
+                          <div className="h-[400px] w-full mt-4">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <BarChart
+                                data={populationComparisonData}
+                                margin={{
+                                  top: 20,
+                                  right: isMobile ? 5 : 20,
+                                  left: isMobile ? 5 : 15,
+                                  bottom: isMobile ? 100 : 70,
                                 }}
-                              />
-                              <YAxis 
-                                tickFormatter={(value) => formatChartNumber(value)}
-                                width={isMobile ? 65 : 80}
-                                fontSize={isMobile ? 8 : 12}
-                                tickCount={isMobile ? 4 : 6}
-                              />
-                              <RechartsTooltip 
-                                formatter={(value: any) => [`${formatNumber(value)}`, 'Population']} 
-                                labelFormatter={(label) => `${label}`}
-                                contentStyle={{ fontSize: isMobile ? 10 : 12 }}
-                              />
-                              <Legend wrapperStyle={{ fontSize: isMobile ? 10 : 12 }}/>
-                              <Bar 
-                                dataKey="population" 
-                                name="Population" 
-                                fill="#ea384c"
-                                label={isMobile ? null : {
-                                  position: 'top',
-                                  formatter: (value: any) => {
-                                    if (value >= 1000) {
-                                      return `${Math.round(value / 1000)}K`;
+                                barSize={isMobile ? 20 : 35}
+                              >
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis 
+                                  dataKey="grade" 
+                                  angle={-45} 
+                                  textAnchor="end" 
+                                  height={isMobile ? 100 : 80}
+                                  interval={0}
+                                  fontSize={isMobile ? 8 : 12}
+                                  tickMargin={isMobile ? 18 : 5}
+                                  tickSize={isMobile ? 5 : 10}
+                                  tickFormatter={(value) => {
+                                    if (isMobile) {
+                                      if (value === "Authentic") return "Auth";
+                                      return value.replace("Grade ", "");
                                     }
                                     return value;
-                                  },
-                                  fontSize: 11,
-                                  fill: '#666',
-                                  offset: 5,
-                                }}
-                              />
-                            </BarChart>
-                          </ResponsiveContainer>
-                        </div>
+                                  }}
+                                />
+                                <YAxis 
+                                  tickFormatter={(value) => formatChartNumber(value)}
+                                  width={isMobile ? 65 : 80}
+                                  fontSize={isMobile ? 8 : 12}
+                                  tickCount={isMobile ? 4 : 6}
+                                />
+                                <RechartsTooltip 
+                                  formatter={(value: any) => [`${formatNumber(value)}`, 'Population']} 
+                                  labelFormatter={(label) => `${label}`}
+                                  contentStyle={{ fontSize: isMobile ? 10 : 12 }}
+                                />
+                                <Legend wrapperStyle={{ fontSize: isMobile ? 10 : 12 }}/>
+                                <Bar 
+                                  dataKey="population" 
+                                  name="Population" 
+                                  fill="#ea384c"
+                                  label={isMobile ? null : {
+                                    position: 'top',
+                                    formatter: (value: any) => {
+                                      if (value >= 1000) {
+                                        return `${Math.round(value / 1000)}K`;
+                                      }
+                                      return value;
+                                    },
+                                    fontSize: 11,
+                                    fill: '#666',
+                                    offset: 5,
+                                  }}
+                                />
+                              </BarChart>
+                            </ResponsiveContainer>
+                          </div>
+                        ) : (
+                          <div className="text-center py-12">
+                            <p>No population data available for this card.</p>
+                          </div>
+                        )}
                         
                         <div className="mt-6">
                           <h4 className="text-sm font-medium text-muted-foreground mb-2">Population Highlights</h4>
@@ -511,17 +581,15 @@ const PSACardDetails: React.FC = () => {
                                 }, 10);
                                 
                                 return (
-                                  <p className="text-md break-words">
+                                  <p className="text-md">
                                     Grade {highestGrade} ({formatNumber(card[`population_${highestGrade}` as keyof MarketDataItem] as number)})
                                   </p>
                                 );
                               })()}
                             </div>
                             <div>
-                              <p className="text-sm font-semibold">Population Ratio (Gem Mint/Total)</p>
-                              <p className="text-md">
-                                {(((card.population_10 || 0) / (card.total_population || 1)) * 100).toFixed(2)}%
-                              </p>
+                              <p className="text-sm font-semibold">PSA 10 Percentage</p>
+                              <p className="text-md">{gemRate}%</p>
                             </div>
                           </div>
                         </div>
