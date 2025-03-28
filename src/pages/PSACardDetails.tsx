@@ -341,17 +341,17 @@ const PSACardDetails: React.FC = () => {
                         <TabsTrigger value="population" className="text-xs sm:text-sm whitespace-normal h-auto py-2">Population Analysis</TabsTrigger>
                       </TabsList>
                       <TabsContent value="price">
-                        <div className="h-[350px] mt-4">
+                        <div className="h-[400px] w-full mt-4">
                           <ResponsiveContainer width="100%" height="100%">
                             <BarChart
                               data={priceComparisonData}
                               margin={{
                                 top: 20,
-                                right: isMobile ? 10 : 30,
-                                left: isMobile ? 10 : 20,
+                                right: isMobile ? 5 : 20,
+                                left: isMobile ? 5 : 15,
                                 bottom: isMobile ? 100 : 70,
                               }}
-                              barSize={isMobile ? 15 : 30}
+                              barSize={isMobile ? 20 : 35}
                             >
                               <CartesianGrid strokeDasharray="3 3" />
                               <XAxis 
@@ -437,17 +437,17 @@ const PSACardDetails: React.FC = () => {
                         </div>
                       </TabsContent>
                       <TabsContent value="population">
-                        <div className="h-[350px] mt-4">
+                        <div className="h-[400px] w-full mt-4">
                           <ResponsiveContainer width="100%" height="100%">
                             <BarChart
                               data={populationComparisonData}
                               margin={{
                                 top: 20,
-                                right: isMobile ? 10 : 30,
-                                left: isMobile ? 10 : 20,
+                                right: isMobile ? 5 : 20,
+                                left: isMobile ? 5 : 15,
                                 bottom: isMobile ? 100 : 70,
                               }}
-                              barSize={isMobile ? 15 : 30}
+                              barSize={isMobile ? 20 : 35}
                             >
                               <CartesianGrid strokeDasharray="3 3" />
                               <XAxis 
