@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -598,7 +599,7 @@ const ArticleEditor = () => {
             </Select>
           </div>
           
-          <div className="flex space-x-8">
+          <div className="flex items-center space-x-6">
             <div className="flex items-center space-x-2">
               <Checkbox 
                 id="featured" 
@@ -607,7 +608,7 @@ const ArticleEditor = () => {
                   handleCheckboxChange('featured', checked === true)
                 }
               />
-              <Label htmlFor="featured">Featured Article</Label>
+              <Label htmlFor="featured" className="cursor-pointer">Featured Article</Label>
             </div>
             
             <div className="flex items-center space-x-2">
@@ -618,10 +619,11 @@ const ArticleEditor = () => {
                   handleCheckboxChange('published', checked === true)
                 }
               />
-              <Label htmlFor="published">Publish Article</Label>
+              <Label htmlFor="published" className="cursor-pointer">Publish Article</Label>
             </div>
           </div>
         </CardContent>
+        
         <CardFooter className="flex justify-between">
           <Button 
             type="button" 
@@ -630,11 +632,8 @@ const ArticleEditor = () => {
           >
             Cancel
           </Button>
-          <Button 
-            type="submit" 
-            disabled={isSaving}
-          >
-            {isSaving ? 'Saving...' : (isEditing ? 'Update Article' : 'Create Article')}
+          <Button type="submit" disabled={isSaving}>
+            {isSaving ? 'Saving...' : isEditing ? 'Update Article' : 'Create Article'}
           </Button>
         </CardFooter>
       </form>

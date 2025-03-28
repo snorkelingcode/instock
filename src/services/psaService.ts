@@ -139,9 +139,14 @@ export const psaService = {
       language: params.language || "English"
     };
     
-    // Create query string from params
-    const queryParams = Object.entries(searchParams)
-      .filter(([_, value]) => value !== undefined && value !== "")
+    // Filter out undefined, null, and empty string values
+    const filteredParams = Object.fromEntries(
+      Object.entries(searchParams)
+        .filter(([_, value]) => value !== undefined && value !== null && value !== "")
+    );
+    
+    // Create query string from filtered params
+    const queryParams = Object.entries(filteredParams)
       .map(([key, value]) => `${key}=${encodeURIComponent(String(value))}`)
       .join("&");
     
