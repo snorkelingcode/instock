@@ -108,6 +108,7 @@ serve(async (req) => {
       sender_name: senderName,
       recipient: recipient,
       attachment_urls: attachmentUrls,
+      status: 'new'  // Explicitly set status to 'new'
     }).select();
 
     if (error) {
