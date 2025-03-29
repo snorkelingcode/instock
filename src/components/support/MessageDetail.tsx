@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
@@ -59,7 +58,6 @@ export const MessageDetail = ({ message, onClose, onStatusChange }: MessageDetai
   const { user } = useAuth();
   const { toast } = useToast();
 
-  // Format date for display
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
@@ -71,13 +69,26 @@ export const MessageDetail = ({ message, onClose, onStatusChange }: MessageDetai
       minute: '2-digit'
     });
   };
-  
-  // Get responses on component mount
+
+  const getBadgeVariant = (status: 'new' | 'read' | 'replied' | 'archived') => {
+    switch (status) {
+      case 'new':
+        return 'default';
+      case 'read':
+        return 'secondary';
+      case 'replied':
+        return 'secondary';
+      case 'archived':
+        return 'outline';
+      default:
+        return 'default';
+    }
+  };
+
   useEffect(() => {
     fetchResponses();
   }, [message.id]);
 
-  // Fetch responses from the database
   const fetchResponses = async () => {
     setIsLoadingResponses(true);
     try {
@@ -101,7 +112,6 @@ export const MessageDetail = ({ message, onClose, onStatusChange }: MessageDetai
     }
   };
 
-  // Handle sending a reply
   const handleSendReply = async () => {
     if (!replyContent.trim() || !user) return;
     
@@ -139,7 +149,6 @@ export const MessageDetail = ({ message, onClose, onStatusChange }: MessageDetai
     }
   };
 
-  // Handle archiving the message
   const handleArchive = async () => {
     try {
       const { error } = await supabase
@@ -168,7 +177,6 @@ export const MessageDetail = ({ message, onClose, onStatusChange }: MessageDetai
 
   return (
     <div className="h-full flex flex-col">
-      {/* Header */}
       <div className="p-4 border-b flex justify-between items-center bg-gray-50">
         <div className="flex items-center">
           <Button 
@@ -207,7 +215,6 @@ export const MessageDetail = ({ message, onClose, onStatusChange }: MessageDetai
         </div>
       </div>
       
-      {/* Message Content */}
       <div className="flex-1 overflow-auto">
         <div className="p-6 border-b">
           <div className="flex justify-between items-start mb-4">
@@ -226,11 +233,7 @@ export const MessageDetail = ({ message, onClose, onStatusChange }: MessageDetai
                 <CalendarDays className="h-3 w-3 mr-1" />
                 {formatDate(message.created_at)}
               </div>
-              <Badge variant={
-                message.status === 'new' ? 'default' : 
-                message.status === 'read' ? 'secondary' : 
-                message.status === 'replied' ? 'success' : 'outline'
-              }>
+              <Badge variant={getBadgeVariant(message.status)}>
                 {message.status.charAt(0).toUpperCase() + message.status.slice(1)}
               </Badge>
             </div>
@@ -270,7 +273,6 @@ export const MessageDetail = ({ message, onClose, onStatusChange }: MessageDetai
           )}
         </div>
 
-        {/* Responses */}
         {isLoadingResponses ? (
           <div className="p-6 flex justify-center">
             <LoadingSpinner />
@@ -305,7 +307,6 @@ export const MessageDetail = ({ message, onClose, onStatusChange }: MessageDetai
         ) : null}
       </div>
       
-      {/* Reply Form */}
       <div className="p-4 border-t bg-gray-50">
         <div className="mb-2">
           <label htmlFor="reply" className="text-sm font-medium">

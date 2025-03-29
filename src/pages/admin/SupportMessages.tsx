@@ -36,7 +36,7 @@ const SupportMessages = () => {
   const [selectedMessage, setSelectedMessage] = useState<SupportMessage | null>(null);
   const { toast } = useToast();
 
-  const fetchMessages = async (status: string | null) => {
+  const fetchMessages = async (status: 'new' | 'read' | 'replied' | 'archived' | null) => {
     const { data, error } = await supabase.rpc('get_support_messages', { 
       _status: status,
       _limit: 100,
@@ -49,7 +49,7 @@ const SupportMessages = () => {
 
   const { data: messages, isLoading, error, refetch } = useQuery({
     queryKey: ['support-messages', activeTab],
-    queryFn: () => fetchMessages(activeTab !== 'all' ? activeTab : null),
+    queryFn: () => fetchMessages(activeTab !== 'all' ? activeTab as 'new' | 'read' | 'replied' | 'archived' : null),
   });
 
   const refreshMessages = () => {

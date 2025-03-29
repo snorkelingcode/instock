@@ -21,8 +21,7 @@ admin_email = "noreply@tcgupdates.com"
 host = "smtp.sendgrid.net"
 port = 587
 user = "apikey"
-# Password is intentionally omitted as it should be configured via the Supabase dashboard
-# instead of in the config file
+pass = "SMTP_PASSWORD_PLACEHOLDER" # Replace this with your actual SMTP password
 
 [auth.external.apple]
 enabled = false
