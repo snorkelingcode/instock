@@ -56,7 +56,7 @@ const FeaturedNews = ({
         {/* Image/Video Section - Takes up left side on desktop */}
         {(image || youtubeThumbnail) && (
           <div 
-            className="md:w-2/5 h-48 md:h-auto relative overflow-hidden bg-red-50 cursor-pointer"
+            className="md:w-2/5 h-40 md:h-auto relative overflow-hidden bg-red-50 cursor-pointer"
             onClick={handleReadClick}
             role="button"
             aria-label={`View featured article: ${title}`}
@@ -69,8 +69,8 @@ const FeaturedNews = ({
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="bg-red-600 bg-opacity-80 rounded-full w-16 h-16 flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" className="w-8 h-8">
+                  <div className="bg-red-600 bg-opacity-80 rounded-full w-12 h-12 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" className="w-6 h-6">
                       <path d="M8 5v14l11-7z" />
                     </svg>
                   </div>
@@ -87,32 +87,32 @@ const FeaturedNews = ({
         )}
 
         {/* Content Section - Takes up right side on desktop */}
-        <div className="p-4 md:w-3/5">
+        <div className="p-3 md:w-3/5">
           <div className="flex justify-between items-start mb-2">
             <Badge variant="default" className="font-medium">{category}</Badge>
             <Badge className="bg-red-500 hover:bg-red-600">Featured Story</Badge>
           </div>
-          <h2 className="text-xl font-bold mb-2">{title}</h2>
-          <div className="flex items-center text-gray-500 mb-3">
+          <h2 className="text-lg font-bold mb-1">{title}</h2>
+          <div className="flex items-center text-gray-500 mb-2">
             <CalendarIcon className="h-4 w-4 mr-2" />
-            <span>{date}</span>
+            <span className="text-sm">{date}</span>
           </div>
-          <div className="prose max-w-none text-gray-700 text-sm leading-relaxed mb-3">
+          <div className="prose max-w-none text-gray-700 text-sm leading-relaxed mb-2">
             <p>{excerpt}</p>
           </div>
-          <div className="flex items-center justify-between">
-            <Button variant="ghost" className="p-0 hover:bg-transparent text-red-600" onClick={handleReadClick}>
-              Read Full Article <ArrowRight className="ml-1 h-4 w-4" />
+          <div className="flex items-center justify-between mt-1">
+            <Button variant="ghost" className="p-0 hover:bg-transparent text-red-600 text-sm" onClick={handleReadClick}>
+              Read Full Article <ArrowRight className="ml-1 h-3 w-3" />
             </Button>
             <Button 
               variant="ghost" 
               size="sm" 
-              className="text-gray-600" 
+              className="text-gray-600 h-7" 
               onClick={handleReadAloudClick}
               aria-label="Read article aloud"
             >
-              <Volume2 className="h-4 w-4 mr-1" />
-              <span className="text-xs">Read Aloud</span>
+              <Volume2 className="h-3 w-3 mr-1" />
+              <span className="text-xs">Read</span>
             </Button>
           </div>
         </div>

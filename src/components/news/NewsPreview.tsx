@@ -61,7 +61,7 @@ const NewsPreview = ({
       aria-label={`View article: ${title}`}
     >
       {(image || youtubeThumbnail) && (
-        <div className="w-full h-40 overflow-hidden rounded-t-lg relative">
+        <div className="w-full h-36 overflow-hidden rounded-t-lg relative">
           {mediaType === 'video' && youtubeId ? (
             <div className="relative w-full h-full">
               <img 
@@ -70,8 +70,8 @@ const NewsPreview = ({
                 className="w-full h-full object-cover transition-transform hover:scale-105"
               />
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="bg-red-600 bg-opacity-80 rounded-full w-12 h-12 flex items-center justify-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" className="w-6 h-6">
+                <div className="bg-red-600 bg-opacity-80 rounded-full w-10 h-10 flex items-center justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" className="w-5 h-5">
                     <path d="M8 5v14l11-7z" />
                   </svg>
                 </div>
@@ -86,23 +86,23 @@ const NewsPreview = ({
           )}
         </div>
       )}
-      <CardHeader className="pb-2 pt-3">
+      <CardHeader className="pb-1 pt-2">
         <div className="flex justify-between items-start mb-1">
           <Badge variant={category === 'Product News' ? 'default' : category === 'Release Dates' ? 'secondary' : 'outline'}>
             {category}
           </Badge>
           {featured && <Badge className="bg-red-500">Featured</Badge>}
         </div>
-        <CardTitle className="text-lg">{title}</CardTitle>
+        <CardTitle className="text-md">{title}</CardTitle>
         <CardDescription className="text-gray-500 text-xs">{date}</CardDescription>
       </CardHeader>
       <CardContent className="flex-grow py-1">
-        <p className="text-gray-700 text-sm line-clamp-3">{excerpt}</p>
+        <p className="text-gray-700 text-sm line-clamp-2">{excerpt}</p>
       </CardContent>
-      <CardFooter className="flex justify-between items-center pt-1 pb-3">
+      <CardFooter className="flex justify-between items-center pt-1 pb-2">
         <Button 
           variant="ghost" 
-          className="p-0 hover:bg-transparent text-red-600 text-sm" 
+          className="p-0 hover:bg-transparent text-red-600 text-xs" 
           onClick={(e) => {
             e.stopPropagation(); // Prevent triggering the card click
             handleReadClick();
@@ -113,7 +113,7 @@ const NewsPreview = ({
         <Button 
           variant="ghost" 
           size="sm" 
-          className="text-gray-600 h-7" 
+          className="text-gray-600 h-6" 
           onClick={handleReadAloudClick}
           aria-label="Read article aloud"
         >
