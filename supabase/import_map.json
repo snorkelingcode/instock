@@ -1,9 +1,8 @@
 
 {
   "imports": {
-    "std/": "https://deno.land/std@0.177.0/",
-    "xhr/": "https://deno.land/x/xhr@0.3.0/",
-    "postgres": "https://deno.land/x/postgres@v0.17.0/mod.ts",
-    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.7.1"
+    "std/": "https://deno.land/std@0.168.0/",
+    "supabase": "https://esm.sh/@supabase/supabase-js@2",
+    "smtp": "https://deno.land/x/smtp@v0.7.0/mod.ts"
   }
 }

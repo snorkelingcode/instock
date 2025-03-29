@@ -78,3 +78,6 @@ enabled = false
 enabled = true
 client_id = "email"
 secret = "email"
+
+[functions]
+import_map_path = "supabase/import_map.json"
