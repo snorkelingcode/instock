@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -310,11 +311,11 @@ const Auth: React.FC = () => {
                   <CardFooter className="flex justify-center text-sm text-gray-500 mt-4">
                     <p>
                       By signing up, you agree to our{' '}
-                      <Link to="/terms-of-service" className="underline hover:text-primary">
+                      <Link to="/terms" className="underline hover:text-primary">
                         Terms of Service
                       </Link>{' '}
                       and{' '}
-                      <Link to="/privacy-policy" className="underline hover:text-primary">
+                      <Link to="/privacy" className="underline hover:text-primary">
                         Privacy Policy
                       </Link>
                     </p>
