@@ -76,3 +76,5 @@ enabled = false
 
 [auth.external.email]
 enabled = true
+client_id = "email"
+secret = "email"
