@@ -29,13 +29,24 @@ const RecentTCGSets = () => {
     setLoading(true);
     try {
       const { data, error } = await supabase
-        .from('tcg_recent_releases')
+        .from('pokemon_recent_releases')
         .select('*')
         .order('release_date', { ascending: false })
         .limit(4);
       
       if (error) throw error;
-      setRecentSets(data || []);
+      
+      // Transform the data to match TCGRelease interface
+      const transformedData: TCGRelease[] = data?.map(item => ({
+        id: item.id,
+        name: item.name,
+        release_date: item.release_date,
+        image_url: item.image_url,
+        popularity: item.popularity,
+        game: 'Pokémon'
+      })) || [];
+      
+      setRecentSets(transformedData);
     } catch (error) {
       console.error('Error fetching recent TCG sets:', error);
     } finally {
