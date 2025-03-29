@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -52,27 +51,20 @@ import {
 
 const formatCurrency = (value?: number) => {
   if (value === undefined || value === null) return "N/A";
-  if (value < 1000) {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      maximumFractionDigits: 0
-    }).format(value);
-  }
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
+    maximumFractionDigits: 0
   }).format(value);
 };
 
 const formatChartCurrency = (value?: number) => {
   if (value === undefined || value === null) return "N/A";
-  if (value >= 100000) {
-    return `$${Math.round(value / 1000)}K`;
-  } else if (value >= 1000) {
-    return `$${(value / 1000).toFixed(2)}K`;
-  }
-  return `$${Math.round(value)}`;
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 0
+  }).format(value);
 };
 
 const formatNumber = (value?: number) => {
@@ -182,7 +174,6 @@ const getHighestPrice = (data: MarketDataItem): number | null => {
   return priceList.length > 0 ? Math.max(...priceList) : null;
 };
 
-// Move calculateTotalPopulation before it's used in calculateGemRate
 const calculateTotalPopulation = (data: MarketDataItem): number => {
   return (
     (data.population_10 || 0) +
