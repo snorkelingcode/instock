@@ -890,6 +890,95 @@ export type Database = {
         }
         Relationships: []
       }
+      support_messages: {
+        Row: {
+          attachment_urls: string[] | null
+          body: string
+          created_at: string
+          html_body: string | null
+          id: string
+          read_at: string | null
+          recipient: string
+          sender_email: string
+          sender_name: string | null
+          status: Database["public"]["Enums"]["message_status"]
+          subject: string
+          thread_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          attachment_urls?: string[] | null
+          body: string
+          created_at?: string
+          html_body?: string | null
+          id?: string
+          read_at?: string | null
+          recipient: string
+          sender_email: string
+          sender_name?: string | null
+          status?: Database["public"]["Enums"]["message_status"]
+          subject: string
+          thread_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          attachment_urls?: string[] | null
+          body?: string
+          created_at?: string
+          html_body?: string | null
+          id?: string
+          read_at?: string | null
+          recipient?: string
+          sender_email?: string
+          sender_name?: string | null
+          status?: Database["public"]["Enums"]["message_status"]
+          subject?: string
+          thread_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      support_responses: {
+        Row: {
+          attachment_urls: string[] | null
+          body: string
+          delivery_status: string | null
+          html_body: string | null
+          id: string
+          message_id: string
+          sent_at: string
+          sent_by: string
+        }
+        Insert: {
+          attachment_urls?: string[] | null
+          body: string
+          delivery_status?: string | null
+          html_body?: string | null
+          id?: string
+          message_id: string
+          sent_at?: string
+          sent_by: string
+        }
+        Update: {
+          attachment_urls?: string[] | null
+          body?: string
+          delivery_status?: string | null
+          html_body?: string | null
+          id?: string
+          message_id?: string
+          sent_at?: string
+          sent_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_responses_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "support_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tcg_download_jobs: {
         Row: {
           completed_at: string | null
@@ -1339,6 +1428,30 @@ export type Database = {
           published_at: string
         }[]
       }
+      get_support_messages: {
+        Args: {
+          _status?: Database["public"]["Enums"]["message_status"]
+          _recipient?: string
+          _limit?: number
+          _offset?: number
+        }
+        Returns: {
+          id: string
+          subject: string
+          body: string
+          html_body: string
+          sender_email: string
+          sender_name: string
+          recipient: string
+          status: Database["public"]["Enums"]["message_status"]
+          thread_id: string
+          created_at: string
+          updated_at: string
+          read_at: string
+          attachment_urls: string[]
+          response_count: number
+        }[]
+      }
       gtrgm_compress: {
         Args: {
           "": unknown
@@ -1411,6 +1524,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
+      message_status: "new" | "read" | "replied" | "archived"
       model_category: "display" | "holder" | "marker" | "promotional" | "other"
     }
     CompositeTypes: {

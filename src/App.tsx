@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -32,6 +33,7 @@ import UserManagement from "./pages/admin/UserManagement";
 import PSAMarket from "./pages/PSAMarket";
 import PSACardDetails from "./pages/PSACardDetails";
 import ManageMarket from "./pages/admin/ManageMarket";
+import SupportMessages from "./pages/admin/SupportMessages";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -156,6 +158,15 @@ const App = () => {
                 element={
                   <RequireAdmin>
                     <ManageModels />
+                  </RequireAdmin>
+                } 
+              />
+              
+              <Route 
+                path="/admin/support" 
+                element={
+                  <RequireAdmin>
+                    <SupportMessages />
                   </RequireAdmin>
                 } 
               />

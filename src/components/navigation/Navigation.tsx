@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -14,7 +13,7 @@ import {
   SheetTrigger,
   SheetClose,
 } from "@/components/ui/sheet";
-import { X, Menu } from "lucide-react";
+import { X, Menu, MessageSquare } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -178,6 +177,15 @@ const Navigation = () => {
                         </SheetClose>
                         <SheetClose asChild>
                           <Link
+                            to="/admin/support"
+                            className="py-3 px-6 text-red-600 font-medium border-b border-gray-200 hover:bg-red-50 transition-colors text-left"
+                          >
+                            <MessageSquare className="h-4 w-4 mr-2 inline-block" />
+                            Support Messages
+                          </Link>
+                        </SheetClose>
+                        <SheetClose asChild>
+                          <Link
                             to="/sets/sync"
                             className="py-3 px-6 text-red-600 font-medium border-b border-gray-200 hover:bg-red-50 transition-colors text-left"
                           >
@@ -283,6 +291,12 @@ const Navigation = () => {
                     <DropdownMenuItem>
                       <Link to="/admin/manage-market" className="w-full">
                         Manage Market Data
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                      <Link to="/admin/support" className="w-full">
+                        <MessageSquare className="h-4 w-4 mr-2 inline-block" />
+                        Support Messages
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem>
