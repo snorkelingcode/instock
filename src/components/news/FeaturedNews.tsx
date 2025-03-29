@@ -52,10 +52,11 @@ const FeaturedNews = ({
   
   return (
     <div className="bg-white rounded-lg shadow-md border border-red-200 overflow-hidden">
-      <div className="md:flex">
+      {/* Using a more horizontal layout with larger images */}
+      <div className="flex flex-col">
         {(image || youtubeThumbnail) && (
           <div 
-            className="md:w-2/5 h-48 md:h-auto relative overflow-hidden bg-red-50 cursor-pointer"
+            className="w-full h-64 sm:h-80 relative overflow-hidden bg-red-50 cursor-pointer"
             onClick={handleReadClick}
             role="button"
             aria-label={`View featured article: ${title}`}
@@ -68,8 +69,8 @@ const FeaturedNews = ({
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="bg-red-600 bg-opacity-80 rounded-full w-12 h-12 flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" className="w-6 h-6">
+                  <div className="bg-red-600 bg-opacity-80 rounded-full w-16 h-16 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" className="w-8 h-8">
                       <path d="M8 5v14l11-7z" />
                     </svg>
                   </div>
@@ -84,17 +85,17 @@ const FeaturedNews = ({
             )}
           </div>
         )}
-        <div className={`p-5 ${(image || youtubeThumbnail) ? 'md:w-3/5' : 'w-full'}`}>
-          <div className="flex justify-between items-start mb-2">
+        <div className="p-6">
+          <div className="flex justify-between items-start mb-3">
             <Badge variant="default" className="font-medium">{category}</Badge>
             <Badge className="bg-red-500 hover:bg-red-600">Featured Story</Badge>
           </div>
-          <h2 className="text-xl font-bold mb-2">{title}</h2>
-          <div className="flex items-center text-gray-500 mb-3">
+          <h2 className="text-2xl font-bold mb-3">{title}</h2>
+          <div className="flex items-center text-gray-500 mb-4">
             <CalendarIcon className="h-4 w-4 mr-2" />
             <span>{date}</span>
           </div>
-          <div className="prose max-w-none text-gray-700 leading-relaxed mb-3 line-clamp-2">
+          <div className="prose max-w-none text-gray-700 leading-relaxed mb-4">
             <p>{excerpt}</p>
           </div>
           <div className="flex items-center justify-between">

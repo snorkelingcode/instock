@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -26,8 +25,7 @@ import RequireAdmin from "./components/auth/RequireAdmin";
 import PokemonSets from "./pages/TCGSets/PokemonSets";
 import PokemonSetDetails from "./pages/TCGSets/PokemonSetDetails";
 import SetSyncPage from "./pages/TCGSets/SetSyncPage";
-import ManageTCGReleases from "./pages/admin/ManagePokemonReleases";
-// import Forge from "./pages/Forge"; // Temporarily disabled
+import ManageTCGReleases from "./pages/admin/ManageTCGReleases";
 import ManageModels from "./pages/admin/ManageModels";
 import ManageProducts from "./pages/admin/ManageProducts";
 import UserManagement from "./pages/admin/UserManagement";
@@ -35,18 +33,13 @@ import PSAMarket from "./pages/PSAMarket";
 import PSACardDetails from "./pages/PSACardDetails";
 import ManageMarket from "./pages/admin/ManageMarket";
 
-// Configure React Query with caching
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // Keep cached data for 15 minutes by default
       staleTime: 15 * 60 * 1000,
-      // Retry failed requests 3 times
       retry: 3,
-      // Don't refetch on window focus if data is fresh
       refetchOnWindowFocus: false,
-      // Cache query results even if component unmounts
-      gcTime: 30 * 60 * 1000, // Changed from cacheTime to gcTime
+      gcTime: 30 * 60 * 1000,
     },
   },
 });
@@ -66,13 +59,13 @@ const App = () => {
               <Route path="/products" element={<PageCacheWrapper><Products /></PageCacheWrapper>} />
               <Route path="/news" element={<PageCacheWrapper><News /></PageCacheWrapper>} />
               <Route path="/market" element={<PageCacheWrapper><PSAMarket /></PageCacheWrapper>} />
-              <Route path="/psa-market" element={<PageCacheWrapper><PSAMarket /></PageCacheWrapper>} /> {/* Keep both routes for backward compatibility */}
+              <Route path="/psa-market" element={<PageCacheWrapper><PSAMarket /></PageCacheWrapper>} />
               <Route path="/psa-market/:id" element={<PageCacheWrapper><PSACardDetails /></PageCacheWrapper>} />
               <Route path="/article/:id" element={<PageCacheWrapper><ArticleDetails /></PageCacheWrapper>} />
               <Route path="/privacy" element={<PageCacheWrapper><PrivacyPolicy /></PageCacheWrapper>} />
               <Route path="/terms" element={<PageCacheWrapper><TermsOfService /></PageCacheWrapper>} />
               <Route path="/cookies" element={<PageCacheWrapper><CookiePolicy /></PageCacheWrapper>} />
-              <Route path="/auth" element={<Auth />} /> {/* No cache wrapper for auth page */}
+              <Route path="/auth" element={<Auth />} />
               <Route 
                 path="/dashboard" 
                 element={
@@ -157,10 +150,6 @@ const App = () => {
                   </RequireAdmin>
                 } 
               />
-              
-              {/* Forge route temporarily disabled
-              <Route path="/forge" element={<Forge />} />
-              */}
               
               <Route 
                 path="/admin/models" 

@@ -7,12 +7,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import Layout from "@/components/layout/Layout";
 import NewsPreview from "@/components/news/NewsPreview";
 import FeaturedNews from "@/components/news/FeaturedNews";
-import RecentTCGSets from "@/components/news/RecentPokemonSets";
-import UpcomingReleases from "@/components/news/UpcomingReleases";
 import { useToast } from "@/hooks/use-toast";
 import { useMetaTags } from "@/hooks/use-meta-tags";
 import { supabase } from "@/integrations/supabase/client";
 import { Article } from "@/types/article";
+import AdContainer from "@/components/ads/AdContainer";
 
 const News = () => {
   const [featuredArticles, setFeaturedArticles] = useState<Article[]>([]);
@@ -112,34 +111,31 @@ const News = () => {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
-              <div className="lg:col-span-2 space-y-4">
-                {featuredArticles.length > 0 ? (
-                  featuredArticles.map((article) => (
-                    <div key={article.id} className="cursor-pointer" onClick={() => handleArticleClick(article.id)}>
-                      <FeaturedNews
-                        id={article.id}
-                        title={article.title}
-                        date={formatDate(article.published_at)}
-                        category={article.category}
-                        excerpt={article.excerpt}
-                        image={article.featured_image}
-                        onClick={() => handleArticleClick(article.id)}
-                      />
-                    </div>
-                  ))
-                ) : (
-                  <div className="bg-white rounded-lg shadow-md border border-blue-200 p-8 text-center">
-                    <p className="text-gray-500">No featured stories available</p>
+            {/* Featured Articles section - now full width */}
+            <div className="mb-12 space-y-4">
+              {featuredArticles.length > 0 ? (
+                featuredArticles.map((article) => (
+                  <div key={article.id} className="cursor-pointer" onClick={() => handleArticleClick(article.id)}>
+                    <FeaturedNews
+                      id={article.id}
+                      title={article.title}
+                      date={formatDate(article.published_at)}
+                      category={article.category}
+                      excerpt={article.excerpt}
+                      image={article.featured_image}
+                      onClick={() => handleArticleClick(article.id)}
+                    />
                   </div>
-                )}
-              </div>
-              
-              <div className="space-y-8">
-                <RecentTCGSets />
-                <UpcomingReleases />
-              </div>
+                ))
+              ) : (
+                <div className="bg-white rounded-lg shadow-md border border-blue-200 p-8 text-center">
+                  <p className="text-gray-500">No featured stories available</p>
+                </div>
+              )}
             </div>
+            
+            {/* Ad container after featured articles */}
+            <AdContainer adSlot="7259341254" adFormat="horizontal" className="mb-12" />
 
             <Tabs defaultValue="all" className="mb-8">
               <TabsList className="mb-16 flex flex-wrap">

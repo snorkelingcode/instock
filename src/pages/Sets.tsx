@@ -3,7 +3,9 @@ import React from "react";
 import Layout from "@/components/layout/Layout";
 import { TCGCategoryCard } from "@/components/sets/TCGCategoryCard";
 import { Layers, Sparkles, Zap, ScrollText } from "lucide-react";
-import LoadingSpinner from "@/components/ui/loading-spinner";
+import RecentTCGSets from "@/components/news/RecentTCGSets";
+import UpcomingReleases from "@/components/news/UpcomingReleases";
+import AdContainer from "@/components/ads/AdContainer";
 
 const SetsPage = () => {
   return (
@@ -55,6 +57,15 @@ const SetsPage = () => {
           />
         </div>
       </div>
+      
+      {/* Add TCG Releases sections */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <RecentTCGSets />
+        <UpcomingReleases />
+      </div>
+      
+      {/* Add ad container at the bottom */}
+      <AdContainer adSlot="5984712058" adFormat="horizontal" className="mb-8" />
     </Layout>
   );
 };
