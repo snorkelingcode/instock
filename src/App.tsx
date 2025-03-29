@@ -1,10 +1,10 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import PageCacheWrapper from "./components/cache/PageCacheWrapper";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import About from "./pages/About";
@@ -34,7 +34,21 @@ import PSAMarket from "./pages/PSAMarket";
 import PSACardDetails from "./pages/PSACardDetails";
 import ManageMarket from "./pages/admin/ManageMarket";
 
-const queryClient = new QueryClient();
+// Configure React Query with caching
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Keep cached data for 15 minutes by default
+      staleTime: 15 * 60 * 1000,
+      // Retry failed requests 3 times
+      retry: 3,
+      // Don't refetch on window focus if data is fresh
+      refetchOnWindowFocus: false,
+      // Cache query results even if component unmounts
+      cacheTime: 30 * 60 * 1000,
+    },
+  },
+});
 
 const App = () => {
   return (
@@ -45,31 +59,31 @@ const App = () => {
             <Toaster />
             <Sonner />
             <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/about" element={<About />} />
-              <Route path="/contact" element={<Contact />} />
-              <Route path="/products" element={<Products />} />
-              <Route path="/news" element={<News />} />
-              <Route path="/market" element={<PSAMarket />} />
-              <Route path="/psa-market" element={<PSAMarket />} /> {/* Keep both routes for backward compatibility */}
-              <Route path="/psa-market/:id" element={<PSACardDetails />} />
-              <Route path="/article/:id" element={<ArticleDetails />} />
-              <Route path="/privacy" element={<PrivacyPolicy />} />
-              <Route path="/terms" element={<TermsOfService />} />
-              <Route path="/cookies" element={<CookiePolicy />} />
-              <Route path="/auth" element={<Auth />} />
+              <Route path="/" element={<PageCacheWrapper><Index /></PageCacheWrapper>} />
+              <Route path="/about" element={<PageCacheWrapper><About /></PageCacheWrapper>} />
+              <Route path="/contact" element={<PageCacheWrapper><Contact /></PageCacheWrapper>} />
+              <Route path="/products" element={<PageCacheWrapper><Products /></PageCacheWrapper>} />
+              <Route path="/news" element={<PageCacheWrapper><News /></PageCacheWrapper>} />
+              <Route path="/market" element={<PageCacheWrapper><PSAMarket /></PageCacheWrapper>} />
+              <Route path="/psa-market" element={<PageCacheWrapper><PSAMarket /></PageCacheWrapper>} /> {/* Keep both routes for backward compatibility */}
+              <Route path="/psa-market/:id" element={<PageCacheWrapper><PSACardDetails /></PageCacheWrapper>} />
+              <Route path="/article/:id" element={<PageCacheWrapper><ArticleDetails /></PageCacheWrapper>} />
+              <Route path="/privacy" element={<PageCacheWrapper><PrivacyPolicy /></PageCacheWrapper>} />
+              <Route path="/terms" element={<PageCacheWrapper><TermsOfService /></PageCacheWrapper>} />
+              <Route path="/cookies" element={<PageCacheWrapper><CookiePolicy /></PageCacheWrapper>} />
+              <Route path="/auth" element={<Auth />} /> {/* No cache wrapper for auth page */}
               <Route 
                 path="/dashboard" 
                 element={
                   <RequireAuth>
-                    <Dashboard />
+                    <PageCacheWrapper><Dashboard /></PageCacheWrapper>
                   </RequireAuth>
                 } 
               />
               
-              <Route path="/sets" element={<Sets />} />
-              <Route path="/sets/pokemon" element={<PokemonSets />} />
-              <Route path="/sets/pokemon/:setId" element={<PokemonSetDetails />} />
+              <Route path="/sets" element={<PageCacheWrapper><Sets /></PageCacheWrapper>} />
+              <Route path="/sets/pokemon" element={<PageCacheWrapper><PokemonSets /></PageCacheWrapper>} />
+              <Route path="/sets/pokemon/:setId" element={<PageCacheWrapper><PokemonSetDetails /></PageCacheWrapper>} />
               
               <Route 
                 path="/sets/sync" 
