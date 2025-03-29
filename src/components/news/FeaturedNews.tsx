@@ -1,9 +1,20 @@
 
-import React from 'react';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CalendarIcon, ArrowRight, Volume2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+
+interface FeaturedNewsProps {
+  id: string;
+  title: string;
+  date: string;
+  category: string;
+  excerpt: string;
+  image?: string;
+  video?: string;
+  mediaType?: 'image' | 'video';
+  onClick?: () => void;
+}
 
 // Function to extract YouTube video ID
 const extractYoutubeId = (url: string): string | null => {
@@ -18,21 +29,11 @@ const FeaturedNews = ({
   date, 
   category, 
   excerpt, 
-  image,
+  image, 
   video,
   mediaType = 'image',
   onClick 
-}: {
-  id: string;
-  title: string;
-  date: string;
-  category: string;
-  excerpt: string;
-  image?: string;
-  video?: string;
-  mediaType?: 'image' | 'video';
-  onClick?: () => void;
-}) => {
+}: FeaturedNewsProps) => {
   const navigate = useNavigate();
   
   const handleReadClick = () => {
@@ -50,12 +51,11 @@ const FeaturedNews = ({
   const youtubeThumbnail = youtubeId ? `https://img.youtube.com/vi/${youtubeId}/maxresdefault.jpg` : null;
   
   return (
-    <div className="bg-white rounded-lg shadow-md border border-red-200 overflow-hidden hover:shadow-lg transition-all duration-300">
-      <div className="flex flex-col md:flex-row h-full">
-        {/* Image/Video Section - Takes up left side on desktop */}
+    <div className="bg-white rounded-lg shadow-md border border-red-200 overflow-hidden">
+      <div className="md:flex">
         {(image || youtubeThumbnail) && (
           <div 
-            className="md:w-[45%] h-48 md:h-auto relative overflow-hidden bg-red-50 cursor-pointer"
+            className="md:w-2/5 h-48 md:h-auto relative overflow-hidden bg-red-50 cursor-pointer"
             onClick={handleReadClick}
             role="button"
             aria-label={`View featured article: ${title}`}
@@ -84,34 +84,32 @@ const FeaturedNews = ({
             )}
           </div>
         )}
-
-        {/* Content Section - Takes up right side on desktop */}
-        <div className="p-2 md:p-3 md:py-2 md:w-[55%]">
-          <div className="flex justify-between items-start mb-1">
-            <Badge variant="default" className="font-medium text-xs">{category}</Badge>
-            <Badge className="bg-red-500 hover:bg-red-600 text-xs">Featured</Badge>
+        <div className={`p-5 ${(image || youtubeThumbnail) ? 'md:w-3/5' : 'w-full'}`}>
+          <div className="flex justify-between items-start mb-2">
+            <Badge variant="default" className="font-medium">{category}</Badge>
+            <Badge className="bg-red-500 hover:bg-red-600">Featured Story</Badge>
           </div>
-          <h2 className="text-base md:text-lg font-bold line-clamp-2 leading-tight mb-1">{title}</h2>
-          <div className="flex items-center text-gray-500 mb-1">
-            <CalendarIcon className="h-3 w-3 mr-1" />
-            <span className="text-xs">{date}</span>
+          <h2 className="text-xl font-bold mb-2">{title}</h2>
+          <div className="flex items-center text-gray-500 mb-3">
+            <CalendarIcon className="h-4 w-4 mr-2" />
+            <span>{date}</span>
           </div>
-          <div className="prose max-w-none text-gray-700 text-xs leading-snug mb-1">
-            <p className="line-clamp-2">{excerpt}</p>
+          <div className="prose max-w-none text-gray-700 leading-relaxed mb-3 line-clamp-2">
+            <p>{excerpt}</p>
           </div>
-          <div className="flex items-center justify-between mt-1">
-            <Button variant="ghost" className="p-0 h-6 hover:bg-transparent text-red-600 text-xs" onClick={handleReadClick}>
-              Read Full Article <ArrowRight className="ml-1 h-3 w-3" />
+          <div className="flex items-center justify-between">
+            <Button variant="ghost" className="p-0 hover:bg-transparent text-red-600" onClick={handleReadClick}>
+              Read Full Article <ArrowRight className="ml-1 h-4 w-4" />
             </Button>
             <Button 
               variant="ghost" 
               size="sm" 
-              className="text-gray-600 h-6" 
+              className="text-gray-600" 
               onClick={handleReadAloudClick}
               aria-label="Read article aloud"
             >
-              <Volume2 className="h-3 w-3 mr-1" />
-              <span className="text-xs">Read</span>
+              <Volume2 className="h-4 w-4 mr-1" />
+              <span className="text-xs">Read Aloud</span>
             </Button>
           </div>
         </div>
