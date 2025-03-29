@@ -81,3 +81,7 @@ secret = "email"
 
 [functions]
 import_map_path = "supabase/import_map.json"
+
+[[functions.http.handle-inbound-email]]
+path = "/handle-inbound-email"
+verify_jwt = false
