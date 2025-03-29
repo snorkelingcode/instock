@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -308,15 +308,22 @@ const Auth: React.FC = () => {
                       </Button>
                     </div>
                   </form>
+                  <CardFooter className="flex justify-center text-sm text-gray-500">
+                    <p>
+                      By signing up, you agree to our{' '}
+                      <Link to="/terms-of-service" className="underline hover:text-primary">
+                        Terms of Service
+                      </Link>{' '}
+                      and{' '}
+                      <Link to="/privacy-policy" className="underline hover:text-primary">
+                        Privacy Policy
+                      </Link>
+                    </p>
+                  </CardFooter>
                 </TabsContent>
               </Tabs>
             )}
           </CardContent>
-          <CardFooter className="flex justify-center text-sm text-gray-500">
-            {!showEncryptionMessage && !resetEmailSent && (
-              <p>By signing up, you agree to our Terms of Service and Privacy Policy</p>
-            )}
-          </CardFooter>
         </Card>
       </div>
     </Layout>
