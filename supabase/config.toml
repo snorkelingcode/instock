@@ -21,7 +21,7 @@ admin_email = "noreply@tcgupdates.com"
 host = "smtp.sendgrid.net"
 port = 587
 user = "apikey"
-pass = "SMTP_PASSWORD_PLACEHOLDER" # Replace this with your actual SMTP password
+pass = { env = "SMTP_PASSWORD" } # This references the secret SMTP_PASSWORD you've stored
 
 [auth.external.apple]
 enabled = false
