@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import LoadingScreen from "@/components/ui/loading-screen";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowUpDown, BarChartIcon, AlertCircle, Info } from "lucide-react";
+import { BarChartIcon, AlertCircle, Info } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import MarketStatistics from "@/components/market/MarketStatistics";
 import { 
@@ -199,6 +199,15 @@ const calculateMarketCap = (data: MarketDataItem): number => {
   if (data.population_auth && data.price_auth) totalValue += data.population_auth * data.price_auth;
   
   return totalValue;
+};
+
+const calculateGemRate = (card: MarketDataItem): string => {
+  const totalPop = card.total_population || calculateTotalPopulation(card);
+  const psa10Count = card.population_10 || 0;
+  
+  if (totalPop === 0) return "0%";
+  
+  return ((psa10Count / totalPop) * 100).toFixed(1) + "%";
 };
 
 const PSAMarket: React.FC = () => {
@@ -660,6 +669,9 @@ const PSAMarket: React.FC = () => {
                       <TableHead className={isMobile ? "hidden sm:table-cell" : ""}>
                         Population
                       </TableHead>
+                      <TableHead className={isMobile ? "hidden sm:table-cell" : ""}>
+                        Gem Rate
+                      </TableHead>
                       <TableHead>
                         {isMobile ? "Market Cap" : "Highest Price"}
                       </TableHead>
@@ -697,6 +709,9 @@ const PSAMarket: React.FC = () => {
                         </TableCell>
                         <TableCell className={isMobile ? "hidden sm:table-cell" : ""}>
                           {formatNumber(card.total_population)}
+                        </TableCell>
+                        <TableCell className={isMobile ? "hidden sm:table-cell" : ""}>
+                          {calculateGemRate(card)}
                         </TableCell>
                         <TableCell className="font-semibold">
                           {isMobile 
