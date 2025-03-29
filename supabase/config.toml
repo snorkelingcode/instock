@@ -45,7 +45,9 @@ enabled = false
 enabled = false
 
 [auth.external.google]
-enabled = false
+enabled = true
+client_id = ""
+secret = ""
 
 [auth.external.keycloak]
 enabled = false
