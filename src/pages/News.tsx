@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import Layout from "@/components/layout/Layout";
 import NewsPreview from "@/components/news/NewsPreview";
 import FeaturedNews from "@/components/news/FeaturedNews";
-import RecentPokemonSets from "@/components/news/RecentPokemonSets";
+import RecentTCGSets from "@/components/news/RecentPokemonSets";
 import UpcomingReleases from "@/components/news/UpcomingReleases";
 import { useToast } from "@/hooks/use-toast";
 import { useMetaTags } from "@/hooks/use-meta-tags";
@@ -136,7 +136,7 @@ const News = () => {
               </div>
               
               <div className="space-y-8">
-                <RecentPokemonSets />
+                <RecentTCGSets />
                 <UpcomingReleases />
               </div>
             </div>

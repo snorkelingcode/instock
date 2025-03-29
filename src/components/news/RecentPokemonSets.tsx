@@ -7,16 +7,17 @@ import { ArrowRight } from "lucide-react";
 import { supabase } from '@/integrations/supabase/client';
 import RecentRelease from './RecentRelease';
 
-interface PokemonRelease {
+interface TCGRelease {
   id: string;
   name: string;
   release_date: string;
   image_url?: string;
   popularity?: number;
+  game?: string;
 }
 
-const RecentPokemonSets = () => {
-  const [recentSets, setRecentSets] = useState<PokemonRelease[]>([]);
+const RecentTCGSets = () => {
+  const [recentSets, setRecentSets] = useState<TCGRelease[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -28,7 +29,7 @@ const RecentPokemonSets = () => {
     setLoading(true);
     try {
       const { data, error } = await supabase
-        .from('pokemon_recent_releases')
+        .from('tcg_recent_releases')
         .select('*')
         .order('release_date', { ascending: false })
         .limit(4);
@@ -36,7 +37,7 @@ const RecentPokemonSets = () => {
       if (error) throw error;
       setRecentSets(data || []);
     } catch (error) {
-      console.error('Error fetching recent Pokemon sets:', error);
+      console.error('Error fetching recent TCG sets:', error);
     } finally {
       setLoading(false);
     }
@@ -50,7 +51,7 @@ const RecentPokemonSets = () => {
   return (
     <Card className="bg-white shadow-md">
       <CardHeader>
-        <CardTitle className="text-xl text-blue-700">Recent Pokémon Set Releases</CardTitle>
+        <CardTitle className="text-xl text-blue-700">Recent TCG Set Releases</CardTitle>
       </CardHeader>
       <CardContent>
         {loading ? (
@@ -66,15 +67,16 @@ const RecentPokemonSets = () => {
                 releaseDate={formatDate(set.release_date)}
                 popularity={set.popularity || 50}
                 imageUrl={set.image_url}
+                game={set.game || "Pokémon"}
               />
             ))}
             <div className="mt-4">
               <Button 
                 variant="ghost" 
                 className="text-blue-600 hover:text-blue-800 p-0"
-                onClick={() => navigate('/sets/pokemon')}
+                onClick={() => navigate('/sets')}
               >
-                View All Pokémon Sets <ArrowRight className="ml-1 h-4 w-4" />
+                View All TCG Sets <ArrowRight className="ml-1 h-4 w-4" />
               </Button>
             </div>
           </div>
@@ -86,4 +88,4 @@ const RecentPokemonSets = () => {
   );
 };
 
-export default RecentPokemonSets;
+export default RecentTCGSets;

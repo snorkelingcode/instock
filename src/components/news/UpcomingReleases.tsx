@@ -11,6 +11,7 @@ interface UpcomingRelease {
   release_date: string;
   type: string;
   image_url?: string;
+  game?: string;
 }
 
 const UpcomingReleases = () => {
@@ -25,7 +26,7 @@ const UpcomingReleases = () => {
     setLoading(true);
     try {
       const { data, error } = await supabase
-        .from('pokemon_upcoming_releases')
+        .from('tcg_upcoming_releases')
         .select('*')
         .order('release_date', { ascending: true })
         .limit(4);
@@ -64,7 +65,7 @@ const UpcomingReleases = () => {
   return (
     <Card className="bg-white shadow-md">
       <CardHeader>
-        <CardTitle className="text-xl text-blue-700">Upcoming Pokémon TCG Releases</CardTitle>
+        <CardTitle className="text-xl text-blue-700">Upcoming TCG Releases</CardTitle>
       </CardHeader>
       <CardContent>
         {loading ? (
@@ -97,7 +98,9 @@ const UpcomingReleases = () => {
                           <CalendarIcon className="h-4 w-4 mr-1" />
                           <span>{formatDate(release.release_date)}</span>
                         </div>
-                        <div className="text-xs text-gray-500 mt-1">{release.type || "Expansion"}</div>
+                        <div className="text-xs text-gray-500 mt-1">
+                          {release.game ? `${release.game} ${release.type || "Expansion"}` : release.type || "Expansion"}
+                        </div>
                       </div>
                     </div>
                     <Badge 

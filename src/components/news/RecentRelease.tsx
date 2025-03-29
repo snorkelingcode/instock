@@ -4,9 +4,10 @@ interface RecentReleaseProps {
   releaseDate: string;
   popularity: number;
   imageUrl?: string;
+  game?: string;
 }
 
-const RecentRelease = ({ name, releaseDate, popularity, imageUrl }: RecentReleaseProps) => {
+const RecentRelease = ({ name, releaseDate, popularity, imageUrl, game = "Pokémon" }: RecentReleaseProps) => {
   // Ensure popularity is within 0-100 range
   const safePopularity = Math.min(100, Math.max(0, popularity || 0));
   
@@ -31,6 +32,7 @@ const RecentRelease = ({ name, releaseDate, popularity, imageUrl }: RecentReleas
           <h3 className="font-medium">{name}</h3>
           <span className="text-xs text-gray-600 mt-1 sm:mt-0">Released: {releaseDate}</span>
         </div>
+        <div className="text-xs text-gray-500 mt-1">{game}</div>
         <div className="flex items-center mt-2">
           <span className="text-xs text-gray-600 mr-2">Popularity:</span>
           <div className="h-2 w-24 bg-gray-200 rounded-full overflow-hidden">
