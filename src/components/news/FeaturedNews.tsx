@@ -56,7 +56,7 @@ const FeaturedNews = ({
         {/* Image/Video Section - Takes up left side on desktop */}
         {(image || youtubeThumbnail) && (
           <div 
-            className="md:w-2/5 h-40 md:h-auto relative overflow-hidden bg-red-50 cursor-pointer"
+            className="md:w-[45%] h-32 md:h-auto relative overflow-hidden bg-red-50 cursor-pointer"
             onClick={handleReadClick}
             role="button"
             aria-label={`View featured article: ${title}`}
@@ -87,27 +87,27 @@ const FeaturedNews = ({
         )}
 
         {/* Content Section - Takes up right side on desktop */}
-        <div className="p-3 md:w-3/5">
-          <div className="flex justify-between items-start mb-2">
-            <Badge variant="default" className="font-medium">{category}</Badge>
-            <Badge className="bg-red-500 hover:bg-red-600">Featured Story</Badge>
+        <div className="p-2 md:p-3 md:py-2 md:w-[55%]">
+          <div className="flex justify-between items-start mb-1">
+            <Badge variant="default" className="font-medium text-xs">{category}</Badge>
+            <Badge className="bg-red-500 hover:bg-red-600 text-xs">Featured</Badge>
           </div>
-          <h2 className="text-lg font-bold mb-1">{title}</h2>
-          <div className="flex items-center text-gray-500 mb-2">
-            <CalendarIcon className="h-4 w-4 mr-2" />
-            <span className="text-sm">{date}</span>
+          <h2 className="text-base md:text-lg font-bold line-clamp-2 leading-tight mb-1">{title}</h2>
+          <div className="flex items-center text-gray-500 mb-1">
+            <CalendarIcon className="h-3 w-3 mr-1" />
+            <span className="text-xs">{date}</span>
           </div>
-          <div className="prose max-w-none text-gray-700 text-sm leading-relaxed mb-2">
-            <p>{excerpt}</p>
+          <div className="prose max-w-none text-gray-700 text-xs leading-snug mb-1">
+            <p className="line-clamp-2">{excerpt}</p>
           </div>
           <div className="flex items-center justify-between mt-1">
-            <Button variant="ghost" className="p-0 hover:bg-transparent text-red-600 text-sm" onClick={handleReadClick}>
+            <Button variant="ghost" className="p-0 h-6 hover:bg-transparent text-red-600 text-xs" onClick={handleReadClick}>
               Read Full Article <ArrowRight className="ml-1 h-3 w-3" />
             </Button>
             <Button 
               variant="ghost" 
               size="sm" 
-              className="text-gray-600 h-7" 
+              className="text-gray-600 h-6" 
               onClick={handleReadAloudClick}
               aria-label="Read article aloud"
             >

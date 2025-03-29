@@ -6,8 +6,14 @@ import { Layers, Sparkles, Zap, ScrollText } from "lucide-react";
 import RecentTCGSets from "@/components/news/RecentTCGSets";
 import UpcomingReleases from "@/components/news/UpcomingReleases";
 import AdContainer from "@/components/ads/AdContainer";
+import { useMetaTags } from "@/hooks/use-meta-tags";
 
 const SetsPage = () => {
+  useMetaTags({
+    title: "TCG Card Sets | Browse Pokémon, Magic & Yu-Gi-Oh Collections",
+    description: "Browse trading card game sets from Pokémon, Magic: The Gathering, Yu-Gi-Oh, and Disney Lorcana. View upcoming releases and recent additions to popular TCGs."
+  });
+
   return (
     <Layout>
       <div className="bg-white p-6 rounded-lg shadow-md mb-8">
@@ -58,13 +64,13 @@ const SetsPage = () => {
         </div>
       </div>
       
-      {/* Add TCG Releases sections */}
+      {/* TCG Releases sections */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
         <RecentTCGSets />
         <UpcomingReleases />
       </div>
       
-      {/* Add ad container at the bottom */}
+      {/* Ad container at the bottom */}
       <AdContainer adSlot="5984712058" adFormat="horizontal" className="mb-8" />
     </Layout>
   );
