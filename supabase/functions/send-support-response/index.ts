@@ -1,6 +1,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { SMTPClient } from "https://deno.land/x/smtp@v0.7.0/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -71,8 +72,59 @@ serve(async (req) => {
       );
     }
 
-    // Here we would use SendGrid or another email provider to send the actual email
-    // This is a simplified implementation that just records the response
+    // Send email using SMTP
+    try {
+      const smtpClient = new SMTPClient({
+        connection: {
+          hostname: "smtp.sendgrid.net",
+          port: 587,
+          tls: true,
+          auth: {
+            username: "apikey",
+            password: Deno.env.get("SMTP_PASSWORD") || "",
+          },
+        },
+      });
+
+      await smtpClient.send({
+        from: `TCG Updates <noreply@tcgupdates.com>`,
+        to: message.sender_email,
+        subject: `Re: ${message.subject}`,
+        content: `
+        <html>
+          <body>
+            <p>Hello,</p>
+            <p>${body}</p>
+            <p>Best regards,<br/>
+            TCG Updates Support Team</p>
+            <hr>
+            <p><small>This is in response to your inquiry: "${message.subject}"</small></p>
+          </body>
+        </html>`,
+        html: `
+        <html>
+          <body>
+            <p>Hello,</p>
+            <p>${body}</p>
+            <p>Best regards,<br/>
+            TCG Updates Support Team</p>
+            <hr>
+            <p><small>This is in response to your inquiry: "${message.subject}"</small></p>
+          </body>
+        </html>`,
+      });
+      
+      console.log("Email sent successfully to:", message.sender_email);
+    } catch (emailError) {
+      console.error("Error sending email:", emailError);
+      return new Response(
+        JSON.stringify({ error: "Failed to send email", details: emailError.message }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
 
     // Record the response in the database
     const { data: responseData, error: responseError } = await supabase
@@ -81,7 +133,7 @@ serve(async (req) => {
         message_id: messageId,
         body: body,
         sent_by: userData.user.email,
-        delivery_status: "recorded" // In a real implementation, this would be updated based on email delivery
+        delivery_status: "sent" // We're now sending the email directly
       })
       .select();
 
@@ -107,12 +159,12 @@ serve(async (req) => {
       // We still continue as the response was saved
     }
 
-    console.log("Support response recorded successfully");
+    console.log("Support response sent and recorded successfully");
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: "Response recorded", 
+        message: "Response sent", 
         id: responseData[0].id 
       }),
       {
@@ -127,7 +179,6 @@ serve(async (req) => {
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
-        
       }
     );
   }

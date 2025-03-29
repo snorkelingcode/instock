@@ -40,9 +40,40 @@ serve(async (req) => {
       headers: Object.fromEntries(req.headers.entries())
     });
     
-    // Verify webhook signature or authentication here if needed
-    const payload: InboundEmailPayload = await req.json();
-    console.log("Received email payload:", JSON.stringify(payload));
+    // For SendGrid inbound parse webhook, the payload will be form data
+    let payload: InboundEmailPayload;
+    
+    const contentType = req.headers.get("content-type") || "";
+    
+    if (contentType.includes("application/json")) {
+      // Standard JSON payload handling
+      payload = await req.json();
+    } else if (contentType.includes("application/x-www-form-urlencoded") || 
+               contentType.includes("multipart/form-data")) {
+      // SendGrid webhook sends data as form-data
+      const formData = await req.formData();
+      
+      // Extract the email data from SendGrid's format
+      const from = formData.get("from") as string;
+      const subject = formData.get("subject") as string;
+      const text = formData.get("text") as string;
+      const html = formData.get("html") as string;
+      const to = formData.get("to") as string;
+      
+      payload = {
+        from,
+        to,
+        subject,
+        text,
+        html
+      };
+      
+      // Handle attachments if present (would need additional processing)
+    } else {
+      throw new Error(`Unsupported content type: ${contentType}`);
+    }
+    
+    console.log("Processed email payload:", JSON.stringify(payload));
 
     // Extract sender information
     const fromParts = payload.from.match(/^(?:"?([^"]*)"?\s)?<?([^\s>]*)>?$/);
