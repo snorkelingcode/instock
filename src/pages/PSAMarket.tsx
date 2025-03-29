@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import LoadingScreen from "@/components/ui/loading-screen";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowUpDown, BarChartIcon, AlertCircle } from "lucide-react";
+import { ArrowUpDown, BarChartIcon, AlertCircle, Info } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { 
   Select,
@@ -47,8 +47,6 @@ import {
   PaginationNext, 
   PaginationPrevious 
 } from "@/components/ui/pagination";
-
-// Remove static category constants as we'll generate them dynamically
 
 const formatCurrency = (value?: number) => {
   if (value === undefined || value === null) return "N/A";
@@ -223,7 +221,6 @@ const PSAMarket: React.FC = () => {
     set: "any"
   });
   
-  // New state for dynamic filter options
   const [filterOptions, setFilterOptions] = useState({
     languages: ["any"],
     years: ["any"],
@@ -258,13 +255,11 @@ const PSAMarket: React.FC = () => {
     applyFilters();
   }, [marketData, filters]);
   
-  // Extract year from card name - assumed to be the first 4-digit number
   const extractYearFromCardName = (cardName: string): string | null => {
     const yearMatch = cardName.match(/\b(19|20)\d{2}\b/);
     return yearMatch ? yearMatch[0] : null;
   };
   
-  // Generate filter options from market data
   const generateFilterOptions = (data: MarketDataItem[]) => {
     const languages = ["any"];
     const years = ["any"];
@@ -273,28 +268,23 @@ const PSAMarket: React.FC = () => {
     const sets = ["any"];
     
     data.forEach(card => {
-      // Add language if it exists and is not already in the list
       if (card.language && !languages.includes(card.language)) {
         languages.push(card.language);
       }
       
-      // Add year from card name if not already in the list
       const year = card.year || extractYearFromCardName(card.card_name);
       if (year && !years.includes(year)) {
         years.push(year);
       }
       
-      // Add franchise if it exists and is not already in the list
       if (card.franchise && !franchises.includes(card.franchise)) {
         franchises.push(card.franchise);
       }
       
-      // Add series if it exists and is not already in the list
       if (card.series && !seriesOptions.includes(card.series)) {
         seriesOptions.push(card.series);
       }
       
-      // Add set if it exists and is not already in the list
       if (card.card_set && !sets.includes(card.card_set)) {
         sets.push(card.card_set);
       }
@@ -325,13 +315,11 @@ const PSAMarket: React.FC = () => {
       } else {
         console.log("Using real market data from database");
         const dataWithUpdatedMarketCap = data.map(card => {
-          // Ensure total_population and market_cap are set if not already
           const totalPopulation = card.total_population || calculateTotalPopulation(card);
           const marketCap = card.market_cap || calculateMarketCap(card);
           
-          // Extract year from card name if not already set
           const year = card.year || extractYearFromCardName(card.card_name);
-
+          
           return {
             ...card,
             total_population: totalPopulation,
@@ -348,7 +336,6 @@ const PSAMarket: React.FC = () => {
         setFilteredData(sortedData);
         setTotalCards(sortedData.length);
         
-        // Generate filter options based on the actual data
         generateFilterOptions(sortedData);
         
         if (sortedData.length > 0 && !selectedCard) {
@@ -495,6 +482,22 @@ const PSAMarket: React.FC = () => {
         <div className="flex flex-row items-center justify-between">
           <h1 className="text-3xl font-bold mb-6">TCG Market Data</h1>
         </div>
+        
+        <Card className="border-blue-200 bg-blue-50/50 dark:bg-blue-950/20 dark:border-blue-800">
+          <CardHeader className="pb-2">
+            <div className="flex items-center space-x-2">
+              <Info className="h-5 w-5 text-blue-500" />
+              <CardTitle className="text-lg text-blue-700 dark:text-blue-300">Market Data Information</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <CardDescription className="text-blue-700 dark:text-blue-300 text-sm">
+              Welcome to our TCG Market Data section. Here you can find population reports and pricing information for graded trading cards.
+              Currently, we're tracking PSA graded cards with detailed population data and estimated market values.
+              <span className="block mt-2 font-medium">More cards and grading services will be added as our database grows.</span>
+            </CardDescription>
+          </CardContent>
+        </Card>
         
         {error && (
           <Alert variant="destructive">
