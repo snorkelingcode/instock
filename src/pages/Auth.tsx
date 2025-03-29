@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -7,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, AlertCircle } from 'lucide-react';
 import Layout from '@/components/layout/Layout';
 import LoadingSpinner from '@/components/ui/loading-spinner';
 import { Separator } from '@/components/ui/separator';
@@ -21,6 +20,7 @@ const Auth: React.FC = () => {
   const [showEncryptionMessage, setShowEncryptionMessage] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
   const [resetInProgress, setResetInProgress] = useState(false);
+  const [signInAttempts, setSignInAttempts] = useState(0);
   const { user, signIn, signUp, signInWithGoogle, sendPasswordResetEmail } = useAuth();
   const navigate = useNavigate();
   const timeoutRef = useRef<number | null>(null);
@@ -44,9 +44,18 @@ const Auth: React.FC = () => {
     
     try {
       await signIn(email, password);
+      setSignInAttempts(0);
       // Redirect is handled by the useEffect when user state updates
     } catch (error: any) {
-      setError(error.message || 'Failed to sign in');
+      const newAttempts = signInAttempts + 1;
+      setSignInAttempts(newAttempts);
+      
+      if (newAttempts >= 3) {
+        setError("Too many failed sign-in attempts. Please reset your password or try again later.");
+      } else {
+        const remainingAttempts = 3 - newAttempts;
+        setError(`${error.message || 'Failed to sign in'}. You have ${remainingAttempts} more ${remainingAttempts === 1 ? 'attempt' : 'attempts'} before you will need to reset your password.`);
+      }
       setIsSubmitting(false);
     }
   };
@@ -58,7 +67,6 @@ const Auth: React.FC = () => {
     setShowEncryptionMessage(true);
     
     try {
-      // Add a slight delay to show the encryption message
       timeoutRef.current = window.setTimeout(async () => {
         try {
           await signUp(email, password);
@@ -93,6 +101,7 @@ const Auth: React.FC = () => {
       if (result.success) {
         console.log("Password reset email sent successfully");
         setResetEmailSent(true);
+        setSignInAttempts(0);
       } else {
         console.error("Password reset failed:", result.error);
         setError(result.error?.message || 'Failed to send password reset email');
@@ -165,6 +174,7 @@ const Auth: React.FC = () => {
                   onClick={() => {
                     setResetEmailSent(false);
                     setEmail('');
+                    setSignInAttempts(0);
                   }}
                 >
                   Back to sign in
@@ -219,11 +229,21 @@ const Auth: React.FC = () => {
                         </Alert>
                       )}
                       
+                      {signInAttempts >= 3 && (
+                        <Alert variant="default" className="bg-blue-50 border-blue-200">
+                          <AlertCircle className="h-4 w-4 text-blue-600" />
+                          <AlertDescription className="text-blue-700">
+                            You've reached the maximum number of sign-in attempts. 
+                            Please reset your password or try again later.
+                          </AlertDescription>
+                        </Alert>
+                      )}
+                      
                       <div className="flex flex-col space-y-2">
                         <Button 
                           type="submit" 
                           className="w-full"
-                          disabled={isSubmitting}
+                          disabled={isSubmitting || signInAttempts >= 3}
                         >
                           {isSubmitting ? (
                             <>
