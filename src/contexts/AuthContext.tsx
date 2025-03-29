@@ -15,7 +15,7 @@ interface AuthContextProps {
   signInWithGoogle: () => Promise<void>;
   sendOtp: (email: string) => Promise<{ success: boolean; error?: any }>;
   verifyOtp: (email: string, token: string) => Promise<{ success: boolean; error?: any }>;
-  sendPasswordResetEmail: (email: string) => Promise<void>;
+  sendPasswordResetEmail: (email: string) => Promise<{ success: boolean; error?: any }>;
 }
 
 const AuthContext = createContext<AuthContextProps | undefined>(undefined);
@@ -178,23 +178,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const sendPasswordResetEmail = async (email: string) => {
     try {
       setIsLoading(true);
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      console.log(`Attempting to send password reset email to: ${email}`);
+      
+      const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/reset-password`,
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Password reset email error:", error);
+        throw error;
+      }
+      
+      console.log("Password reset email sent successfully:", data);
       
       toast({
         title: "Password reset email sent",
         description: "Check your email for the password reset link.",
       });
+      
+      return { success: true };
     } catch (error: any) {
+      console.error("Full error when sending reset email:", error);
+      
       toast({
         title: "Failed to send reset email",
         description: error.message || "An error occurred",
         variant: "destructive",
       });
-      throw error;
+      
+      return { success: false, error };
     } finally {
       setIsLoading(false);
     }

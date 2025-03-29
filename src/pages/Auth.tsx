@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -88,9 +87,18 @@ const Auth: React.FC = () => {
     setResetInProgress(true);
     
     try {
-      await sendPasswordResetEmail(email);
-      setResetEmailSent(true);
+      console.log(`Sending password reset email to: ${email}`);
+      const result = await sendPasswordResetEmail(email);
+      
+      if (result.success) {
+        console.log("Password reset email sent successfully");
+        setResetEmailSent(true);
+      } else {
+        console.error("Password reset failed:", result.error);
+        setError(result.error?.message || 'Failed to send password reset email');
+      }
     } catch (error: any) {
+      console.error("Exception during password reset:", error);
       setError(error.message || 'Failed to send password reset email');
     } finally {
       setResetInProgress(false);

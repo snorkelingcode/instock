@@ -7,13 +7,16 @@ port = 8080
 
 [auth]
 site_url = "https://tcgupdates.com"
-additional_redirect_urls = ["https://www.tcgupdates.com"]
+additional_redirect_urls = ["https://www.tcgupdates.com", "http://localhost:5173", "http://localhost:3000"]
 enable_signup = true
 
 [auth.email]
 enable_signup = true
 double_confirm_changes = true
 enable_confirmations = true
+
+# Add configuration for password reset
+enable_password_recovery = true
 
 [auth.email.smtp]
 sender_name = "TCG Updates"
