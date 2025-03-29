@@ -30,7 +30,7 @@ const Navigation = () => {
           <img 
             src="/lovable-uploads/3a088818-3512-46b0-898d-16a118d744fa.png" 
             alt="TCG Updates" 
-            className="h-16 -my-2" // Keeping the same size adjustments
+            className="h-16 -my-2"
           />
         </Link>
 
@@ -44,16 +44,16 @@ const Navigation = () => {
           </SheetTrigger>
           <SheetContent side="left" className="w-full p-0 bg-white">
             <div className="flex flex-col h-full">
-              {/* Logo centered at the top - now using the red logo for mobile menu */}
+              {/* Logo centered at the top */}
               <div className="flex justify-center py-6 border-b border-gray-200">
                 <img 
                   src="/lovable-uploads/e60afbdf-2426-466b-ae0b-ebe03404efc4.png" 
                   alt="TCG Updates" 
-                  className="h-24" // Keeping the same size for mobile menu logo
+                  className="h-24"
                 />
               </div>
               
-              {/* Close button - positioned absolute top right */}
+              {/* Close button */}
               <SheetClose className="absolute top-4 right-4 rounded-sm opacity-70 ring-offset-white transition-opacity hover:opacity-100 focus:outline-none">
                 <X className="h-6 w-6" color="#ea384c" />
                 <span className="sr-only">Close</span>
@@ -61,20 +61,13 @@ const Navigation = () => {
               
               {/* Navigation Links */}
               <div className="flex flex-col py-4 overflow-y-auto">
+                {/* Reordered navigation links */}
                 <SheetClose asChild>
                   <Link
                     to="/"
                     className="py-3 px-6 text-red-600 font-medium border-b border-gray-200 hover:bg-red-50 transition-colors text-left"
                   >
                     Home
-                  </Link>
-                </SheetClose>
-                <SheetClose asChild>
-                  <Link
-                    to="/products"
-                    className="py-3 px-6 text-red-600 font-medium border-b border-gray-200 hover:bg-red-50 transition-colors text-left"
-                  >
-                    Products
                   </Link>
                 </SheetClose>
                 <SheetClose asChild>
@@ -91,6 +84,14 @@ const Navigation = () => {
                     className="py-3 px-6 text-red-600 font-medium border-b border-gray-200 hover:bg-red-50 transition-colors text-left"
                   >
                     Market
+                  </Link>
+                </SheetClose>
+                <SheetClose asChild>
+                  <Link
+                    to="/products"
+                    className="py-3 px-6 text-red-600 font-medium border-b border-gray-200 hover:bg-red-50 transition-colors text-left"
+                  >
+                    Products
                   </Link>
                 </SheetClose>
                 <SheetClose asChild>
@@ -214,17 +215,17 @@ const Navigation = () => {
           <Link to="/" className="hover:text-red-200 transition-colors">
             Home
           </Link>
-          <Link
-            to="/products"
-            className="hover:text-red-200 transition-colors"
-          >
-            Products
-          </Link>
           <Link to="/news" className="hover:text-red-200 transition-colors">
             News
           </Link>
           <Link to="/market" className="hover:text-red-200 transition-colors">
             Market
+          </Link>
+          <Link
+            to="/products"
+            className="hover:text-red-200 transition-colors"
+          >
+            Products
           </Link>
           <Link to="/sets" className="hover:text-red-200 transition-colors">
             Sets
