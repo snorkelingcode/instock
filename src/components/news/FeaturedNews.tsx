@@ -51,12 +51,12 @@ const FeaturedNews = ({
   const youtubeThumbnail = youtubeId ? `https://img.youtube.com/vi/${youtubeId}/maxresdefault.jpg` : null;
   
   return (
-    <div className="bg-white rounded-lg shadow-md border border-red-200 overflow-hidden">
-      {/* Using a more horizontal layout with larger images */}
-      <div className="flex flex-col">
+    <div className="bg-white rounded-lg shadow-md border border-red-200 overflow-hidden hover:shadow-lg transition-all duration-300">
+      <div className="flex flex-col md:flex-row">
+        {/* Image/Video Section - Takes up left side on desktop */}
         {(image || youtubeThumbnail) && (
           <div 
-            className="w-full h-64 sm:h-80 relative overflow-hidden bg-red-50 cursor-pointer"
+            className="md:w-2/5 h-64 md:h-auto relative overflow-hidden bg-red-50 cursor-pointer"
             onClick={handleReadClick}
             role="button"
             aria-label={`View featured article: ${title}`}
@@ -85,7 +85,9 @@ const FeaturedNews = ({
             )}
           </div>
         )}
-        <div className="p-6">
+
+        {/* Content Section - Takes up right side on desktop */}
+        <div className="p-6 md:w-3/5">
           <div className="flex justify-between items-start mb-3">
             <Badge variant="default" className="font-medium">{category}</Badge>
             <Badge className="bg-red-500 hover:bg-red-600">Featured Story</Badge>
