@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { ThreeDModel } from '@/types/model';
 import { Button } from "@/components/ui/button";
