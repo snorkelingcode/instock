@@ -5,11 +5,12 @@ import { useToast } from "@/hooks/use-toast";
 import Layout from "@/components/layout/Layout";
 import { CardGrid } from "@/components/landing/CardGrid";
 import FeaturedProducts from "@/components/products/FeaturedProducts";
-import AboutSection from "@/components/products/AboutSection";
+import ProductsPageSummary from "@/components/products/ProductsPageSummary";
 import RecentlySoldOut from "@/components/products/RecentlySoldOut";
 import { setCache, getCache } from "@/utils/cacheUtils";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { InfoIcon } from "lucide-react";
+import { useMetaTags } from "@/hooks/use-meta-tags";
 
 // Interface for product data
 interface Product {
@@ -54,6 +55,28 @@ const ProductsPage = () => {
   const [soldOutLoading, setSoldOutLoading] = useState(true);
   const [activeJobs, setActiveJobs] = useState<JobStatus[]>([]);
   const { toast } = useToast();
+  
+  // Set meta tags for SEO
+  useMetaTags({
+    title: "TCG Products Tracker | In-Stock Trading Card Game Products",
+    description: "Track TCG product availability across major retailers. Find in-stock Pokémon, Magic, Yu-Gi-Oh and other trading card game products, booster boxes, and elite trainer boxes.",
+    keywords: "TCG products, Pokémon cards in stock, trading card games, booster boxes, elite trainer boxes, TCG tracker",
+    ogTitle: "TCG Products Tracker | Find In-Stock Trading Card Game Products",
+    ogDescription: "Real-time tracking of TCG product availability from Pokemon Center, Target, Walmart, Best Buy, GameStop and more.",
+    canonicalUrl: "https://tcgupdates.com/products",
+    structuredData: {
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      "name": "TCG Products Tracker",
+      "description": "Track trading card game product availability across major retailers",
+      "url": "https://tcgupdates.com/products",
+      "isPartOf": {
+        "@type": "WebSite",
+        "name": "TCG Updates",
+        "url": "https://tcgupdates.com"
+      }
+    }
+  });
   
   useEffect(() => {
     const fetchData = async () => {
@@ -242,7 +265,7 @@ const ProductsPage = () => {
         </div>
       </div>
       
-      <AboutSection />
+      <ProductsPageSummary />
     </Layout>
   );
 };
