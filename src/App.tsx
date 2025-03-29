@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -45,7 +46,7 @@ const queryClient = new QueryClient({
       // Don't refetch on window focus if data is fresh
       refetchOnWindowFocus: false,
       // Cache query results even if component unmounts
-      cacheTime: 30 * 60 * 1000,
+      gcTime: 30 * 60 * 1000, // Changed from cacheTime to gcTime
     },
   },
 });
