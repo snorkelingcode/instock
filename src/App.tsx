@@ -26,7 +26,7 @@ import PokemonSets from "./pages/TCGSets/PokemonSets";
 import PokemonSetDetails from "./pages/TCGSets/PokemonSetDetails";
 import SetSyncPage from "./pages/TCGSets/SetSyncPage";
 import ManagePokemonReleases from "./pages/admin/ManagePokemonReleases";
-import Forge from "./pages/Forge";
+// import Forge from "./pages/Forge"; // Temporarily disabled
 import ManageModels from "./pages/admin/ManageModels";
 import ManageProducts from "./pages/admin/ManageProducts";
 import UserManagement from "./pages/admin/UserManagement";
@@ -143,7 +143,9 @@ const App = () => {
                 } 
               />
               
+              {/* Forge route temporarily disabled
               <Route path="/forge" element={<Forge />} />
+              */}
               
               <Route 
                 path="/admin/models" 
