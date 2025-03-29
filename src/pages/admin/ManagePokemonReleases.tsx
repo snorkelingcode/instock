@@ -24,12 +24,13 @@ import {
 import { format } from "date-fns";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
-interface PokemonRelease {
+interface TCGRelease {
   id: string;
   name: string;
   release_date: string;
   image_url?: string;
   popularity?: number;
+  game?: string;
   created_at: string;
 }
 
@@ -39,11 +40,12 @@ interface UpcomingRelease {
   release_date: string;
   type: string;
   image_url?: string;
+  game?: string;
   created_at: string;
 }
 
-const ManagePokemonReleases = () => {
-  const [recentReleases, setRecentReleases] = useState<PokemonRelease[]>([]);
+const ManageTCGReleases = () => {
+  const [recentReleases, setRecentReleases] = useState<TCGRelease[]>([]);
   const [upcomingReleases, setUpcomingReleases] = useState<UpcomingRelease[]>([]);
   const [isLoadingRecent, setIsLoadingRecent] = useState(true);
   const [isLoadingUpcoming, setIsLoadingUpcoming] = useState(true);
@@ -55,7 +57,8 @@ const ManagePokemonReleases = () => {
     name: "",
     release_date: "",
     image_url: "",
-    popularity: 50
+    popularity: 50,
+    game: "Pokémon"
   });
   
   // Form state for upcoming releases
@@ -64,7 +67,8 @@ const ManagePokemonReleases = () => {
     name: "",
     release_date: "",
     type: "Expansion",
-    image_url: ""
+    image_url: "",
+    game: "Pokémon"
   });
   
   const [isSubmittingRecent, setIsSubmittingRecent] = useState(false);
@@ -76,8 +80,8 @@ const ManagePokemonReleases = () => {
   const { isAdmin } = useAuth();
   
   useMetaTags({
-    title: "Manage Pokémon Releases | Admin Dashboard",
-    description: "Manage recent and upcoming Pokémon TCG releases"
+    title: "Manage TCG Releases | Admin Dashboard",
+    description: "Manage recent and upcoming Trading Card Game releases"
   });
 
   useEffect(() => {
@@ -146,7 +150,8 @@ const ManagePokemonReleases = () => {
       name: "",
       release_date: "",
       image_url: "",
-      popularity: 50
+      popularity: 50,
+      game: "Pokémon"
     });
   };
 
@@ -156,11 +161,12 @@ const ManagePokemonReleases = () => {
       name: "",
       release_date: "",
       type: "Expansion",
-      image_url: ""
+      image_url: "",
+      game: "Pokémon"
     });
   };
 
-  const handleRecentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleRecentChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setRecentFormData(prev => ({
       ...prev,
@@ -195,7 +201,8 @@ const ManagePokemonReleases = () => {
         name: recentFormData.name,
         release_date: recentFormData.release_date,
         image_url: recentFormData.image_url || null,
-        popularity: recentFormData.popularity || 50
+        popularity: recentFormData.popularity || 50,
+        game: recentFormData.game
       };
       
       if (recentFormData.id) {
@@ -259,7 +266,8 @@ const ManagePokemonReleases = () => {
         name: upcomingFormData.name,
         release_date: upcomingFormData.release_date,
         type: upcomingFormData.type,
-        image_url: upcomingFormData.image_url || null
+        image_url: upcomingFormData.image_url || null,
+        game: upcomingFormData.game
       };
       
       if (upcomingFormData.id) {
@@ -304,14 +312,15 @@ const ManagePokemonReleases = () => {
     }
   };
 
-  const editRecentRelease = (release: PokemonRelease) => {
+  const editRecentRelease = (release: TCGRelease) => {
     setActiveTab("recent");
     setRecentFormData({
       id: release.id,
       name: release.name,
       release_date: release.release_date,
       image_url: release.image_url || "",
-      popularity: release.popularity || 50
+      popularity: release.popularity || 50,
+      game: release.game || "Pokémon"
     });
     setIsDialogOpen(true);
   };
@@ -323,7 +332,8 @@ const ManagePokemonReleases = () => {
       name: release.name,
       release_date: release.release_date,
       type: release.type || "Expansion",
-      image_url: release.image_url || ""
+      image_url: release.image_url || "",
+      game: release.game || "Pokémon"
     });
     setIsDialogOpen(true);
   };
@@ -426,7 +436,7 @@ const ManagePokemonReleases = () => {
           <TabsContent value="recent" className="space-y-4">
             <Card>
               <CardHeader className="bg-gray-50 border-b">
-                <CardTitle>Recent Pokémon Set Releases</CardTitle>
+                <CardTitle>Recent TCG Set Releases</CardTitle>
               </CardHeader>
               <CardContent className="p-0">
                 {isLoadingRecent ? (
@@ -444,6 +454,7 @@ const ManagePokemonReleases = () => {
                         <tr>
                           <th className="p-3 text-left">Image</th>
                           <th className="p-3 text-left">Name</th>
+                          <th className="p-3 text-left">Game</th>
                           <th className="p-3 text-left">Release Date</th>
                           <th className="p-3 text-center">Popularity</th>
                           <th className="p-3 text-right">Actions</th>
@@ -471,6 +482,7 @@ const ManagePokemonReleases = () => {
                               </div>
                             </td>
                             <td className="p-3 font-medium">{release.name}</td>
+                            <td className="p-3">{release.game || "Pokémon"}</td>
                             <td className="p-3">{formatDate(release.release_date)}</td>
                             <td className="p-3 text-center">
                               <div className="inline-flex items-center">
@@ -538,7 +550,7 @@ const ManagePokemonReleases = () => {
           <TabsContent value="upcoming" className="space-y-4">
             <Card>
               <CardHeader className="bg-gray-50 border-b">
-                <CardTitle>Upcoming Pokémon Set Releases</CardTitle>
+                <CardTitle>Upcoming TCG Set Releases</CardTitle>
               </CardHeader>
               <CardContent className="p-0">
                 {isLoadingUpcoming ? (
@@ -556,6 +568,7 @@ const ManagePokemonReleases = () => {
                         <tr>
                           <th className="p-3 text-left">Image</th>
                           <th className="p-3 text-left">Name</th>
+                          <th className="p-3 text-left">Game</th>
                           <th className="p-3 text-left">Release Date</th>
                           <th className="p-3 text-left">Type</th>
                           <th className="p-3 text-right">Actions</th>
@@ -583,6 +596,7 @@ const ManagePokemonReleases = () => {
                               </div>
                             </td>
                             <td className="p-3 font-medium">{release.name}</td>
+                            <td className="p-3">{release.game || "Pokémon"}</td>
                             <td className="p-3">{formatDate(release.release_date)}</td>
                             <td className="p-3">{release.type || "Expansion"}</td>
                             <td className="p-3 text-right">
@@ -661,6 +675,23 @@ const ManagePokemonReleases = () => {
                     onChange={handleRecentChange}
                     required
                   />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="game">Game</Label>
+                  <select
+                    id="game"
+                    name="game"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                    value={recentFormData.game}
+                    onChange={handleRecentChange}
+                  >
+                    <option value="Pokémon">Pokémon</option>
+                    <option value="Magic: The Gathering">Magic: The Gathering</option>
+                    <option value="Yu-Gi-Oh!">Yu-Gi-Oh!</option>
+                    <option value="Lorcana">Lorcana</option>
+                    <option value="Other">Other</option>
+                  </select>
                 </div>
                 
                 <div className="space-y-2">
@@ -746,6 +777,23 @@ const ManagePokemonReleases = () => {
                 </div>
                 
                 <div className="space-y-2">
+                  <Label htmlFor="game">Game</Label>
+                  <select
+                    id="game"
+                    name="game"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                    value={upcomingFormData.game}
+                    onChange={handleUpcomingChange}
+                  >
+                    <option value="Pokémon">Pokémon</option>
+                    <option value="Magic: The Gathering">Magic: The Gathering</option>
+                    <option value="Yu-Gi-Oh!">Yu-Gi-Oh!</option>
+                    <option value="Lorcana">Lorcana</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                
+                <div className="space-y-2">
                   <Label htmlFor="release_date">Release Date</Label>
                   <div className="relative">
                     <Input
@@ -825,4 +873,4 @@ const ManagePokemonReleases = () => {
   );
 };
 
-export default ManagePokemonReleases;
+export default ManageTCGReleases;

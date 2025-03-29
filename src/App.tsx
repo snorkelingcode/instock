@@ -26,7 +26,7 @@ import RequireAdmin from "./components/auth/RequireAdmin";
 import PokemonSets from "./pages/TCGSets/PokemonSets";
 import PokemonSetDetails from "./pages/TCGSets/PokemonSetDetails";
 import SetSyncPage from "./pages/TCGSets/SetSyncPage";
-import ManagePokemonReleases from "./pages/admin/ManagePokemonReleases";
+import ManageTCGReleases from "./pages/admin/ManagePokemonReleases";
 // import Forge from "./pages/Forge"; // Temporarily disabled
 import ManageModels from "./pages/admin/ManageModels";
 import ManageProducts from "./pages/admin/ManageProducts";
@@ -121,10 +121,10 @@ const App = () => {
               />
               
               <Route 
-                path="/admin/pokemon-releases" 
+                path="/admin/tcg-releases" 
                 element={
                   <RequireAdmin>
-                    <ManagePokemonReleases />
+                    <ManageTCGReleases />
                   </RequireAdmin>
                 } 
               />

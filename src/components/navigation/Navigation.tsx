@@ -145,10 +145,10 @@ const Navigation = () => {
                         </SheetClose>
                         <SheetClose asChild>
                           <Link
-                            to="/admin/pokemon-releases"
+                            to="/admin/tcg-releases"
                             className="py-3 px-6 text-red-600 font-medium border-b border-gray-200 hover:bg-red-50 transition-colors text-left"
                           >
-                            Manage Pokémon Releases
+                            Manage TCG Releases
                           </Link>
                         </SheetClose>
                         <SheetClose asChild>
@@ -265,8 +265,8 @@ const Navigation = () => {
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem>
-                      <Link to="/admin/pokemon-releases" className="w-full">
-                        Manage Pokémon Releases
+                      <Link to="/admin/tcg-releases" className="w-full">
+                        Manage TCG Releases
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem>

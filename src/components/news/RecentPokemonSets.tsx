@@ -29,7 +29,7 @@ const RecentTCGSets = () => {
     setLoading(true);
     try {
       const { data, error } = await supabase
-        .from('tcg_recent_releases')
+        .from('pokemon_recent_releases')
         .select('*')
         .order('release_date', { ascending: false })
         .limit(4);

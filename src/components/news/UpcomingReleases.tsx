@@ -26,7 +26,7 @@ const UpcomingReleases = () => {
     setLoading(true);
     try {
       const { data, error } = await supabase
-        .from('tcg_upcoming_releases')
+        .from('pokemon_upcoming_releases')
         .select('*')
         .order('release_date', { ascending: true })
         .limit(4);
