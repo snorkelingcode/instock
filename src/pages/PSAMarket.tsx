@@ -12,6 +12,7 @@ import LoadingScreen from "@/components/ui/loading-screen";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowUpDown, BarChartIcon, AlertCircle, Info } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import MarketStatistics from "@/components/market/MarketStatistics";
 import { 
   Select,
   SelectContent,
@@ -505,6 +506,10 @@ const PSAMarket: React.FC = () => {
             <AlertTitle>Error</AlertTitle>
             <AlertDescription>{error}</AlertDescription>
           </Alert>
+        )}
+
+        {!isLoading && filteredData.length > 0 && (
+          <MarketStatistics marketData={filteredData} />
         )}
 
         <Card className="mb-6">
