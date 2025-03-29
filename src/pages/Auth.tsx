@@ -10,7 +10,6 @@ import { AlertTriangle } from 'lucide-react';
 import Layout from '@/components/layout/Layout';
 import LoadingSpinner from '@/components/ui/loading-spinner';
 import { Separator } from '@/components/ui/separator';
-import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
 
 const Auth: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -308,7 +307,7 @@ const Auth: React.FC = () => {
                       </Button>
                     </div>
                   </form>
-                  <CardFooter className="flex justify-center text-sm text-gray-500">
+                  <CardFooter className="flex justify-center text-sm text-gray-500 mt-4">
                     <p>
                       By signing up, you agree to our{' '}
                       <Link to="/terms-of-service" className="underline hover:text-primary">
