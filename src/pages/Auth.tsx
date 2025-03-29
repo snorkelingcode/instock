@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -10,6 +11,7 @@ import { AlertTriangle } from 'lucide-react';
 import Layout from '@/components/layout/Layout';
 import LoadingSpinner from '@/components/ui/loading-spinner';
 import { Separator } from '@/components/ui/separator';
+import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
 
 const Auth: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -18,7 +20,9 @@ const Auth: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
   const [showEncryptionMessage, setShowEncryptionMessage] = useState(false);
-  const { user, signIn, signUp, signInWithGoogle } = useAuth();
+  const [resetEmailSent, setResetEmailSent] = useState(false);
+  const [resetInProgress, setResetInProgress] = useState(false);
+  const { user, signIn, signUp, signInWithGoogle, sendPasswordResetEmail } = useAuth();
   const navigate = useNavigate();
   const timeoutRef = useRef<number | null>(null);
 
@@ -73,6 +77,26 @@ const Auth: React.FC = () => {
     }
   };
 
+  const handleForgotPassword = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!email) {
+      setError('Please enter your email address');
+      return;
+    }
+    
+    setError(null);
+    setResetInProgress(true);
+    
+    try {
+      await sendPasswordResetEmail(email);
+      setResetEmailSent(true);
+    } catch (error: any) {
+      setError(error.message || 'Failed to send password reset email');
+    } finally {
+      setResetInProgress(false);
+    }
+  };
+
   const handleGoogleSignIn = async () => {
     setError(null);
     setIsGoogleSubmitting(true);
@@ -119,6 +143,24 @@ const Auth: React.FC = () => {
                 <p className="mt-4 text-sm text-gray-500">
                   Your password is being securely encrypted before storage
                 </p>
+              </div>
+            ) : resetEmailSent ? (
+              <div className="flex flex-col items-center justify-center py-8">
+                <Alert className="bg-green-50 border-green-200">
+                  <AlertDescription className="text-green-700">
+                    Password reset instructions have been sent to your email address. Please check your inbox.
+                  </AlertDescription>
+                </Alert>
+                <Button 
+                  className="mt-4"
+                  variant="outline"
+                  onClick={() => {
+                    setResetEmailSent(false);
+                    setEmail('');
+                  }}
+                >
+                  Back to sign in
+                </Button>
               </div>
             ) : (
               <Tabs defaultValue="signin" className="w-full">
@@ -169,18 +211,34 @@ const Auth: React.FC = () => {
                         </Alert>
                       )}
                       
-                      <Button 
-                        type="submit" 
-                        className="w-full"
-                        disabled={isSubmitting}
-                      >
-                        {isSubmitting ? (
-                          <>
-                            <LoadingSpinner size="sm" className="mr-2" />
-                            Signing in...
-                          </>
-                        ) : "Sign In"}
-                      </Button>
+                      <div className="flex flex-col space-y-2">
+                        <Button 
+                          type="submit" 
+                          className="w-full"
+                          disabled={isSubmitting}
+                        >
+                          {isSubmitting ? (
+                            <>
+                              <LoadingSpinner size="sm" className="mr-2" />
+                              Signing in...
+                            </>
+                          ) : "Sign In"}
+                        </Button>
+                        
+                        <Button 
+                          variant="link" 
+                          className="self-end text-sm text-gray-500 hover:text-gray-800"
+                          onClick={handleForgotPassword}
+                          disabled={resetInProgress}
+                        >
+                          {resetInProgress ? (
+                            <>
+                              <LoadingSpinner size="sm" className="mr-2" />
+                              Sending...
+                            </>
+                          ) : "Forgot password?"}
+                        </Button>
+                      </div>
                     </div>
                   </form>
                 </TabsContent>
@@ -247,7 +305,7 @@ const Auth: React.FC = () => {
             )}
           </CardContent>
           <CardFooter className="flex justify-center text-sm text-gray-500">
-            {!showEncryptionMessage && (
+            {!showEncryptionMessage && !resetEmailSent && (
               <p>By signing up, you agree to our Terms of Service and Privacy Policy</p>
             )}
           </CardFooter>
