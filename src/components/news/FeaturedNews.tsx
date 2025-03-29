@@ -52,11 +52,11 @@ const FeaturedNews = ({
   
   return (
     <div className="bg-white rounded-lg shadow-md border border-red-200 overflow-hidden hover:shadow-lg transition-all duration-300">
-      <div className="flex flex-col md:flex-row">
+      <div className="flex flex-col md:flex-row h-full">
         {/* Image/Video Section - Takes up left side on desktop */}
         {(image || youtubeThumbnail) && (
           <div 
-            className="md:w-2/5 h-64 md:h-auto relative overflow-hidden bg-red-50 cursor-pointer"
+            className="md:w-2/5 h-48 md:h-auto relative overflow-hidden bg-red-50 cursor-pointer"
             onClick={handleReadClick}
             role="button"
             aria-label={`View featured article: ${title}`}
@@ -87,17 +87,17 @@ const FeaturedNews = ({
         )}
 
         {/* Content Section - Takes up right side on desktop */}
-        <div className="p-6 md:w-3/5">
-          <div className="flex justify-between items-start mb-3">
+        <div className="p-4 md:w-3/5">
+          <div className="flex justify-between items-start mb-2">
             <Badge variant="default" className="font-medium">{category}</Badge>
             <Badge className="bg-red-500 hover:bg-red-600">Featured Story</Badge>
           </div>
-          <h2 className="text-2xl font-bold mb-3">{title}</h2>
-          <div className="flex items-center text-gray-500 mb-4">
+          <h2 className="text-xl font-bold mb-2">{title}</h2>
+          <div className="flex items-center text-gray-500 mb-3">
             <CalendarIcon className="h-4 w-4 mr-2" />
             <span>{date}</span>
           </div>
-          <div className="prose max-w-none text-gray-700 leading-relaxed mb-4">
+          <div className="prose max-w-none text-gray-700 text-sm leading-relaxed mb-3">
             <p>{excerpt}</p>
           </div>
           <div className="flex items-center justify-between">

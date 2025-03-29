@@ -61,7 +61,7 @@ const NewsPreview = ({
       aria-label={`View article: ${title}`}
     >
       {(image || youtubeThumbnail) && (
-        <div className="w-full h-48 overflow-hidden rounded-t-lg relative">
+        <div className="w-full h-40 overflow-hidden rounded-t-lg relative">
           {mediaType === 'video' && youtubeId ? (
             <div className="relative w-full h-full">
               <img 
@@ -86,39 +86,39 @@ const NewsPreview = ({
           )}
         </div>
       )}
-      <CardHeader className="pb-2">
+      <CardHeader className="pb-2 pt-3">
         <div className="flex justify-between items-start mb-1">
           <Badge variant={category === 'Product News' ? 'default' : category === 'Release Dates' ? 'secondary' : 'outline'}>
             {category}
           </Badge>
           {featured && <Badge className="bg-red-500">Featured</Badge>}
         </div>
-        <CardTitle className="text-xl">{title}</CardTitle>
-        <CardDescription className="text-gray-500">{date}</CardDescription>
+        <CardTitle className="text-lg">{title}</CardTitle>
+        <CardDescription className="text-gray-500 text-xs">{date}</CardDescription>
       </CardHeader>
-      <CardContent className="flex-grow">
-        <p className="text-gray-700">{excerpt}</p>
+      <CardContent className="flex-grow py-1">
+        <p className="text-gray-700 text-sm line-clamp-3">{excerpt}</p>
       </CardContent>
-      <CardFooter className="flex justify-between items-center">
+      <CardFooter className="flex justify-between items-center pt-1 pb-3">
         <Button 
           variant="ghost" 
-          className="p-0 hover:bg-transparent text-red-600" 
+          className="p-0 hover:bg-transparent text-red-600 text-sm" 
           onClick={(e) => {
             e.stopPropagation(); // Prevent triggering the card click
             handleReadClick();
           }}
         >
-          Read More <ArrowRight className="ml-1 h-4 w-4" />
+          Read More <ArrowRight className="ml-1 h-3 w-3" />
         </Button>
         <Button 
           variant="ghost" 
           size="sm" 
-          className="text-gray-600" 
+          className="text-gray-600 h-7" 
           onClick={handleReadAloudClick}
           aria-label="Read article aloud"
         >
-          <Volume2 className="h-4 w-4 mr-1" />
-          <span className="text-xs">Read Aloud</span>
+          <Volume2 className="h-3 w-3 mr-1" />
+          <span className="text-xs">Read</span>
         </Button>
       </CardFooter>
     </Card>
