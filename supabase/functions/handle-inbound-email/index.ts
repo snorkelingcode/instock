@@ -33,6 +33,13 @@ serve(async (req) => {
   }
 
   try {
+    // Log the full request for debugging
+    console.log("Received request:", {
+      method: req.method,
+      url: req.url,
+      headers: Object.fromEntries(req.headers.entries())
+    });
+    
     // Verify webhook signature or authentication here if needed
     const payload: InboundEmailPayload = await req.json();
     console.log("Received email payload:", JSON.stringify(payload));
@@ -49,6 +56,13 @@ serve(async (req) => {
     } else {
       recipient = payload.to.split("@")[0];
     }
+
+    console.log("Parsed email details:", { 
+      senderName, 
+      senderEmail, 
+      recipient, 
+      subject: payload.subject 
+    });
 
     // Process any attachments
     const attachmentUrls: string[] = [];
@@ -76,6 +90,8 @@ serve(async (req) => {
       );
     }
 
+    console.log("Email successfully stored with ID:", data[0].id);
+
     // Return success
     return new Response(
       JSON.stringify({ success: true, message: "Email received and stored", id: data[0].id }),
@@ -87,7 +103,7 @@ serve(async (req) => {
   } catch (error) {
     console.error("Error processing incoming email:", error);
     return new Response(
-      JSON.stringify({ error: "Failed to process email" }),
+      JSON.stringify({ error: "Failed to process email", details: error.message }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

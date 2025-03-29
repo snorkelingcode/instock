@@ -1,7 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { Resend } from "https://esm.sh/resend@1.0.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -10,15 +9,12 @@ const corsHeaders = {
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
-const resendApiKey = Deno.env.get("RESEND_API_KEY") || "";
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
-const resend = new Resend(resendApiKey);
 
 interface ResponsePayload {
   messageId: string;
   body: string;
-  htmlBody?: string;
   userId: string;
 }
 
@@ -29,9 +25,21 @@ serve(async (req) => {
   }
 
   try {
-    const { messageId, body, htmlBody, userId }: ResponsePayload = await req.json();
+    const { messageId, body, userId }: ResponsePayload = await req.json();
+    
+    console.log("Received support response request:", { messageId, userId });
 
-    // Get the original message details
+    if (!messageId || !body || !userId) {
+      return new Response(
+        JSON.stringify({ error: "Missing required fields" }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Get original message
     const { data: message, error: messageError } = await supabase
       .from("support_messages")
       .select("*")
@@ -39,9 +47,9 @@ serve(async (req) => {
       .single();
 
     if (messageError || !message) {
-      console.error("Error retrieving message:", messageError);
+      console.error("Error fetching original message:", messageError);
       return new Response(
-        JSON.stringify({ error: "Message not found" }),
+        JSON.stringify({ error: "Failed to find original message" }),
         {
           status: 404,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -49,27 +57,31 @@ serve(async (req) => {
       );
     }
 
-    // Send email via Resend
-    const emailResult = await resend.emails.send({
-      from: `${message.recipient}@tcgupdates.com`,
-      to: message.sender_email,
-      subject: `Re: ${message.subject}`,
-      text: body,
-      html: htmlBody || `<div>${body.replace(/\n/g, '<br>')}</div>`,
-      reply_to: `${message.recipient}@tcgupdates.com`,
-    });
+    // Get user info
+    const { data: userData, error: userError } = await supabase.auth.admin.getUserById(userId);
 
-    console.log("Email send result:", emailResult);
+    if (userError || !userData.user) {
+      console.error("Error fetching user data:", userError);
+      return new Response(
+        JSON.stringify({ error: "Failed to get user information" }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
 
-    // Store the response in the database
+    // Here we would use SendGrid or another email provider to send the actual email
+    // This is a simplified implementation that just records the response
+
+    // Record the response in the database
     const { data: responseData, error: responseError } = await supabase
       .from("support_responses")
       .insert({
         message_id: messageId,
         body: body,
-        html_body: htmlBody || null,
-        sent_by: userId,
-        delivery_status: emailResult.id ? "sent" : "failed",
+        sent_by: userData.user.email,
+        delivery_status: "recorded" // In a real implementation, this would be updated based on email delivery
       })
       .select();
 
@@ -85,18 +97,23 @@ serve(async (req) => {
     }
 
     // Update the message status to 'replied'
-    await supabase
+    const { error: updateError } = await supabase
       .from("support_messages")
       .update({ status: "replied" })
       .eq("id", messageId);
 
-    // Return success
+    if (updateError) {
+      console.error("Error updating message status:", updateError);
+      // We still continue as the response was saved
+    }
+
+    console.log("Support response recorded successfully");
+
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: "Response sent and stored", 
-        id: responseData[0].id,
-        emailId: emailResult.id
+        message: "Response recorded", 
+        id: responseData[0].id 
       }),
       {
         status: 200,
@@ -106,7 +123,7 @@ serve(async (req) => {
   } catch (error) {
     console.error("Error sending support response:", error);
     return new Response(
-      JSON.stringify({ error: "Failed to send response" }),
+      JSON.stringify({ error: "Failed to process response", details: error.message }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
