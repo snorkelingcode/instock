@@ -1,20 +1,9 @@
 
+import React from 'react';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CalendarIcon, ArrowRight, Volume2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-
-interface FeaturedNewsProps {
-  id: string;
-  title: string;
-  date: string;
-  category: string;
-  excerpt: string;
-  image?: string;
-  video?: string;
-  mediaType?: 'image' | 'video';
-  onClick?: () => void;
-}
 
 // Function to extract YouTube video ID
 const extractYoutubeId = (url: string): string | null => {
@@ -29,11 +18,21 @@ const FeaturedNews = ({
   date, 
   category, 
   excerpt, 
-  image, 
+  image,
   video,
   mediaType = 'image',
   onClick 
-}: FeaturedNewsProps) => {
+}: {
+  id: string;
+  title: string;
+  date: string;
+  category: string;
+  excerpt: string;
+  image?: string;
+  video?: string;
+  mediaType?: 'image' | 'video';
+  onClick?: () => void;
+}) => {
   const navigate = useNavigate();
   
   const handleReadClick = () => {
@@ -56,7 +55,7 @@ const FeaturedNews = ({
         {/* Image/Video Section - Takes up left side on desktop */}
         {(image || youtubeThumbnail) && (
           <div 
-            className="md:w-[45%] h-32 md:h-auto relative overflow-hidden bg-red-50 cursor-pointer"
+            className="md:w-[45%] h-48 md:h-auto relative overflow-hidden bg-red-50 cursor-pointer"
             onClick={handleReadClick}
             role="button"
             aria-label={`View featured article: ${title}`}

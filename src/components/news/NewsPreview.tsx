@@ -61,7 +61,7 @@ const NewsPreview = ({
       aria-label={`View article: ${title}`}
     >
       {(image || youtubeThumbnail) && (
-        <div className="w-full h-36 overflow-hidden rounded-t-lg relative">
+        <div className="w-full h-48 overflow-hidden rounded-t-lg relative">
           {mediaType === 'video' && youtubeId ? (
             <div className="relative w-full h-full">
               <img 
