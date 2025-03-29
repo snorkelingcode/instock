@@ -655,19 +655,13 @@ const PSAMarket: React.FC = () => {
                       <TableHead className="w-16 text-center">Rank</TableHead>
                       <TableHead>Card Name</TableHead>
                       <TableHead className={isMobile ? "hidden sm:table-cell" : ""}>
-                        <div className="flex items-center">
-                          Market Cap
-                          <ArrowUpDown className="ml-2 h-4 w-4" />
-                        </div>
+                        Market Cap
                       </TableHead>
                       <TableHead className={isMobile ? "hidden sm:table-cell" : ""}>
                         Population
                       </TableHead>
                       <TableHead>
-                        <div className="flex items-center">
-                          {isMobile ? "Market Cap" : "Highest Price"}
-                          <ArrowUpDown className="ml-2 h-4 w-4" />
-                        </div>
+                        {isMobile ? "Market Cap" : "Highest Price"}
                       </TableHead>
                     </TableRow>
                   </TableHeader>

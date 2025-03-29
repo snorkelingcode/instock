@@ -45,14 +45,9 @@ const MarketStatistics: React.FC<MarketStatisticsProps> = ({ marketData }) => {
     0
   );
 
-  // Calculate average gem rate (population of PSA 9-10 / total population)
-  const totalGems = marketData.reduce(
-    (sum, card) => sum + (card.population_10 || 0) + (card.population_9 || 0), 
-    0
-  );
-  
+  // Calculate gem rate (population of PSA 10 / total population)
   const gemRate = totalPopulation > 0 
-    ? ((totalGems / totalPopulation) * 100).toFixed(1) 
+    ? ((totalPsa10s / totalPopulation) * 100).toFixed(1) 
     : "0";
 
   return (
@@ -104,7 +99,7 @@ const MarketStatistics: React.FC<MarketStatisticsProps> = ({ marketData }) => {
         <CardContent>
           <div className="text-2xl font-bold">{gemRate}%</div>
           <p className="text-xs text-muted-foreground">
-            PSA 9-10 / Total population
+            PSA 10 / Total population
           </p>
         </CardContent>
       </Card>
