@@ -85,34 +85,54 @@ const UpcomingReleases = () => {
               
               return (
                 <div key={release.id} className="border-b border-gray-200 pb-4 last:border-0 last:pb-0">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h3 className="font-medium text-gray-900">{release.name}</h3>
-                      <div className="flex items-center text-gray-500 mt-1 text-sm">
-                        <CalendarIcon className="h-3 w-3 mr-1" />
-                        <span>{formatDate(release.release_date)}</span>
-                      </div>
-                      {release.type && (
-                        <Badge variant="outline" className="mt-2 text-xs">
-                          {release.type}
-                        </Badge>
-                      )}
-                      <div className="text-xs text-gray-500 mt-1">{release.game || "TCG"}</div>
-                    </div>
-                    <div>
-                      {daysRemaining > 0 ? (
-                        <Badge className="bg-amber-500">
-                          {daysRemaining} day{daysRemaining !== 1 ? 's' : ''} left
-                        </Badge>
-                      ) : daysRemaining === 0 ? (
-                        <Badge className="bg-green-500">
-                          Releases today!
-                        </Badge>
+                  <div className="flex items-start gap-3">
+                    <div className="h-16 w-16 flex-shrink-0 rounded overflow-hidden bg-gray-100">
+                      {release.image_url ? (
+                        <img 
+                          src={release.image_url} 
+                          alt={release.name} 
+                          className="h-full w-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.src = "https://placehold.co/100x100/e2e8f0/475569?text=TCG";
+                          }}
+                        />
                       ) : (
-                        <Badge variant="outline" className="text-gray-500 border-gray-300">
-                          Released
-                        </Badge>
+                        <div className="h-full w-full flex items-center justify-center text-xs text-gray-500">
+                          No image
+                        </div>
                       )}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <h3 className="font-medium text-gray-900">{release.name}</h3>
+                          <div className="flex items-center text-gray-500 mt-1 text-sm">
+                            <CalendarIcon className="h-3 w-3 mr-1" />
+                            <span>{formatDate(release.release_date)}</span>
+                          </div>
+                          {release.type && (
+                            <Badge variant="outline" className="mt-2 text-xs">
+                              {release.type}
+                            </Badge>
+                          )}
+                          <div className="text-xs text-gray-500 mt-1">{release.game || "TCG"}</div>
+                        </div>
+                        <div>
+                          {daysRemaining > 0 ? (
+                            <Badge className="bg-amber-500">
+                              {daysRemaining} day{daysRemaining !== 1 ? 's' : ''} left
+                            </Badge>
+                          ) : daysRemaining === 0 ? (
+                            <Badge className="bg-green-500">
+                              Releases today!
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-gray-500 border-gray-300">
+                              Released
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
