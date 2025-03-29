@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -179,6 +180,23 @@ const getHighestPrice = (data: MarketDataItem): number | null => {
   ].filter(price => price !== null && price !== undefined) as number[];
   
   return priceList.length > 0 ? Math.max(...priceList) : null;
+};
+
+// Move calculateTotalPopulation before it's used in calculateGemRate
+const calculateTotalPopulation = (data: MarketDataItem): number => {
+  return (
+    (data.population_10 || 0) +
+    (data.population_9 || 0) +
+    (data.population_8 || 0) +
+    (data.population_7 || 0) +
+    (data.population_6 || 0) +
+    (data.population_5 || 0) +
+    (data.population_4 || 0) +
+    (data.population_3 || 0) +
+    (data.population_2 || 0) +
+    (data.population_1 || 0) +
+    (data.population_auth || 0)
+  );
 };
 
 const calculateMarketCap = (data: MarketDataItem): number => {
