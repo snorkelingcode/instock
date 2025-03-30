@@ -15,7 +15,6 @@ interface FeaturedNewsProps {
   onClick?: () => void;
 }
 
-// Function to extract YouTube video ID
 const extractYoutubeId = (url: string): string | null => {
   const regExp = /^.*(?:(?:youtu\.be\/|v\/|vi\/|u\/\w\/|embed\/|shorts\/)|(?:(?:watch)?\?v(?:i)?=|\&v(?:i)?=))([^#\&\?]*).*/;
   const match = url.match(regExp);
@@ -45,7 +44,6 @@ const FeaturedNews = ({
     navigate(`/article/${id}?autoplay=true`);
   };
 
-  // Generate YouTube thumbnail if needed
   const youtubeId = video ? extractYoutubeId(video) : null;
   const youtubeThumbnail = youtubeId ? `https://img.youtube.com/vi/${youtubeId}/maxresdefault.jpg` : null;
   
@@ -96,7 +94,7 @@ const FeaturedNews = ({
           <div className="prose max-w-none text-gray-700 leading-relaxed mb-3 line-clamp-2">
             <p>{excerpt}</p>
           </div>
-          <div className="flex items-center justify-between mt-4">
+          <div className="flex items-center justify-between mt-6">
             <Button variant="ghost" className="p-0 hover:bg-transparent text-red-600" onClick={handleReadClick}>
               Read Full Article <ArrowRight className="ml-1 h-4 w-4" />
             </Button>
