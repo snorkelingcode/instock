@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { format, parseISO } from "date-fns";
 import { useNavigate } from "react-router-dom";
@@ -31,7 +30,7 @@ const Index = () => {
         "target": "https://tcgupdates.com/search?q={search_term_string}",
         "query-input": "required name=search_term_string"
       },
-      "description": "TCG Updates - Your source for trading card game news, inventory tracking, market trends and DIY accessories for Pokemon, Magic: The Gathering, Yu-Gi-Oh and other TCGs.",
+      "description": "TCG Updates - Your source for trading card game news, inventory tracking, market trends for Pokemon, Magic: The Gathering, Yu-Gi-Oh and other TCGs.",
       "publisher": {
         "@type": "Organization",
         "name": "TCG Updates",

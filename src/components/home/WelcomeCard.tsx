@@ -31,14 +31,14 @@ const WelcomeCard = () => {
         <Button 
           onClick={() => navigate('/about')}
           variant="outline"
-          className="border-red-300 hover:bg-red-50 text-red-700 flex-1 transition-all duration-300 shadow-sm text-sm"
+          className="border-red-300 hover:bg-red-50 text-red-700 transition-all duration-300 shadow-sm text-xs px-3 py-1 h-8"
         >
           <span>Learn More</span> 
           <ArrowRight className="ml-1 h-3 w-3" />
         </Button>
         <Button 
           onClick={() => navigate('/products')}
-          className="bg-red-600 hover:bg-red-700 flex-1 transition-all duration-300 shadow-md text-sm"
+          className="bg-red-600 hover:bg-red-700 transition-all duration-300 shadow-md text-xs px-3 py-1 h-8"
         >
           <span>Browse Products</span>
           <ArrowRight className="ml-1 h-3 w-3" />
