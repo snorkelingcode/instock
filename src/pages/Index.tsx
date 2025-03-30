@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { format, parseISO } from "date-fns";
 import { useNavigate } from "react-router-dom";
@@ -15,10 +16,10 @@ const ARTICLES_PER_PAGE = 6;
 
 const Index = () => {
   useMetaTags({
-    title: "TCG Updates - Trading Card Game News, Inventory Tracking & Market Analysis",
-    description: "TCG Updates provides comprehensive information about trading card game restocks, new releases, market trends, and inventory status for Pokemon, MTG, Yu-Gi-Oh and more trading card games.",
-    keywords: "TCG Updates, TCG news, Pokemon cards, MTG, Yu-Gi-Oh, trading card games, in-stock alerts, DIY card accessories, card collecting, TCG market trends",
-    ogTitle: "TCG Updates - Your Complete Trading Card Game Resource",
+    title: "TCG Updates: Trading Card Game News & Market Insights",
+    description: "Discover comprehensive TCG resources including real-time news, inventory tracking, market trends, and collectible card game insights for Pokemon, MTG, Yu-Gi-Oh, and more.",
+    keywords: "TCG Updates, trading card game news, Pokemon cards, MTG, Yu-Gi-Oh, card market trends, inventory tracking, collectible card games, card collecting",
+    ogTitle: "TCG Updates - Comprehensive Trading Card Game Resource",
     ogDescription: "Stay informed with breaking news, inventory tracking, market trends, and DIY projects for all major trading card games with TCG Updates.",
     structuredData: {
       "@context": "https://schema.org",
