@@ -67,17 +67,24 @@ export const Hero: React.FC = () => {
   return (
     <header className="mb-10 max-md:mb-8 max-sm:mb-6" role="banner">
       <h1 
-        className="text-[64px] text-[#1E1E1E] font-normal max-md:text-5xl max-sm:text-4xl"
+        className="text-[64px] text-[#1E1E1E] font-bold max-md:text-5xl max-sm:text-4xl mb-4"
         style={textStyle}
       >
-        News. Products. DIY.
+        TCG Updates: Your Ultimate Trading Card Game Resource
       </h1>
       <h2 
-        className="text-[64px] text-[#1E1E1E] font-normal max-md:text-5xl max-sm:text-4xl"
+        className="text-[32px] text-[#1E1E1E] font-normal max-md:text-3xl max-sm:text-2xl mb-6"
         style={textStyle}
       >
-        All things TCG.
+        News. Products. Market Trends. DIY Projects.
       </h2>
+      <div className="prose max-w-none mb-8 text-lg">
+        <p>
+          Welcome to <strong>TCG Updates</strong>, your comprehensive source for everything related to trading card games. 
+          Our platform keeps you informed about the latest card releases, restock alerts, market trends, and DIY accessories 
+          for all major TCGs including Pokémon, Magic: The Gathering, Yu-Gi-Oh!, and Disney Lorcana.
+        </p>
+      </div>
     </header>
   );
 };

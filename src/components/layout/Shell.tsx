@@ -6,13 +6,19 @@ import { Analytics } from "@vercel/analytics/react";
 
 interface ShellProps {
   children: React.ReactNode;
+  pageTitle?: string;
 }
 
-export const Shell: React.FC<ShellProps> = ({ children }) => {
+export const Shell: React.FC<ShellProps> = ({ children, pageTitle }) => {
   const location = useLocation();
   
-  // Update canonical URL based on current route
+  // Update title, canonical URL, and other meta tags based on current route
   useEffect(() => {
+    // Set page title with default fallback for SEO
+    document.title = pageTitle 
+      ? `${pageTitle} | TCG Updates - Trading Card Game News & Resources` 
+      : 'TCG Updates - Trading Card Game News, Inventory & Market Tracker';
+    
     // Get the canonical link element
     let canonicalLink = document.querySelector('link[rel="canonical"]');
     
@@ -36,7 +42,16 @@ export const Shell: React.FC<ShellProps> = ({ children }) => {
     }
     ogUrlMeta.setAttribute('content', url);
     
-  }, [location.pathname]);
+    // Update Open Graph title
+    let ogTitleMeta = document.querySelector('meta[property="og:title"]');
+    if (!ogTitleMeta) {
+      ogTitleMeta = document.createElement('meta');
+      ogTitleMeta.setAttribute('property', 'og:title');
+      document.head.appendChild(ogTitleMeta);
+    }
+    ogTitleMeta.setAttribute('content', document.title);
+    
+  }, [location.pathname, pageTitle]);
 
   return (
     <>

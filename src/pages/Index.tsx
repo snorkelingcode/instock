@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { format, parseISO } from "date-fns";
 import { useNavigate } from "react-router-dom";
@@ -16,11 +15,11 @@ const ARTICLES_PER_PAGE = 6;
 
 const Index = () => {
   useMetaTags({
-    title: "TCG Updates - Trading Card Game News, Inventory Tracking & DIY Accessories",
-    description: "Get the latest news, in-stock alerts, and DIY tips for Pokemon, Magic: The Gathering, Yu-Gi-Oh and other trading card games. Track inventory across major retailers.",
-    keywords: "TCG news, Pokemon cards, MTG, Yu-Gi-Oh, trading card games, in-stock alerts, DIY card accessories, card collecting",
+    title: "TCG Updates - Trading Card Game News, Inventory Tracking & Market Analysis",
+    description: "TCG Updates provides comprehensive information about trading card game restocks, new releases, market trends, and inventory status for Pokemon, MTG, Yu-Gi-Oh and more trading card games.",
+    keywords: "TCG Updates, TCG news, Pokemon cards, MTG, Yu-Gi-Oh, trading card games, in-stock alerts, DIY card accessories, card collecting, TCG market trends",
     ogTitle: "TCG Updates - Your Complete Trading Card Game Resource",
-    ogDescription: "Stay informed with breaking news, inventory tracking, and DIY projects for all major trading card games.",
+    ogDescription: "Stay informed with breaking news, inventory tracking, market trends, and DIY projects for all major trading card games with TCG Updates.",
     structuredData: {
       "@context": "https://schema.org",
       "@type": "WebSite",
@@ -31,7 +30,7 @@ const Index = () => {
         "target": "https://tcgupdates.com/search?q={search_term_string}",
         "query-input": "required name=search_term_string"
       },
-      "description": "Trading card game news, inventory tracking and DIY accessories for Pokemon, Magic: The Gathering, Yu-Gi-Oh and other TCGs.",
+      "description": "TCG Updates - Your source for trading card game news, inventory tracking, market trends and DIY accessories for Pokemon, Magic: The Gathering, Yu-Gi-Oh and other TCGs.",
       "publisher": {
         "@type": "Organization",
         "name": "TCG Updates",
@@ -76,7 +75,6 @@ const Index = () => {
     }
   };
 
-  // Fetch featured articles once at component mount
   useEffect(() => {
     const fetchFeaturedArticles = async () => {
       try {
@@ -97,7 +95,6 @@ const Index = () => {
     fetchFeaturedArticles();
   }, []);
 
-  // Fetch non-featured articles with pagination
   useEffect(() => {
     fetchArticles();
   }, [page]);
@@ -137,7 +134,7 @@ const Index = () => {
   };
 
   return (
-    <Shell>
+    <Shell pageTitle="Trading Card Game News, Inventory Tracking & Market Analysis">
       <div className="container mx-auto py-12 px-4">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
           <WelcomeCard />
@@ -145,9 +142,8 @@ const Index = () => {
         </div>
         
         <section className="mt-12 mb-16">
-          <h2 className="text-3xl font-bold mb-6">Latest News</h2>
+          <h2 className="text-3xl font-bold mb-6">Latest TCG Updates and News</h2>
           
-          {/* Featured Articles */}
           {featuredArticles.length > 0 && (
             <div className="mb-10">
               <h3 className="text-xl font-semibold mb-4">Featured Stories</h3>
@@ -170,7 +166,6 @@ const Index = () => {
             </div>
           )}
           
-          {/* Regular Articles Grid */}
           {articles.length > 0 && (
             <>
               {featuredArticles.length > 0 && <h3 className="text-xl font-semibold mb-4">More Stories</h3>}
