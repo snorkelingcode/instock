@@ -94,7 +94,7 @@ const FeaturedNews = ({
           <div className="prose max-w-none text-gray-700 leading-relaxed mb-3 line-clamp-2">
             <p>{excerpt}</p>
           </div>
-          <div className="flex items-center justify-between mt-6">
+          <div className="flex items-center justify-between mt-8">
             <Button variant="ghost" className="p-0 hover:bg-transparent text-red-600" onClick={handleReadClick}>
               Read Full Article <ArrowRight className="ml-1 h-4 w-4" />
             </Button>
