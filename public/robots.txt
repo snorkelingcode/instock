@@ -1,6 +1,17 @@
 
 User-agent: *
 Allow: /
+Allow: /about
+Allow: /contact
+Allow: /products
+Allow: /news
+Allow: /market
+Allow: /sets
+Allow: /sets/pokemon
+Allow: /privacy
+Allow: /terms
+Allow: /cookies
+Allow: /article/
 
 # Disallow admin sections
 Disallow: /admin/

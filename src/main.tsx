@@ -21,6 +21,15 @@ if (metaKeywords) {
   document.head.appendChild(newMetaKeywords);
 }
 
+// Add meta robots tag to ensure proper indexing
+const metaRobots = document.querySelector('meta[name="robots"]');
+if (!metaRobots) {
+  const newMetaRobots = document.createElement('meta');
+  newMetaRobots.setAttribute('name', 'robots');
+  newMetaRobots.setAttribute('content', 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1');
+  document.head.appendChild(newMetaRobots);
+}
+
 // Render our app
 const root = createRoot(document.getElementById("root")!)
 root.render(<App />);
@@ -37,6 +46,37 @@ const addHiddenKeywords = () => {
   }
 };
 
+// Generate route mapping for search engines
+const generateRoutesMapping = () => {
+  const routes = [
+    '/',
+    '/about',
+    '/contact',
+    '/products',
+    '/news',
+    '/market',
+    '/sets',
+    '/sets/pokemon',
+    '/privacy',
+    '/terms',
+    '/cookies'
+  ];
+  
+  const routesDiv = document.createElement('div');
+  routesDiv.id = 'sitemap-routes';
+  routesDiv.style.display = 'none';
+  
+  routes.forEach(route => {
+    const link = document.createElement('a');
+    link.href = route;
+    link.textContent = route;
+    routesDiv.appendChild(link);
+    routesDiv.appendChild(document.createElement('br'));
+  });
+  
+  document.getElementById('root')?.appendChild(routesDiv);
+};
+
 // Remove the loader once the app has rendered
 const removeLoader = () => {
   const loader = document.getElementById('initialLoader');
@@ -48,8 +88,9 @@ const removeLoader = () => {
   }
 };
 
-// Add SEO keywords and remove the loader after a short delay
+// Add SEO keywords, route mapping and remove the loader after a short delay
 setTimeout(() => {
   addHiddenKeywords();
+  generateRoutesMapping();
   removeLoader();
 }, 800);

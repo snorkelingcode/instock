@@ -11,10 +11,17 @@ https://www.fixthesupplyissue.com/*  https://tcgupdates.com/:splat  301!
 
 # Ensure sitemap.xml is served with the correct content type
 /sitemap.xml  /sitemap.xml  200  Content-Type=application/xml
+/robots.txt  /robots.txt  200  Content-Type=text/plain
 
-# Allow Googlebot and other crawlers specifically
-/* /index.html 200!  User-Agent=Googlebot
-/* /index.html 200!  User-Agent=bingbot
-/* /index.html 200!  User-Agent=DuckDuckBot
-/* /index.html 200!  User-Agent=Baiduspider
-/* /index.html 200!  User-Agent=YandexBot
+# Special rules to help search engines index SPA pages
+/news              /index.html   200
+/market            /index.html   200
+/products          /index.html   200
+/sets              /index.html   200
+/sets/pokemon      /index.html   200
+/about             /index.html   200
+/contact           /index.html   200
+/privacy           /index.html   200
+/terms             /index.html   200
+/cookies           /index.html   200
+/article/*         /index.html   200
