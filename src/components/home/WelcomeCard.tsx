@@ -15,28 +15,28 @@ const WelcomeCard = () => {
         <CardDescription>Your comprehensive resource for Trading Card Game news and inventory tracking</CardDescription>
       </CardHeader>
       <CardContent>
-        <p className="text-gray-700">
+        <p className="text-gray-700 mb-6">
           <strong>TCG Updates</strong> provides real-time information on product availability, 
           market trends, and latest news for all major trading card games. Whether you're a collector, 
           player, or investor, we help you stay ahead.
         </p>
-        <p className="text-gray-700 mt-2">
+        <p className="text-gray-700 mb-6">
           Join thousands of TCG enthusiasts who rely on <strong>TCG Updates</strong> for their daily 
           card game information.
         </p>
       </CardContent>
-      <CardFooter className="flex flex-col gap-4">
+      <CardFooter className="flex justify-between gap-4">
         <Button 
           onClick={() => navigate('/about')}
           variant="outline"
-          className="border-red-300 hover:bg-red-50 text-red-700 w-full transition-all duration-300 shadow-sm"
+          className="border-red-300 hover:bg-red-50 text-red-700 flex-1 transition-all duration-300 shadow-sm"
         >
           <span>Learn More</span> 
           <ArrowRight className="ml-1 h-4 w-4" />
         </Button>
         <Button 
           onClick={() => navigate('/products')}
-          className="bg-red-600 hover:bg-red-700 w-full transition-all duration-300 shadow-md"
+          className="bg-red-600 hover:bg-red-700 flex-1 transition-all duration-300 shadow-md"
         >
           <span>Browse Products</span>
           <ArrowRight className="ml-1 h-4 w-4" />

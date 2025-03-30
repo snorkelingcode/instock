@@ -3,7 +3,6 @@ import { format, parseISO } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { Shell } from "@/components/layout/Shell";
 import WelcomeCard from "@/components/home/WelcomeCard";
-import HowItWorksCard from "@/components/home/HowItWorksCard";
 import NewsPreview from "@/components/news/NewsPreview";
 import FeaturedNews from "@/components/news/FeaturedNews";
 import { useMetaTags } from "@/hooks/use-meta-tags";
@@ -19,7 +18,7 @@ const Index = () => {
     description: "TCG Updates provides comprehensive information about trading card game restocks, new releases, market trends, and inventory status for Pokemon, MTG, Yu-Gi-Oh, and more.",
     keywords: "TCG Updates, TCG Updates news, TCG Updates inventory, TCG Updates tracking, trading card game, Pokemon cards, TCG Updates market, MTG cards, Yu-Gi-Oh, card collecting, TCG Updates resources, tcgupdates, tcg updates, tcg news, tcgnews, pokemon news, trading card game news, magic the gathering news, one piece news, video game news, game news, pokemon market cap, trading card game market cap, pokemon sets, browse pokemon sets, all pokemon tcg sets, pokemon tcg online, pokemon pocket, pokemon sleep, one piece trading card game, one piece tcg, pokemon sword and shield news, pokemon reprint news, trading card game investing",
     ogTitle: "TCG Updates - Trading Card Game Resource",
-    ogDescription: "TCG Updates provides comprehensive information about trading card game restocks, new releases, market trends, and inventory status for Pokemon, MTG, and more.",
+    ogDescription: "TCG Updates provides comprehensive information about trading card game restocks, new releases, market trends, and inventory status for Pokemon, Magic: The Gathering, and more.",
     structuredData: {
       "@context": "https://schema.org",
       "@type": "WebSite",
@@ -138,9 +137,8 @@ const Index = () => {
       <div className="container mx-auto py-12 px-4">
         <h1 className="text-4xl font-bold text-red-800 mb-0 text-center"></h1>
         
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+        <div className="mb-12">
           <WelcomeCard />
-          <HowItWorksCard />
         </div>
         
         <section className="mt-12 mb-16">
