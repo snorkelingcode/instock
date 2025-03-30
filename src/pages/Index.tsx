@@ -17,7 +17,7 @@ const Index = () => {
   useMetaTags({
     title: "TCG Updates - Trading Card Game Resource",
     description: "TCG Updates provides comprehensive information about trading card game restocks, new releases, market trends, and inventory status for Pokemon, MTG, Yu-Gi-Oh, and more.",
-    keywords: "TCG Updates, TCG Updates news, TCG Updates inventory, TCG Updates tracking, trading card game, Pokemon cards, TCG Updates market, MTG cards, Yu-Gi-Oh, card collecting, TCG Updates resources",
+    keywords: "TCG Updates, TCG Updates news, TCG Updates inventory, TCG Updates tracking, trading card game, Pokemon cards, TCG Updates market, MTG cards, Yu-Gi-Oh, card collecting, TCG Updates resources, tcgupdates, tcg updates, tcg news, tcgnews, pokemon news, trading card game news, magic the gathering news, one piece news, video game news, game news, pokemon market cap, trading card game market cap, pokemon sets, browse pokemon sets, all pokemon tcg sets, pokemon tcg online, pokemon pocket, pokemon sleep, one piece trading card game, one piece tcg, pokemon sword and shield news, pokemon reprint news, trading card game investing",
     ogTitle: "TCG Updates - Trading Card Game Resource",
     ogDescription: "TCG Updates provides comprehensive information about trading card game restocks, new releases, market trends, and inventory status for Pokemon, MTG, and more.",
     structuredData: {
@@ -136,7 +136,7 @@ const Index = () => {
   return (
     <Shell pageTitle="TCG Updates - Trading Card Game News">
       <div className="container mx-auto py-12 px-4">
-        <h1 className="text-4xl font-bold text-red-800 mb-8 text-center">TCG Updates - Your Trading Card Game Resource</h1>
+        <h1 className="text-4xl font-bold text-red-800 mb-0 text-center"></h1>
         
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
           <WelcomeCard />
