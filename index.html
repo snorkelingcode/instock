@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="en">
   <head>
@@ -86,6 +85,14 @@
       .fade-out {
         animation: fadeOut 0.5s ease-in-out forwards;
       }
+      
+      .seo-content {
+        position: absolute;
+        left: -9999px;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+      }
     </style>
   </head>
   <body>
@@ -95,14 +102,15 @@
           <img src="/lovable-uploads/tcg-updates-logo.png" alt="TCG Updates" class="loader-logo" />
         </div>
       </div>
-      <!-- Prerendered content for search engines -->
-      <h1 style="display:none">TCG Updates - Trading Card Game News, Inventory Tracking & Market Analysis</h1>
-      <!-- Hidden SEO content with focus keyword repetition -->
-      <div style="display:none" aria-hidden="true">
-        TCG Updates is your premier source for trading card game information. TCG Updates covers Pokemon, Magic: The Gathering, and Yu-Gi-Oh. TCG Updates tracks inventory, market trends, and provides news updates for collectors and players.
+      
+      <!-- Hidden SEO content optimized for screen readers and search engines -->
+      <div class="seo-content" aria-hidden="true">
+        <h1>TCG Updates - Trading Card Game News, Inventory Tracking & Market Analysis</h1>
+        <p>TCG Updates is your premier source for trading card game information. TCG Updates covers Pokemon, Magic: The Gathering, and Yu-Gi-Oh. TCG Updates tracks inventory, market trends, and provides news updates for collectors and players.</p>
       </div>
+      
       <!-- Prerendered navigation for search engines -->
-      <nav style="display:none">
+      <nav class="seo-content">
         <a href="/">Home</a>
         <a href="/news">News</a>
         <a href="/market">Market</a>
