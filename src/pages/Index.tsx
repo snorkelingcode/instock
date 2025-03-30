@@ -137,6 +137,8 @@ const Index = () => {
   return (
     <Shell pageTitle="Trading Card Game News, Inventory Tracking & Market Analysis">
       <div className="container mx-auto py-12 px-4">
+        <h1 className="text-4xl font-bold text-red-800 mb-8 text-center">TCG Updates - Your Trading Card Game Resource</h1>
+        
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
           <WelcomeCard />
           <HowItWorksCard />
