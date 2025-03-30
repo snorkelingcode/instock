@@ -1,4 +1,3 @@
-
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CalendarIcon, ArrowRight, Volume2 } from "lucide-react";
@@ -97,7 +96,7 @@ const FeaturedNews = ({
           <div className="prose max-w-none text-gray-700 leading-relaxed mb-3 line-clamp-2">
             <p>{excerpt}</p>
           </div>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mt-4">
             <Button variant="ghost" className="p-0 hover:bg-transparent text-red-600" onClick={handleReadClick}>
               Read Full Article <ArrowRight className="ml-1 h-4 w-4" />
             </Button>
