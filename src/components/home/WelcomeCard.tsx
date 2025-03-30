@@ -10,43 +10,38 @@ const WelcomeCard = () => {
   
   return (
     <Card className="bg-gradient-to-r from-red-50 to-white border-red-200 shadow-md">
-      <CardHeader>
+      <CardHeader className="pb-2">
         <CardTitle className="text-2xl text-red-800">Welcome to TCG Updates</CardTitle>
-        <CardDescription>Your comprehensive resource for Trading Card Game news, inventory tracking, and DIY accessories</CardDescription>
+        <CardDescription>Your comprehensive resource for Trading Card Game news and inventory tracking</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="py-2">
         <div className="prose">
-          <p className="text-gray-700">
-            <strong>TCG Updates</strong> provides you with real-time information on product availability, 
+          <p className="text-gray-700 text-sm">
+            <strong>TCG Updates</strong> provides real-time information on product availability, 
             market trends, and latest news for all major trading card games. Whether you're a collector, 
-            player, or investor, our platform helps you stay ahead with timely updates.
+            player, or investor, we help you stay ahead.
           </p>
-          <p className="text-gray-700 mt-3">
-            At <strong>TCG Updates</strong>, we track inventory across major retailers, monitor price 
-            fluctuations in the secondary market, and provide detailed guides for DIY storage solutions 
-            and display options for your valuable cards.
-          </p>
-          <p className="text-gray-700 mt-3">
+          <p className="text-gray-700 mt-2 text-sm">
             Join thousands of TCG enthusiasts who rely on <strong>TCG Updates</strong> for their daily 
-            dose of trading card game information.
+            card game information.
           </p>
         </div>
       </CardContent>
-      <CardFooter className="flex flex-col gap-4">
+      <CardFooter className="flex gap-2 pt-2">
         <Button 
           onClick={() => navigate('/about')}
           variant="outline"
-          className="border-red-300 hover:bg-red-50 text-red-700 w-full transition-all duration-300 shadow-sm"
+          className="border-red-300 hover:bg-red-50 text-red-700 flex-1 transition-all duration-300 shadow-sm text-sm"
         >
-          <span>Learn More About TCG Updates</span> 
-          <ArrowRight className="ml-1 h-4 w-4" />
+          <span>Learn More</span> 
+          <ArrowRight className="ml-1 h-3 w-3" />
         </Button>
         <Button 
           onClick={() => navigate('/products')}
-          className="bg-red-600 hover:bg-red-700 w-full transition-all duration-300 shadow-md"
+          className="bg-red-600 hover:bg-red-700 flex-1 transition-all duration-300 shadow-md text-sm"
         >
-          <span>Browse All Products</span>
-          <ArrowRight className="ml-1 h-4 w-4" />
+          <span>Browse Products</span>
+          <ArrowRight className="ml-1 h-3 w-3" />
         </Button>
       </CardFooter>
     </Card>

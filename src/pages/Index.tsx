@@ -16,11 +16,11 @@ const ARTICLES_PER_PAGE = 6;
 
 const Index = () => {
   useMetaTags({
-    title: "TCG Updates: Trading Card Game News & Market Insights",
-    description: "Discover comprehensive TCG resources including real-time news, inventory tracking, market trends, and collectible card game insights for Pokemon, MTG, Yu-Gi-Oh, and more.",
-    keywords: "TCG Updates, trading card game news, Pokemon cards, MTG, Yu-Gi-Oh, card market trends, inventory tracking, collectible card games, card collecting",
-    ogTitle: "TCG Updates - Comprehensive Trading Card Game Resource",
-    ogDescription: "Stay informed with breaking news, inventory tracking, market trends, and DIY projects for all major trading card games with TCG Updates.",
+    title: "TCG Updates - Trading Card Game Resource",
+    description: "TCG Updates provides comprehensive information about trading card game restocks, new releases, market trends, and inventory status for Pokemon, MTG, Yu-Gi-Oh, and more.",
+    keywords: "TCG Updates, TCG Updates news, TCG Updates inventory, TCG Updates tracking, trading card game, Pokemon cards, TCG Updates market, MTG cards, Yu-Gi-Oh, card collecting, TCG Updates resources",
+    ogTitle: "TCG Updates - Trading Card Game Resource",
+    ogDescription: "TCG Updates provides comprehensive information about trading card game restocks, new releases, market trends, and inventory status for Pokemon, MTG, and more.",
     structuredData: {
       "@context": "https://schema.org",
       "@type": "WebSite",
@@ -37,7 +37,7 @@ const Index = () => {
         "name": "TCG Updates",
         "logo": {
           "@type": "ImageObject",
-          "url": "https://tcgupdates.com/lovable-uploads/e60afbdf-2426-466b-ae0b-ebe03404efc4.png"
+          "url": "https://tcgupdates.com/lovable-uploads/tcg-updates-logo.png"
         }
       }
     }
@@ -135,7 +135,7 @@ const Index = () => {
   };
 
   return (
-    <Shell pageTitle="Trading Card Game News, Inventory Tracking & Market Analysis">
+    <Shell pageTitle="TCG Updates - Trading Card Game News">
       <div className="container mx-auto py-12 px-4">
         <h1 className="text-4xl font-bold text-red-800 mb-8 text-center">TCG Updates - Your Trading Card Game Resource</h1>
         
@@ -146,6 +146,14 @@ const Index = () => {
         
         <section className="mt-12 mb-16">
           <h2 className="text-3xl font-bold mb-6">Latest TCG Updates and News</h2>
+          
+          {/* SEO content - hidden from users but visible to crawlers */}
+          <div className="sr-only">
+            TCG Updates is your ultimate destination for trading card game information. 
+            TCG Updates keeps collectors and players informed about restocks, market trends, and inventory status. 
+            TCG Updates covers all major trading card games including Pokemon, Magic: The Gathering, and Yu-Gi-Oh.
+            With TCG Updates, you'll never miss important product announcements or market changes.
+          </div>
           
           {featuredArticles.length > 0 && (
             <div className="mb-10">
@@ -225,6 +233,14 @@ const Index = () => {
             </div>
           )}
         </section>
+        
+        {/* Additional SEO content at the bottom */}
+        <footer className="sr-only">
+          TCG Updates - The trusted source for trading card game news and market analysis.
+          TCG Updates monitors inventory levels across major retailers.
+          TCG Updates tracks price trends in the secondary market.
+          TCG Updates provides alerts for new releases and restocks.
+        </footer>
       </div>
     </Shell>
   );
