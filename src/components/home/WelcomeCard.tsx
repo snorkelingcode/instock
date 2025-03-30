@@ -10,38 +10,36 @@ const WelcomeCard = () => {
   
   return (
     <Card className="bg-gradient-to-r from-red-50 to-white border-red-200 shadow-md">
-      <CardHeader className="pb-2">
+      <CardHeader>
         <CardTitle className="text-2xl text-red-800">Welcome to TCG Updates</CardTitle>
         <CardDescription>Your comprehensive resource for Trading Card Game news and inventory tracking</CardDescription>
       </CardHeader>
-      <CardContent className="py-2">
-        <div className="prose">
-          <p className="text-gray-700 text-sm">
-            <strong>TCG Updates</strong> provides real-time information on product availability, 
-            market trends, and latest news for all major trading card games. Whether you're a collector, 
-            player, or investor, we help you stay ahead.
-          </p>
-          <p className="text-gray-700 mt-2 text-sm">
-            Join thousands of TCG enthusiasts who rely on <strong>TCG Updates</strong> for their daily 
-            card game information.
-          </p>
-        </div>
+      <CardContent>
+        <p className="text-gray-700">
+          <strong>TCG Updates</strong> provides real-time information on product availability, 
+          market trends, and latest news for all major trading card games. Whether you're a collector, 
+          player, or investor, we help you stay ahead.
+        </p>
+        <p className="text-gray-700 mt-2">
+          Join thousands of TCG enthusiasts who rely on <strong>TCG Updates</strong> for their daily 
+          card game information.
+        </p>
       </CardContent>
-      <CardFooter className="flex gap-2 pt-2">
+      <CardFooter className="flex flex-col gap-4">
         <Button 
           onClick={() => navigate('/about')}
           variant="outline"
-          className="border-red-300 hover:bg-red-50 text-red-700 transition-all duration-300 shadow-sm text-xs px-3 py-1 h-8"
+          className="border-red-300 hover:bg-red-50 text-red-700 w-full transition-all duration-300 shadow-sm"
         >
           <span>Learn More</span> 
-          <ArrowRight className="ml-1 h-3 w-3" />
+          <ArrowRight className="ml-1 h-4 w-4" />
         </Button>
         <Button 
           onClick={() => navigate('/products')}
-          className="bg-red-600 hover:bg-red-700 transition-all duration-300 shadow-md text-xs px-3 py-1 h-8"
+          className="bg-red-600 hover:bg-red-700 w-full transition-all duration-300 shadow-md"
         >
           <span>Browse Products</span>
-          <ArrowRight className="ml-1 h-3 w-3" />
+          <ArrowRight className="ml-1 h-4 w-4" />
         </Button>
       </CardFooter>
     </Card>
