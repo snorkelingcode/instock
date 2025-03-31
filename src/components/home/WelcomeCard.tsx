@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { ArrowRight } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from 'react-router-dom';
 
@@ -9,11 +9,11 @@ const WelcomeCard = () => {
   const navigate = useNavigate();
   
   return (
-    <Card className="bg-gradient-to-r from-red-50 to-white border-red-200 shadow-md">
+    <Card className="bg-gradient-to-r from-red-50 to-white border-red-200 shadow-md flex flex-col h-full">
       <CardHeader>
         <CardTitle className="text-2xl text-red-800">Welcome to TCG Updates</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-grow">
         <p className="text-gray-700">
           <strong>TCG Updates</strong> provides high quality information on product availability, 
           market trends, and the latest news for all major trading card games. Whether you're a collector, 
@@ -24,7 +24,7 @@ const WelcomeCard = () => {
           card game information.
         </p>
       </CardContent>
-      <CardFooter className="flex flex-col gap-4">
+      <CardFooter className="flex flex-col gap-4 mt-auto">
         <Button 
           onClick={() => navigate('/about')}
           variant="outline"
