@@ -81,15 +81,6 @@ const RecentTCGSets = () => {
                 game={set.game || "TCG"}
               />
             ))}
-            <div className="mt-4">
-              <Button 
-                variant="ghost" 
-                className="text-blue-600 hover:text-blue-800 p-0"
-                onClick={() => navigate('/sets')}
-              >
-                View All TCG Sets <ArrowRight className="ml-1 h-4 w-4" />
-              </Button>
-            </div>
           </div>
         ) : (
           <p className="text-gray-500 text-center py-4">No recent releases found.</p>
