@@ -324,6 +324,7 @@ export type Database = {
           card_image: string | null
           card_name: string
           card_set: string | null
+          certification_number: string | null
           created_at: string | null
           franchise: string | null
           grading_service: string
@@ -361,6 +362,7 @@ export type Database = {
           card_image?: string | null
           card_name: string
           card_set?: string | null
+          certification_number?: string | null
           created_at?: string | null
           franchise?: string | null
           grading_service: string
@@ -398,6 +400,7 @@ export type Database = {
           card_image?: string | null
           card_name?: string
           card_set?: string | null
+          certification_number?: string | null
           created_at?: string | null
           franchise?: string | null
           grading_service?: string
