@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -12,7 +11,6 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { MarketDataItem, marketDataService } from "@/services/marketDataService";
 import LoadingScreen from "@/components/ui/loading-screen";
 import { Grid } from "@/components/ui/grid";
-
 const formatCurrency = (value?: number) => {
   if (value === undefined || value === null) return "N/A";
   if (value < 1000) {
@@ -24,10 +22,9 @@ const formatCurrency = (value?: number) => {
   }
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: 'USD',
+    currency: 'USD'
   }).format(value);
 };
-
 const formatChartCurrency = (value?: number) => {
   if (value === undefined || value === null) return "N/A";
   if (value >= 100000) {
@@ -37,12 +34,10 @@ const formatChartCurrency = (value?: number) => {
   }
   return `$${Math.round(value)}`;
 };
-
 const formatNumber = (value?: number) => {
   if (value === undefined || value === null) return "N/A";
   return new Intl.NumberFormat('en-US').format(value);
 };
-
 const formatChartNumber = (value?: number) => {
   if (value === undefined || value === null) return "N/A";
   if (value >= 100000) {
@@ -55,27 +50,13 @@ const formatChartNumber = (value?: number) => {
 
 // Helper function to calculate total population for a card
 const calculateTotalPopulation = (card: MarketDataItem): number => {
-  return (
-    (card.population_10 || 0) +
-    (card.population_9 || 0) +
-    (card.population_8 || 0) +
-    (card.population_7 || 0) +
-    (card.population_6 || 0) +
-    (card.population_5 || 0) +
-    (card.population_4 || 0) +
-    (card.population_3 || 0) +
-    (card.population_2 || 0) +
-    (card.population_1 || 0) +
-    (card.population_auth || 0)
-  );
+  return (card.population_10 || 0) + (card.population_9 || 0) + (card.population_8 || 0) + (card.population_7 || 0) + (card.population_6 || 0) + (card.population_5 || 0) + (card.population_4 || 0) + (card.population_3 || 0) + (card.population_2 || 0) + (card.population_1 || 0) + (card.population_auth || 0);
 };
 
 // Helper function to calculate market cap
 const calculateMarketCap = (card: MarketDataItem): number => {
   if (card.market_cap) return card.market_cap;
-  
   let totalValue = 0;
-  
   if (card.population_10 && card.price_10) totalValue += card.population_10 * card.price_10;
   if (card.population_9 && card.price_9) totalValue += card.population_9 * card.price_9;
   if (card.population_8 && card.price_8) totalValue += card.population_8 * card.price_8;
@@ -87,37 +68,18 @@ const calculateMarketCap = (card: MarketDataItem): number => {
   if (card.population_2 && card.price_2) totalValue += card.population_2 * card.price_2;
   if (card.population_1 && card.price_1) totalValue += card.population_1 * card.price_1;
   if (card.population_auth && card.price_auth) totalValue += card.population_auth * card.price_auth;
-  
   return totalValue;
 };
-
 const getHighestPrice = (data: MarketDataItem): number | null => {
-  const priceList = [
-    data.price_10,
-    data.price_9,
-    data.price_8,
-    data.price_7,
-    data.price_6,
-    data.price_5,
-    data.price_4,
-    data.price_3,
-    data.price_2,
-    data.price_1,
-    data.price_auth
-  ].filter(price => price !== null && price !== undefined) as number[];
-  
+  const priceList = [data.price_10, data.price_9, data.price_8, data.price_7, data.price_6, data.price_5, data.price_4, data.price_3, data.price_2, data.price_1, data.price_auth].filter(price => price !== null && price !== undefined) as number[];
   return priceList.length > 0 ? Math.max(...priceList) : null;
 };
-
 const generatePriceComparisonData = (card: MarketDataItem | null) => {
   if (!card) return [];
-  
   const grades = ['Auth', 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-  
   return grades.map(grade => {
     const gradeKey = grade === 'Auth' ? 'auth' : grade;
     const price = card[`price_${gradeKey}` as keyof MarketDataItem] as number || 0;
-    
     return {
       grade: grade === 'Auth' ? 'Authentic' : `Grade ${grade}`,
       price: price,
@@ -125,16 +87,12 @@ const generatePriceComparisonData = (card: MarketDataItem | null) => {
     };
   }).filter(item => item.price > 0);
 };
-
 const generatePopulationComparisonData = (card: MarketDataItem | null) => {
   if (!card) return [];
-  
   const grades = ['Auth', 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-  
   return grades.map(grade => {
     const gradeKey = grade === 'Auth' ? 'auth' : grade;
     const population = card[`population_${gradeKey}` as keyof MarketDataItem] as number || 0;
-    
     return {
       grade: grade === 'Auth' ? 'Authentic' : `Grade ${grade}`,
       population: population,
@@ -142,21 +100,22 @@ const generatePopulationComparisonData = (card: MarketDataItem | null) => {
     };
   }).filter(item => item.population > 0);
 };
-
 const PSACardDetails: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
+  const {
+    id
+  } = useParams<{
+    id: string;
+  }>();
   const location = useLocation();
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
   const isMobile = useIsMobile();
-  
-  const [card, setCard] = useState<MarketDataItem | null>(
-    location.state?.card || null
-  );
+  const [card, setCard] = useState<MarketDataItem | null>(location.state?.card || null);
   const [isLoading, setIsLoading] = useState<boolean>(!location.state?.card);
   const [priceComparisonData, setPriceComparisonData] = useState<any[]>([]);
   const [populationComparisonData, setPopulationComparisonData] = useState<any[]>([]);
-  
   useEffect(() => {
     if (!card && id) {
       fetchCardData(id);
@@ -172,12 +131,10 @@ const PSACardDetails: React.FC = () => {
       setPopulationComparisonData(generatePopulationComparisonData(enhancedCard));
     }
   }, [card, id]);
-  
   const fetchCardData = async (cardId: string) => {
     try {
       setIsLoading(true);
       const fetchedCard = await marketDataService.getMarketDataById(cardId);
-      
       if (fetchedCard) {
         // Ensure card has total_population and market_cap
         const enhancedCard = {
@@ -185,7 +142,6 @@ const PSACardDetails: React.FC = () => {
           total_population: fetchedCard.total_population || calculateTotalPopulation(fetchedCard),
           market_cap: fetchedCard.market_cap || calculateMarketCap(fetchedCard)
         };
-        
         setCard(enhancedCard);
         setPriceComparisonData(generatePriceComparisonData(enhancedCard));
         setPopulationComparisonData(generatePopulationComparisonData(enhancedCard));
@@ -193,7 +149,7 @@ const PSACardDetails: React.FC = () => {
         toast({
           title: "Error",
           description: "Card not found",
-          variant: "destructive",
+          variant: "destructive"
         });
         navigate("/psa-market");
       }
@@ -202,26 +158,21 @@ const PSACardDetails: React.FC = () => {
       toast({
         title: "Error",
         description: "Failed to load card data",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setIsLoading(false);
     }
   };
-  
   if (isLoading) {
-    return (
-      <Layout>
+    return <Layout>
         <div className="container mx-auto py-12">
           <LoadingScreen message="Loading card data..." />
         </div>
-      </Layout>
-    );
+      </Layout>;
   }
-  
   if (!card) {
-    return (
-      <Layout>
+    return <Layout>
         <div className="container mx-auto py-12">
           <Card>
             <CardContent className="pt-6">
@@ -235,25 +186,16 @@ const PSACardDetails: React.FC = () => {
             </CardContent>
           </Card>
         </div>
-      </Layout>
-    );
+      </Layout>;
   }
-  
+
   // Calculate gem rate safely
-  const gemRate = card.total_population && card.total_population > 0 && card.population_10
-    ? ((card.population_10 / card.total_population) * 100).toFixed(2)
-    : "0.00";
-  
-  return (
-    <Layout>
+  const gemRate = card.total_population && card.total_population > 0 && card.population_10 ? (card.population_10 / card.total_population * 100).toFixed(2) : "0.00";
+  return <Layout>
       <div className="container mx-auto py-6 space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="w-full">
-            <Button 
-              variant="outline" 
-              onClick={() => navigate("/psa-market")}
-              className="mb-2"
-            >
+            <Button variant="outline" onClick={() => navigate("/psa-market")} className="mb-2">
               <ArrowLeft className="mr-2 h-4 w-4" /> Back to Market
             </Button>
             <h1 className="text-xl sm:text-2xl md:text-3xl font-bold break-words line-clamp-2 md:line-clamp-none">{card.card_name}</h1>
@@ -270,15 +212,9 @@ const PSACardDetails: React.FC = () => {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-6">
-                {card.card_image && (
-                  <div className="flex justify-center mb-4">
-                    <img 
-                      src={card.card_image} 
-                      alt={card.card_name} 
-                      className="rounded-lg shadow-md max-h-96 object-contain"
-                    />
-                  </div>
-                )}
+                {card.card_image && <div className="flex justify-center mb-4">
+                    <img src={card.card_image} alt={card.card_name} className="rounded-lg shadow-md max-h-96 object-contain" />
+                  </div>}
                 
                 <Card>
                   <CardHeader className="pb-2">
@@ -314,14 +250,12 @@ const PSACardDetails: React.FC = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                      {[10, 9, 8, 7, 6, 5, 4, 3, 2, 1].map(grade => (
-                        <div key={`pop-${grade}`} className="flex flex-col">
+                      {[10, 9, 8, 7, 6, 5, 4, 3, 2, 1].map(grade => <div key={`pop-${grade}`} className="flex flex-col">
                           <h4 className="text-sm font-medium text-muted-foreground">Grade {grade}</h4>
                           <p className="text-md font-medium">
                             {formatNumber(card[`population_${grade}` as keyof MarketDataItem] as number)}
                           </p>
-                        </div>
-                      ))}
+                        </div>)}
                       <div className="flex flex-col">
                         <h4 className="text-sm font-medium text-muted-foreground">Authentic</h4>
                         <p className="text-md font-medium">{formatNumber(card.population_auth)}</p>
@@ -399,81 +333,53 @@ const PSACardDetails: React.FC = () => {
                         <TabsTrigger value="population" className="text-xs sm:text-sm whitespace-normal h-auto py-2">Population Analysis</TabsTrigger>
                       </TabsList>
                       <TabsContent value="price">
-                        {priceComparisonData.length > 0 ? (
-                          <div className="h-[400px] w-full mt-4">
+                        {priceComparisonData.length > 0 ? <div className="h-[400px] w-full mt-4">
                             <ResponsiveContainer width="100%" height="100%">
-                              <BarChart
-                                data={priceComparisonData}
-                                margin={{
-                                  top: 20,
-                                  right: isMobile ? 5 : 20,
-                                  left: isMobile ? 5 : 15,
-                                  bottom: isMobile ? 100 : 70,
-                                }}
-                                barSize={isMobile ? 20 : 35}
-                              >
+                              <BarChart data={priceComparisonData} margin={{
+                            top: 20,
+                            right: isMobile ? 5 : 20,
+                            left: isMobile ? 5 : 15,
+                            bottom: isMobile ? 100 : 70
+                          }} barSize={isMobile ? 20 : 35}>
                                 <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis 
-                                  dataKey="grade" 
-                                  angle={-45} 
-                                  textAnchor="end" 
-                                  height={isMobile ? 100 : 80}
-                                  interval={0}
-                                  fontSize={isMobile ? 8 : 12}
-                                  tickMargin={isMobile ? 18 : 5}
-                                  tickSize={isMobile ? 5 : 10}
-                                  tickFormatter={(value) => {
-                                    if (isMobile) {
-                                      if (value === "Authentic") return "Auth";
-                                      return value.replace("Grade ", "");
-                                    }
-                                    return value;
-                                  }}
-                                />
-                                <YAxis 
-                                  tickFormatter={(value) => formatChartCurrency(value)}
-                                  width={isMobile ? 65 : 80}
-                                  fontSize={isMobile ? 8 : 12}
-                                  tickCount={isMobile ? 4 : 6}
-                                />
-                                <RechartsTooltip 
-                                  formatter={(value: any) => [`${formatCurrency(value)}`, 'Price']} 
-                                  labelFormatter={(label) => `${label}`}
-                                  contentStyle={{ fontSize: isMobile ? 10 : 12 }}
-                                />
-                                <Legend wrapperStyle={{ fontSize: isMobile ? 10 : 12 }}/>
-                                <Bar 
-                                  dataKey="price" 
-                                  name="Price" 
-                                  fill="#ea384c" 
-                                  label={isMobile ? null : {
-                                    position: 'top',
-                                    formatter: (value: any) => {
-                                      if (value >= 1000000) {
-                                        return `$${Math.round(value / 1000000)}M`;
-                                      } 
-                                      if (value >= 100000) {
-                                        return `$${Math.round(value / 1000)}K`;
-                                      } else if (value >= 1000) {
-                                        return `$${(value / 1000).toFixed(1)}K`;
-                                      }
-                                      return value.toLocaleString();
-                                    },
-                                    fontSize: 11,
-                                    fill: '#666',
-                                    offset: 5,
-                                  }}
-                                />
+                                <XAxis dataKey="grade" angle={-45} textAnchor="end" height={isMobile ? 100 : 80} interval={0} fontSize={isMobile ? 8 : 12} tickMargin={isMobile ? 18 : 5} tickSize={isMobile ? 5 : 10} tickFormatter={value => {
+                              if (isMobile) {
+                                if (value === "Authentic") return "Auth";
+                                return value.replace("Grade ", "");
+                              }
+                              return value;
+                            }} />
+                                <YAxis tickFormatter={value => formatChartCurrency(value)} width={isMobile ? 65 : 80} fontSize={isMobile ? 8 : 12} tickCount={isMobile ? 4 : 6} />
+                                <RechartsTooltip formatter={(value: any) => [`${formatCurrency(value)}`, 'Price']} labelFormatter={label => `${label}`} contentStyle={{
+                              fontSize: isMobile ? 10 : 12
+                            }} />
+                                <Legend wrapperStyle={{
+                              fontSize: isMobile ? 10 : 12
+                            }} />
+                                <Bar dataKey="price" name="Price" fill="#ea384c" label={isMobile ? null : {
+                              position: 'top',
+                              formatter: (value: any) => {
+                                if (value >= 1000000) {
+                                  return `$${Math.round(value / 1000000)}M`;
+                                }
+                                if (value >= 100000) {
+                                  return `$${Math.round(value / 1000)}K`;
+                                } else if (value >= 1000) {
+                                  return `$${(value / 1000).toFixed(1)}K`;
+                                }
+                                return value.toLocaleString();
+                              },
+                              fontSize: 11,
+                              fill: '#666',
+                              offset: 5
+                            }} />
                               </BarChart>
                             </ResponsiveContainer>
-                          </div>
-                        ) : (
-                          <div className="text-center py-12">
+                          </div> : <div className="text-center py-12">
                             <p>No price data available for this card.</p>
-                          </div>
-                        )}
+                          </div>}
                         
-                        <div className="mt-6">
+                        <div className="mt-6 my-0">
                           <h4 className="text-sm font-medium text-muted-foreground mb-2">Price Highlights</h4>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
@@ -482,90 +388,58 @@ const PSACardDetails: React.FC = () => {
                                 {card.price_10 ? formatCurrency(card.price_10) : 'N/A'}
                               </p>
                             </div>
-                            {card.price_10 && card.price_9 ? (
-                              <p className="text-md">
+                            {card.price_10 && card.price_9 ? <p className="text-md">
                                 <span className="truncate block" title={formatCurrency(card.price_10 - card.price_9)}>
                                   {formatCurrency(card.price_10 - card.price_9)}
                                 </span>
                                 <span className="whitespace-nowrap text-xs sm:text-sm">
-                                  {` (${Math.round(((card.price_10 / card.price_9) - 1) * 100)}%)`}
+                                  {` (${Math.round((card.price_10 / card.price_9 - 1) * 100)}%)`}
                                 </span>
-                              </p>
-                            ) : (
-                              <p className="text-md">N/A</p>
-                            )}
+                              </p> : <p className="text-md">N/A</p>}
                           </div>
                         </div>
                       </TabsContent>
                       <TabsContent value="population">
-                        {populationComparisonData.length > 0 ? (
-                          <div className="h-[400px] w-full mt-4">
+                        {populationComparisonData.length > 0 ? <div className="h-[400px] w-full mt-4">
                             <ResponsiveContainer width="100%" height="100%">
-                              <BarChart
-                                data={populationComparisonData}
-                                margin={{
-                                  top: 20,
-                                  right: isMobile ? 5 : 20,
-                                  left: isMobile ? 5 : 15,
-                                  bottom: isMobile ? 100 : 70,
-                                }}
-                                barSize={isMobile ? 20 : 35}
-                              >
+                              <BarChart data={populationComparisonData} margin={{
+                            top: 20,
+                            right: isMobile ? 5 : 20,
+                            left: isMobile ? 5 : 15,
+                            bottom: isMobile ? 100 : 70
+                          }} barSize={isMobile ? 20 : 35}>
                                 <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis 
-                                  dataKey="grade" 
-                                  angle={-45} 
-                                  textAnchor="end" 
-                                  height={isMobile ? 100 : 80}
-                                  interval={0}
-                                  fontSize={isMobile ? 8 : 12}
-                                  tickMargin={isMobile ? 18 : 5}
-                                  tickSize={isMobile ? 5 : 10}
-                                  tickFormatter={(value) => {
-                                    if (isMobile) {
-                                      if (value === "Authentic") return "Auth";
-                                      return value.replace("Grade ", "");
-                                    }
-                                    return value;
-                                  }}
-                                />
-                                <YAxis 
-                                  tickFormatter={(value) => formatChartNumber(value)}
-                                  width={isMobile ? 65 : 80}
-                                  fontSize={isMobile ? 8 : 12}
-                                  tickCount={isMobile ? 4 : 6}
-                                />
-                                <RechartsTooltip 
-                                  formatter={(value: any) => [`${formatNumber(value)}`, 'Population']} 
-                                  labelFormatter={(label) => `${label}`}
-                                  contentStyle={{ fontSize: isMobile ? 10 : 12 }}
-                                />
-                                <Legend wrapperStyle={{ fontSize: isMobile ? 10 : 12 }}/>
-                                <Bar 
-                                  dataKey="population" 
-                                  name="Population" 
-                                  fill="#ea384c"
-                                  label={isMobile ? null : {
-                                    position: 'top',
-                                    formatter: (value: any) => {
-                                      if (value >= 1000) {
-                                        return `${Math.round(value / 1000)}K`;
-                                      }
-                                      return value;
-                                    },
-                                    fontSize: 11,
-                                    fill: '#666',
-                                    offset: 5,
-                                  }}
-                                />
+                                <XAxis dataKey="grade" angle={-45} textAnchor="end" height={isMobile ? 100 : 80} interval={0} fontSize={isMobile ? 8 : 12} tickMargin={isMobile ? 18 : 5} tickSize={isMobile ? 5 : 10} tickFormatter={value => {
+                              if (isMobile) {
+                                if (value === "Authentic") return "Auth";
+                                return value.replace("Grade ", "");
+                              }
+                              return value;
+                            }} />
+                                <YAxis tickFormatter={value => formatChartNumber(value)} width={isMobile ? 65 : 80} fontSize={isMobile ? 8 : 12} tickCount={isMobile ? 4 : 6} />
+                                <RechartsTooltip formatter={(value: any) => [`${formatNumber(value)}`, 'Population']} labelFormatter={label => `${label}`} contentStyle={{
+                              fontSize: isMobile ? 10 : 12
+                            }} />
+                                <Legend wrapperStyle={{
+                              fontSize: isMobile ? 10 : 12
+                            }} />
+                                <Bar dataKey="population" name="Population" fill="#ea384c" label={isMobile ? null : {
+                              position: 'top',
+                              formatter: (value: any) => {
+                                if (value >= 1000) {
+                                  return `${Math.round(value / 1000)}K`;
+                                }
+                                return value;
+                              },
+                              fontSize: 11,
+                              fill: '#666',
+                              offset: 5
+                            }} />
                               </BarChart>
                             </ResponsiveContainer>
-                          </div>
-                        ) : (
-                          <div className="text-center py-12">
+                          </div> : <div className="text-center py-12">
                             <p>No population data available for this card.</p>
-                          </div>
-                        )}
+                          </div>}
                         
                         <div className="mt-6">
                           <h4 className="text-sm font-medium text-muted-foreground mb-2">Population Highlights</h4>
@@ -573,19 +447,16 @@ const PSACardDetails: React.FC = () => {
                             <div>
                               <p className="text-sm font-semibold">Highest Population Grade</p>
                               {(() => {
-                                const grades = [10, 9, 8, 7, 6, 5, 4, 3, 2, 1];
-                                const highestGrade = grades.reduce((prev, current) => {
-                                  const prevValue = card[`population_${prev}` as keyof MarketDataItem] as number || 0;
-                                  const currentValue = card[`population_${current}` as keyof MarketDataItem] as number || 0;
-                                  return currentValue > prevValue ? current : prev;
-                                }, 10);
-                                
-                                return (
-                                  <p className="text-md">
+                              const grades = [10, 9, 8, 7, 6, 5, 4, 3, 2, 1];
+                              const highestGrade = grades.reduce((prev, current) => {
+                                const prevValue = card[`population_${prev}` as keyof MarketDataItem] as number || 0;
+                                const currentValue = card[`population_${current}` as keyof MarketDataItem] as number || 0;
+                                return currentValue > prevValue ? current : prev;
+                              }, 10);
+                              return <p className="text-md">
                                     Grade {highestGrade} ({formatNumber(card[`population_${highestGrade}` as keyof MarketDataItem] as number)})
-                                  </p>
-                                );
-                              })()}
+                                  </p>;
+                            })()}
                             </div>
                             <div>
                               <p className="text-sm font-semibold">PSA 10 Percentage</p>
@@ -602,8 +473,6 @@ const PSACardDetails: React.FC = () => {
           </CardContent>
         </Card>
       </div>
-    </Layout>
-  );
+    </Layout>;
 };
-
 export default PSACardDetails;
