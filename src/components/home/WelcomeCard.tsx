@@ -11,32 +11,29 @@ const WelcomeCard = () => {
   return (
     <Card className="bg-gradient-to-r from-red-50 to-white border-red-200 shadow-md">
       <CardHeader>
-        <CardTitle className="text-2xl text-red-800">Welcome to TCG Updates</CardTitle>
+        <h1 className="text-2xl font-semibold leading-none tracking-tight text-red-800">Welcome to TCG Updates</h1>
         <CardDescription>Your comprehensive resource for Trading Card Game news and inventory tracking</CardDescription>
       </CardHeader>
       <CardContent>
         <p className="text-gray-700 mb-6">
-          <strong>TCG Updates</strong> provides real-time information on product availability, 
-          market trends, and latest news for all major trading card games. Whether you're a collector, 
-          player, or investor, we help you stay ahead.
-        </p>
-        <p className="text-gray-700 mb-6">
-          Join thousands of TCG enthusiasts who rely on <strong>TCG Updates</strong> for their daily 
-          card game information.
+          Stay ahead with real-time information on product availability, market trends, and latest news 
+          for all major trading card games - trusted by thousands of collectors, players, and investors.
         </p>
       </CardContent>
-      <CardFooter className="flex justify-between gap-4">
+      <CardFooter className="flex justify-end gap-2">
         <Button 
           onClick={() => navigate('/about')}
           variant="outline"
-          className="border-red-300 hover:bg-red-50 text-red-700 flex-1 transition-all duration-300 shadow-sm"
+          className="border-red-300 hover:bg-red-50 text-red-700 transition-all duration-300 shadow-sm"
+          size="sm"
         >
           <span>Learn More</span> 
           <ArrowRight className="ml-1 h-4 w-4" />
         </Button>
         <Button 
           onClick={() => navigate('/products')}
-          className="bg-red-600 hover:bg-red-700 flex-1 transition-all duration-300 shadow-md"
+          className="bg-red-600 hover:bg-red-700 transition-all duration-300 shadow-md"
+          size="sm"
         >
           <span>Browse Products</span>
           <ArrowRight className="ml-1 h-4 w-4" />
