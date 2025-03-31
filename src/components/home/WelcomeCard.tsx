@@ -15,9 +15,13 @@ const WelcomeCard = () => {
         <CardDescription>Your comprehensive resource for Trading Card Game news and inventory tracking</CardDescription>
       </CardHeader>
       <CardContent>
-        <p className="text-gray-700 mb-6">
-          Stay ahead with real-time information on product availability, market trends, and latest news 
-          for all major trading card games - trusted by thousands of collectors, players, and investors.
+        <p className="text-gray-700 mb-3">
+          Stay informed with the latest news and market analysis for all major trading card games. 
+          We track inventory across major retailers, monitor price trends, and provide detailed market statistics for collectors and investors.
+        </p>
+        <p className="text-gray-700">
+          From product tracking with MSRP data to graded card analytics showing market cap and population reports - 
+          we provide the essential tools for making informed decisions in the TCG market.
         </p>
       </CardContent>
       <CardFooter className="flex justify-end gap-2">
