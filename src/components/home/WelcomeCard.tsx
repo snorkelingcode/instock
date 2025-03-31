@@ -23,7 +23,7 @@ const WelcomeCard = () => {
             <div>
               <h3 className="font-medium mb-1">News</h3>
               <p className="text-gray-600 text-sm">
-                Stay informed with the latest TCG Updates for trading card game products.
+                Stay informed with the latest TCG Updates for trading card game products. Our dedicated news coverage spans market analysis, restock alerts, product announcements, upcoming release dates, and retailer updates, all filterable on our News page to customize your information feed.
               </p>
             </div>
           </div>
@@ -35,7 +35,7 @@ const WelcomeCard = () => {
             <div>
               <h3 className="font-medium mb-1">Product Tracking</h3>
               <p className="text-gray-600 text-sm">
-                We track major retailers with MSRP data and historic inventory information.
+                We track all major retailers and reputable hobby shops, providing comprehensive MSRP data and current discount rates when available. Our unique inventory tracking system records historical stock information, helping you understand product availability patterns and make informed purchasing decisions.
               </p>
             </div>
           </div>
@@ -47,7 +47,7 @@ const WelcomeCard = () => {
             <div>
               <h3 className="font-medium mb-1">Market Trends</h3>
               <p className="text-gray-600 text-sm">
-                Track graded card statistics including market cap, population, and gem rates.
+                Track essential statistics for graded cards including market capitalization, population reports, gem rates, and more. Our Market page provides collectors with powerful research tools to analyze trading card performance, identify market opportunities, and make data-driven collecting decisions.
               </p>
             </div>
           </div>
