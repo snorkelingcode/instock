@@ -1,18 +1,16 @@
-
 import React, { useEffect, useState } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from "recharts";
-import { ArrowLeft, BarChartIcon, DollarSign, Package, TrendingUp, RefreshCw } from "lucide-react";
+import { ArrowLeft, BarChartIcon, DollarSign, Package, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { MarketDataItem, marketDataService } from "@/services/marketDataService";
 import LoadingScreen from "@/components/ui/loading-screen";
 import { Grid } from "@/components/ui/grid";
-import psaService from "@/services/psaService";
 
 const formatCurrency = (value?: number) => {
   if (value === undefined || value === null) return "N/A";
@@ -54,7 +52,6 @@ const formatChartNumber = (value?: number) => {
   return value.toLocaleString();
 };
 
-// Helper function to calculate total population for a card
 const calculateTotalPopulation = (card: MarketDataItem): number => {
   return (
     (card.population_10 || 0) +
@@ -71,7 +68,6 @@ const calculateTotalPopulation = (card: MarketDataItem): number => {
   );
 };
 
-// Helper function to calculate market cap
 const calculateMarketCap = (card: MarketDataItem): number => {
   if (card.market_cap) return card.market_cap;
   
@@ -155,7 +151,6 @@ const PSACardDetails: React.FC = () => {
     location.state?.card || null
   );
   const [isLoading, setIsLoading] = useState<boolean>(!location.state?.card);
-  const [isUpdating, setIsUpdating] = useState<boolean>(false);
   const [priceComparisonData, setPriceComparisonData] = useState<any[]>([]);
   const [populationComparisonData, setPopulationComparisonData] = useState<any[]>([]);
   
@@ -211,46 +206,6 @@ const PSACardDetails: React.FC = () => {
     }
   };
   
-  const updateCardFromPSA = async () => {
-    if (!card) return;
-    
-    setIsUpdating(true);
-    try {
-      // Check if PSA token exists
-      const token = psaService.getToken();
-      if (!token) {
-        toast({
-          title: "API Token Required",
-          description: "Please set your PSA API token on the market management page",
-          variant: "destructive"
-        });
-        return;
-      }
-      
-      const success = await psaService.updateCardPopulationFromPSA(card);
-      
-      if (success) {
-        toast({
-          title: "Success",
-          description: "Card population data has been updated",
-        });
-        // Refresh the card data
-        if (card.id) {
-          fetchCardData(card.id);
-        }
-      }
-    } catch (error) {
-      console.error("Error updating card from PSA:", error);
-      toast({
-        title: "Update Failed",
-        description: error instanceof Error ? error.message : "Failed to update card data from PSA",
-        variant: "destructive"
-      });
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-  
   if (isLoading) {
     return (
       <Layout>
@@ -281,7 +236,6 @@ const PSACardDetails: React.FC = () => {
     );
   }
   
-  // Calculate gem rate safely
   const gemRate = card.total_population && card.total_population > 0 && card.population_10
     ? ((card.population_10 / card.total_population) * 100).toFixed(2)
     : "0.00";
@@ -300,28 +254,6 @@ const PSACardDetails: React.FC = () => {
             </Button>
             <h1 className="text-xl sm:text-2xl md:text-3xl font-bold break-words line-clamp-2 md:line-clamp-none">{card.card_name}</h1>
           </div>
-          {card.grading_service === "PSA" && (
-            <div>
-              <Button
-                onClick={updateCardFromPSA}
-                variant="outline"
-                disabled={isUpdating}
-                className="whitespace-nowrap"
-              >
-                {isUpdating ? (
-                  <>
-                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    Updating...
-                  </>
-                ) : (
-                  <>
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                    Update from PSA
-                  </>
-                )}
-              </Button>
-            </div>
-          )}
         </div>
         
         <Card>

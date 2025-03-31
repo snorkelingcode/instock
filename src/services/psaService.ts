@@ -1,4 +1,3 @@
-
 import { toast } from "@/hooks/use-toast";
 import { marketDataService } from "@/services/marketDataService";
 
