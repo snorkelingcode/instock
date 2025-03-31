@@ -7,7 +7,7 @@ const HowItWorksCard = () => {
   return (
     <Card className="bg-white border-red-200 shadow-md">
       <CardHeader>
-        <CardTitle className="text-xl text-red-800">How TCG Updates Works</CardTitle>
+        <CardTitle className="text-xl text-red-800">What We Do</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-6">
@@ -16,7 +16,7 @@ const HowItWorksCard = () => {
               <Search className="h-5 w-5 text-red-700" />
             </div>
             <div>
-              <h3 className="font-medium mb-1">Browse Products & News</h3>
+              <h3 className="font-medium mb-1">News</h3>
               <p className="text-gray-600 text-sm">
                 Stay informed with the latest TCG Updates for trading card game products.
               </p>
@@ -28,9 +28,9 @@ const HowItWorksCard = () => {
               <Bell className="h-5 w-5 text-red-700" />
             </div>
             <div>
-              <h3 className="font-medium mb-1">Get Notifications</h3>
+              <h3 className="font-medium mb-1">Market</h3>
               <p className="text-gray-600 text-sm">
-                TCG Updates alerts you about specific products and upcoming releases.
+                Find the market cap, population, and gem rate for your the best cards.
               </p>
             </div>
           </div>
@@ -40,9 +40,15 @@ const HowItWorksCard = () => {
               <Wrench className="h-5 w-5 text-red-700" />
             </div>
             <div>
-              <h3 className="font-medium mb-1">Track Market Trends</h3>
+              <h3 className="font-medium mb-1">In-Stock Products</h3>
               <p className="text-gray-600 text-sm">
-                TCG Updates helps monitor market trends and inventory levels for your collection.
+                TCG Updates monitors online retailers for In-Stock trading card game products.
+              </p>
+            </div>
+            <div>
+              <h3 className="font-medium mb-1">Set Lists</h3>
+              <p className="text-gray-600 text-sm">
+                View the set list for Pokemon, Magic the Gathering, and other trading card games.
               </p>
             </div>
           </div>
