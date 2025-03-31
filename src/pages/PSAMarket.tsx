@@ -585,6 +585,11 @@ const PSAMarket: React.FC = () => {
     });
   };
 
+  const handleViewCardDetails = (card: MarketDataItem) => {
+    setSelectedCard(card);
+    navigate(`/psa-card/${card.id}`, { state: { card } });
+  };
+
   return (
     <Layout>
       <div className="container mx-auto py-6 space-y-6">
