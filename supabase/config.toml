@@ -15,8 +15,9 @@ enable_signup = true
 double_confirm_changes = true
 enable_confirmations = true
 
-# Add configuration for password reset
-enable_password_recovery = true
+# Password reset configuration moved to proper location
+[auth.email.password_recovery]
+enable = true
 
 [auth.email.smtp]
 sender_name = "TCG Updates"
@@ -87,6 +88,7 @@ secret = "email"
 [functions]
 import_map_path = "supabase/import_map.json"
 
-[[functions.http.handle-inbound-email]]
+# Fix the HTTP functions format
+[[functions.http]]
 path = "/handle-inbound-email"
 verify_jwt = false
