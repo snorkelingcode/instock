@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Bell, Search, Wrench } from 'lucide-react';
+import { Newspaper, TrendingUp, Gift, ListOrdered } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const HowItWorksCard = () => {
@@ -13,7 +13,7 @@ const HowItWorksCard = () => {
         <div className="space-y-6">
           <div className="flex items-start">
             <div className="mr-4 bg-red-100 p-2 rounded-full">
-              <Search className="h-5 w-5 text-red-700" />
+              <Newspaper className="h-5 w-5 text-red-700" />
             </div>
             <div>
               <h3 className="font-medium mb-1">News</h3>
@@ -25,7 +25,7 @@ const HowItWorksCard = () => {
           
           <div className="flex items-start">
             <div className="mr-4 bg-red-100 p-2 rounded-full">
-              <Bell className="h-5 w-5 text-red-700" />
+              <TrendingUp className="h-5 w-5 text-red-700" />
             </div>
             <div>
               <h3 className="font-medium mb-1">Market</h3>
@@ -37,13 +37,19 @@ const HowItWorksCard = () => {
           
           <div className="flex items-start">
             <div className="mr-4 bg-red-100 p-2 rounded-full">
-              <Wrench className="h-5 w-5 text-red-700" />
+              <Gift className="h-5 w-5 text-red-700" />
             </div>
             <div>
               <h3 className="font-medium mb-1">In-Stock Products</h3>
               <p className="text-gray-600 text-sm">
                 TCG Updates monitors online retailers for In-Stock trading card game products.
               </p>
+            </div>
+          </div>
+          
+          <div className="flex items-start">
+            <div className="mr-4 bg-red-100 p-2 rounded-full">
+              <ListOrdered className="h-5 w-5 text-red-700" />
             </div>
             <div>
               <h3 className="font-medium mb-1">Set Lists</h3>
