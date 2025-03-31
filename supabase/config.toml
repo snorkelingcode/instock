@@ -10,14 +10,14 @@ site_url = "https://tcgupdates.com"
 additional_redirect_urls = ["https://www.tcgupdates.com", "http://localhost:5173", "http://localhost:3000"]
 enable_signup = true
 
+# Password recovery needs to be directly under auth as a section, not a property
+[auth.password_recovery]
+enable = true
+
 [auth.email]
 enable_signup = true
 double_confirm_changes = true
 enable_confirmations = true
-
-# Password recovery needs to be directly under auth, not under auth.email
-[auth.password_recovery]
-enable = true
 
 [auth.email.smtp]
 sender_name = "TCG Updates"
@@ -85,17 +85,18 @@ enabled = true
 client_id = "email"
 secret = "email"
 
-# Functions section needs specific formatting
+# Functions section needs to be formatted properly
 [functions]
-# Import map path defined as a string, which is correct
+# Import map path defined as a property of the functions section
 import_map_path = "supabase/import_map.json"
 
-# HTTP functions defined as an array
-[[functions.http]]
-path = "/handle-inbound-email"
-verify_jwt = false
-
-# Adding the PSA proxy endpoint
-[[functions.http]]
-path = "/psa-proxy"
-verify_jwt = false
+# HTTP functions defined as properties of functions.http, not as an array
+[functions.http]
+"handle-inbound-email" = {
+  path = "/handle-inbound-email",
+  verify_jwt = false
+}
+"psa-proxy" = {
+  path = "/psa-proxy",
+  verify_jwt = false
+}
