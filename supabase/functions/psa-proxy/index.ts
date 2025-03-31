@@ -46,7 +46,7 @@ serve(async (req) => {
     if (!psaToken) {
       console.error("PSA token is missing from request headers");
       return new Response(
-        JSON.stringify({ error: "PSA token is required" }),
+        JSON.stringify({ error: "PSA token is required", code: 401, message: "Missing authorization header" }),
         { 
           status: 401, 
           headers: { "Content-Type": "application/json", ...corsHeaders } 

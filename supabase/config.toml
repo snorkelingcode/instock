@@ -15,7 +15,8 @@ enable_signup = true
 double_confirm_changes = true
 enable_confirmations = true
 
-[auth.email.password_recovery]
+# Password recovery needs to be directly under auth, not under auth.email
+[auth.password_recovery]
 enable = true
 
 [auth.email.smtp]
@@ -84,9 +85,17 @@ enabled = true
 client_id = "email"
 secret = "email"
 
+# Functions section needs specific formatting
 [functions]
+# Import map path defined as a string, which is correct
 import_map_path = "supabase/import_map.json"
 
+# HTTP functions defined as an array
 [[functions.http]]
 path = "/handle-inbound-email"
+verify_jwt = false
+
+# Adding the PSA proxy endpoint
+[[functions.http]]
+path = "/psa-proxy"
 verify_jwt = false

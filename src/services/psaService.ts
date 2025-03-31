@@ -1,4 +1,3 @@
-
 import { toast } from "@/hooks/use-toast";
 import { marketDataService } from "@/services/marketDataService";
 
@@ -135,6 +134,11 @@ export const psaService = {
     const token = psaService.getToken();
     
     if (!token) {
+      toast({
+        title: "Authentication Required",
+        description: "PSA API token is not set. Please set a token in your account settings.",
+        variant: "destructive"
+      });
       throw new Error("PSA API token is not set");
     }
     
@@ -148,7 +152,7 @@ export const psaService = {
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
         "Accept": "application/json",
-        "psa-token": token  // Make sure this header is correctly set
+        "psa-token": token
       };
       
       const response = await fetch(`${PSA_PROXY_URL}${endpoint}`, {
@@ -161,16 +165,26 @@ export const psaService = {
       clearTimeout(timeoutId);
       
       if (!response.ok) {
-        if (response.status === 401) {
-          throw new Error("Authentication failed. Please check your PSA API token.");
-        }
+        console.error(`PSA API error: ${response.status}`);
         
         let errorMessage = `API returned ${response.status}`;
+        
         try {
           const errorData = await response.json();
+          console.error("Error data:", errorData);
           errorMessage = errorData.error || errorMessage;
         } catch (e) {
           // If we can't parse the error response, just use the status code
+          console.error("Could not parse error response");
+        }
+        
+        if (response.status === 401) {
+          toast({
+            title: "Authentication Failed",
+            description: "Your PSA API token is invalid or expired. Please update your token in the settings.",
+            variant: "destructive"
+          });
+          throw new Error("Authentication failed. Please check your PSA API token.");
         }
         
         throw new Error(errorMessage);
@@ -190,11 +204,14 @@ export const psaService = {
         throw new Error("Request timed out");
       }
       
-      toast({
-        title: "API Error",
-        description: error instanceof Error ? error.message : "Failed to fetch data from PSA",
-        variant: "destructive"
-      });
+      // Only show toast if it's not an auth error (we already showed one for that)
+      if (!error.message?.includes("Authentication failed")) {
+        toast({
+          title: "API Error",
+          description: error instanceof Error ? error.message : "Failed to fetch data from PSA",
+          variant: "destructive"
+        });
+      }
       
       throw error;
     }
