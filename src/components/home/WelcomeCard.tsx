@@ -12,12 +12,11 @@ const WelcomeCard = () => {
     <Card className="bg-gradient-to-r from-red-50 to-white border-red-200 shadow-md">
       <CardHeader>
         <CardTitle className="text-2xl text-red-800">Welcome to TCG Updates</CardTitle>
-        <CardDescription>Your comprehensive resource for Trading Card Game news and inventory tracking</CardDescription>
       </CardHeader>
       <CardContent>
         <p className="text-gray-700">
-          <strong>TCG Updates</strong> provides real-time information on product availability, 
-          market trends, and latest news for all major trading card games. Whether you're a collector, 
+          <strong>TCG Updates</strong> provides high quality information on product availability, 
+          market trends, and the latest news for all major trading card games. Whether you're a collector, 
           player, or investor, we help you stay ahead.
         </p>
         <p className="text-gray-700 mt-2">
