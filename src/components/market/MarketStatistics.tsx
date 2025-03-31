@@ -1,11 +1,17 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Database, BarChart, Users, Star, Diamond } from "lucide-react";
+import { Database, BarChart, Users, Star, Diamond, TrendingUp, TrendingDown } from "lucide-react";
 import { MarketDataItem } from "@/services/marketDataService";
 
 interface MarketStatisticsProps {
   marketData: MarketDataItem[];
+  previousData?: {
+    totalMarketCap: number;
+    totalPopulation: number;
+    totalPsa10s: number;
+    gemRate: string;
+  };
 }
 
 const formatCurrency = (value: number): string => {
@@ -26,7 +32,16 @@ const formatNumber = (value: number): string => {
   return value.toLocaleString();
 };
 
-const MarketStatistics: React.FC<MarketStatisticsProps> = ({ marketData }) => {
+const calculatePercentChange = (current: number, previous: number): { value: number, isPositive: boolean } => {
+  if (previous === 0) return { value: 0, isPositive: false };
+  const change = ((current - previous) / previous) * 100;
+  return { 
+    value: Math.abs(change), 
+    isPositive: change >= 0 
+  };
+};
+
+const MarketStatistics: React.FC<MarketStatisticsProps> = ({ marketData, previousData }) => {
   // Calculate total market cap
   const totalMarketCap = marketData.reduce(
     (sum, card) => sum + (card.market_cap || 0), 
@@ -50,6 +65,19 @@ const MarketStatistics: React.FC<MarketStatisticsProps> = ({ marketData }) => {
     ? ((totalPsa10s / totalPopulation) * 100).toFixed(1) 
     : "0";
 
+  // Calculate changes if previous data is provided
+  const marketCapChange = previousData 
+    ? calculatePercentChange(totalMarketCap, previousData.totalMarketCap)
+    : null;
+    
+  const populationChange = previousData 
+    ? calculatePercentChange(totalPopulation, previousData.totalPopulation)
+    : null;
+    
+  const gemRateChange = previousData && previousData.gemRate
+    ? calculatePercentChange(parseFloat(gemRate), parseFloat(previousData.gemRate))
+    : null;
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       <Card>
@@ -59,6 +87,16 @@ const MarketStatistics: React.FC<MarketStatisticsProps> = ({ marketData }) => {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{formatCurrency(totalMarketCap)}</div>
+          {marketCapChange && (
+            <div className={`flex items-center text-xs ${marketCapChange.isPositive ? 'text-green-500' : 'text-red-500'}`}>
+              {marketCapChange.isPositive ? (
+                <TrendingUp className="h-3 w-3 mr-1" />
+              ) : (
+                <TrendingDown className="h-3 w-3 mr-1" />
+              )}
+              <span>{marketCapChange.value.toFixed(1)}% {marketCapChange.isPositive ? 'increase' : 'decrease'}</span>
+            </div>
+          )}
           <p className="text-xs text-muted-foreground">
             Value of all graded cards
           </p>
@@ -72,6 +110,16 @@ const MarketStatistics: React.FC<MarketStatisticsProps> = ({ marketData }) => {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{formatNumber(totalPopulation)}</div>
+          {populationChange && (
+            <div className={`flex items-center text-xs ${populationChange.isPositive ? 'text-green-500' : 'text-red-500'}`}>
+              {populationChange.isPositive ? (
+                <TrendingUp className="h-3 w-3 mr-1" />
+              ) : (
+                <TrendingDown className="h-3 w-3 mr-1" />
+              )}
+              <span>{populationChange.value.toFixed(1)}% {populationChange.isPositive ? 'increase' : 'decrease'}</span>
+            </div>
+          )}
           <p className="text-xs text-muted-foreground">
             Number of graded cards
           </p>
@@ -98,6 +146,16 @@ const MarketStatistics: React.FC<MarketStatisticsProps> = ({ marketData }) => {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{gemRate}%</div>
+          {gemRateChange && (
+            <div className={`flex items-center text-xs ${gemRateChange.isPositive ? 'text-green-500' : 'text-red-500'}`}>
+              {gemRateChange.isPositive ? (
+                <TrendingUp className="h-3 w-3 mr-1" />
+              ) : (
+                <TrendingDown className="h-3 w-3 mr-1" />
+              )}
+              <span>{gemRateChange.value.toFixed(1)}% {gemRateChange.isPositive ? 'increase' : 'decrease'}</span>
+            </div>
+          )}
           <p className="text-xs text-muted-foreground">
             PSA 10 / Total population
           </p>

@@ -58,6 +58,64 @@ export const psaService = {
     localStorage.setItem("psa_access_token", token);
   },
   
+  // Direct call to PSA API (without proxy, for testing purposes)
+  callPsaApiDirect: async <T>(endpoint: string, method: string = "GET", body?: any): Promise<T> => {
+    const token = psaService.getToken();
+    
+    if (!token) {
+      throw new Error("PSA API token is not set");
+    }
+    
+    try {
+      console.log(`Calling PSA API directly: https://api.psacard.com/publicapi${endpoint}`);
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+      
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "Authorization": `bearer ${token}`
+      };
+      
+      const response = await fetch(`https://api.psacard.com/publicapi${endpoint}`, {
+        method,
+        headers,
+        body: body ? JSON.stringify(body) : undefined,
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `API returned ${response.status}: ${response.statusText}`);
+      }
+      
+      return await response.json();
+      
+    } catch (error) {
+      console.error("PSA API direct call failed:", error);
+      
+      if (error instanceof DOMException && error.name === "AbortError") {
+        toast({
+          title: "Request Timeout",
+          description: "The API request timed out. Please try again later.",
+          variant: "destructive"
+        });
+        throw new Error("Request timed out");
+      }
+      
+      toast({
+        title: "API Error",
+        description: error instanceof Error ? error.message : "Failed to fetch data from PSA",
+        variant: "destructive"
+      });
+      
+      throw error;
+    }
+  },
+  
   // Generic function to make API calls to PSA via our edge function
   callApi: async <T>(endpoint: string, method: string = "GET", body?: any): Promise<T> => {
     const token = psaService.getToken();
@@ -181,6 +239,18 @@ export const psaService = {
       
       // Fall back to mock data
       return psaService.getMockCardsByCategory(category, page, pageSize);
+    }
+  },
+  
+  // Test direct PSA API call
+  testPsaApiConnection: async (): Promise<boolean> => {
+    try {
+      const response = await psaService.callPsaApiDirect<any>("/cert/GetByCertNumber/00000001");
+      console.log("PSA API connection test result:", response);
+      return true;
+    } catch (error) {
+      console.error("PSA API connection test failed:", error);
+      return false;
     }
   },
   

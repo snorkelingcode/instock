@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import LoadingScreen from "@/components/ui/loading-screen";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarChartIcon, AlertCircle, Info } from "lucide-react";
+import { BarChartIcon, AlertCircle, Info, Clock, RefreshCw } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import MarketStatistics from "@/components/market/MarketStatistics";
 import { 
@@ -222,7 +222,14 @@ const calculateGemRate = (card: MarketDataItem): string => {
 const PSAMarket: React.FC = () => {
   const [token, setToken] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isUpdating, setIsUpdating] = useState<boolean>(false);
   const [marketData, setMarketData] = useState<MarketDataItem[]>([]);
+  const [previousMarketData, setPreviousMarketData] = useState<{
+    totalMarketCap: number;
+    totalPopulation: number;
+    totalPsa10s: number;
+    gemRate: string;
+  } | null>(null);
   const [filteredData, setFilteredData] = useState<MarketDataItem[]>([]);
   const [chartData, setChartData] = useState<any[]>([]);
   const [selectedCard, setSelectedCard] = useState<MarketDataItem | null>(null);
@@ -231,6 +238,7 @@ const PSAMarket: React.FC = () => {
   const [populationComparisonData, setPopulationComparisonData] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [totalCards, setTotalCards] = useState<number>(0);
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const [yearInput, setYearInput] = useState<string>("");
   const [filters, setFilters] = useState({
     language: "any",
@@ -257,6 +265,8 @@ const PSAMarket: React.FC = () => {
     const savedToken = psaService.getToken();
     if (savedToken) {
       setToken(savedToken);
+    } else if (token) {
+      psaService.setToken(token);
     }
     
     fetchMarketData();
@@ -327,12 +337,27 @@ const PSAMarket: React.FC = () => {
       console.log("Fetched market data:", data);
       
       if (data.length === 0) {
-        console.log("No data found in database, no need to generate mock data as we want real data only");
+        console.log("No data found in database");
         setMarketData([]);
         setFilteredData([]);
         setTotalCards(0);
       } else {
-        console.log("Using real market data from database");
+        console.log("Using market data from database");
+        
+        const currentMarketCap = data.reduce((sum, card) => sum + (card.market_cap || 0), 0);
+        const currentPopulation = data.reduce((sum, card) => sum + (card.total_population || 0), 0);
+        const currentPsa10s = data.reduce((sum, card) => sum + (card.population_10 || 0), 0);
+        const currentGemRate = currentPopulation > 0 
+          ? ((currentPsa10s / currentPopulation) * 100).toFixed(1) 
+          : "0";
+        
+        setPreviousMarketData({
+          totalMarketCap: currentMarketCap,
+          totalPopulation: currentPopulation,
+          totalPsa10s: currentPsa10s,
+          gemRate: currentGemRate
+        });
+        
         const dataWithUpdatedMarketCap = data.map(card => {
           const totalPopulation = card.total_population || calculateTotalPopulation(card);
           const marketCap = card.market_cap || calculateMarketCap(card);
@@ -363,6 +388,11 @@ const PSAMarket: React.FC = () => {
           setPriceComparisonData(generatePriceComparisonData(sortedData[0]));
           setPopulationComparisonData(generatePopulationComparisonData(sortedData[0]));
         }
+        
+        const lastUpdatedInfo = localStorage.getItem('psa_market_last_updated');
+        if (lastUpdatedInfo) {
+          setLastUpdated(lastUpdatedInfo);
+        }
       }
     } catch (error) {
       console.error("Error fetching market data:", error);
@@ -377,22 +407,106 @@ const PSAMarket: React.FC = () => {
     }
   };
   
-  const calculateTotalPopulation = (card: MarketDataItem): number => {
-    return (
-      (card.population_10 || 0) +
-      (card.population_9 || 0) +
-      (card.population_8 || 0) +
-      (card.population_7 || 0) +
-      (card.population_6 || 0) +
-      (card.population_5 || 0) +
-      (card.population_4 || 0) +
-      (card.population_3 || 0) +
-      (card.population_2 || 0) +
-      (card.population_1 || 0) +
-      (card.population_auth || 0)
-    );
+  const updatePopulationData = async () => {
+    if (!token) {
+      toast({
+        title: "API Token Required",
+        description: "Please set your PSA API token first",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setIsUpdating(true);
+    psaService.setToken(token);
+    
+    try {
+      const isConnected = await psaService.testPsaApiConnection();
+      if (!isConnected) {
+        throw new Error("Could not connect to PSA API. Please check your token.");
+      }
+      
+      toast({
+        title: "Update Started",
+        description: "Updating population data for all cards...",
+      });
+      
+      let updatedCards = 0;
+      let updatedCount = 0;
+      
+      const updatedMarketData = [...marketData];
+      
+      for (let i = 0; i < marketData.length; i++) {
+        const card = marketData[i];
+        console.log(`Updating card ${i+1}/${marketData.length}: ${card.card_name}`);
+        
+        try {
+          const certMatch = card.card_name.match(/PSA\s*#?\s*(\d+)/i);
+          if (certMatch && certMatch[1]) {
+            const certNumber = certMatch[1];
+            console.log(`Found cert number ${certNumber} in card name`);
+            
+            const psaData = await psaService.callPsaApiDirect<any>(`/cert/GetByCertNumber/${certNumber}`);
+            
+            if (psaData && psaData.popReport) {
+              console.log(`Got population data for cert ${certNumber}:`, psaData.popReport);
+              
+              updatedMarketData[i] = {
+                ...card,
+                population_10: psaData.popReport.pop10 || card.population_10,
+                population_9: psaData.popReport.pop9 || card.population_9,
+                population_8: psaData.popReport.pop8 || card.population_8,
+                population_7: psaData.popReport.pop7 || card.population_7,
+                population_6: psaData.popReport.pop6 || card.population_6,
+                population_5: psaData.popReport.pop5 || card.population_5,
+                population_4: psaData.popReport.pop4 || card.population_4,
+                population_3: psaData.popReport.pop3 || card.population_3,
+                population_2: psaData.popReport.pop2 || card.population_2,
+                population_1: psaData.popReport.pop1 || card.population_1,
+                population_auth: psaData.popReport.popA || card.population_auth,
+                total_population: psaData.popReport.totalPop || calculateTotalPopulation(card)
+              };
+              
+              await marketDataService.updateMarketData(card.id, updatedMarketData[i]);
+              updatedCount++;
+            }
+          } else {
+            console.log(`No cert number found in card name: ${card.card_name}`);
+          }
+          
+          updatedCards++;
+          
+          await new Promise(resolve => setTimeout(resolve, 500));
+        } catch (cardError) {
+          console.error(`Error updating card ${card.card_name}:`, cardError);
+        }
+        
+        if (updatedCards % 5 === 0 || updatedCards === marketData.length) {
+          setMarketData([...updatedMarketData]);
+          applyFilters();
+        }
+      }
+      
+      const now = new Date().toISOString();
+      localStorage.setItem('psa_market_last_updated', now);
+      setLastUpdated(now);
+      
+      toast({
+        title: "Update Complete",
+        description: `Updated population data for ${updatedCount} cards`,
+      });
+    } catch (error) {
+      console.error("Error updating population data:", error);
+      toast({
+        title: "Update Failed",
+        description: error instanceof Error ? error.message : "Failed to update population data",
+        variant: "destructive"
+      });
+    } finally {
+      setIsUpdating(false);
+    }
   };
-
+  
   const handleFilterChange = (filterType: string, value: string) => {
     setFilters(prev => ({ ...prev, [filterType]: value }));
     
@@ -460,39 +574,15 @@ const PSAMarket: React.FC = () => {
   const nextPage = () => setCurrentPage(prev => Math.min(prev + 1, totalPages));
   const prevPage = () => setCurrentPage(prev => Math.max(prev - 1, 1));
   
-  const handleTokenSave = () => {
-    if (token) {
-      psaService.setToken(token);
-      toast({
-        title: "Success",
-        description: "PSA API token has been saved",
-      });
-    }
-  };
-  
-  const handleCardSelect = (card: MarketDataItem) => {
-    setSelectedCard(card);
-  };
-  
-  const handleViewCardDetails = (card: MarketDataItem) => {
-    navigate(`/psa-market/${card.id}`, { state: { card } });
-  };
-  
-  const calculateTotalMarketCap = () => {
-    return filteredData.reduce((sum, card) => sum + (card.market_cap || 0), 0);
-  };
-  
-  const calculateTotalPopulationAll = () => {
-    return filteredData.reduce((sum, card) => sum + (card.total_population || 0), 0);
-  };
-  
-  const calculateOverallAveragePrice = () => {
-    const totalValue = filteredData.reduce((sum, card) => {
-      const avgPrice = calculateAveragePrice(card) || 0;
-      return sum + avgPrice;
-    }, 0);
-    
-    return filteredData.length > 0 ? totalValue / filteredData.length : 0;
+  const formatDate = (isoString: string): string => {
+    const date = new Date(isoString);
+    return date.toLocaleString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
   return (
@@ -500,6 +590,42 @@ const PSAMarket: React.FC = () => {
       <div className="container mx-auto py-6 space-y-6">
         <div className="flex flex-row items-center justify-between">
           <h1 className="text-3xl font-bold mb-6">TCG Market Data</h1>
+          
+          <div className="flex items-center gap-2">
+            <Input
+              placeholder="Enter PSA API Token"
+              value={token}
+              onChange={(e) => setToken(e.target.value)}
+              className="max-w-xs"
+              type="password"
+            />
+            <Button onClick={() => {
+              psaService.setToken(token);
+              toast({
+                title: "Token Saved",
+                description: "PSA API token has been saved",
+              });
+            }} size="sm" variant="outline">
+              Save Token
+            </Button>
+            <Button 
+              onClick={updatePopulationData} 
+              size="sm" 
+              disabled={isUpdating || !token}
+            >
+              {isUpdating ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Updating...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Update Data
+                </>
+              )}
+            </Button>
+          </div>
         </div>
         
         <Card className="border-blue-200 bg-blue-50/50 dark:bg-blue-950/20 dark:border-blue-800">
@@ -527,7 +653,10 @@ const PSAMarket: React.FC = () => {
         )}
 
         {!isLoading && filteredData.length > 0 && (
-          <MarketStatistics marketData={filteredData} />
+          <MarketStatistics 
+            marketData={filteredData} 
+            previousData={previousMarketData || undefined}
+          />
         )}
 
         <Card className="mb-6">
@@ -763,6 +892,13 @@ const PSAMarket: React.FC = () => {
                         </PaginationItem>
                       </PaginationContent>
                     </Pagination>
+                  </div>
+                )}
+                
+                {lastUpdated && (
+                  <div className="p-4 border-t border-border flex items-center text-sm text-muted-foreground">
+                    <Clock className="h-4 w-4 mr-2" />
+                    Last updated: {formatDate(lastUpdated)}
                   </div>
                 )}
               </div>
