@@ -1,4 +1,6 @@
+
 import { toast } from "@/hooks/use-toast";
+import { marketDataService } from "@/services/marketDataService";
 
 // PSA API proxy URL (using Supabase Edge Function)
 const PSA_PROXY_URL = "https://etgkuasmqjidwtaxrfww.supabase.co/functions/v1/psa-proxy";
@@ -21,6 +23,19 @@ export interface PSACard {
     popHigher: number;
     popSame: number;
     popLower: number;
+    details?: {
+      pop10?: number;
+      pop9?: number;
+      pop8?: number;
+      pop7?: number;
+      pop6?: number;
+      pop5?: number;
+      pop4?: number;
+      pop3?: number;
+      pop2?: number;
+      pop1?: number;
+      popA?: number;
+    };
   };
   marketData?: {
     lastSalePrice?: number;
@@ -253,6 +268,115 @@ export const psaService = {
     }
   },
   
+  // Update card data from PSA API
+  updateCardPopulationFromPSA: async (card: any): Promise<boolean> => {
+    try {
+      let certNumber = card.certification_number;
+      
+      if (!certNumber) {
+        const certMatch = card.card_name.match(/PSA\s*#?\s*(\d+)/i);
+        if (certMatch && certMatch[1]) {
+          certNumber = certMatch[1];
+          console.log(`Found cert number ${certNumber} in card name`);
+        } else {
+          throw new Error("No certification number found for card");
+        }
+      }
+      
+      console.log(`Updating population data for cert ${certNumber}`);
+      
+      const psaData = await psaService.callApi<any>(`/cert/${certNumber}`);
+      
+      if (!psaData || !psaData.PSACert) {
+        throw new Error("No data returned from PSA API");
+      }
+      
+      console.log("PSA data received:", psaData);
+      
+      // Get the population data
+      const popReport = psaData.popReport || {};
+      const popDetails = popReport.details || {};
+      
+      // Update the card data
+      const updatedCard = {
+        ...card,
+        certification_number: certNumber,
+        population_10: popDetails.pop10 || 0,
+        population_9: popDetails.pop9 || 0,
+        population_8: popDetails.pop8 || 0,
+        population_7: popDetails.pop7 || 0,
+        population_6: popDetails.pop6 || 0,
+        population_5: popDetails.pop5 || 0,
+        population_4: popDetails.pop4 || 0,
+        population_3: popDetails.pop3 || 0,
+        population_2: popDetails.pop2 || 0,
+        population_1: popDetails.pop1 || 0,
+        population_auth: popDetails.popA || 0,
+        total_population: psaData.PSACert.TotalPopulation || 0
+      };
+      
+      // Save the updated card to the database
+      if (card.id) {
+        const result = await marketDataService.updateMarketData(card.id, updatedCard);
+        
+        if (result) {
+          toast({
+            title: "Success",
+            description: "Card population data has been updated from PSA",
+          });
+          
+          return true;
+        } else {
+          throw new Error("Failed to save updated card data");
+        }
+      } else {
+        throw new Error("Card ID is missing");
+      }
+    } catch (error) {
+      console.error("Error updating card population data:", error);
+      
+      toast({
+        title: "Update Failed",
+        description: error instanceof Error ? error.message : "Failed to update card data from PSA",
+        variant: "destructive"
+      });
+      
+      return false;
+    }
+  },
+  
+  // Batch update multiple cards
+  batchUpdateCardsFromPSA: async (cards: any[], progressCallback?: (current: number, total: number) => void): Promise<{ success: number, failed: number }> => {
+    let successCount = 0;
+    let failedCount = 0;
+    
+    for (let i = 0; i < cards.length; i++) {
+      try {
+        const success = await psaService.updateCardPopulationFromPSA(cards[i]);
+        if (success) {
+          successCount++;
+        } else {
+          failedCount++;
+        }
+      } catch (error) {
+        console.error(`Error updating card ${i}:`, error);
+        failedCount++;
+      }
+      
+      // Report progress if callback provided
+      if (progressCallback) {
+        progressCallback(i + 1, cards.length);
+      }
+      
+      // Add a small delay to avoid rate limiting
+      if (i < cards.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+    }
+    
+    return { success: successCount, failed: failedCount };
+  },
+  
   // Helper function to extract PSA cert number from card name
   extractCertNumber: (cardName: string): string | null => {
     const certMatch = cardName.match(/PSA\s*#?\s*(\d+)/i);
@@ -281,7 +405,20 @@ export const psaService = {
         totalPop: Math.floor(Math.random() * 1000) + 10,
         popHigher: Math.floor(Math.random() * 100),
         popSame: Math.floor(Math.random() * 500),
-        popLower: Math.floor(Math.random() * 200)
+        popLower: Math.floor(Math.random() * 200),
+        details: {
+          pop10: Math.floor(Math.random() * 100),
+          pop9: Math.floor(Math.random() * 200),
+          pop8: Math.floor(Math.random() * 200),
+          pop7: Math.floor(Math.random() * 150),
+          pop6: Math.floor(Math.random() * 100),
+          pop5: Math.floor(Math.random() * 50),
+          pop4: Math.floor(Math.random() * 30),
+          pop3: Math.floor(Math.random() * 20),
+          pop2: Math.floor(Math.random() * 10),
+          pop1: Math.floor(Math.random() * 5),
+          popA: Math.floor(Math.random() * 20)
+        }
       },
       marketData: {
         lastSalePrice: Math.round(Math.random() * 10000) / 100,
@@ -316,7 +453,20 @@ export const psaService = {
         totalPop: Math.floor(Math.random() * 1000) + 10,
         popHigher: Math.floor(Math.random() * 100),
         popSame: Math.floor(Math.random() * 500),
-        popLower: Math.floor(Math.random() * 200)
+        popLower: Math.floor(Math.random() * 200),
+        details: {
+          pop10: Math.floor(Math.random() * 100),
+          pop9: Math.floor(Math.random() * 200),
+          pop8: Math.floor(Math.random() * 200),
+          pop7: Math.floor(Math.random() * 150),
+          pop6: Math.floor(Math.random() * 100),
+          pop5: Math.floor(Math.random() * 50),
+          pop4: Math.floor(Math.random() * 30),
+          pop3: Math.floor(Math.random() * 20),
+          pop2: Math.floor(Math.random() * 10),
+          pop1: Math.floor(Math.random() * 5),
+          popA: Math.floor(Math.random() * 20)
+        }
       }
     }));
     
