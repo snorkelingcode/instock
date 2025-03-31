@@ -1,4 +1,5 @@
 
+
 # Redirect all routes to index.html for SPA handling
 /*    /index.html   200
 
@@ -25,3 +26,6 @@ https://www.fixthesupplyissue.com/*  https://tcgupdates.com/:splat  301!
 /terms             /index.html   200
 /cookies           /index.html   200
 /article/*         /index.html   200
+/psa-market/*      /index.html   200
+/psa-card/*        /index.html   200
+

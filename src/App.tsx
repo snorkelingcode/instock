@@ -63,6 +63,7 @@ const App = () => {
               <Route path="/market" element={<PageCacheWrapper><PSAMarket /></PageCacheWrapper>} />
               <Route path="/psa-market" element={<PageCacheWrapper><PSAMarket /></PageCacheWrapper>} />
               <Route path="/psa-market/:id" element={<PageCacheWrapper><PSACardDetails /></PageCacheWrapper>} />
+              <Route path="/psa-card/:id" element={<PageCacheWrapper><PSACardDetails /></PageCacheWrapper>} />
               <Route path="/article/:id" element={<PageCacheWrapper><ArticleDetails /></PageCacheWrapper>} />
               <Route path="/privacy" element={<PageCacheWrapper><PrivacyPolicy /></PageCacheWrapper>} />
               <Route path="/terms" element={<PageCacheWrapper><TermsOfService /></PageCacheWrapper>} />

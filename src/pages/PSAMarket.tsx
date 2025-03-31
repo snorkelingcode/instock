@@ -478,7 +478,7 @@ const PSAMarket: React.FC = () => {
 
   const handleViewCardDetails = (card: MarketDataItem) => {
     setSelectedCard(card);
-    navigate(`/psa-card/${card.id}`, { state: { card } });
+    navigate(`/psa-market/${card.id}`, { state: { card } });
   };
 
   return (
