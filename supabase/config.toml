@@ -15,7 +15,7 @@ enable_signup = true
 double_confirm_changes = true
 enable_confirmations = true
 
-# Password reset configuration moved to proper location
+# Password reset configuration in the proper format
 [auth.email.password_recovery]
 enable = true
 
@@ -86,9 +86,10 @@ client_id = "email"
 secret = "email"
 
 [functions]
+# Fix the import_map_path to be properly formatted
 import_map_path = "supabase/import_map.json"
 
-# Fix the HTTP functions format
+# Fix the HTTP functions format with proper mapping
 [[functions.http]]
 path = "/handle-inbound-email"
 verify_jwt = false

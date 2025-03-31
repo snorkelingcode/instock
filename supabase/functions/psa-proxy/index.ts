@@ -39,15 +39,16 @@ serve(async (req) => {
     const endpoint = url.pathname.replace("/psa-proxy", "");
     const query = url.search;
     
-    // Forward the token from the request headers if available
+    // Forward the token from the request headers
     const psaToken = req.headers.get("psa-token");
     
+    // Check if token is available
     if (!psaToken) {
-      console.error("PSA token is missing from request");
+      console.error("PSA token is missing from request headers");
       return new Response(
         JSON.stringify({ error: "PSA token is required" }),
         { 
-          status: 400, 
+          status: 401, 
           headers: { "Content-Type": "application/json", ...corsHeaders } 
         }
       );
@@ -55,7 +56,7 @@ serve(async (req) => {
     
     console.log(`Proxying request to PSA API: ${PSA_API_BASE_URL}${endpoint}${query}`);
     
-    // Set up request options
+    // Set up request options with the token
     const fetchOptions = {
       method: req.method,
       headers: {

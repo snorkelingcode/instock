@@ -1,3 +1,4 @@
+
 import { toast } from "@/hooks/use-toast";
 import { marketDataService } from "@/services/marketDataService";
 
@@ -133,6 +134,10 @@ export const psaService = {
   callApi: async <T>(endpoint: string, method: string = "GET", body?: any): Promise<T> => {
     const token = psaService.getToken();
     
+    if (!token) {
+      throw new Error("PSA API token is not set");
+    }
+    
     try {
       console.log(`Calling PSA API via edge function: ${PSA_PROXY_URL}${endpoint}`);
       
@@ -142,13 +147,9 @@ export const psaService = {
       
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
-        "Accept": "application/json"
+        "Accept": "application/json",
+        "psa-token": token  // Make sure this header is correctly set
       };
-      
-      // Only add the token if it exists
-      if (token) {
-        headers["psa-token"] = token;
-      }
       
       const response = await fetch(`${PSA_PROXY_URL}${endpoint}`, {
         method,
@@ -160,8 +161,19 @@ export const psaService = {
       clearTimeout(timeoutId);
       
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `API returned ${response.status}: ${response.statusText}`);
+        if (response.status === 401) {
+          throw new Error("Authentication failed. Please check your PSA API token.");
+        }
+        
+        let errorMessage = `API returned ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch (e) {
+          // If we can't parse the error response, just use the status code
+        }
+        
+        throw new Error(errorMessage);
       }
       
       return await response.json();
