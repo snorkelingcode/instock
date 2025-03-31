@@ -1,4 +1,3 @@
-
 # Project ID should remain as the first line
 project_id = "etgkuasmqjidwtaxrfww"
 
@@ -10,7 +9,6 @@ site_url = "https://tcgupdates.com"
 additional_redirect_urls = ["https://www.tcgupdates.com", "http://localhost:5173", "http://localhost:3000"]
 enable_signup = true
 
-# Password recovery needs to be directly under auth as a section, not a property
 [auth.password_recovery]
 enable = true
 
@@ -85,18 +83,15 @@ enabled = true
 client_id = "email"
 secret = "email"
 
-# Functions section needs to be formatted properly
+# Functions configuration
 [functions]
-# Import map path defined as a property of the functions section
 import_map_path = "supabase/import_map.json"
 
-# HTTP functions defined as properties of functions.http, not as an array
-[functions.http]
-"handle-inbound-email" = {
-  path = "/handle-inbound-email",
-  verify_jwt = false
-}
-"psa-proxy" = {
-  path = "/psa-proxy",
-  verify_jwt = false
-}
+# HTTP function endpoints - uses double brackets for array items
+[[functions.http]]
+path = "/handle-inbound-email"
+verify_jwt = false
+
+[[functions.http]]
+path = "/psa-proxy"
+verify_jwt = false
