@@ -1,3 +1,4 @@
+
 import { toast } from "@/hooks/use-toast";
 import { marketDataService } from "@/services/marketDataService";
 
@@ -63,11 +64,14 @@ export interface PSASearchParams {
 export const psaService = {
   // Get access token from localStorage
   getToken: () => {
-    return localStorage.getItem("psa_access_token") || "";
+    const token = localStorage.getItem("psa_access_token") || "";
+    console.log("Retrieved token from localStorage:", token ? "Token exists" : "No token found");
+    return token;
   },
   
   // Save access token to localStorage
   setToken: (token: string) => {
+    console.log("Saving token to localStorage");
     localStorage.setItem("psa_access_token", token);
   },
   
@@ -144,6 +148,7 @@ export const psaService = {
     
     try {
       console.log(`Calling PSA API via edge function: ${PSA_PROXY_URL}${endpoint}`);
+      console.log("Using PSA token:", token.substring(0, 5) + "..." + token.substring(token.length - 5));
       
       // Add a timeout to the fetch request
       const controller = new AbortController();
@@ -155,6 +160,8 @@ export const psaService = {
         "psa-token": token
       };
       
+      console.log("Sending request with headers:", headers);
+      
       const response = await fetch(`${PSA_PROXY_URL}${endpoint}`, {
         method,
         headers,
@@ -163,6 +170,8 @@ export const psaService = {
       });
       
       clearTimeout(timeoutId);
+      
+      console.log(`Response received with status ${response.status}`);
       
       if (!response.ok) {
         console.error(`PSA API error: ${response.status}`);
@@ -179,6 +188,9 @@ export const psaService = {
         }
         
         if (response.status === 401) {
+          // Clear the invalid token from localStorage
+          localStorage.removeItem("psa_access_token");
+          
           toast({
             title: "Authentication Failed",
             description: "Your PSA API token is invalid or expired. Please update your token in the settings.",

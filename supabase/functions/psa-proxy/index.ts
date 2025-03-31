@@ -42,6 +42,10 @@ serve(async (req) => {
     // Forward the token from the request headers
     const psaToken = req.headers.get("psa-token");
     
+    // Debugging - log all headers to see what we're receiving
+    console.log("All headers received:", Object.fromEntries(req.headers.entries()));
+    console.log("PSA token from header:", psaToken);
+    
     // Check if token is available
     if (!psaToken) {
       console.error("PSA token is missing from request headers");
@@ -80,10 +84,12 @@ serve(async (req) => {
     const response = await fetch(`${PSA_API_BASE_URL}${endpoint}${query}`, fetchOptions);
     clearTimeout(timeoutId);
     
+    // Log response status and headers for debugging
+    console.log(`PSA API responded with status ${response.status}`);
+    console.log("PSA API response headers:", Object.fromEntries(response.headers.entries()));
+    
     // Get the response data
     const data = await response.json();
-    
-    console.log(`PSA API responded with status ${response.status}`);
     
     // If we're getting a cert, try to also get the population report
     if (endpoint.startsWith("/cert/") && data && data.PSACert) {
