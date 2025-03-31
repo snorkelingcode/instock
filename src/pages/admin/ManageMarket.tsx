@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import { useToast } from "@/hooks/use-toast";
@@ -13,11 +12,10 @@ import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Progress } from "@/components/ui/progress";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { PlusCircle, Pencil, Trash2, RefreshCw, ImageIcon, Clock, Database } from "lucide-react";
+import { PlusCircle, Pencil, Trash2, RefreshCw, ImageIcon, Clock } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import LoadingScreen from "@/components/ui/loading-screen";
@@ -69,8 +67,6 @@ const ManageMarket: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>("all");
   const [token, setToken] = useState<string>("");
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
-  const [updateProgress, setUpdateProgress] = useState<number>(0);
-  const [isUpdatingCard, setIsUpdatingCard] = useState<boolean>(false);
   const { toast } = useToast();
   const { user, isAdmin } = useAuth();
 
@@ -310,41 +306,6 @@ const ManageMarket: React.FC = () => {
     setActiveTab(value);
   };
 
-  const updateCardPopulation = async (card: MarketDataItem) => {
-    if (!token) {
-      toast({
-        title: "API Token Required",
-        description: "Please set your PSA API token first",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    setIsUpdatingCard(true);
-    psaService.setToken(token);
-    
-    try {
-      const success = await psaService.updateCardPopulationFromPSA(card);
-      
-      if (success) {
-        toast({
-          title: "Success",
-          description: "Card population data has been updated",
-        });
-        fetchMarketData();
-      }
-    } catch (error) {
-      console.error("Error updating card population:", error);
-      toast({
-        title: "Update Failed",
-        description: error instanceof Error ? error.message : "Failed to update card population",
-        variant: "destructive"
-      });
-    } finally {
-      setIsUpdatingCard(false);
-    }
-  };
-
   const updatePopulationData = async () => {
     if (!token) {
       toast({
@@ -356,7 +317,6 @@ const ManageMarket: React.FC = () => {
     }
     
     setIsUpdating(true);
-    setUpdateProgress(0);
     psaService.setToken(token);
     
     try {
@@ -370,12 +330,69 @@ const ManageMarket: React.FC = () => {
         description: "Updating population data for all cards...",
       });
       
-      const psaCards = marketData.filter(card => card.grading_service === "PSA");
+      let updatedCards = 0;
+      let updatedCount = 0;
       
-      const result = await psaService.batchUpdateCardsFromPSA(psaCards, (current, total) => {
-        const progress = Math.floor((current / total) * 100);
-        setUpdateProgress(progress);
-      });
+      const updatedMarketData = [...marketData];
+      
+      for (let i = 0; i < marketData.length; i++) {
+        const card = marketData[i];
+        console.log(`Updating card ${i+1}/${marketData.length}: ${card.card_name}`);
+        
+        try {
+          let certNumber = card.certification_number;
+          
+          if (!certNumber) {
+            const certMatch = card.card_name.match(/PSA\s*#?\s*(\d+)/i);
+            if (certMatch && certMatch[1]) {
+              certNumber = certMatch[1];
+              console.log(`Found cert number ${certNumber} in card name`);
+            }
+          }
+          
+          if (certNumber) {
+            console.log(`Using cert number ${certNumber} for API call`);
+            
+            const psaData = await psaService.callPsaApiDirect<any>(`/cert/GetByCertNumber/${certNumber}`);
+            
+            if (psaData && psaData.popReport) {
+              console.log(`Got population data for cert ${certNumber}:`, psaData.popReport);
+              
+              updatedMarketData[i] = {
+                ...card,
+                certification_number: certNumber,
+                population_10: psaData.popReport.pop10 || card.population_10,
+                population_9: psaData.popReport.pop9 || card.population_9,
+                population_8: psaData.popReport.pop8 || card.population_8,
+                population_7: psaData.popReport.pop7 || card.population_7,
+                population_6: psaData.popReport.pop6 || card.population_6,
+                population_5: psaData.popReport.pop5 || card.population_5,
+                population_4: psaData.popReport.pop4 || card.population_4,
+                population_3: psaData.popReport.pop3 || card.population_3,
+                population_2: psaData.popReport.pop2 || card.population_2,
+                population_1: psaData.popReport.pop1 || card.population_1,
+                population_auth: psaData.popReport.popA || card.population_auth,
+                total_population: psaData.popReport.totalPop || calculateTotalPopulation(card)
+              };
+              
+              await marketDataService.updateMarketData(card.id, updatedMarketData[i]);
+              updatedCount++;
+            }
+          } else {
+            console.log(`No cert number found for card: ${card.card_name}`);
+          }
+          
+          updatedCards++;
+          
+          await new Promise(resolve => setTimeout(resolve, 500));
+        } catch (cardError) {
+          console.error(`Error updating card ${card.card_name}:`, cardError);
+        }
+        
+        if (updatedCards % 5 === 0 || updatedCards === marketData.length) {
+          setMarketData([...updatedMarketData]);
+        }
+      }
       
       const now = new Date().toISOString();
       localStorage.setItem('psa_market_last_updated', now);
@@ -383,10 +400,8 @@ const ManageMarket: React.FC = () => {
       
       toast({
         title: "Update Complete",
-        description: `Updated population data for ${result.success} cards (${result.failed} failed)`,
+        description: `Updated population data for ${updatedCount} cards`,
       });
-      
-      fetchMarketData();
     } catch (error) {
       console.error("Error updating population data:", error);
       toast({
@@ -396,7 +411,6 @@ const ManageMarket: React.FC = () => {
       });
     } finally {
       setIsUpdating(false);
-      setUpdateProgress(0);
     }
   };
 
@@ -501,21 +515,12 @@ const ManageMarket: React.FC = () => {
                     ) : (
                       <>
                         <RefreshCw className="h-4 w-4 mr-2" />
-                        Update All Population Data
+                        Update Population Data
                       </>
                     )}
                   </Button>
                 </div>
               </div>
-              {isUpdating && (
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm text-muted-foreground">
-                    <span>Progress</span>
-                    <span>{updateProgress}%</span>
-                  </div>
-                  <Progress value={updateProgress} className="h-2" />
-                </div>
-              )}
               {lastUpdated && (
                 <p className="text-sm text-muted-foreground flex items-center">
                   <Clock className="h-4 w-4 mr-2" />
@@ -543,7 +548,6 @@ const ManageMarket: React.FC = () => {
                           <TableRow>
                             <TableHead>Card Name</TableHead>
                             <TableHead>Grading Service</TableHead>
-                            <TableHead>Cert Number</TableHead>
                             <TableHead>Total Population</TableHead>
                             <TableHead>Market Cap</TableHead>
                             <TableHead className="text-right">Actions</TableHead>
@@ -554,21 +558,10 @@ const ManageMarket: React.FC = () => {
                             <TableRow key={item.id}>
                               <TableCell className="font-medium">{item.card_name}</TableCell>
                               <TableCell>{item.grading_service}</TableCell>
-                              <TableCell>{item.certification_number || '-'}</TableCell>
                               <TableCell>{formatNumber(item.total_population)}</TableCell>
                               <TableCell>{formatCurrency(item.market_cap)}</TableCell>
                               <TableCell className="text-right">
                                 <div className="flex justify-end space-x-2">
-                                  {item.grading_service === "PSA" && (
-                                    <Button
-                                      onClick={() => updateCardPopulation(item)}
-                                      variant="outline"
-                                      size="sm"
-                                      disabled={isUpdatingCard}
-                                    >
-                                      <Database className="h-4 w-4" />
-                                    </Button>
-                                  )}
                                   <Button
                                     onClick={() => handleEdit(item)}
                                     variant="outline"

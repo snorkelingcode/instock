@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -52,6 +53,7 @@ const formatChartNumber = (value?: number) => {
   return value.toLocaleString();
 };
 
+// Helper function to calculate total population for a card
 const calculateTotalPopulation = (card: MarketDataItem): number => {
   return (
     (card.population_10 || 0) +
@@ -68,6 +70,7 @@ const calculateTotalPopulation = (card: MarketDataItem): number => {
   );
 };
 
+// Helper function to calculate market cap
 const calculateMarketCap = (card: MarketDataItem): number => {
   if (card.market_cap) return card.market_cap;
   
@@ -118,7 +121,7 @@ const generatePriceComparisonData = (card: MarketDataItem | null) => {
     return {
       grade: grade === 'Auth' ? 'Authentic' : `Grade ${grade}`,
       price: price,
-      formattedPrice: formatCurrency(price)
+      formattedPrice: price.toLocaleString()
     };
   }).filter(item => item.price > 0);
 };
@@ -236,6 +239,7 @@ const PSACardDetails: React.FC = () => {
     );
   }
   
+  // Calculate gem rate safely
   const gemRate = card.total_population && card.total_population > 0 && card.population_10
     ? ((card.population_10 / card.total_population) * 100).toFixed(2)
     : "0.00";
@@ -290,12 +294,6 @@ const PSACardDetails: React.FC = () => {
                         <h4 className="text-sm font-medium text-muted-foreground">Grading Service</h4>
                         <p className="text-md font-medium">{card.grading_service}</p>
                       </div>
-                      {card.certification_number && (
-                        <div>
-                          <h4 className="text-sm font-medium text-muted-foreground">Certification Number</h4>
-                          <p className="text-md font-medium">{card.certification_number}</p>
-                        </div>
-                      )}
                       <div>
                         <h4 className="text-sm font-medium text-muted-foreground">Total Population</h4>
                         <p className="text-md font-medium">{formatNumber(card.total_population)}</p>
@@ -306,24 +304,6 @@ const PSACardDetails: React.FC = () => {
                           {formatCurrency(card.market_cap)}
                         </p>
                       </div>
-                      {card.franchise && (
-                        <div>
-                          <h4 className="text-sm font-medium text-muted-foreground">Franchise</h4>
-                          <p className="text-md font-medium">{card.franchise}</p>
-                        </div>
-                      )}
-                      {card.series && (
-                        <div>
-                          <h4 className="text-sm font-medium text-muted-foreground">Series</h4>
-                          <p className="text-md font-medium">{card.series}</p>
-                        </div>
-                      )}
-                      {card.card_set && (
-                        <div>
-                          <h4 className="text-sm font-medium text-muted-foreground">Card Set</h4>
-                          <p className="text-md font-medium">{card.card_set}</p>
-                        </div>
-                      )}
                     </div>
                   </CardContent>
                 </Card>
