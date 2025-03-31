@@ -24,6 +24,7 @@ import psaService from "@/services/psaService";
 const marketDataSchema = z.object({
   card_name: z.string().min(1, "Card name is required"),
   grading_service: z.string().min(1, "Grading service is required"),
+  certification_number: z.string().optional(),
   population_10: z.number().optional(),
   population_9: z.number().optional(),
   population_8: z.number().optional(),
@@ -74,6 +75,7 @@ const ManageMarket: React.FC = () => {
     defaultValues: {
       card_name: "",
       grading_service: "PSA",
+      certification_number: "",
       population_10: 0,
       population_9: 0,
       population_8: 0,
@@ -124,6 +126,7 @@ const ManageMarket: React.FC = () => {
       form.reset({
         card_name: selectedItem.card_name,
         grading_service: selectedItem.grading_service,
+        certification_number: selectedItem.certification_number || "",
         population_10: selectedItem.population_10 || 0,
         population_9: selectedItem.population_9 || 0,
         population_8: selectedItem.population_8 || 0,
@@ -157,6 +160,7 @@ const ManageMarket: React.FC = () => {
       form.reset({
         card_name: "",
         grading_service: "PSA",
+        certification_number: "",
         population_10: 0,
         population_9: 0,
         population_8: 0,
@@ -336,10 +340,18 @@ const ManageMarket: React.FC = () => {
         console.log(`Updating card ${i+1}/${marketData.length}: ${card.card_name}`);
         
         try {
-          const certMatch = card.card_name.match(/PSA\s*#?\s*(\d+)/i);
-          if (certMatch && certMatch[1]) {
-            const certNumber = certMatch[1];
-            console.log(`Found cert number ${certNumber} in card name`);
+          let certNumber = card.certification_number;
+          
+          if (!certNumber) {
+            const certMatch = card.card_name.match(/PSA\s*#?\s*(\d+)/i);
+            if (certMatch && certMatch[1]) {
+              certNumber = certMatch[1];
+              console.log(`Found cert number ${certNumber} in card name`);
+            }
+          }
+          
+          if (certNumber) {
+            console.log(`Using cert number ${certNumber} for API call`);
             
             const psaData = await psaService.callPsaApiDirect<any>(`/cert/GetByCertNumber/${certNumber}`);
             
@@ -348,6 +360,7 @@ const ManageMarket: React.FC = () => {
               
               updatedMarketData[i] = {
                 ...card,
+                certification_number: certNumber,
                 population_10: psaData.popReport.pop10 || card.population_10,
                 population_9: psaData.popReport.pop9 || card.population_9,
                 population_8: psaData.popReport.pop8 || card.population_8,
@@ -366,7 +379,7 @@ const ManageMarket: React.FC = () => {
               updatedCount++;
             }
           } else {
-            console.log(`No cert number found in card name: ${card.card_name}`);
+            console.log(`No cert number found for card: ${card.card_name}`);
           }
           
           updatedCards++;
@@ -643,6 +656,20 @@ const ManageMarket: React.FC = () => {
                         <FormLabel>Grading Service</FormLabel>
                         <FormControl>
                           <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="certification_number"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>PSA Certification Number</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="e.g. 12345678" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

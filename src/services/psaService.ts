@@ -1,4 +1,3 @@
-
 import { toast } from "@/hooks/use-toast";
 
 // PSA API proxy URL (using Supabase Edge Function)
@@ -252,6 +251,15 @@ export const psaService = {
       console.error("PSA API connection test failed:", error);
       return false;
     }
+  },
+  
+  // Helper function to extract PSA cert number from card name
+  extractCertNumber: (cardName: string): string | null => {
+    const certMatch = cardName.match(/PSA\s*#?\s*(\d+)/i);
+    if (certMatch && certMatch[1]) {
+      return certMatch[1];
+    }
+    return null;
   },
   
   // Generate a single mock card
