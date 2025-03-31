@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import { useToast } from "@/hooks/use-toast";
@@ -19,6 +18,7 @@ import { PlusCircle, Pencil, Trash2, RefreshCw, ImageIcon } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import LoadingScreen from "@/components/ui/loading-screen";
+import psaService from "@/services/psaService";
 
 const marketDataSchema = z.object({
   card_name: z.string().min(1, "Card name is required"),
@@ -46,7 +46,6 @@ const marketDataSchema = z.object({
   price_1: z.number().optional(),
   price_auth: z.number().optional(),
   card_image: z.string().optional(),
-  // Add the new fields to the schema
   language: z.string().optional(),
   year: z.string().optional(),
   franchise: z.string().optional(),
@@ -59,10 +58,13 @@ type MarketDataFormValues = z.infer<typeof marketDataSchema>;
 const ManageMarket: React.FC = () => {
   const [marketData, setMarketData] = useState<MarketDataItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isUpdating, setIsUpdating] = useState<boolean>(false);
   const [selectedItem, setSelectedItem] = useState<MarketDataItem | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState<boolean>(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string>("all");
+  const [token, setToken] = useState<string>("");
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const { toast } = useToast();
   const { user, isAdmin } = useAuth();
 
@@ -94,7 +96,6 @@ const ManageMarket: React.FC = () => {
       price_1: 0,
       price_auth: 0,
       card_image: "",
-      // Add default values for the new fields
       language: "English",
       year: "",
       franchise: "Pokemon",
@@ -105,6 +106,16 @@ const ManageMarket: React.FC = () => {
 
   useEffect(() => {
     fetchMarketData();
+    
+    const savedToken = psaService.getToken();
+    if (savedToken) {
+      setToken(savedToken);
+    }
+    
+    const lastUpdatedInfo = localStorage.getItem('psa_market_last_updated');
+    if (lastUpdatedInfo) {
+      setLastUpdated(lastUpdatedInfo);
+    }
   }, []);
 
   useEffect(() => {
@@ -135,7 +146,6 @@ const ManageMarket: React.FC = () => {
         price_1: selectedItem.price_1 || 0,
         price_auth: selectedItem.price_auth || 0,
         card_image: selectedItem.card_image || "",
-        // Include the new fields in the form reset
         language: selectedItem.language || "English",
         year: selectedItem.year || "",
         franchise: selectedItem.franchise || "Pokemon",
@@ -169,7 +179,6 @@ const ManageMarket: React.FC = () => {
         price_1: 0,
         price_auth: 0,
         card_image: "",
-        // Include the new fields in the form reset with default values
         language: "English",
         year: "",
         franchise: "Pokemon",
@@ -292,6 +301,105 @@ const ManageMarket: React.FC = () => {
     setActiveTab(value);
   };
 
+  const updatePopulationData = async () => {
+    if (!token) {
+      toast({
+        title: "API Token Required",
+        description: "Please set your PSA API token first",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setIsUpdating(true);
+    psaService.setToken(token);
+    
+    try {
+      const isConnected = await psaService.testPsaApiConnection();
+      if (!isConnected) {
+        throw new Error("Could not connect to PSA API. Please check your token.");
+      }
+      
+      toast({
+        title: "Update Started",
+        description: "Updating population data for all cards...",
+      });
+      
+      let updatedCards = 0;
+      let updatedCount = 0;
+      
+      const updatedMarketData = [...marketData];
+      
+      for (let i = 0; i < marketData.length; i++) {
+        const card = marketData[i];
+        console.log(`Updating card ${i+1}/${marketData.length}: ${card.card_name}`);
+        
+        try {
+          const certMatch = card.card_name.match(/PSA\s*#?\s*(\d+)/i);
+          if (certMatch && certMatch[1]) {
+            const certNumber = certMatch[1];
+            console.log(`Found cert number ${certNumber} in card name`);
+            
+            const psaData = await psaService.callPsaApiDirect<any>(`/cert/GetByCertNumber/${certNumber}`);
+            
+            if (psaData && psaData.popReport) {
+              console.log(`Got population data for cert ${certNumber}:`, psaData.popReport);
+              
+              updatedMarketData[i] = {
+                ...card,
+                population_10: psaData.popReport.pop10 || card.population_10,
+                population_9: psaData.popReport.pop9 || card.population_9,
+                population_8: psaData.popReport.pop8 || card.population_8,
+                population_7: psaData.popReport.pop7 || card.population_7,
+                population_6: psaData.popReport.pop6 || card.population_6,
+                population_5: psaData.popReport.pop5 || card.population_5,
+                population_4: psaData.popReport.pop4 || card.population_4,
+                population_3: psaData.popReport.pop3 || card.population_3,
+                population_2: psaData.popReport.pop2 || card.population_2,
+                population_1: psaData.popReport.pop1 || card.population_1,
+                population_auth: psaData.popReport.popA || card.population_auth,
+                total_population: psaData.popReport.totalPop || calculateTotalPopulation(card)
+              };
+              
+              await marketDataService.updateMarketData(card.id, updatedMarketData[i]);
+              updatedCount++;
+            }
+          } else {
+            console.log(`No cert number found in card name: ${card.card_name}`);
+          }
+          
+          updatedCards++;
+          
+          await new Promise(resolve => setTimeout(resolve, 500));
+        } catch (cardError) {
+          console.error(`Error updating card ${card.card_name}:`, cardError);
+        }
+        
+        if (updatedCards % 5 === 0 || updatedCards === marketData.length) {
+          setMarketData([...updatedMarketData]);
+        }
+      }
+      
+      const now = new Date().toISOString();
+      localStorage.setItem('psa_market_last_updated', now);
+      setLastUpdated(now);
+      
+      toast({
+        title: "Update Complete",
+        description: `Updated population data for ${updatedCount} cards`,
+      });
+    } catch (error) {
+      console.error("Error updating population data:", error);
+      toast({
+        title: "Update Failed",
+        description: error instanceof Error ? error.message : "Failed to update population data",
+        variant: "destructive"
+      });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   useEffect(() => {
     fetchMarketData();
   }, [activeTab]);
@@ -307,6 +415,17 @@ const ManageMarket: React.FC = () => {
   const formatNumber = (value?: number) => {
     if (value === undefined || value === null) return "N/A";
     return new Intl.NumberFormat('en-US').format(value);
+  };
+  
+  const formatDate = (isoString: string): string => {
+    const date = new Date(isoString);
+    return date.toLocaleString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
   if (!isAdmin) {
@@ -343,6 +462,59 @@ const ManageMarket: React.FC = () => {
             </div>
           </CardHeader>
           <CardContent>
+            <div className="mb-6 space-y-4">
+              <h3 className="text-lg font-semibold">PSA API Integration</h3>
+              <div className="flex flex-col md:flex-row gap-4 items-start md:items-end">
+                <div className="flex-1">
+                  <Label htmlFor="psa-token">PSA API Token</Label>
+                  <Input
+                    id="psa-token"
+                    placeholder="Enter PSA API Token"
+                    value={token}
+                    onChange={(e) => setToken(e.target.value)}
+                    type="password"
+                    className="mt-1"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={() => {
+                      psaService.setToken(token);
+                      toast({
+                        title: "Token Saved",
+                        description: "PSA API token has been saved",
+                      });
+                    }} 
+                    variant="outline"
+                  >
+                    Save Token
+                  </Button>
+                  <Button 
+                    onClick={updatePopulationData} 
+                    disabled={isUpdating || !token}
+                  >
+                    {isUpdating ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                        Updating...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        Update Population Data
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+              {lastUpdated && (
+                <p className="text-sm text-muted-foreground flex items-center">
+                  <Clock className="h-4 w-4 mr-2" />
+                  Last data update: {formatDate(lastUpdated)}
+                </p>
+              )}
+            </div>
+            
             <Tabs defaultValue="all" value={activeTab} onValueChange={handleTabChange}>
               <TabsList className="mb-4">
                 <TabsTrigger value="all">All</TabsTrigger>
@@ -490,7 +662,6 @@ const ManageMarket: React.FC = () => {
                     )}
                   />
 
-                  {/* Add new form fields for card metadata */}
                   <FormField
                     control={form.control}
                     name="language"
