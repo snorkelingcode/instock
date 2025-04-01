@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { PackageX, Package as PackageIcon } from "lucide-react";
 
@@ -30,9 +31,13 @@ export const Card: React.FC<CardProps> = ({
 }) => {
   const [isButtonHovered, setIsButtonHovered] = useState(false);
   
+  // Calculate discount percentage only if MSRP and price exist and MSRP is higher than price
   const discountPercentage = msrp && price && msrp > price
     ? Math.round(((msrp - price) / msrp) * 100)
     : null;
+  
+  // Only show discount if it's 1% or greater
+  const shouldShowDiscount = discountPercentage !== null && discountPercentage >= 1;
   
   const buttonLabel = inStock ? "View Listing" : "View Details";
   
@@ -74,8 +79,9 @@ export const Card: React.FC<CardProps> = ({
         <div className="text-xl text-[#1E1E1E] mb-[6px]">{source}</div>
         
         <div className="space-y-1">
-          {msrp && price && msrp > price && (
-            <div className="text-sm line-through text-gray-500">
+          {/* Always show MSRP if available */}
+          {msrp && (
+            <div className={`text-sm ${shouldShowDiscount ? 'line-through text-gray-500' : 'text-[#1E1E1E]'}`}>
               MSRP: ${msrp.toFixed(2)}
             </div>
           )}
@@ -83,10 +89,11 @@ export const Card: React.FC<CardProps> = ({
           {price && (
             <div className="flex items-baseline gap-2">
               <div className="text-xl text-[#1E1E1E]">
-                {discountPercentage ? 'Sale: ' : ''}${price?.toFixed(2)}
+                {shouldShowDiscount ? 'Sale: ' : ''}${price?.toFixed(2)}
               </div>
               
-              {discountPercentage && (
+              {/* Only show discount percentage if it's 1% or greater */}
+              {shouldShowDiscount && (
                 <div className="text-sm font-semibold text-green-600">
                   Save {discountPercentage}%
                 </div>
