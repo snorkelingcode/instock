@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Database, BarChart, Users, Star, Diamond, TrendingUp, TrendingDown } from "lucide-react";
@@ -57,10 +58,6 @@ const MarketStatistics: React.FC<MarketStatisticsProps> = ({
   // Calculate gem rate (population of PSA 10 / total population)
   const gemRate = totalPopulation > 0 ? (totalPsa10s / totalPopulation * 100).toFixed(1) : "0";
 
-  // Calculate changes if previous data is provided
-  const marketCapChange = previousData ? calculatePercentChange(totalMarketCap, previousData.totalMarketCap) : null;
-  const populationChange = previousData ? calculatePercentChange(totalPopulation, previousData.totalPopulation) : null;
-  const gemRateChange = previousData && previousData.gemRate ? calculatePercentChange(parseFloat(gemRate), parseFloat(previousData.gemRate)) : null;
   return <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -69,10 +66,6 @@ const MarketStatistics: React.FC<MarketStatisticsProps> = ({
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{formatCurrency(totalMarketCap)}</div>
-          {marketCapChange && <div className={`flex items-center text-xs ${marketCapChange.isPositive ? 'text-green-500' : 'text-red-500'}`}>
-              {marketCapChange.isPositive ? <TrendingUp className="h-3 w-3 mr-1" /> : <TrendingDown className="h-3 w-3 mr-1" />}
-              <span className="This value never changes when I update the card listings.">{marketCapChange.value.toFixed(1)}% {marketCapChange.isPositive ? 'increase' : 'decrease'}</span>
-            </div>}
           <p className="text-xs text-muted-foreground">
             Value of all graded cards
           </p>
@@ -86,10 +79,6 @@ const MarketStatistics: React.FC<MarketStatisticsProps> = ({
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{formatNumber(totalPopulation)}</div>
-          {populationChange && <div className={`flex items-center text-xs ${populationChange.isPositive ? 'text-green-500' : 'text-red-500'}`}>
-              {populationChange.isPositive ? <TrendingUp className="h-3 w-3 mr-1" /> : <TrendingDown className="h-3 w-3 mr-1" />}
-              <span>{populationChange.value.toFixed(1)}% {populationChange.isPositive ? 'increase' : 'decrease'}</span>
-            </div>}
           <p className="text-xs text-muted-foreground">
             Number of graded cards
           </p>
@@ -116,10 +105,6 @@ const MarketStatistics: React.FC<MarketStatisticsProps> = ({
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{gemRate}%</div>
-          {gemRateChange && <div className={`flex items-center text-xs ${gemRateChange.isPositive ? 'text-green-500' : 'text-red-500'}`}>
-              {gemRateChange.isPositive ? <TrendingUp className="h-3 w-3 mr-1" /> : <TrendingDown className="h-3 w-3 mr-1" />}
-              <span>{gemRateChange.value.toFixed(1)}% {gemRateChange.isPositive ? 'increase' : 'decrease'}</span>
-            </div>}
           <p className="text-xs text-muted-foreground">
             PSA 10 / Total population
           </p>
