@@ -1,8 +1,9 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Database, BarChart, Users, Star, Diamond, TrendingUp, TrendingDown } from "lucide-react";
+import { BarChart, Users, Star, Diamond } from "lucide-react";
 import { MarketDataItem } from "@/services/marketDataService";
+
 interface MarketStatisticsProps {
   marketData: MarketDataItem[];
   previousData?: {
@@ -12,6 +13,7 @@ interface MarketStatisticsProps {
     gemRate: string;
   };
 }
+
 const formatCurrency = (value: number): string => {
   if (value >= 1000000) {
     return `$${(value / 1000000).toFixed(2)}M`;
@@ -20,6 +22,7 @@ const formatCurrency = (value: number): string => {
   }
   return `$${value.toFixed(0)}`;
 };
+
 const formatNumber = (value: number): string => {
   if (value >= 1000000) {
     return `${(value / 1000000).toFixed(2)}M`;
@@ -28,23 +31,9 @@ const formatNumber = (value: number): string => {
   }
   return value.toLocaleString();
 };
-const calculatePercentChange = (current: number, previous: number): {
-  value: number;
-  isPositive: boolean;
-} => {
-  if (previous === 0) return {
-    value: 0,
-    isPositive: false
-  };
-  const change = (current - previous) / previous * 100;
-  return {
-    value: Math.abs(change),
-    isPositive: change >= 0
-  };
-};
+
 const MarketStatistics: React.FC<MarketStatisticsProps> = ({
-  marketData,
-  previousData
+  marketData
 }) => {
   // Calculate total market cap
   const totalMarketCap = marketData.reduce((sum, card) => sum + (card.market_cap || 0), 0);
@@ -112,4 +101,5 @@ const MarketStatistics: React.FC<MarketStatisticsProps> = ({
       </Card>
     </div>;
 };
+
 export default MarketStatistics;
