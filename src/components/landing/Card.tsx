@@ -54,11 +54,11 @@ export const Card: React.FC<CardProps> = ({
 
   return (
     <div
-      className="w-[340px] h-[480px] relative bg-white rounded-lg border border-rose-100 transition-all duration-300 overflow-hidden"
+      className="w-[340px] relative bg-white rounded-lg border border-rose-100 transition-all duration-300 overflow-hidden"
       role="article"
       style={{
         width: '340px', // Fixed width to ensure consistency
-        minHeight: "480px",
+        minHeight: "520px", // Increased from 480px to 520px
       }}
     >
       <div className="w-[140px] h-[140px] mx-auto mt-6 overflow-hidden rounded-md bg-white">
@@ -73,9 +73,9 @@ export const Card: React.FC<CardProps> = ({
         />
       </div>
 
-      <div className="px-[41px] py-[15px]">
-        <div className="text-xl text-[#1E1E1E] mb-[6px]">{productLine}</div>
-        <div className="text-xl text-[#1E1E1E] mb-[6px]">{product}</div>
+      <div className="px-[41px] py-[15px] min-h-[240px]"> {/* Added min-height to prevent text cutoff */}
+        <div className="text-xl text-[#1E1E1E] mb-[6px] break-words">{productLine}</div>
+        <div className="text-xl text-[#1E1E1E] mb-[6px] break-words">{product}</div>
         <div className="text-xl text-[#1E1E1E] mb-[6px]">{source}</div>
         
         <div className="space-y-1">
