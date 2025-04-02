@@ -107,11 +107,7 @@ const NewsPreview = ({
       <CardFooter className="flex justify-between items-center">
         <Button 
           variant="ghost" 
-          className="p-0 hover:bg-transparent text-red-600" 
-          onClick={(e) => {
-            e.stopPropagation(); // Prevent triggering the card click
-            handleReadClick();
-          }}
+          className="p-0 hover:bg-transparent text-red-600"
         >
           Read More <ArrowRight className="ml-1 h-4 w-4" />
         </Button>

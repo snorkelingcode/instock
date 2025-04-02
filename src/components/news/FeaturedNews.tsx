@@ -54,14 +54,16 @@ const FeaturedNews = ({
   const youtubeThumbnail = youtubeId ? `https://img.youtube.com/vi/${youtubeId}/maxresdefault.jpg` : null;
   
   return (
-    <div className="bg-white rounded-lg shadow-md border border-red-200 overflow-hidden">
+    <div 
+      className="bg-white rounded-lg shadow-md border border-red-200 overflow-hidden cursor-pointer hover:shadow-lg transition-all"
+      onClick={handleReadClick}
+      role="button"
+      aria-label={`View featured article: ${title}`}
+    >
       <div className="md:flex">
         {(image || youtubeThumbnail) && (
           <div 
-            className="md:w-2/5 h-48 md:h-auto relative overflow-hidden bg-red-50 cursor-pointer"
-            onClick={handleReadClick}
-            role="button"
-            aria-label={`View featured article: ${title}`}
+            className="md:w-2/5 h-48 md:h-auto relative overflow-hidden bg-red-50"
           >
             {mediaType === 'video' && youtubeId ? (
               <div className="relative w-full h-full">
@@ -101,7 +103,7 @@ const FeaturedNews = ({
             <p>{excerpt}</p>
           </div>
           <div className="flex items-center justify-between mt-8">
-            <Button variant="ghost" className="p-0 hover:bg-transparent text-red-600" onClick={handleReadClick}>
+            <Button variant="ghost" className="p-0 hover:bg-transparent text-red-600">
               Read Full Article <ArrowRight className="ml-1 h-4 w-4" />
             </Button>
             <Button 
