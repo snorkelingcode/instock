@@ -921,3 +921,75 @@ const fetchSetsFromAPI = async (): Promise<PokemonSet[]> => {
       logo_url: set.images.logo,
       images_url: set.images.logo // Prefer logo, fallback to symbol
     }));
+    
+    // Cache and return the sets
+    cacheSets(transformedSets);
+    return transformedSets;
+  } catch (error) {
+    console.error("Error fetching sets from API:", error);
+    // Return empty array if API fails
+    return [];
+  }
+};
+
+// Function to preload card images 
+export const preloadCardImages = (cards: PokemonCard[], limit: number = 20) => {
+  if (!cards || cards.length === 0) return;
+  
+  console.log(`Preloading images for ${Math.min(limit, cards.length)} cards`);
+  
+  // Only preload up to the limit
+  const cardsToPreload = cards.slice(0, limit);
+  
+  cardsToPreload.forEach(card => {
+    if (card.images && card.images.small) {
+      const img = new Image();
+      img.src = card.images.small;
+    }
+  });
+};
+
+// Initialize preloading of Pokemon cards - only called from the Sets pages
+export const initPokemonCardPrefetching = (setIds?: string[]) => {
+  console.log("Initializing Pokemon card prefetching", setIds ? `for sets: ${setIds.join(', ')}` : '');
+  
+  // If specific set IDs are provided, prefetch those
+  if (setIds && setIds.length > 0) {
+    setIds.forEach((setId, index) => {
+      // Stagger prefetching to avoid overwhelming the browser
+      setTimeout(() => {
+        prefetchPokemonSet(setId).catch(e => 
+          console.warn(`Failed to prefetch set ${setId}:`, e)
+        );
+      }, index * 2000);
+    });
+    return;
+  }
+  
+  // Otherwise, wait for sets data and prefetch the most recent
+  setTimeout(async () => {
+    try {
+      const sets = await fetchPokemonSets();
+      
+      if (sets && sets.length > 0) {
+        // Get the 2 most recent sets
+        const recentSets = sets
+          .sort((a, b) => new Date(b.release_date).getTime() - new Date(a.release_date).getTime())
+          .slice(0, 2);
+        
+        console.log("Prefetching recent sets:", recentSets.map(s => s.set_id).join(', '));
+        
+        // Prefetch each set with a delay to avoid overwhelming resources
+        recentSets.forEach((set, index) => {
+          setTimeout(() => {
+            prefetchPokemonSet(set.set_id).catch(e => 
+              console.warn(`Failed to prefetch set ${set.set_id}:`, e)
+            );
+          }, index * 3000);
+        });
+      }
+    } catch (e) {
+      console.warn("Failed to fetch sets for prefetching:", e);
+    }
+  }, 5000);
+};
