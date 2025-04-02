@@ -1,7 +1,9 @@
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CalendarIcon, ArrowRight, Volume2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { createSlug } from "@/pages/ArticleDetails";
 
 interface FeaturedNewsProps {
   id: string;
@@ -36,12 +38,16 @@ const FeaturedNews = ({
   
   const handleReadClick = () => {
     if (onClick) onClick();
-    else navigate(`/article/${id}`);
+    else {
+      const slug = createSlug(title);
+      navigate(`/articles/${slug}`);
+    }
   };
   
   const handleReadAloudClick = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent triggering the card click
-    navigate(`/article/${id}?autoplay=true`);
+    const slug = createSlug(title);
+    navigate(`/articles/${slug}?autoplay=true`);
   };
 
   const youtubeId = video ? extractYoutubeId(video) : null;

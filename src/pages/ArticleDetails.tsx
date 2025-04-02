@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 import { format, parseISO } from 'date-fns';
@@ -13,24 +12,15 @@ import ReadAloud from '@/components/articles/ReadAloud';
 import CommentSection from '@/components/articles/CommentSection';
 import { Card } from '@/components/ui/card';
 import ImageCarousel from '@/components/articles/ImageCarousel';
+import { Article } from '@/types/article';
 
-interface Article {
-  id: string;
-  title: string;
-  content: string;
-  excerpt: string;
-  author_id: string;
-  category: string;
-  featured: boolean;
-  published: boolean;
-  created_at: string;
-  updated_at: string;
-  published_at: string | null;
-  featured_image?: string;
-  featured_video?: string;
-  media_type?: 'image' | 'video';
-  additional_images?: string[];
-}
+export const createSlug = (title: string): string => {
+  return title
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, '') // Remove special characters
+    .replace(/\s+/g, '_')     // Replace spaces with underscores
+    .replace(/-+/g, '_');     // Replace hyphens with underscores
+};
 
 const extractYoutubeId = (url: string): string | null => {
   const regExp = /^.*(?:(?:youtu\.be\/|v\/|vi\/|u\/\w\/|embed\/|shorts\/)|(?:(?:watch)?\?v(?:i)?=|\&v(?:i)?=))([^#\&\?]*).*/;
@@ -39,7 +29,7 @@ const extractYoutubeId = (url: string): string | null => {
 };
 
 const ArticleDetails = () => {
-  const { id } = useParams<{ id: string }>();
+  const { id, slug } = useParams<{ id?: string; slug?: string }>();
   const [article, setArticle] = useState<Article | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -50,11 +40,13 @@ const ArticleDetails = () => {
 
   useEffect(() => {
     if (id) {
-      fetchArticle(id);
+      fetchArticleById(id);
+    } else if (slug) {
+      fetchArticleBySlug(slug);
     }
-  }, [id]);
+  }, [id, slug]);
 
-  const fetchArticle = async (articleId: string) => {
+  const fetchArticleById = async (articleId: string) => {
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -68,8 +60,47 @@ const ArticleDetails = () => {
       }
 
       setArticle(data as Article);
+      
+      const articleSlug = createSlug(data.title);
+      if (location.pathname.startsWith('/article/')) {
+        navigate(`/articles/${articleSlug}`, { replace: true });
+      }
     } catch (error) {
       console.error("Error fetching article:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load article. Please try again later.",
+        variant: "destructive",
+      });
+      setArticle(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchArticleBySlug = async (articleSlug: string) => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('articles')
+        .select('*')
+        .filter('published', 'eq', true);
+
+      if (error) {
+        throw error;
+      }
+
+      const foundArticle = data.find((article: Article) => 
+        createSlug(article.title) === articleSlug
+      );
+
+      if (!foundArticle) {
+        throw new Error("Article not found");
+      }
+
+      setArticle(foundArticle);
+    } catch (error) {
+      console.error("Error fetching article by slug:", error);
       toast({
         title: "Error",
         description: "Failed to load article. Please try again later.",
@@ -93,23 +124,28 @@ const ArticleDetails = () => {
   };
 
   const shareArticle = () => {
-    if (navigator.share) {
-      navigator.share({
-        title: article?.title || 'Check out this article',
-        text: article?.excerpt || 'Read this interesting article',
-        url: window.location.href,
-      })
-      .then(() => console.log('Successful share'))
-      .catch((error) => console.error('Error sharing:', error));
-    } else {
-      navigator.clipboard.writeText(window.location.href)
-        .then(() => {
-          toast({
-            title: "Link copied",
-            description: "Article link copied to clipboard",
-          });
+    if (article) {
+      const articleSlug = createSlug(article.title);
+      const shareUrl = `${window.location.origin}/articles/${articleSlug}`;
+      
+      if (navigator.share) {
+        navigator.share({
+          title: article.title || 'Check out this article',
+          text: article.excerpt || 'Read this interesting article',
+          url: shareUrl,
         })
-        .catch(console.error);
+        .then(() => console.log('Successful share'))
+        .catch((error) => console.error('Error sharing:', error));
+      } else {
+        navigator.clipboard.writeText(shareUrl)
+          .then(() => {
+            toast({
+              title: "Link copied",
+              description: "Article link copied to clipboard",
+            });
+          })
+          .catch(console.error);
+      }
     }
   };
 

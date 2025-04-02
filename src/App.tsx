@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -64,7 +63,11 @@ const App = () => {
               <Route path="/psa-market" element={<PageCacheWrapper><PSAMarket /></PageCacheWrapper>} />
               <Route path="/psa-market/:id" element={<PageCacheWrapper><PSACardDetails /></PageCacheWrapper>} />
               <Route path="/psa-card/:id" element={<PageCacheWrapper><PSACardDetails /></PageCacheWrapper>} />
+              
               <Route path="/article/:id" element={<PageCacheWrapper><ArticleDetails /></PageCacheWrapper>} />
+              
+              <Route path="/articles/:slug" element={<PageCacheWrapper><ArticleDetails /></PageCacheWrapper>} />
+              
               <Route path="/privacy" element={<PageCacheWrapper><PrivacyPolicy /></PageCacheWrapper>} />
               <Route path="/terms" element={<PageCacheWrapper><TermsOfService /></PageCacheWrapper>} />
               <Route path="/cookies" element={<PageCacheWrapper><CookiePolicy /></PageCacheWrapper>} />

@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { Article } from "@/types/article";
+import { createSlug } from "@/pages/ArticleDetails";
 
 // Your IndexNow key - you should replace this with your actual key
 const INDEX_NOW_KEY = "65196a99c535429cb66fb6fca33477d7"; // Example key from your prompt
@@ -10,7 +11,8 @@ const SITE_HOST = window.location.hostname;
  * Notify search engines about a single article URL using IndexNow
  */
 export async function notifyIndexNowSingleUrl(article: Article) {
-  const articleUrl = `${window.location.origin}/article/${article.id}`;
+  const slug = createSlug(article.title);
+  const articleUrl = `${window.location.origin}/articles/${slug}`;
   
   try {
     const { data, error } = await supabase.functions.invoke("index-now", {
@@ -40,7 +42,10 @@ export async function notifyIndexNowBatch(articles: Article[]) {
   if (!articles.length) return { success: false, error: "No articles provided" };
   
   try {
-    const urlList = articles.map(article => `${window.location.origin}/article/${article.id}`);
+    const urlList = articles.map(article => {
+      const slug = createSlug(article.title);
+      return `${window.location.origin}/articles/${slug}`;
+    });
     
     const { data, error } = await supabase.functions.invoke("index-now", {
       body: {

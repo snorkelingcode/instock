@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowRight, Volume2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { createSlug } from "@/pages/ArticleDetails";
 
 interface NewsPreviewProps {
   id: string;
@@ -41,12 +42,16 @@ const NewsPreview = ({
   
   const handleReadClick = () => {
     if (onClick) onClick();
-    else navigate(`/article/${id}`);
+    else {
+      const slug = createSlug(title);
+      navigate(`/articles/${slug}`);
+    }
   };
 
   const handleReadAloudClick = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent triggering the card click
-    navigate(`/article/${id}?autoplay=true`);
+    const slug = createSlug(title);
+    navigate(`/articles/${slug}?autoplay=true`);
   };
 
   // Generate YouTube thumbnail if needed
