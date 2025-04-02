@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import { TCGCategoryCard } from "@/components/sets/TCGCategoryCard";
 import { Layers, Sparkles, Zap, ScrollText } from "lucide-react";
@@ -7,12 +7,21 @@ import RecentTCGSets from "@/components/news/RecentTCGSets";
 import UpcomingReleases from "@/components/news/UpcomingReleases";
 import AdContainer from "@/components/ads/AdContainer";
 import { useMetaTags } from "@/hooks/use-meta-tags";
+import { initPokemonCardPrefetching } from "@/utils/pokemon-cards";
 
 const SetsPage = () => {
   useMetaTags({
     title: "TCG Card Sets | Browse Pokémon, Magic & Yu-Gi-Oh Collections",
     description: "Browse trading card game sets from Pokémon, Magic: The Gathering, Yu-Gi-Oh, and Disney Lorcana. View upcoming releases and recent additions to popular TCGs."
   });
+
+  // Initialize prefetching when the Sets page loads
+  useEffect(() => {
+    // Common recent sets - consider prefetching these
+    const recentSets = ['sv4', 'sv3pt5', 'sv3', 'sv2'];
+    console.log("Initializing Pokemon sets prefetching from Sets page");
+    initPokemonCardPrefetching(recentSets);
+  }, []);
 
   return (
     <Layout>

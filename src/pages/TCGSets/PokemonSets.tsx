@@ -17,6 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { usePokemonSets } from "@/hooks/useTCGSets";
 import AdContainer from "@/components/ads/AdContainer";
 import { useMetaTags } from "@/hooks/use-meta-tags";
+import { initPokemonCardPrefetching } from "@/utils/pokemon-cards";
 
 const PokemonSets = () => {
   // Set SEO meta tags for this page
@@ -25,6 +26,12 @@ const PokemonSets = () => {
     description: "Browse all Pokémon Trading Card Game sets, sorted by release date. Find detailed information on every Pokémon TCG expansion, series, and promo collection.",
     keywords: "pokemon cards, pokemon tcg sets, pokemon card collection, trading cards, card sets, pokemon expansions"
   });
+
+  // Initialize prefetching specifically for Pokemon TCG sets
+  useEffect(() => {
+    console.log("Initializing Pokemon sets prefetching from PokemonSets page");
+    initPokemonCardPrefetching();
+  }, []);
 
   // Load sets with pagination
   const { 
