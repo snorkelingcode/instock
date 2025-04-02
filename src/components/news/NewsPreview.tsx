@@ -15,7 +15,7 @@ interface NewsPreviewProps {
   featured?: boolean;
   image?: string;
   video?: string;
-  mediaType?: 'image' | 'video';
+  mediaType?: string;
   onClick?: () => void;
 }
 

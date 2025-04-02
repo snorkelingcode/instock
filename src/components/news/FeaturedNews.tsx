@@ -13,7 +13,7 @@ interface FeaturedNewsProps {
   excerpt: string;
   image?: string;
   video?: string;
-  mediaType?: 'image' | 'video';
+  mediaType?: string;
   onClick?: () => void;
 }
 

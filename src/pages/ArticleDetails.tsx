@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 import { format, parseISO } from 'date-fns';
@@ -90,15 +91,16 @@ const ArticleDetails = () => {
         throw error;
       }
 
-      const foundArticle = data.find((article: Article) => 
-        createSlug(article.title) === articleSlug
+      // We need to type the data properly before using find
+      const foundArticle = data.find((dbArticle) => 
+        createSlug(dbArticle.title) === articleSlug
       );
 
       if (!foundArticle) {
         throw new Error("Article not found");
       }
 
-      setArticle(foundArticle);
+      setArticle(foundArticle as Article);
     } catch (error) {
       console.error("Error fetching article by slug:", error);
       toast({
