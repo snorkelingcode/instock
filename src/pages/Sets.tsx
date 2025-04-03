@@ -5,7 +5,6 @@ import { TCGCategoryCard } from "@/components/sets/TCGCategoryCard";
 import { Layers, Sparkles, Zap, ScrollText } from "lucide-react";
 import RecentTCGSets from "@/components/news/RecentTCGSets";
 import UpcomingReleases from "@/components/news/UpcomingReleases";
-import AdContainer from "@/components/ads/AdContainer";
 import { useMetaTags } from "@/hooks/use-meta-tags";
 import { initPokemonCardPrefetching } from "@/utils/pokemon-cards";
 
@@ -78,9 +77,6 @@ const SetsPage = () => {
         <RecentTCGSets />
         <UpcomingReleases />
       </div>
-      
-      {/* Ad container at the bottom */}
-      <AdContainer adSlot="5984712058" adFormat="horizontal" className="mb-8" />
     </Layout>
   );
 };

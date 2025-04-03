@@ -11,7 +11,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useMetaTags } from "@/hooks/use-meta-tags";
 import { supabase } from "@/integrations/supabase/client";
 import { Article } from "@/types/article";
-import AdContainer from "@/components/ads/AdContainer";
 
 const News = () => {
   const [featuredArticles, setFeaturedArticles] = useState<Article[]>([]);
@@ -133,9 +132,6 @@ const News = () => {
                 </div>
               </section>
             )}
-            
-            {/* Ad container after featured articles */}
-            <AdContainer adSlot="7259341254" adFormat="horizontal" className="mb-12" />
 
             <Tabs defaultValue="all" className="mb-8">
               <TabsList className="mb-16 flex flex-wrap">

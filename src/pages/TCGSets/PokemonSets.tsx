@@ -15,7 +15,6 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePokemonSets } from "@/hooks/useTCGSets";
-import AdContainer from "@/components/ads/AdContainer";
 import { useMetaTags } from "@/hooks/use-meta-tags";
 import { initPokemonCardPrefetching } from "@/utils/pokemon-cards";
 
@@ -132,9 +131,6 @@ const PokemonSets = () => {
           Browse all Pokémon Trading Card Game sets, sorted by release date. Click on a set to view all cards in that set.
         </p>
         
-        {/* Insert ad container after introduction */}
-        <AdContainer adSlot="7259341254" adFormat="horizontal" className="my-4" />
-        
         <div className="mb-8 space-y-4">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="relative flex-1">
@@ -190,26 +186,21 @@ const PokemonSets = () => {
             {renderSkeletons()}
           </div>
         ) : displayedSets.length > 0 ? (
-          <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {displayedSets.map((set) => (
-                <SetCard
-                  key={set.set_id}
-                  id={set.set_id}
-                  name={set.name}
-                  imageUrl={set.logo_url || set.images_url || set.symbol_url}
-                  releaseDate={set.release_date}
-                  totalCards={set.total || set.printed_total}
-                  description={`${set.series} Series • ${set.total || set.printed_total} Cards`}
-                  category="pokemon"
-                  color="#E53E3E"
-                />
-              ))}
-            </div>
-            
-            {/* Add an ad at the bottom of the content */}
-            <AdContainer adSlot="5984712058" adFormat="horizontal" className="mt-8" />
-          </>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {displayedSets.map((set) => (
+              <SetCard
+                key={set.set_id}
+                id={set.set_id}
+                name={set.name}
+                imageUrl={set.logo_url || set.images_url || set.symbol_url}
+                releaseDate={set.release_date}
+                totalCards={set.total || set.printed_total}
+                description={`${set.series} Series • ${set.total || set.printed_total} Cards`}
+                category="pokemon"
+                color="#E53E3E"
+              />
+            ))}
+          </div>
         ) : (
           <div className="text-center py-8">
             <p>No Pokémon sets found matching your filters.</p>
