@@ -82,12 +82,45 @@ const AdContainer: React.FC<AdContainerProps> = ({
       }
     };
     
-    window.addEventListener('error', handleAdError);
+    // Handle specific ad load errors
+    const handleGoogleAdsError = () => {
+      window.addEventListener('error', handleAdError);
+      
+      // Additional error handling for network requests
+      const originalFetch = window.fetch;
+      window.fetch = async function(input, init) {
+        const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input instanceof Request ? input.url : '';
+        
+        try {
+          const response = await originalFetch(input, init);
+          
+          // Check if this is a Google Ads request that failed
+          if (url.includes('googleads') || url.includes('doubleclick') || url.includes('pagead2')) {
+            if (!response.ok) {
+              console.warn(`Google Ads request failed: ${url} (${response.status})`);
+              setAdError(true);
+            }
+          }
+          
+          return response;
+        } catch (error) {
+          if (url.includes('googleads') || url.includes('doubleclick') || url.includes('pagead2')) {
+            console.warn(`Google Ads network error: ${url}`, error);
+            setAdError(true);
+          }
+          throw error;
+        }
+      };
+    };
+    
+    // Set up the error handler
+    handleGoogleAdsError();
     
     return () => {
       observer.disconnect();
       clearInterval(contentCheckInterval);
       window.removeEventListener('error', handleAdError);
+      window.fetch = originalFetch; // Restore original fetch
     };
   }, [adLoaded, hasEnoughContent]);
   
@@ -95,9 +128,19 @@ const AdContainer: React.FC<AdContainerProps> = ({
   useEffect(() => {
     if (isVisible && !adLoaded && hasEnoughContent && !adError) {
       try {
-        // @ts-ignore - window.adsbygoogle is added by the AdSense script
-        (window.adsbygoogle = window.adsbygoogle || []).push({});
-        setAdLoaded(true);
+        // Add a small delay to ensure DOM is ready
+        const timer = setTimeout(() => {
+          try {
+            // @ts-ignore - window.adsbygoogle is added by the AdSense script
+            (window.adsbygoogle = window.adsbygoogle || []).push({});
+            setAdLoaded(true);
+          } catch (error) {
+            console.error('Error initializing AdSense ad:', error);
+            setAdError(true);
+          }
+        }, 100);
+        
+        return () => clearTimeout(timer);
       } catch (error) {
         console.error('Error loading AdSense ad:', error);
         setAdError(true);
