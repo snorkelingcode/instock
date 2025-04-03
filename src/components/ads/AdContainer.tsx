@@ -15,6 +15,7 @@ interface AdContainerProps {
  * - Only renders when there is content on the page
  * - Uses IntersectionObserver to load ads only when visible
  * - Adds proper labeling for compliance
+ * - Handles ad loading errors gracefully
  */
 const AdContainer: React.FC<AdContainerProps> = ({
   adSlot = "auto",
@@ -27,6 +28,7 @@ const AdContainer: React.FC<AdContainerProps> = ({
   const [isVisible, setIsVisible] = useState(false);
   const [adLoaded, setAdLoaded] = useState(false);
   const [hasEnoughContent, setHasEnoughContent] = useState(false);
+  const [adError, setAdError] = useState(false);
   
   useEffect(() => {
     // More strict content check - must have real paragraphs and headings
@@ -69,28 +71,57 @@ const AdContainer: React.FC<AdContainerProps> = ({
       contentCheck();
     }, 1000);
     
+    // Handle AdSense errors
+    const handleAdError = (event: ErrorEvent) => {
+      if (event.message && 
+         (event.message.includes('adsbygoogle') || 
+          event.filename?.includes('pagead') || 
+          event.filename?.includes('googleads'))) {
+        console.warn('AdSense error detected:', event.message);
+        setAdError(true);
+      }
+    };
+    
+    window.addEventListener('error', handleAdError);
+    
     return () => {
       observer.disconnect();
       clearInterval(contentCheckInterval);
+      window.removeEventListener('error', handleAdError);
     };
   }, [adLoaded, hasEnoughContent]);
   
   // Initialize the ad when the container becomes visible
   useEffect(() => {
-    if (isVisible && !adLoaded && hasEnoughContent) {
+    if (isVisible && !adLoaded && hasEnoughContent && !adError) {
       try {
         // @ts-ignore - window.adsbygoogle is added by the AdSense script
         (window.adsbygoogle = window.adsbygoogle || []).push({});
         setAdLoaded(true);
       } catch (error) {
         console.error('Error loading AdSense ad:', error);
+        setAdError(true);
       }
     }
-  }, [isVisible, adLoaded, hasEnoughContent]);
+  }, [isVisible, adLoaded, hasEnoughContent, adError]);
   
   // If there's not enough content, don't render the ad space at all
   if (!hasEnoughContent) {
     return null;
+  }
+  
+  // If ad had an error, show a minimal placeholder
+  if (adError) {
+    return (
+      <div className={cn(
+        "min-h-[90px] bg-gray-50 border border-gray-100 rounded",
+        className
+      )}>
+        {showLabel && (
+          <div className="text-xs text-gray-500 py-1 px-2">Advertisement</div>
+        )}
+      </div>
+    );
   }
   
   return (
