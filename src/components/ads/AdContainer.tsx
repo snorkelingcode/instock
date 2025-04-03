@@ -1,6 +1,7 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
+
+const originalFetch = window.fetch;
 
 interface AdContainerProps {
   adSlot?: string;
@@ -87,7 +88,6 @@ const AdContainer: React.FC<AdContainerProps> = ({
       window.addEventListener('error', handleAdError);
       
       // Additional error handling for network requests
-      const originalFetch = window.fetch;
       window.fetch = async function(input, init) {
         const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input instanceof Request ? input.url : '';
         
