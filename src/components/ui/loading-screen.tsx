@@ -18,7 +18,6 @@ const LoadingScreen: React.FC<LoadingScreenProps> = ({
           alt="TCG Updates" 
           className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-48 h-auto z-10" 
         />
-        {/* Removed spinning loader */}
       </div>
       <p className="text-xl font-medium text-center">{message}</p>
     </div>
