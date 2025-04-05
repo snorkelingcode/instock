@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -183,8 +182,7 @@ const ProductsPage = () => {
         .select('*')
         .eq('in_stock', false)
         .not('last_seen_in_stock', 'is', null)
-        .order('last_seen_in_stock', { ascending: false })
-        .limit(6);
+        .order('last_seen_in_stock', { ascending: false });
         
       if (soldOutError) {
         throw soldOutError;
