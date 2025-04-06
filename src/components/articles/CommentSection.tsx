@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -16,11 +15,6 @@ interface Comment {
   created_at: string;
   user_id: string;
   display_user_id?: string;
-}
-
-interface UserDisplayName {
-  id: string;
-  display_user_id: string;
 }
 
 interface CommentSectionProps {
@@ -84,49 +78,53 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
         
         try {
           console.log("Fetching display names for users:", userIds);
-          // Now fetch the latest display names using direct SQL query instead of RPC
-          const { data, error } = await supabase
-            .from('auth.users')
-            .select('id, raw_user_meta_data->display_user_id')
-            .in('id', userIds);
           
-          if (error) {
-            console.error("Error fetching user display names:", error);
-            // If there's an error calling the function, try a direct fallback for the current user
-            if (user && userIds.includes(user.id)) {
-              console.log("Using fallback for current user display name");
-              // Use the current user's display name from auth context
-              const currentUserName = user.user_metadata?.display_user_id || `user_${user.id.substring(0, 8)}`;
-              
-              // Update the comments for the current user only
-              const updatedComments = initialComments.map(comment => {
-                if (comment.user_id === user.id) {
-                  return { ...comment, display_user_id: currentUserName };
-                }
-                return comment;
-              });
-              
-              setComments(updatedComments);
-            }
-            return; // Early return, we'll keep using the temporary/fallback display names
-          }
-          
-          // Type the returned data
-          const userNamesData = data as { id: string, display_user_id: string }[] | null;
-          
-          if (userNamesData && userNamesData.length > 0) {
-            console.log("Successfully retrieved display names:", userNamesData);
-            // Update comments with real display names
-            const updatedComments = initialComments.map(comment => {
-              const userData = userNamesData.find(u => u.id === comment.user_id);
-              if (userData && userData.display_user_id) {
-                return { ...comment, display_user_id: userData.display_user_id };
-              }
-              return comment;
-            });
+          // Fetch display names directly from user metadata
+          // Process each user ID individually to build display names
+          const displayNamePromises = userIds.map(async (userId) => {
+            const { data: userData, error: userError } = await supabase
+              .from('user_profiles')
+              .select('user_id, display_name')
+              .eq('user_id', userId)
+              .single();
             
-            setComments(updatedComments);
-          }
+            // If we have a profile with display name, use it
+            if (userData && userData.display_name) {
+              return {
+                id: userId,
+                display_user_id: userData.display_name
+              };
+            }
+            
+            // Fallback: If current user, use metadata from auth context
+            if (user && userId === user.id && user.user_metadata?.display_user_id) {
+              return {
+                id: userId,
+                display_user_id: user.user_metadata.display_user_id
+              };
+            }
+            
+            // Final fallback: Create a display name from the user ID
+            return {
+              id: userId,
+              display_user_id: `user_${userId.substring(0, 8)}`
+            };
+          });
+          
+          // Resolve all the promises
+          const userDisplayNames = await Promise.all(displayNamePromises);
+          console.log("Successfully generated display names:", userDisplayNames);
+          
+          // Update comments with display names
+          const updatedComments = initialComments.map(comment => {
+            const userDisplayData = userDisplayNames.find(u => u.id === comment.user_id);
+            if (userDisplayData) {
+              return { ...comment, display_user_id: userDisplayData.display_user_id };
+            }
+            return comment;
+          });
+          
+          setComments(updatedComments);
         } catch (error) {
           console.error("Error in display name processing:", error);
           // We already have set initialComments, so the UI won't be broken
