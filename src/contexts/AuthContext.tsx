@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,6 +17,7 @@ interface AuthContextProps {
   sendOtp: (email: string) => Promise<{ success: boolean; error?: any }>;
   verifyOtp: (email: string, token: string) => Promise<{ success: boolean; error?: any }>;
   sendPasswordResetEmail: (email: string) => Promise<{ success: boolean; error?: any }>;
+  refreshSession: () => Promise<void>; // Added a method to explicitly refresh the session
 }
 
 const AuthContext = createContext<AuthContextProps | undefined>(undefined);
@@ -69,6 +71,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       subscription.unsubscribe();
     };
   }, []);
+
+  const refreshSession = async () => {
+    try {
+      setIsLoading(true);
+      const { data: { session }, error } = await supabase.auth.refreshSession();
+      
+      if (error) throw error;
+      
+      setSession(session);
+      setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        checkUserRole(session.user.id);
+      }
+    } catch (error) {
+      console.error("Error refreshing session:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const checkUserRole = async (userId: string) => {
     try {
@@ -293,6 +315,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         sendOtp,
         verifyOtp,
         sendPasswordResetEmail,
+        refreshSession, // Export the refreshSession method
       }}
     >
       {children}

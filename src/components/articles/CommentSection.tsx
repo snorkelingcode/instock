@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -61,66 +60,52 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
       if (commentsData && commentsData.length > 0) {
         // Create a map to track unique user IDs
         const userIds = [...new Set(commentsData.map(comment => comment.user_id))];
-        const userDisplayNames = new Map();
         
-        // For the current signed-in user, we already have their metadata
-        if (user) {
-          userDisplayNames.set(user.id, user.user_metadata?.display_user_id || `user${user.id.substring(0, 4)}`);
-        }
-        
-        // Map the display names to comments
-        const formattedComments = commentsData.map(comment => {
-          // For the current user, use their display_user_id from auth session
-          const isCurrentUser = user && comment.user_id === user.id;
-          let displayUserId;
-          
-          if (isCurrentUser && user.user_metadata?.display_user_id) {
-            displayUserId = user.user_metadata.display_user_id;
-          } else if (userDisplayNames.has(comment.user_id)) {
-            displayUserId = userDisplayNames.get(comment.user_id);
-          } else {
-            // Create a generic username from the user ID instead of showing email
-            displayUserId = `user${comment.user_id.substring(0, 4)}`;
-          }
-          
+        // Initial comments with temporary display names
+        const initialComments = commentsData.map(comment => {
           return {
             id: comment.id,
             content: comment.content,
             created_at: comment.created_at,
             user_id: comment.user_id,
-            display_user_id: displayUserId
+            // Default temporary display name
+            display_user_id: `user${comment.user_id.substring(0, 4)}`
           };
         });
         
+        // Set initial comments
+        setComments(initialComments);
+        
         try {
-          // Now we need to get the latest display names for all users
-          // We need to use a type assertion to work around TypeScript limitations with dynamic RPC functions
+          // Now fetch the latest display names from auth metadata
           const { data, error } = await supabase.rpc(
             'get_user_display_names' as any, 
             { user_ids: userIds }
           );
           
+          if (error) {
+            console.error("Error fetching user display names:", error);
+            return; // Early return, we'll keep using the temporary display names
+          }
+          
+          // Type the returned data
           const userNamesData = data as UserDisplayName[] | null;
-          const userNamesError = error;
-
-          if (!userNamesError && userNamesData) {
-            // Update comment display names with the latest from the database
-            const updatedComments = formattedComments.map(comment => {
+          
+          if (userNamesData && userNamesData.length > 0) {
+            // Update comments with real display names
+            const updatedComments = initialComments.map(comment => {
               const userData = userNamesData.find(u => u.id === comment.user_id);
               if (userData && userData.display_user_id) {
                 return { ...comment, display_user_id: userData.display_user_id };
               }
               return comment;
             });
+            
             setComments(updatedComments);
-          } else {
-            // Fall back to the original display names if we couldn't get updated ones
-            setComments(formattedComments);
-            console.error("Could not fetch updated user display names:", userNamesError);
           }
         } catch (error) {
-          console.error("Error fetching user display names:", error);
-          setComments(formattedComments);
+          console.error("Error in display name processing:", error);
+          // We already have set initialComments, so the UI won't be broken
         }
       } else {
         setComments([]);

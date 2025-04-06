@@ -116,11 +116,22 @@ const AccountModal: React.FC<AccountModalProps> = ({ open, onOpenChange }) => {
 
     setIsUpdating(true);
     try {
+      // Update the user's metadata in Supabase Auth
       const { error } = await supabase.auth.updateUser({
         data: { display_user_id: displayUserId }
       });
 
       if (error) throw error;
+
+      // After successfully updating the user's display_user_id in auth metadata,
+      // we need to trigger a full session refresh to ensure the changes are properly
+      // propagated throughout the application
+      const { data: sessionData, error: sessionError } = await supabase.auth.refreshSession();
+      
+      if (sessionError) {
+        console.error("Error refreshing session:", sessionError);
+        // Continue with toast notification even if session refresh fails
+      }
 
       toast({
         title: "User ID updated",
