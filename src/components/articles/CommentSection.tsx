@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Comment } from "@/types/comment";
 import { useAuth } from "@/contexts/AuthContext";
@@ -54,21 +55,29 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
         const userIds = [...new Set(commentsData.map(comment => comment.user_id))];
         console.log(`Found ${commentsData.length} comments from ${userIds.length} unique users`);
         
-        // Use the new RPC function to get display names
-        const { data: displayNames, error: displayNamesError } = await supabase.rpc(
-          'get_user_display_names', 
-          { user_ids: userIds }
-        );
+        // Use direct database query instead of RPC function
+        const { data: userProfiles, error: userProfilesError } = await supabase
+          .from('user_profiles')
+          .select('user_id, display_name')
+          .in('user_id', userIds);
         
-        if (displayNamesError) {
-          console.error("Error fetching display names:", displayNamesError);
-          throw displayNamesError;
+        if (userProfilesError) {
+          console.error("Error fetching user profiles:", userProfilesError);
+          throw userProfilesError;
         }
+
+        // Create a mapping of user_id to display_name
+        const displayNameMap = (userProfiles || []).reduce((map: Record<string, string>, profile) => {
+          if (profile.user_id && profile.display_name) {
+            map[profile.user_id] = profile.display_name;
+          }
+          return map;
+        }, {});
 
         // Map comments with display names
         const updatedComments = commentsData.map(comment => ({
           ...comment,
-          display_user_id: displayNames.find((d: any) => d.id === comment.user_id)?.display_user_id || `user_${comment.user_id.substring(0, 8)}`
+          display_user_id: displayNameMap[comment.user_id] || `user_${comment.user_id.substring(0, 8)}`
         }));
         
         setComments(updatedComments);
