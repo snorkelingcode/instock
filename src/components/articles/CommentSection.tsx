@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Comment } from "@/types/comment";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,14 +9,6 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { UserIcon, MessageSquare, Clock, Shield } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import LoadingSpinner from "@/components/ui/loading-spinner";
-
-interface Comment {
-  id: string;
-  content: string;
-  created_at: string;
-  user_id: string;
-  display_user_id?: string;
-}
 
 interface CommentSectionProps {
   articleId: string;
@@ -61,70 +54,27 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
         const userIds = [...new Set(commentsData.map(comment => comment.user_id))];
         console.log(`Found ${commentsData.length} comments from ${userIds.length} unique users`);
         
-        // Initial comments with temporary display names
-        const initialComments = commentsData.map(comment => {
+        // Use the new RPC function to get display names
+        const { data: displayNames, error: displayNamesError } = await supabase.rpc(
+          'get_user_display_names', 
+          { user_ids: userIds }
+        );
+        
+        if (displayNamesError) {
+          console.error("Error fetching display names:", displayNamesError);
+          throw displayNamesError;
+        }
+
+        // Map comments with display names
+        const updatedComments = commentsData.map(comment => {
+          const displayNameData = displayNames.find(d => d.id === comment.user_id);
           return {
-            id: comment.id,
-            content: comment.content,
-            created_at: comment.created_at,
-            user_id: comment.user_id,
-            // Default temporary display name
-            display_user_id: `user_${comment.user_id.substring(0, 8)}`
-          };
+            ...comment,
+            display_user_id: displayNameData?.display_user_id || `user_${comment.user_id.substring(0, 8)}`
+          } as Comment;
         });
         
-        // Set initial comments
-        setComments(initialComments);
-        
-        try {
-          console.log("Fetching display names for users:", userIds);
-          
-          // Process each user ID individually to fetch display names
-          const displayNamePromises = userIds.map(async (userId) => {
-            try {
-              // Use RPC function to get display name from user_profiles
-              const { data, error } = await supabase
-                .rpc('get_user_display_name', { user_id_param: userId });
-              
-              if (error || !data) {
-                console.log(`No profile found for user ${userId}, using fallback`);
-                return {
-                  id: userId,
-                  display_user_id: `user_${userId.substring(0, 8)}`
-                };
-              }
-              
-              return {
-                id: userId,
-                display_user_id: data
-              };
-            } catch (error) {
-              console.error(`Error fetching profile for user ${userId}:`, error);
-              return {
-                id: userId,
-                display_user_id: `user_${userId.substring(0, 8)}`
-              };
-            }
-          });
-          
-          // Resolve all the promises
-          const userDisplayNames = await Promise.all(displayNamePromises);
-          console.log("Successfully generated display names:", userDisplayNames);
-          
-          // Update comments with display names
-          const updatedComments = initialComments.map(comment => {
-            const userDisplayData = userDisplayNames.find(u => u.id === comment.user_id);
-            if (userDisplayData) {
-              return { ...comment, display_user_id: userDisplayData.display_user_id };
-            }
-            return comment;
-          });
-          
-          setComments(updatedComments);
-        } catch (error) {
-          console.error("Error in display name processing:", error);
-          // We already have set initialComments, so the UI won't be broken
-        }
+        setComments(updatedComments);
       } else {
         console.log("No comments found for this article");
         setComments([]);

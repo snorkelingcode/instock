@@ -1479,6 +1479,12 @@ export type Database = {
           response_count: number
         }[]
       }
+      get_user_display_name: {
+        Args: {
+          user_id_param: string
+        }
+        Returns: string
+      }
       gtrgm_compress: {
         Args: {
           "": unknown

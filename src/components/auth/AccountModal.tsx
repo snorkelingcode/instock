@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   Dialog, 
@@ -43,23 +42,76 @@ const AccountModal: React.FC<AccountModalProps> = ({ open, onOpenChange }) => {
     if (!user) return;
     
     try {
-      // Try to get the display name from user_profiles first
       const { data, error } = await supabase
-        .from('user_profiles')
+        .from('public.user_profiles')
         .select('display_name')
         .eq('user_id', user.id)
         .single();
       
-      if (data && data.display_name) {
-        setDisplayUserId(data.display_name);
+      if (data) {
+        setDisplayUserId(data.display_name || `user_${user.id.substring(0, 8)}`);
       } else {
-        // Fallback to user metadata
-        setDisplayUserId(user.user_metadata?.display_user_id || `user_${user.id.substring(0, 8)}`);
+        setDisplayUserId(`user_${user.id.substring(0, 8)}`);
       }
     } catch (error) {
       console.error("Error fetching display name:", error);
-      // Fallback to user metadata
-      setDisplayUserId(user.user_metadata?.display_user_id || `user_${user.id.substring(0, 8)}`);
+      setDisplayUserId(`user_${user.id.substring(0, 8)}`);
+    }
+  };
+
+  const handleUpdateUserId = async () => {
+    if (!displayUserId) {
+      toast({
+        title: "Error",
+        description: "Please enter a User ID",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (displayUserId.length < 3) {
+      toast({
+        title: "Error",
+        description: "User ID must be at least 3 characters",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsUpdating(true);
+    try {
+      const { error: authError } = await supabase.auth.updateUser({
+        data: { display_user_id: displayUserId }
+      });
+
+      if (authError) throw authError;
+
+      const { error: profileError } = await supabase
+        .from('user_profiles')
+        .upsert({ 
+          user_id: user!.id,
+          display_name: displayUserId
+        }, { 
+          onConflict: 'user_id' 
+        });
+
+      if (profileError) throw profileError;
+
+      await refreshSession();
+      
+      toast({
+        title: "User ID updated",
+        description: "Your User ID has been successfully updated",
+      });
+    } catch (error: any) {
+      console.error('Error updating User ID:', error);
+      toast({
+        title: "Update failed",
+        description: error.message || "Failed to update User ID",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -111,70 +163,6 @@ const AccountModal: React.FC<AccountModalProps> = ({ open, onOpenChange }) => {
       toast({
         title: "Update failed",
         description: error.message || "Failed to update password",
-        variant: "destructive",
-      });
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
-  const handleUpdateUserId = async () => {
-    if (!displayUserId) {
-      toast({
-        title: "Error",
-        description: "Please enter a User ID",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (displayUserId.length < 3) {
-      toast({
-        title: "Error",
-        description: "User ID must be at least 3 characters",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsUpdating(true);
-    try {
-      console.log("Updating user ID to:", displayUserId);
-      
-      // First, update the user's metadata in Supabase Auth
-      const { error: authError } = await supabase.auth.updateUser({
-        data: { display_user_id: displayUserId }
-      });
-
-      if (authError) throw authError;
-      
-      console.log("User ID updated in auth metadata");
-
-      // Then update the user_profiles table
-      const { error: profileError } = await supabase
-        .from('user_profiles')
-        .upsert({ 
-          user_id: user!.id,
-          display_name: displayUserId,
-          updated_at: new Date().toISOString()
-        });
-      
-      if (profileError) throw profileError;
-      
-      console.log("User ID updated in profiles table, refreshing session...");
-
-      // Explicitly refresh the session to ensure changes are propagated
-      await refreshSession();
-      
-      toast({
-        title: "User ID updated",
-        description: "Your User ID has been successfully updated",
-      });
-    } catch (error: any) {
-      console.error('Error updating User ID:', error);
-      toast({
-        title: "Update failed",
-        description: error.message || "Failed to update User ID",
         variant: "destructive",
       });
     } finally {
