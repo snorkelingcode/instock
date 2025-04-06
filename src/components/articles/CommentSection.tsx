@@ -94,12 +94,14 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
         
         try {
           // Now we need to get the latest display names for all users
-          // Using a custom query to work around type limitations
-          const { data: userNamesData, error: userNamesError } = await supabase
-            .rpc('get_user_display_names', { user_ids: userIds }) as { 
-              data: UserDisplayName[] | null; 
-              error: Error | null 
-            };
+          // We need to use a type assertion to work around TypeScript limitations with dynamic RPC functions
+          const { data, error } = await supabase.rpc(
+            'get_user_display_names' as any, 
+            { user_ids: userIds }
+          );
+          
+          const userNamesData = data as UserDisplayName[] | null;
+          const userNamesError = error;
 
           if (!userNamesError && userNamesData) {
             // Update comment display names with the latest from the database
