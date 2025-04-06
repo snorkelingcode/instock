@@ -55,7 +55,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
         const userIds = [...new Set(commentsData.map(comment => comment.user_id))];
         console.log(`Found ${commentsData.length} comments from ${userIds.length} unique users`);
         
-        // Use direct database query instead of RPC function
+        // Use direct database query to get display names from user_profiles
         const { data: userProfiles, error: userProfilesError } = await supabase
           .from('user_profiles')
           .select('user_id, display_name')
@@ -74,7 +74,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
           return map;
         }, {});
 
-        // Map comments with display names
+        // Map comments with display names - always use display name from user_profiles
         const updatedComments = commentsData.map(comment => ({
           ...comment,
           display_user_id: displayNameMap[comment.user_id] || `user_${comment.user_id.substring(0, 8)}`
