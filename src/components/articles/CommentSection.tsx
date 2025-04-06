@@ -84,11 +84,11 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
         
         try {
           console.log("Fetching display names for users:", userIds);
-          // Now fetch the latest display names from auth metadata
-          const { data, error } = await supabase.rpc(
-            'get_user_display_names',
-            { user_ids: userIds }
-          );
+          // Now fetch the latest display names using direct SQL query instead of RPC
+          const { data, error } = await supabase
+            .from('auth.users')
+            .select('id, raw_user_meta_data->display_user_id')
+            .in('id', userIds);
           
           if (error) {
             console.error("Error fetching user display names:", error);
@@ -112,7 +112,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
           }
           
           // Type the returned data
-          const userNamesData = data as UserDisplayName[] | null;
+          const userNamesData = data as { id: string, display_user_id: string }[] | null;
           
           if (userNamesData && userNamesData.length > 0) {
             console.log("Successfully retrieved display names:", userNamesData);
