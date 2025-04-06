@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,11 @@ interface Comment {
   created_at: string;
   user_id: string;
   display_user_id?: string;
+}
+
+interface UserDisplayName {
+  id: string;
+  display_user_id: string;
 }
 
 interface CommentSectionProps {
@@ -62,12 +68,6 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
           userDisplayNames.set(user.id, user.user_metadata?.display_user_id || `user${user.id.substring(0, 4)}`);
         }
         
-        // For all other users, we need to fetch their latest metadata from auth.users
-        // We can't directly query auth.users, so we'll use a function or RPC if needed
-        
-        // For now, fetch what we can from the session and fall back to generic IDs
-        // Future improvement: Use a secure RPC function to get all user display names at once
-        
         // Map the display names to comments
         const formattedComments = commentsData.map(comment => {
           // For the current user, use their display_user_id from auth session
@@ -92,25 +92,33 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
           };
         });
         
-        // Now we need to get the latest display names for all users
-        // This part requires a server function since we can't directly query auth.users from the client
-        const { data: userNamesData, error: userNamesError } = await supabase
-          .rpc('get_user_display_names', { user_ids: userIds });
+        try {
+          // Now we need to get the latest display names for all users
+          // Using a custom query to work around type limitations
+          const { data: userNamesData, error: userNamesError } = await supabase
+            .rpc('get_user_display_names', { user_ids: userIds }) as { 
+              data: UserDisplayName[] | null; 
+              error: Error | null 
+            };
 
-        if (!userNamesError && userNamesData) {
-          // Update comment display names with the latest from the database
-          const updatedComments = formattedComments.map(comment => {
-            const userData = userNamesData.find(u => u.id === comment.user_id);
-            if (userData && userData.display_user_id) {
-              return { ...comment, display_user_id: userData.display_user_id };
-            }
-            return comment;
-          });
-          setComments(updatedComments);
-        } else {
-          // Fall back to the original display names if we couldn't get updated ones
+          if (!userNamesError && userNamesData) {
+            // Update comment display names with the latest from the database
+            const updatedComments = formattedComments.map(comment => {
+              const userData = userNamesData.find(u => u.id === comment.user_id);
+              if (userData && userData.display_user_id) {
+                return { ...comment, display_user_id: userData.display_user_id };
+              }
+              return comment;
+            });
+            setComments(updatedComments);
+          } else {
+            // Fall back to the original display names if we couldn't get updated ones
+            setComments(formattedComments);
+            console.error("Could not fetch updated user display names:", userNamesError);
+          }
+        } catch (error) {
+          console.error("Error fetching user display names:", error);
           setComments(formattedComments);
-          console.error("Could not fetch updated user display names:", userNamesError);
         }
       } else {
         setComments([]);
