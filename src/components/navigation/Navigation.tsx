@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -13,7 +14,7 @@ import {
   SheetTrigger,
   SheetClose,
 } from "@/components/ui/sheet";
-import { X, Menu, MessageSquare } from "lucide-react";
+import { X, Menu, MessageSquare, Flag } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -186,6 +187,15 @@ const Navigation = () => {
                         </SheetClose>
                         <SheetClose asChild>
                           <Link
+                            to="/admin/comment-moderation"
+                            className="py-3 px-6 text-red-600 font-medium border-b border-gray-200 hover:bg-red-50 transition-colors text-left"
+                          >
+                            <Flag className="h-4 w-4 mr-2 inline-block" />
+                            Comment Moderation
+                          </Link>
+                        </SheetClose>
+                        <SheetClose asChild>
+                          <Link
                             to="/sets/sync"
                             className="py-3 px-6 text-red-600 font-medium border-b border-gray-200 hover:bg-red-50 transition-colors text-left"
                           >
@@ -297,6 +307,12 @@ const Navigation = () => {
                       <Link to="/admin/support" className="w-full">
                         <MessageSquare className="h-4 w-4 mr-2 inline-block" />
                         Support Messages
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                      <Link to="/admin/comment-moderation" className="w-full">
+                        <Flag className="h-4 w-4 mr-2 inline-block" />
+                        Comment Moderation
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem>
