@@ -55,7 +55,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
         const userIds = [...new Set(commentsData.map(comment => comment.user_id))];
         console.log(`Found ${commentsData.length} comments from ${userIds.length} unique users`);
         
-        // Use direct database query to get display names from user_profiles
+        // Query the user_profiles table directly
         const { data: userProfiles, error: userProfilesError } = await supabase
           .from('user_profiles')
           .select('user_id, display_name')
@@ -66,6 +66,8 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
           throw userProfilesError;
         }
 
+        console.log("Fetched user profiles:", userProfiles);
+        
         // Create a mapping of user_id to display_name
         const displayNameMap = (userProfiles || []).reduce((map: Record<string, string>, profile) => {
           if (profile.user_id && profile.display_name) {
@@ -74,11 +76,18 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
           return map;
         }, {});
 
+        console.log("Display name map:", displayNameMap);
+
         // Map comments with display names - always use display name from user_profiles
-        const updatedComments = commentsData.map(comment => ({
-          ...comment,
-          display_user_id: displayNameMap[comment.user_id] || `user_${comment.user_id.substring(0, 8)}`
-        }));
+        const updatedComments = commentsData.map(comment => {
+          const displayName = displayNameMap[comment.user_id];
+          console.log(`User ID: ${comment.user_id}, Display Name: ${displayName || 'not found'}`);
+          
+          return {
+            ...comment,
+            display_user_id: displayName || `user_${comment.user_id.substring(0, 8)}`
+          };
+        });
         
         setComments(updatedComments);
       } else {
