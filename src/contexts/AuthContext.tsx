@@ -17,7 +17,7 @@ interface AuthContextProps {
   sendOtp: (email: string) => Promise<{ success: boolean; error?: any }>;
   verifyOtp: (email: string, token: string) => Promise<{ success: boolean; error?: any }>;
   sendPasswordResetEmail: (email: string) => Promise<{ success: boolean; error?: any }>;
-  refreshSession: () => Promise<void>; // Keep return type as Promise<void>
+  refreshSession: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextProps | undefined>(undefined);
@@ -91,8 +91,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (session?.user) {
         await checkUserRole(session.user.id);
       }
-
-      // Return void instead of the session
+      
+      return; // Explicitly return void
     } catch (error) {
       console.error("Failed to refresh session:", error);
       throw error;

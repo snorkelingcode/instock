@@ -69,7 +69,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
             created_at: comment.created_at,
             user_id: comment.user_id,
             // Default temporary display name
-            display_user_id: `user${comment.user_id.substring(0, 4)}`
+            display_user_id: `user_${comment.user_id.substring(0, 8)}`
           };
         });
         
@@ -79,36 +79,34 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
         try {
           console.log("Fetching display names for users:", userIds);
           
-          // Fetch display names directly from user metadata
-          // Process each user ID individually to build display names
+          // Process each user ID individually to fetch display names
           const displayNamePromises = userIds.map(async (userId) => {
-            const { data: userData, error: userError } = await supabase
-              .from('user_profiles')
-              .select('user_id, display_name')
-              .eq('user_id', userId)
-              .single();
-            
-            // If we have a profile with display name, use it
-            if (userData && userData.display_name) {
+            try {
+              const { data, error } = await supabase
+                .from('user_profiles')
+                .select('user_id, display_name')
+                .eq('user_id', userId)
+                .single();
+              
+              if (error) {
+                console.log(`No profile found for user ${userId}, using fallback`);
+                return {
+                  id: userId,
+                  display_user_id: `user_${userId.substring(0, 8)}`
+                };
+              }
+              
               return {
                 id: userId,
-                display_user_id: userData.display_name
+                display_user_id: data.display_name
               };
-            }
-            
-            // Fallback: If current user, use metadata from auth context
-            if (user && userId === user.id && user.user_metadata?.display_user_id) {
+            } catch (error) {
+              console.error(`Error fetching profile for user ${userId}:`, error);
               return {
                 id: userId,
-                display_user_id: user.user_metadata.display_user_id
+                display_user_id: `user_${userId.substring(0, 8)}`
               };
             }
-            
-            // Final fallback: Create a display name from the user ID
-            return {
-              id: userId,
-              display_user_id: `user_${userId.substring(0, 8)}`
-            };
           });
           
           // Resolve all the promises
