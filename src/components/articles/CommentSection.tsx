@@ -32,6 +32,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
     setIsLoading(true);
     try {
       console.log("Fetching comments for article:", articleId);
+      
       // First fetch the comments
       const { data: commentsData, error: commentsError } = await supabase
         .from('article_comments')
@@ -49,43 +50,45 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
         throw commentsError;
       }
 
-      // If we have comments, fetch user metadata for all comment authors
+      // If we have comments, fetch user display names from user_profiles
       if (commentsData && commentsData.length > 0) {
-        // Create a map to track unique user IDs
+        // Get unique user IDs
         const userIds = [...new Set(commentsData.map(comment => comment.user_id))];
         console.log(`Found ${commentsData.length} comments from ${userIds.length} unique users`);
         
-        // Query the user_profiles table directly
-        const { data: userProfiles, error: userProfilesError } = await supabase
-          .from('user_profiles')
-          .select('user_id, display_name')
-          .in('user_id', userIds);
+        // Direct RPC call to the function that gets display names
+        const { data: displayNames, error: displayNamesError } = await supabase
+          .rpc('get_user_display_names', { 
+            user_ids: userIds 
+          });
         
-        if (userProfilesError) {
-          console.error("Error fetching user profiles:", userProfilesError);
-          throw userProfilesError;
+        if (displayNamesError) {
+          console.error("Error fetching display names:", displayNamesError);
+          throw displayNamesError;
         }
 
-        console.log("Fetched user profiles:", userProfiles);
+        console.log("Display names from RPC:", displayNames);
         
         // Create a mapping of user_id to display_name
-        const displayNameMap = (userProfiles || []).reduce((map: Record<string, string>, profile) => {
-          if (profile.user_id && profile.display_name) {
-            map[profile.user_id] = profile.display_name;
-          }
-          return map;
-        }, {});
+        const displayNameMap: Record<string, string> = {};
+        if (displayNames && Array.isArray(displayNames)) {
+          displayNames.forEach(item => {
+            if (item && item.id && item.display_user_id) {
+              displayNameMap[item.id] = item.display_user_id;
+            }
+          });
+        }
 
         console.log("Display name map:", displayNameMap);
 
-        // Map comments with display names - always use display name from user_profiles
+        // Map comments with display names
         const updatedComments = commentsData.map(comment => {
-          const displayName = displayNameMap[comment.user_id];
-          console.log(`User ID: ${comment.user_id}, Display Name: ${displayName || 'not found'}`);
+          // Log for debugging
+          console.log(`Looking for display name for user ${comment.user_id}:`, displayNameMap[comment.user_id]);
           
           return {
             ...comment,
-            display_user_id: displayName || `user_${comment.user_id.substring(0, 8)}`
+            display_name: displayNameMap[comment.user_id] || `user_${comment.user_id.substring(0, 8)}`
           };
         });
         
@@ -211,9 +214,9 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
     });
   };
   
-  const getUserInitials = (identifier: string) => {
-    // Take first two characters of the identifier
-    return identifier.substring(0, 2).toUpperCase();
+  const getUserInitials = (displayName: string) => {
+    // Take first two characters of the display name
+    return displayName.substring(0, 2).toUpperCase();
   };
 
   const canDeleteComment = (commentUserId: string) => {
@@ -268,13 +271,13 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
               <div className="flex items-start gap-3 mb-2">
                 <Avatar className="h-8 w-8 bg-red-100">
                   <AvatarFallback className="bg-red-100 text-red-600">
-                    {getUserInitials(comment.display_user_id || 'User')}
+                    {getUserInitials(comment.display_name || 'User')}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1">
                   <div className="flex flex-col sm:flex-row sm:justify-between sm:items-baseline">
                     <div className="flex items-center gap-2">
-                      <p className="font-medium">{comment.display_user_id}</p>
+                      <p className="font-medium">{comment.display_name}</p>
                       {user && user.id === comment.user_id && (
                         <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">You</span>
                       )}
