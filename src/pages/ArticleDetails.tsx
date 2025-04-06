@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 import { format, parseISO } from 'date-fns';
@@ -14,6 +13,9 @@ import CommentSection from '@/components/articles/CommentSection';
 import { Card } from '@/components/ui/card';
 import ImageCarousel from '@/components/articles/ImageCarousel';
 import { Article } from '@/types/article';
+import { useMetaTags } from '@/hooks/use-meta-tags';
+import ArticleStructuredData from '@/components/seo/ArticleStructuredData';
+import { notifyIndexNowSingleUrl } from '@/utils/indexNow';
 
 export const createSlug = (title: string): string => {
   return title
@@ -38,6 +40,19 @@ const ArticleDetails = () => {
   const navigate = useNavigate();
   const searchParams = new URLSearchParams(location.search);
   const autoplay = searchParams.get('autoplay') === 'true';
+
+  useMetaTags(article ? {
+    title: article.title || 'Article',
+    description: article.excerpt || 'Read this interesting article on TCG Updates',
+    ogTitle: article.title,
+    ogDescription: article.excerpt,
+    ogImage: article.featured_image,
+    keywords: `trading card game, tcg, ${article.category}, ${article.title}`,
+    canonicalUrl: `https://tcgupdates.com/articles/${createSlug(article.title)}`,
+  } : {
+    title: "Article",
+    description: "Trading card game article - TCG Updates"
+  });
 
   useEffect(() => {
     if (id) {
@@ -91,7 +106,6 @@ const ArticleDetails = () => {
         throw error;
       }
 
-      // We need to type the data properly before using find
       const foundArticle = data.find((dbArticle) => 
         createSlug(dbArticle.title) === articleSlug
       );
@@ -113,6 +127,18 @@ const ArticleDetails = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (article && article.published) {
+      notifyIndexNowSingleUrl(article)
+        .then(result => {
+          console.log("IndexNow notification result:", result);
+        })
+        .catch(err => {
+          console.error("Error notifying search engines:", err);
+        });
+    }
+  }, [article?.id]);
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'Unknown date';
@@ -175,6 +201,8 @@ const ArticleDetails = () => {
           </div>
         ) : article ? (
           <>
+            <ArticleStructuredData article={article} />
+            
             <div className="mb-6">
               <Button 
                 variant="ghost" 

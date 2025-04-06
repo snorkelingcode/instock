@@ -12,10 +12,14 @@ Allow: /privacy
 Allow: /terms
 Allow: /cookies
 Allow: /article/
+Allow: /articles/
 
 # Disallow admin sections
 Disallow: /admin/
 Disallow: /auth/
 
-# Sitemap
+# Sitemaps
 Sitemap: https://tcgupdates.com/sitemap.xml
+Sitemap: https://tcgupdates.com/api/sitemap-static.xml
+Sitemap: https://tcgupdates.com/api/sitemap-articles.xml
+

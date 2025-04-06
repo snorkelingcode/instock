@@ -29,11 +29,12 @@ serve(async (req) => {
     // Set headers for the request to search engines
     const headers = {
       "Content-Type": "application/json",
-      "User-Agent": "Supabase Edge Function"
+      "User-Agent": "TCG Updates Bot"
     };
     
     // Prepare the IndexNow request body
     let indexNowBody;
+    let bingResponse, googleResponse, yandexResponse;
     
     if (url) {
       // Single URL submission
@@ -42,6 +43,30 @@ serve(async (req) => {
         key: key,
         url: url
       };
+      
+      // Send URL to Bing using IndexNow API
+      bingResponse = await fetch("https://www.bing.com/indexnow", {
+        method: "POST",
+        headers: headers,
+        body: JSON.stringify(indexNowBody)
+      });
+      
+      // Send to Google Indexing API (simplified - in real implementation would require OAuth2)
+      const pingGoogleUrl = `https://www.google.com/ping?sitemap=https://tcgupdates.com/sitemap.xml`;
+      googleResponse = await fetch(pingGoogleUrl, {
+        method: "GET",
+        headers: {
+          "User-Agent": "TCG Updates Bot"
+        }
+      });
+      
+      // Also submit to Yandex (another search engine that supports IndexNow)
+      yandexResponse = await fetch("https://yandex.com/indexnow", {
+        method: "POST",
+        headers: headers,
+        body: JSON.stringify(indexNowBody)
+      });
+      
     } else {
       // Multiple URL submission
       indexNowBody = {
@@ -49,27 +74,51 @@ serve(async (req) => {
         key: key,
         urlList: urlList
       };
+      
+      // Send URLs to Bing using IndexNow API
+      bingResponse = await fetch("https://www.bing.com/indexnow", {
+        method: "POST",
+        headers: headers,
+        body: JSON.stringify(indexNowBody)
+      });
+      
+      // Send to Google Indexing API (simplified)
+      const pingGoogleUrl = `https://www.google.com/ping?sitemap=https://tcgupdates.com/sitemap.xml`;
+      googleResponse = await fetch(pingGoogleUrl, {
+        method: "GET",
+        headers: {
+          "User-Agent": "TCG Updates Bot"
+        }
+      });
+      
+      // Also submit to Yandex
+      yandexResponse = await fetch("https://yandex.com/indexnow", {
+        method: "POST",
+        headers: headers,
+        body: JSON.stringify(indexNowBody)
+      });
     }
     
-    // Send request to IndexNow API (Bing)
-    const response = await fetch("https://www.bing.com/indexnow", {
-      method: "POST",
-      headers: headers,
-      body: JSON.stringify(indexNowBody)
-    });
+    // Log results
+    console.log("Bing IndexNow submission status:", bingResponse.status);
+    console.log("Google ping submission status:", googleResponse.status);
+    console.log("Yandex IndexNow submission status:", yandexResponse.status);
     
-    const result = await response.text();
+    const bingResult = await bingResponse.text();
     
     return new Response(
       JSON.stringify({ 
-        success: response.ok, 
-        status: response.status, 
-        statusText: response.statusText,
-        result: result 
+        success: bingResponse.ok, 
+        bingStatus: bingResponse.status,
+        bingStatusText: bingResponse.statusText,
+        googleStatus: googleResponse.status,
+        yandexStatus: yandexResponse.status,
+        bingResult: bingResult
       }),
       { status: 200, headers: { "Content-Type": "application/json" } }
     );
   } catch (error) {
+    console.error("Error in IndexNow function:", error);
     return new Response(
       JSON.stringify({ error: error.message }),
       { status: 500, headers: { "Content-Type": "application/json" } }

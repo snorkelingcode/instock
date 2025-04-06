@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import PageCacheWrapper from "./components/cache/PageCacheWrapper";
+import SitemapManager from "./components/seo/SitemapManager";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import About from "./pages/About";
@@ -53,130 +54,132 @@ const App = () => {
           <TooltipProvider>
             <Toaster />
             <Sonner />
-            <Routes>
-              <Route path="/" element={<PageCacheWrapper><Index /></PageCacheWrapper>} />
-              <Route path="/about" element={<PageCacheWrapper><About /></PageCacheWrapper>} />
-              <Route path="/contact" element={<PageCacheWrapper><Contact /></PageCacheWrapper>} />
-              <Route path="/products" element={<PageCacheWrapper><Products /></PageCacheWrapper>} />
-              <Route path="/news" element={<PageCacheWrapper><News /></PageCacheWrapper>} />
-              <Route path="/market" element={<PageCacheWrapper><PSAMarket /></PageCacheWrapper>} />
-              <Route path="/psa-market" element={<PageCacheWrapper><PSAMarket /></PageCacheWrapper>} />
-              <Route path="/psa-market/:id" element={<PageCacheWrapper><PSACardDetails /></PageCacheWrapper>} />
-              <Route path="/psa-card/:id" element={<PageCacheWrapper><PSACardDetails /></PageCacheWrapper>} />
-              
-              <Route path="/article/:id" element={<PageCacheWrapper><ArticleDetails /></PageCacheWrapper>} />
-              
-              <Route path="/articles/:slug" element={<PageCacheWrapper><ArticleDetails /></PageCacheWrapper>} />
-              
-              <Route path="/privacy" element={<PageCacheWrapper><PrivacyPolicy /></PageCacheWrapper>} />
-              <Route path="/terms" element={<PageCacheWrapper><TermsOfService /></PageCacheWrapper>} />
-              <Route path="/cookies" element={<PageCacheWrapper><CookiePolicy /></PageCacheWrapper>} />
-              <Route path="/auth" element={<Auth />} />
-              <Route 
-                path="/dashboard" 
-                element={
-                  <RequireAuth>
-                    <PageCacheWrapper><Dashboard /></PageCacheWrapper>
-                  </RequireAuth>
-                } 
-              />
-              
-              <Route path="/sets" element={<PageCacheWrapper><Sets /></PageCacheWrapper>} />
-              <Route path="/sets/pokemon" element={<PageCacheWrapper><PokemonSets /></PageCacheWrapper>} />
-              <Route path="/sets/pokemon/:setId" element={<PageCacheWrapper><PokemonSetDetails /></PageCacheWrapper>} />
-              
-              <Route 
-                path="/sets/sync" 
-                element={
-                  <RequireAdmin>
-                    <SetSyncPage />
-                  </RequireAdmin>
-                } 
-              />
-              
-              <Route 
-                path="/admin/articles" 
-                element={
-                  <RequireAdmin>
-                    <AdminArticles />
-                  </RequireAdmin>
-                } 
-              />
-              <Route 
-                path="/admin/articles/new" 
-                element={
-                  <RequireAdmin>
-                    <ArticleEditor />
-                  </RequireAdmin>
-                } 
-              />
-              <Route 
-                path="/admin/articles/edit/:id" 
-                element={
-                  <RequireAdmin>
-                    <ArticleEditor />
-                  </RequireAdmin>
-                } 
-              />
-              
-              <Route 
-                path="/admin/tcg-releases" 
-                element={
-                  <RequireAdmin>
-                    <ManageTCGReleases />
-                  </RequireAdmin>
-                } 
-              />
-              
-              <Route 
-                path="/admin/products" 
-                element={
-                  <RequireAdmin>
-                    <ManageProducts />
-                  </RequireAdmin>
-                } 
-              />
-              
-              <Route 
-                path="/admin/users" 
-                element={
-                  <RequireAdmin>
-                    <UserManagement />
-                  </RequireAdmin>
-                } 
-              />
-              
-              <Route path="/admin/psa-market" element={<PSAMarket />} />
-              
-              <Route 
-                path="/admin/manage-market" 
-                element={
-                  <RequireAdmin>
-                    <ManageMarket />
-                  </RequireAdmin>
-                } 
-              />
-              
-              <Route 
-                path="/admin/models" 
-                element={
-                  <RequireAdmin>
-                    <ManageModels />
-                  </RequireAdmin>
-                } 
-              />
-              
-              <Route 
-                path="/admin/support" 
-                element={
-                  <RequireAdmin>
-                    <SupportMessages />
-                  </RequireAdmin>
-                } 
-              />
-              
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+            <SitemapManager>
+              <Routes>
+                <Route path="/" element={<PageCacheWrapper><Index /></PageCacheWrapper>} />
+                <Route path="/about" element={<PageCacheWrapper><About /></PageCacheWrapper>} />
+                <Route path="/contact" element={<PageCacheWrapper><Contact /></PageCacheWrapper>} />
+                <Route path="/products" element={<PageCacheWrapper><Products /></PageCacheWrapper>} />
+                <Route path="/news" element={<PageCacheWrapper><News /></PageCacheWrapper>} />
+                <Route path="/market" element={<PageCacheWrapper><PSAMarket /></PageCacheWrapper>} />
+                <Route path="/psa-market" element={<PageCacheWrapper><PSAMarket /></PageCacheWrapper>} />
+                <Route path="/psa-market/:id" element={<PageCacheWrapper><PSACardDetails /></PageCacheWrapper>} />
+                <Route path="/psa-card/:id" element={<PageCacheWrapper><PSACardDetails /></PageCacheWrapper>} />
+                
+                <Route path="/article/:id" element={<PageCacheWrapper><ArticleDetails /></PageCacheWrapper>} />
+                
+                <Route path="/articles/:slug" element={<PageCacheWrapper><ArticleDetails /></PageCacheWrapper>} />
+                
+                <Route path="/privacy" element={<PageCacheWrapper><PrivacyPolicy /></PageCacheWrapper>} />
+                <Route path="/terms" element={<PageCacheWrapper><TermsOfService /></PageCacheWrapper>} />
+                <Route path="/cookies" element={<PageCacheWrapper><CookiePolicy /></PageCacheWrapper>} />
+                <Route path="/auth" element={<Auth />} />
+                <Route 
+                  path="/dashboard" 
+                  element={
+                    <RequireAuth>
+                      <PageCacheWrapper><Dashboard /></PageCacheWrapper>
+                    </RequireAuth>
+                  } 
+                />
+                
+                <Route path="/sets" element={<PageCacheWrapper><Sets /></PageCacheWrapper>} />
+                <Route path="/sets/pokemon" element={<PageCacheWrapper><PokemonSets /></PageCacheWrapper>} />
+                <Route path="/sets/pokemon/:setId" element={<PageCacheWrapper><PokemonSetDetails /></PageCacheWrapper>} />
+                
+                <Route 
+                  path="/sets/sync" 
+                  element={
+                    <RequireAdmin>
+                      <SetSyncPage />
+                    </RequireAdmin>
+                  } 
+                />
+                
+                <Route 
+                  path="/admin/articles" 
+                  element={
+                    <RequireAdmin>
+                      <AdminArticles />
+                    </RequireAdmin>
+                  } 
+                />
+                <Route 
+                  path="/admin/articles/new" 
+                  element={
+                    <RequireAdmin>
+                      <ArticleEditor />
+                    </RequireAdmin>
+                  } 
+                />
+                <Route 
+                  path="/admin/articles/edit/:id" 
+                  element={
+                    <RequireAdmin>
+                      <ArticleEditor />
+                    </RequireAdmin>
+                  } 
+                />
+                
+                <Route 
+                  path="/admin/tcg-releases" 
+                  element={
+                    <RequireAdmin>
+                      <ManageTCGReleases />
+                    </RequireAdmin>
+                  } 
+                />
+                
+                <Route 
+                  path="/admin/products" 
+                  element={
+                    <RequireAdmin>
+                      <ManageProducts />
+                    </RequireAdmin>
+                  } 
+                />
+                
+                <Route 
+                  path="/admin/users" 
+                  element={
+                    <RequireAdmin>
+                      <UserManagement />
+                    </RequireAdmin>
+                  } 
+                />
+                
+                <Route path="/admin/psa-market" element={<PSAMarket />} />
+                
+                <Route 
+                  path="/admin/manage-market" 
+                  element={
+                    <RequireAdmin>
+                      <ManageMarket />
+                    </RequireAdmin>
+                  } 
+                />
+                
+                <Route 
+                  path="/admin/models" 
+                  element={
+                    <RequireAdmin>
+                      <ManageModels />
+                    </RequireAdmin>
+                  } 
+                />
+                
+                <Route 
+                  path="/admin/support" 
+                  element={
+                    <RequireAdmin>
+                      <SupportMessages />
+                    </RequireAdmin>
+                  } 
+                />
+                
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </SitemapManager>
           </TooltipProvider>
         </AuthProvider>
       </BrowserRouter>
