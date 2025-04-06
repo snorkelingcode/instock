@@ -43,7 +43,7 @@ const AccountModal: React.FC<AccountModalProps> = ({ open, onOpenChange }) => {
     
     try {
       const { data, error } = await supabase
-        .from('public.user_profiles')
+        .from('user_profiles')
         .select('display_name')
         .eq('user_id', user.id)
         .single();

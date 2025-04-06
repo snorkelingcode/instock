@@ -66,13 +66,10 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
         }
 
         // Map comments with display names
-        const updatedComments = commentsData.map(comment => {
-          const displayNameData = displayNames.find(d => d.id === comment.user_id);
-          return {
-            ...comment,
-            display_user_id: displayNameData?.display_user_id || `user_${comment.user_id.substring(0, 8)}`
-          } as Comment;
-        });
+        const updatedComments = commentsData.map(comment => ({
+          ...comment,
+          display_user_id: displayNames.find((d: any) => d.id === comment.user_id)?.display_user_id || `user_${comment.user_id.substring(0, 8)}`
+        }));
         
         setComments(updatedComments);
       } else {

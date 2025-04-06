@@ -1485,6 +1485,15 @@ export type Database = {
         }
         Returns: string
       }
+      get_user_display_names: {
+        Args: {
+          user_ids: string[]
+        }
+        Returns: {
+          id: string
+          display_user_id: string
+        }[]
+      }
       gtrgm_compress: {
         Args: {
           "": unknown
