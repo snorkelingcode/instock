@@ -82,13 +82,11 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
           // Process each user ID individually to fetch display names
           const displayNamePromises = userIds.map(async (userId) => {
             try {
+              // Use RPC function to get display name from user_profiles
               const { data, error } = await supabase
-                .from('user_profiles')
-                .select('user_id, display_name')
-                .eq('user_id', userId)
-                .single();
+                .rpc('get_user_display_name', { user_id_param: userId });
               
-              if (error) {
+              if (error || !data) {
                 console.log(`No profile found for user ${userId}, using fallback`);
                 return {
                   id: userId,
@@ -98,7 +96,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
               
               return {
                 id: userId,
-                display_user_id: data.display_name
+                display_user_id: data
               };
             } catch (error) {
               console.error(`Error fetching profile for user ${userId}:`, error);

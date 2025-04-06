@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { 
   Dialog, 
@@ -34,10 +35,33 @@ const AccountModal: React.FC<AccountModalProps> = ({ open, onOpenChange }) => {
 
   useEffect(() => {
     if (user) {
-      // Set display user ID from user metadata or generate from system ID
-      setDisplayUserId(user.user_metadata?.display_user_id || `user_${user.id.substring(0, 8)}`);
+      fetchDisplayName();
     }
   }, [user]);
+
+  const fetchDisplayName = async () => {
+    if (!user) return;
+    
+    try {
+      // Try to get the display name from user_profiles first
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('display_name')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (data && data.display_name) {
+        setDisplayUserId(data.display_name);
+      } else {
+        // Fallback to user metadata
+        setDisplayUserId(user.user_metadata?.display_user_id || `user_${user.id.substring(0, 8)}`);
+      }
+    } catch (error) {
+      console.error("Error fetching display name:", error);
+      // Fallback to user metadata
+      setDisplayUserId(user.user_metadata?.display_user_id || `user_${user.id.substring(0, 8)}`);
+    }
+  };
 
   const handleUpdatePassword = async () => {
     if (!password) {
@@ -117,14 +141,27 @@ const AccountModal: React.FC<AccountModalProps> = ({ open, onOpenChange }) => {
     try {
       console.log("Updating user ID to:", displayUserId);
       
-      // Update the user's metadata in Supabase Auth
-      const { error } = await supabase.auth.updateUser({
+      // First, update the user's metadata in Supabase Auth
+      const { error: authError } = await supabase.auth.updateUser({
         data: { display_user_id: displayUserId }
       });
 
-      if (error) throw error;
+      if (authError) throw authError;
       
-      console.log("User ID updated in auth metadata, refreshing session...");
+      console.log("User ID updated in auth metadata");
+
+      // Then update the user_profiles table
+      const { error: profileError } = await supabase
+        .from('user_profiles')
+        .upsert({ 
+          user_id: user!.id,
+          display_name: displayUserId,
+          updated_at: new Date().toISOString()
+        });
+      
+      if (profileError) throw profileError;
+      
+      console.log("User ID updated in profiles table, refreshing session...");
 
       // Explicitly refresh the session to ensure changes are propagated
       await refreshSession();
@@ -317,7 +354,89 @@ const AccountModal: React.FC<AccountModalProps> = ({ open, onOpenChange }) => {
             />
           )
         ) : (
-          accountView
+          <>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>Email</Label>
+                <Input 
+                  value={user?.email || ""} 
+                  disabled 
+                  className="bg-gray-100"
+                />
+                <p className="text-sm text-gray-500">
+                  Your email address cannot be changed
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="displayUserId">Display User ID</Label>
+                <Input 
+                  id="displayUserId"
+                  placeholder="Enter your preferred User ID" 
+                  value={displayUserId}
+                  onChange={(e) => setDisplayUserId(e.target.value)}
+                />
+                <p className="text-sm text-gray-500">
+                  This is how you'll be identified on the site
+                </p>
+                <Button 
+                  onClick={handleUpdateUserId} 
+                  disabled={isUpdating || displayUserId === user?.user_metadata?.display_user_id}
+                  size="sm"
+                >
+                  {isUpdating ? (
+                    <>
+                      <LoadingSpinner size="sm" className="mr-2" />
+                      Updating...
+                    </>
+                  ) : "Update User ID"}
+                </Button>
+              </div>
+
+              <div className="space-y-2 pt-4 border-t">
+                <Label>Password</Label>
+                <p className="text-sm text-gray-500">
+                  Change your password (requires verification)
+                </p>
+                <Button 
+                  onClick={handleStartPasswordChange} 
+                  size="sm"
+                >
+                  Change Password
+                </Button>
+              </div>
+            </div>
+
+            <DialogFooter className="flex flex-col sm:flex-row sm:justify-between">
+              <div className="order-2 sm:order-1">
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" className="w-full sm:w-auto">
+                      Delete Account
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete your account
+                        and remove all your data from our servers.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction 
+                        onClick={signOut} 
+                        className="bg-red-600 hover:bg-red-700"
+                      >
+                        Delete Account
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            </DialogFooter>
+          </>
         )}
       </DialogContent>
     </Dialog>
