@@ -70,20 +70,78 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
   const fetchComments = async () => {
     setIsLoading(true);
     try {
-      // Using the new get_comment_details function
+      // Fetch comments directly instead of using the RPC function
       const { data, error } = await supabase
-        .rpc('get_comment_details', { 
-          article_id_param: articleId 
-        });
+        .from('article_comments')
+        .select(`
+          id,
+          content,
+          created_at,
+          user_id
+        `)
+        .eq('article_id', articleId)
+        .order('created_at', { ascending: false });
       
       if (error) {
-        console.error("Error fetching comment details:", error);
+        console.error("Error fetching comments:", error);
         throw error;
       }
 
-      console.log("Fetched comment details:", data);
+      console.log("Fetched comments:", data);
       
-      // If user is logged in, check which comments they've liked
+      if (!data || data.length === 0) {
+        setComments([]);
+        setIsLoading(false);
+        return;
+      }
+      
+      // Get user display names
+      const userIds = [...new Set(data.map(comment => comment.user_id))];
+      
+      const { data: displayNames, error: namesError } = await supabase
+        .rpc('get_user_display_names', {
+          user_ids: userIds
+        });
+      
+      if (namesError) {
+        console.error("Error fetching display names:", namesError);
+      }
+      
+      // Create a map of user IDs to display names
+      const displayNameMap: Record<string, string> = {};
+      if (displayNames) {
+        displayNames.forEach((item: any) => {
+          if (item && item.id && item.display_user_id) {
+            displayNameMap[item.id] = item.display_user_id;
+          }
+        });
+      }
+      
+      // Count likes for each comment
+      const likesCountsPromises = data.map(async (comment) => {
+        const { count, error } = await supabase
+          .from('comment_likes')
+          .select('*', { count: 'exact', head: true })
+          .eq('comment_id', comment.id);
+        
+        return { commentId: comment.id, count: count || 0, error };
+      });
+      
+      const likesCounts = await Promise.all(likesCountsPromises);
+      
+      // Count replies for each comment
+      const repliesCountsPromises = data.map(async (comment) => {
+        const { count, error } = await supabase
+          .from('comment_replies')
+          .select('*', { count: 'exact', head: true })
+          .eq('parent_comment_id', comment.id);
+        
+        return { commentId: comment.id, count: count || 0, error };
+      });
+      
+      const repliesCounts = await Promise.all(repliesCountsPromises);
+      
+      // Check which comments the current user has liked
       let userLikes: Record<string, boolean> = {};
       
       if (user) {
@@ -102,16 +160,21 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
         }
       }
       
-      // Add liked_by_me flag to comments
-      const commentsWithLikes = data.map(comment => ({
-        ...comment,
-        liked_by_me: !!userLikes[comment.id],
-        // Convert counts to numbers (RPC returns bigint as string)
-        likes_count: parseInt(comment.likes_count as unknown as string) || 0,
-        replies_count: parseInt(comment.replies_count as unknown as string) || 0
-      }));
+      // Build the complete comments object with all required fields
+      const commentsWithDetails = data.map(comment => {
+        const likes = likesCounts.find(l => l.commentId === comment.id)?.count || 0;
+        const replies = repliesCounts.find(r => r.commentId === comment.id)?.count || 0;
+        
+        return {
+          ...comment,
+          display_name: displayNameMap[comment.user_id] || `user_${comment.user_id.substring(0, 8)}`,
+          likes_count: likes,
+          replies_count: replies,
+          liked_by_me: !!userLikes[comment.id]
+        };
+      });
       
-      setComments(commentsWithLikes);
+      setComments(commentsWithDetails);
     } catch (error) {
       console.error("Error fetching comments:", error);
       toast({
@@ -294,7 +357,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
     setLoadingReplies(prev => ({ ...prev, [commentId]: true }));
     
     try {
-      // Fetch replies for this comment
+      // Fetch replies for this comment manually since we're avoiding the table type errors
       const { data, error } = await supabase
         .from('comment_replies')
         .select(`
@@ -425,11 +488,21 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
         
       if (error) throw error;
       
+      // Get the display name for the user
+      const { data: displayNameData, error: displayNameError } = await supabase
+        .rpc('get_user_display_name', { user_id_param: user.id });
+      
+      if (displayNameError) {
+        console.error("Error getting display name:", displayNameError);
+      }
+      
+      const displayName = displayNameData || `user_${user.id.substring(0, 8)}`;
+      
       // Optimistically update UI with new reply
       if (data && data[0]) {
         const newReply = {
           ...data[0],
-          display_name: user ? (await supabase.rpc('get_user_display_name', { user_id_param: user.id })) : 'Anonymous'
+          display_name: displayName
         };
         
         setCommentReplies(prev => ({

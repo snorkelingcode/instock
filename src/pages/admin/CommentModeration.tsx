@@ -73,70 +73,93 @@ const CommentModeration = () => {
   const fetchReports = async (status: string) => {
     setIsLoading(true);
     try {
-      // Fetch reports with joined data for comments and articles
-      let query = supabase
-        .from('comment_reports')
-        .select(`
-          *,
-          article_comments!inner (
-            id,
-            content,
-            article_id,
-            user_id,
-            articles!inner (
-              id,
-              title
-            )
-          )
-        `);
-
-      // Filter by status
+      // Fetch reports directly instead of using nested selects for better type compatibility
+      let query = supabase.from('comment_reports');
+      
+      // Build query with filters
       if (status === 'pending') {
         query = query.eq('status', 'pending');
       } else if (status === 'resolved') {
         query = query.neq('status', 'pending');
       }
-
-      // Order by created_at
-      query = query.order('created_at', { ascending: false });
-
-      const { data, error } = await query;
-
+      
+      // Run the query
+      const { data: reportData, error } = await query
+        .select()
+        .order('created_at', { ascending: false });
+      
       if (error) throw error;
-
-      // Format reports
-      if (data) {
-        // Get unique user IDs (reporters and reported users)
-        const userIds = [
-          ...new Set(
-            data.flatMap(report => [
-              report.reporter_id,
-              report.resolved_by,
-              report.article_comments.user_id
-            ].filter(Boolean) as string[])
-          )
-        ];
-
-        // Fetch display names for all users
-        const { data: displayNames, error: namesError } = await supabase
-          .rpc('get_user_display_names', {
-            user_ids: userIds
-          });
-
-        if (namesError) throw namesError;
-
-        // Create display name map
-        const displayNameMap: Record<string, string> = {};
-        if (displayNames) {
-          displayNames.forEach((item: any) => {
-            if (item && item.id && item.display_user_id) {
-              displayNameMap[item.id] = item.display_user_id;
-            }
-          });
-        }
-
-        // Map the data to include display names and related info
-        const formattedReports = data.map(report => ({
+      
+      if (!reportData || reportData.length === 0) {
+        setReports([]);
+        setIsLoading(false);
+        return;
+      }
+      
+      // Get comment data for all reports
+      const commentIds = reportData.map(report => report.comment_id);
+      
+      const { data: commentsData, error: commentsError } = await supabase
+        .from('article_comments')
+        .select(`
+          id,
+          content,
+          article_id,
+          user_id
+        `)
+        .in('id', commentIds);
+      
+      if (commentsError) throw commentsError;
+      
+      // Get article titles
+      const articleIds = commentsData.map(comment => comment.article_id);
+      
+      const { data: articlesData, error: articlesError } = await supabase
+        .from('articles')
+        .select('id, title')
+        .in('id', articleIds);
+      
+      if (articlesError) throw articlesError;
+      
+      // Get display names for reporter and resolver
+      const userIds = [
+        ...reportData.map(report => report.reporter_id),
+        ...reportData.filter(report => report.resolved_by).map(report => report.resolved_by as string)
+      ].filter(Boolean);
+      
+      const { data: displayNames, error: namesError } = await supabase
+        .rpc('get_user_display_names', {
+          user_ids: userIds
+        });
+      
+      if (namesError) throw namesError;
+      
+      // Create a map for easier lookup
+      const displayNameMap: Record<string, string> = {};
+      if (displayNames) {
+        displayNames.forEach((item: any) => {
+          if (item && item.id && item.display_user_id) {
+            displayNameMap[item.id] = item.display_user_id;
+          }
+        });
+      }
+      
+      const commentMap = commentsData.reduce((acc, comment) => {
+        acc[comment.id] = comment;
+        return acc;
+      }, {} as Record<string, any>);
+      
+      const articleMap = articlesData.reduce((acc, article) => {
+        acc[article.id] = article;
+        return acc;
+      }, {} as Record<string, any>);
+      
+      // Format the reports with all necessary data
+      const formattedReports: CommentReport[] = reportData.map(report => {
+        const comment = commentMap[report.comment_id];
+        const article = comment && comment.article_id ? articleMap[comment.article_id] : null;
+        
+        return {
           id: report.id,
           comment_id: report.comment_id,
           reporter_id: report.reporter_id,
@@ -148,13 +171,13 @@ const CommentModeration = () => {
           resolved_by: report.resolved_by,
           resolver_name: report.resolved_by ? (displayNameMap[report.resolved_by] || `user_${report.resolved_by.substring(0, 8)}`) : undefined,
           resolution_notes: report.resolution_notes,
-          comment_content: report.article_comments.content,
-          article_id: report.article_comments.article_id,
-          article_title: report.article_comments.articles.title
-        }));
-
-        setReports(formattedReports);
-      }
+          comment_content: comment ? comment.content : 'Comment not found',
+          article_id: comment ? comment.article_id : '',
+          article_title: article ? article.title : 'Unknown article'
+        };
+      });
+      
+      setReports(formattedReports);
     } catch (error) {
       console.error('Error fetching reports:', error);
       toast({
