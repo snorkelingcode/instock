@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import RequireAdmin from '@/components/auth/RequireAdmin';
@@ -74,21 +73,19 @@ const CommentModeration = () => {
     setIsLoading(true);
     try {
       // Fetch reports directly instead of using nested selects for better type compatibility
-      let query = supabase.from('comment_reports');
-      
-      // Build query with filters
-      if (status === 'pending') {
-        query = query.eq('status', 'pending');
-      } else if (status === 'resolved') {
-        query = query.neq('status', 'pending');
-      }
-      
-      // Run the query
-      const { data: reportData, error } = await query
+      let { data: reportData, error } = await supabase
+        .from('comment_reports')
         .select()
         .order('created_at', { ascending: false });
       
       if (error) throw error;
+      
+      // Filter the data based on status
+      if (status === 'pending') {
+        reportData = reportData.filter(report => report.status === 'pending');
+      } else if (status === 'resolved') {
+        reportData = reportData.filter(report => report.status !== 'pending');
+      }
       
       if (!reportData || reportData.length === 0) {
         setReports([]);
