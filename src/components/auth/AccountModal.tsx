@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   Dialog, 
@@ -24,7 +23,7 @@ interface AccountModalProps {
 }
 
 const AccountModal: React.FC<AccountModalProps> = ({ open, onOpenChange }) => {
-  const { user, signOut } = useAuth();
+  const { user, signOut, refreshSession } = useAuth();
   const [isUpdating, setIsUpdating] = useState(false);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -116,28 +115,26 @@ const AccountModal: React.FC<AccountModalProps> = ({ open, onOpenChange }) => {
 
     setIsUpdating(true);
     try {
+      console.log("Updating user ID to:", displayUserId);
+      
       // Update the user's metadata in Supabase Auth
       const { error } = await supabase.auth.updateUser({
         data: { display_user_id: displayUserId }
       });
 
       if (error) throw error;
-
-      // After successfully updating the user's display_user_id in auth metadata,
-      // we need to trigger a full session refresh to ensure the changes are properly
-      // propagated throughout the application
-      const { data: sessionData, error: sessionError } = await supabase.auth.refreshSession();
       
-      if (sessionError) {
-        console.error("Error refreshing session:", sessionError);
-        // Continue with toast notification even if session refresh fails
-      }
+      console.log("User ID updated in auth metadata, refreshing session...");
 
+      // Explicitly refresh the session to ensure changes are propagated
+      await refreshSession();
+      
       toast({
         title: "User ID updated",
         description: "Your User ID has been successfully updated",
       });
     } catch (error: any) {
+      console.error('Error updating User ID:', error);
       toast({
         title: "Update failed",
         description: error.message || "Failed to update User ID",
@@ -160,7 +157,6 @@ const AccountModal: React.FC<AccountModalProps> = ({ open, onOpenChange }) => {
     setIsChangingPassword(false);
   };
 
-  // Regular account view
   const accountView = (
     <>
       <div className="space-y-4 py-4">
@@ -247,7 +243,6 @@ const AccountModal: React.FC<AccountModalProps> = ({ open, onOpenChange }) => {
     </>
   );
 
-  // Password change view (after verification)
   const passwordChangeView = (
     <>
       <div className="space-y-4 py-4">

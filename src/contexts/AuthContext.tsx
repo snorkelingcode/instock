@@ -54,7 +54,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      (event, session) => {
+        console.log("Auth state changed:", event, session?.user?.id);
         setSession(session);
         setUser(session?.user ?? null);
         setIsLoading(false);
@@ -75,18 +76,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const refreshSession = async () => {
     try {
       setIsLoading(true);
+      console.log("Refreshing session...");
       const { data: { session }, error } = await supabase.auth.refreshSession();
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error refreshing session:", error);
+        throw error;
+      }
       
+      console.log("Session refreshed successfully:", session?.user?.id);
       setSession(session);
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        checkUserRole(session.user.id);
+        await checkUserRole(session.user.id);
       }
+
+      return session;
     } catch (error) {
-      console.error("Error refreshing session:", error);
+      console.error("Failed to refresh session:", error);
+      throw error;
     } finally {
       setIsLoading(false);
     }
@@ -315,7 +324,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         sendOtp,
         verifyOtp,
         sendPasswordResetEmail,
-        refreshSession, // Export the refreshSession method
+        refreshSession,
       }}
     >
       {children}

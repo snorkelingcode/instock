@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -32,16 +33,17 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isDeletingComment, setIsDeletingComment] = useState<string | null>(null);
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, session } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
     fetchComments();
-  }, [articleId]);
+  }, [articleId, user?.id, session?.access_token]);
 
   const fetchComments = async () => {
     setIsLoading(true);
     try {
+      console.log("Fetching comments for article:", articleId);
       // First fetch the comments
       const { data: commentsData, error: commentsError } = await supabase
         .from('article_comments')
@@ -54,12 +56,16 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
         .eq("article_id", articleId)
         .order("created_at", { ascending: false });
 
-      if (commentsError) throw commentsError;
+      if (commentsError) {
+        console.error("Error fetching comments:", commentsError);
+        throw commentsError;
+      }
 
       // If we have comments, fetch user metadata for all comment authors
       if (commentsData && commentsData.length > 0) {
         // Create a map to track unique user IDs
         const userIds = [...new Set(commentsData.map(comment => comment.user_id))];
+        console.log(`Found ${commentsData.length} comments from ${userIds.length} unique users`);
         
         // Initial comments with temporary display names
         const initialComments = commentsData.map(comment => {
@@ -77,21 +83,39 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
         setComments(initialComments);
         
         try {
+          console.log("Fetching display names for users:", userIds);
           // Now fetch the latest display names from auth metadata
           const { data, error } = await supabase.rpc(
-            'get_user_display_names' as any, 
+            'get_user_display_names',
             { user_ids: userIds }
           );
           
           if (error) {
             console.error("Error fetching user display names:", error);
-            return; // Early return, we'll keep using the temporary display names
+            // If there's an error calling the function, try a direct fallback for the current user
+            if (user && userIds.includes(user.id)) {
+              console.log("Using fallback for current user display name");
+              // Use the current user's display name from auth context
+              const currentUserName = user.user_metadata?.display_user_id || `user_${user.id.substring(0, 8)}`;
+              
+              // Update the comments for the current user only
+              const updatedComments = initialComments.map(comment => {
+                if (comment.user_id === user.id) {
+                  return { ...comment, display_user_id: currentUserName };
+                }
+                return comment;
+              });
+              
+              setComments(updatedComments);
+            }
+            return; // Early return, we'll keep using the temporary/fallback display names
           }
           
           // Type the returned data
           const userNamesData = data as UserDisplayName[] | null;
           
           if (userNamesData && userNamesData.length > 0) {
+            console.log("Successfully retrieved display names:", userNamesData);
             // Update comments with real display names
             const updatedComments = initialComments.map(comment => {
               const userData = userNamesData.find(u => u.id === comment.user_id);
@@ -108,6 +132,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
           // We already have set initialComments, so the UI won't be broken
         }
       } else {
+        console.log("No comments found for this article");
         setComments([]);
       }
     } catch (error) {
@@ -162,7 +187,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
       });
       
       setNewComment("");
-      fetchComments();
+      fetchComments(); // Refresh comments after posting
       
     } catch (error) {
       console.error("Error posting comment:", error);
