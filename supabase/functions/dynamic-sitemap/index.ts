@@ -51,7 +51,7 @@ serve(async (req) => {
       );
     }
     
-    // Return the XML sitemap
+    // Return the XML sitemap, ensuring no BOM or whitespace before XML declaration
     return new Response(sitemapContent, {
       status: 200,
       headers: {
@@ -136,7 +136,7 @@ async function generateArticlesSitemap(): Promise<string> {
     const slug = createSlug(article.title);
     
     sitemap += `  <url>\n`;
-    sitemap += `    <loc>${baseUrl}/article/${slug}</loc>\n`;
+    sitemap += `    <loc>${baseUrl}/articles/${slug}</loc>\n`;
     sitemap += `    <lastmod>${article.updated_at.split('T')[0]}</lastmod>\n`;
     sitemap += `    <changefreq>monthly</changefreq>\n`;
     sitemap += `    <priority>0.7</priority>\n`;
