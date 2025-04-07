@@ -10,8 +10,8 @@ https://fixthesupplyissue.com/*  https://tcgupdates.com/:splat  301!
 https://www.fixthesupplyissue.com/*  https://tcgupdates.com/:splat  301!
 
 # API endpoints for sitemaps (point to the dynamic sitemap edge function)
-/api/sitemap-static.xml  https://etgkuasmqjidwtaxrfww.supabase.co/functions/v1/dynamic-sitemap?type=static 200
-/api/sitemap-articles.xml https://etgkuasmqjidwtaxrfww.supabase.co/functions/v1/dynamic-sitemap?type=articles 200
+/api/sitemap-static.xml  https://etgkuasmqjidwtaxrfww.supabase.co/functions/v1/dynamic-sitemap?type=static 200 Content-Type=application/xml
+/api/sitemap-articles.xml https://etgkuasmqjidwtaxrfww.supabase.co/functions/v1/dynamic-sitemap?type=articles 200 Content-Type=application/xml
 
 # Ensure sitemap.xml is served with the correct content type
 /sitemap.xml  /sitemap.xml  200  Content-Type=application/xml

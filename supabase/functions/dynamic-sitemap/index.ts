@@ -51,11 +51,11 @@ serve(async (req) => {
       );
     }
     
-    // Return the XML sitemap, ensuring no BOM or whitespace before XML declaration
+    // Return the XML sitemap with the correct content type and no BOM
     return new Response(sitemapContent, {
       status: 200,
       headers: {
-        "Content-Type": "application/xml",
+        "Content-Type": "application/xml; charset=utf-8",
         ...corsHeaders,
       },
     });
