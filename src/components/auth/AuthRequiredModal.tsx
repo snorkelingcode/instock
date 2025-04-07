@@ -1,4 +1,5 @@
 
+import React from "react";
 import {
   Dialog,
   DialogContent,
@@ -8,7 +9,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { LogIn, UserPlus } from "lucide-react";
+import { LogIn } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface AuthRequiredModalProps {
@@ -22,11 +23,6 @@ const AuthRequiredModal = ({ isOpen, onClose, actionType }: AuthRequiredModalPro
 
   const handleSignIn = () => {
     navigate("/auth?mode=signin");
-    onClose();
-  };
-
-  const handleCreateAccount = () => {
-    navigate("/auth?mode=signup");
     onClose();
   };
 
@@ -65,18 +61,10 @@ const AuthRequiredModal = ({ isOpen, onClose, actionType }: AuthRequiredModalPro
           </Button>
           <Button 
             onClick={handleSignIn}
-            variant="secondary"
             className="sm:w-auto w-full gap-2"
           >
             <LogIn className="h-4 w-4" />
             Sign in
-          </Button>
-          <Button 
-            onClick={handleCreateAccount}
-            className="sm:w-auto w-full gap-2"
-          >
-            <UserPlus className="h-4 w-4" />
-            Create account
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -85,4 +73,3 @@ const AuthRequiredModal = ({ isOpen, onClose, actionType }: AuthRequiredModalPro
 };
 
 export default AuthRequiredModal;
-
