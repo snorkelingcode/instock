@@ -661,9 +661,8 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
                   
                   <div className="mt-3 flex items-center space-x-4 text-gray-500 text-sm">
                     <button 
-                      onClick={() => user && handleLikeComment(comment.id, !!comment.liked_by_me)}
+                      onClick={() => handleLikeComment(comment.id, !!comment.liked_by_me)}
                       className={`flex items-center hover:text-red-600 ${comment.liked_by_me ? 'text-red-600' : ''}`}
-                      disabled={!user}
                     >
                       {comment.liked_by_me ? (
                         <Heart className="h-4 w-4 fill-red-600 text-red-600 mr-1" />
@@ -676,7 +675,6 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
                     <button 
                       onClick={() => handleStartReply(comment.id)}
                       className="flex items-center hover:text-blue-600"
-                      disabled={!user}
                     >
                       <Reply className="h-4 w-4 mr-1" />
                       Reply
@@ -685,7 +683,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
                     <button 
                       onClick={() => handleOpenReportDialog(comment.id)}
                       className="flex items-center hover:text-orange-600"
-                      disabled={!user || user.id === comment.user_id}
+                      disabled={user && user.id === comment.user_id}
                       title={user && user.id === comment.user_id ? "Cannot report your own comment" : "Report comment"}
                     >
                       <Flag className="h-4 w-4 mr-1" />
