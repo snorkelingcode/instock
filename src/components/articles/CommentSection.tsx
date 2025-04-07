@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { Comment, CommentReply } from "@/types/comment";
 import { useAuth } from "@/contexts/AuthContext";
@@ -38,6 +37,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import AuthRequiredModal from "@/components/auth/AuthRequiredModal";
 
 interface CommentSectionProps {
   articleId: string;
@@ -62,6 +62,9 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
   const [reportingCommentId, setReportingCommentId] = useState<string | null>(null);
   const [isSubmittingReport, setIsSubmittingReport] = useState(false);
   const replyInputRef = useRef<HTMLTextAreaElement>(null);
+  
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authAction, setAuthAction] = useState<"like" | "reply" | "report" | "comment">("comment");
 
   useEffect(() => {
     fetchComments();
@@ -70,7 +73,6 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
   const fetchComments = async () => {
     setIsLoading(true);
     try {
-      // Fetch comments directly instead of using the RPC function
       const { data, error } = await supabase
         .from('article_comments')
         .select(`
@@ -95,7 +97,6 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
         return;
       }
       
-      // Get user display names
       const userIds = [...new Set(data.map(comment => comment.user_id))];
       
       const { data: displayNames, error: namesError } = await supabase
@@ -107,7 +108,6 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
         console.error("Error fetching display names:", namesError);
       }
       
-      // Create a map of user IDs to display names
       const displayNameMap: Record<string, string> = {};
       if (displayNames) {
         displayNames.forEach((item: any) => {
@@ -117,7 +117,6 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
         });
       }
       
-      // Count likes for each comment
       const likesCountsPromises = data.map(async (comment) => {
         const { count, error } = await supabase
           .from('comment_likes')
@@ -129,7 +128,6 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
       
       const likesCounts = await Promise.all(likesCountsPromises);
       
-      // Count replies for each comment
       const repliesCountsPromises = data.map(async (comment) => {
         const { count, error } = await supabase
           .from('comment_replies')
@@ -141,7 +139,6 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
       
       const repliesCounts = await Promise.all(repliesCountsPromises);
       
-      // Check which comments the current user has liked
       let userLikes: Record<string, boolean> = {};
       
       if (user) {
@@ -160,7 +157,6 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
         }
       }
       
-      // Build the complete comments object with all required fields
       const commentsWithDetails = data.map(comment => {
         const likes = likesCounts.find(l => l.commentId === comment.id)?.count || 0;
         const replies = repliesCounts.find(r => r.commentId === comment.id)?.count || 0;
@@ -191,11 +187,8 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
     e.preventDefault();
     
     if (!user) {
-      toast({
-        title: "Sign in required",
-        description: "Please sign in to post a comment.",
-        variant: "destructive",
-      });
+      setAuthAction("comment");
+      setAuthModalOpen(true);
       return;
     }
     
@@ -227,8 +220,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
       });
       
       setNewComment("");
-      fetchComments(); // Refresh comments after posting
-      
+      fetchComments();
     } catch (error) {
       console.error("Error posting comment:", error);
       toast({
@@ -242,7 +234,6 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
   };
 
   const handleDeleteComment = async (commentId: string, commentUserId: string) => {
-    // Only proceed if the user is logged in AND (is the comment author OR is an admin)
     if (!user || (!isAdmin && user.id !== commentUserId)) {
       toast({
         title: "Permission denied",
@@ -262,7 +253,6 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
       
       if (error) throw error;
       
-      // Remove the deleted comment from state
       setComments(comments.filter(comment => comment.id !== commentId));
       
       toast({
@@ -283,16 +273,12 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
 
   const handleLikeComment = async (commentId: string, isCurrentlyLiked: boolean) => {
     if (!user) {
-      toast({
-        title: "Sign in required",
-        description: "Please sign in to like comments.",
-        variant: "destructive",
-      });
+      setAuthAction("like");
+      setAuthModalOpen(true);
       return;
     }
 
     try {
-      // Optimistically update UI
       setComments(comments.map(comment => {
         if (comment.id === commentId) {
           return {
@@ -307,7 +293,6 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
       }));
 
       if (isCurrentlyLiked) {
-        // Delete the like
         const { error } = await supabase
           .from('comment_likes')
           .delete()
@@ -316,7 +301,6 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
 
         if (error) throw error;
       } else {
-        // Add a like
         const { error } = await supabase
           .from('comment_likes')
           .insert({
@@ -329,7 +313,6 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
     } catch (error) {
       console.error("Error toggling like:", error);
       
-      // Revert optimistic update on failure
       fetchComments();
       
       toast({
@@ -341,13 +324,11 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
   };
 
   const toggleReplies = async (commentId: string) => {
-    // Toggle the open state
     setOpenReplies(prev => ({
       ...prev,
       [commentId]: !prev[commentId]
     }));
     
-    // If opening replies and they're not loaded yet, fetch them
     if (!openReplies[commentId] && !commentReplies[commentId]) {
       await fetchReplies(commentId);
     }
@@ -357,7 +338,6 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
     setLoadingReplies(prev => ({ ...prev, [commentId]: true }));
     
     try {
-      // Fetch replies for this comment manually since we're avoiding the table type errors
       const { data, error } = await supabase
         .from('comment_replies')
         .select(`
@@ -373,10 +353,8 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
       if (error) throw error;
       
       if (data && data.length > 0) {
-        // Get unique user IDs
         const userIds = [...new Set(data.map(reply => reply.user_id))];
         
-        // Fetch display names for these users
         const { data: displayNames, error: namesError } = await supabase
           .rpc('get_user_display_names', { 
             user_ids: userIds 
@@ -384,7 +362,6 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
           
         if (namesError) throw namesError;
         
-        // Create display name map
         const displayNameMap: Record<string, string> = {};
         if (displayNames) {
           displayNames.forEach((item: any) => {
@@ -394,19 +371,16 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
           });
         }
         
-        // Add display names to replies
         const repliesWithNames = data.map(reply => ({
           ...reply,
           display_name: displayNameMap[reply.user_id] || `user_${reply.user_id.substring(0, 8)}`
         }));
         
-        // Update state
         setCommentReplies(prev => ({
           ...prev,
           [commentId]: repliesWithNames
         }));
       } else {
-        // No replies, set empty array
         setCommentReplies(prev => ({
           ...prev,
           [commentId]: []
@@ -426,23 +400,18 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
 
   const handleStartReply = (commentId: string) => {
     if (!user) {
-      toast({
-        title: "Sign in required",
-        description: "Please sign in to reply to comments.",
-        variant: "destructive",
-      });
+      setAuthAction("reply");
+      setAuthModalOpen(true);
       return;
     }
     
     setReplyingTo(commentId);
     setReplyContent("");
     
-    // Make sure the comment's replies are open
     if (!openReplies[commentId]) {
       toggleReplies(commentId);
     }
     
-    // Focus the reply input after rendering
     setTimeout(() => {
       if (replyInputRef.current) {
         replyInputRef.current.focus();
@@ -457,11 +426,8 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
 
   const handleSubmitReply = async (parentCommentId: string) => {
     if (!user) {
-      toast({
-        title: "Sign in required",
-        description: "Please sign in to reply to comments.",
-        variant: "destructive",
-      });
+      setAuthAction("reply");
+      setAuthModalOpen(true);
       return;
     }
     
@@ -488,7 +454,6 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
         
       if (error) throw error;
       
-      // Get the display name for the user
       const { data: displayNameData, error: displayNameError } = await supabase
         .rpc('get_user_display_name', { user_id_param: user.id });
       
@@ -498,7 +463,6 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
       
       const displayName = displayNameData || `user_${user.id.substring(0, 8)}`;
       
-      // Optimistically update UI with new reply
       if (data && data[0]) {
         const newReply = {
           ...data[0],
@@ -511,7 +475,6 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
         }));
       }
       
-      // Update the reply count on the parent comment
       setComments(comments.map(comment => {
         if (comment.id === parentCommentId) {
           return {
@@ -544,11 +507,8 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
 
   const handleOpenReportDialog = (commentId: string) => {
     if (!user) {
-      toast({
-        title: "Sign in required",
-        description: "Please sign in to report comments.",
-        variant: "destructive",
-      });
+      setAuthAction("report");
+      setAuthModalOpen(true);
       return;
     }
     
@@ -615,7 +575,6 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
   };
   
   const getUserInitials = (displayName: string) => {
-    // Take first two characters of the display name
     return displayName.substring(0, 2).toUpperCase();
   };
 
@@ -654,7 +613,12 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
       ) : (
         <Card className="p-4 mb-8 text-center bg-gray-50">
           <p className="mb-3">Sign in to join the conversation and post comments</p>
-          <Button onClick={() => window.location.href = "/auth"}>
+          <Button 
+            onClick={() => {
+              setAuthAction("comment");
+              setAuthModalOpen(true);
+            }}
+          >
             Sign In / Create Account
           </Button>
         </Card>
@@ -744,7 +708,6 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
                     )}
                   </div>
                   
-                  {/* Show reply count and toggle button if there are replies */}
                   {(comment.replies_count && comment.replies_count > 0) || openReplies[comment.id] ? (
                     <button 
                       onClick={() => toggleReplies(comment.id)}
@@ -754,7 +717,6 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
                     </button>
                   ) : null}
                   
-                  {/* Replies section */}
                   {openReplies[comment.id] && (
                     <div className="mt-3 ml-6 border-l-2 border-gray-100 pl-4">
                       {loadingReplies[comment.id] ? (
@@ -791,7 +753,6 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
                         <p className="text-sm text-gray-500 py-2">No replies yet</p>
                       )}
                       
-                      {/* Reply input */}
                       {replyingTo === comment.id && user && (
                         <div className="mt-3">
                           <Textarea
@@ -841,7 +802,6 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
         </div>
       )}
       
-      {/* Report dialog */}
       <Dialog open={reportDialogOpen} onOpenChange={setReportDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -885,6 +845,12 @@ const CommentSection: React.FC<CommentSectionProps> = ({ articleId }) => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      <AuthRequiredModal 
+        isOpen={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        actionType={authAction}
+      />
     </div>
   );
 };
