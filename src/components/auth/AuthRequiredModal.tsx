@@ -8,7 +8,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { LogIn } from "lucide-react";
+import { LogIn, UserPlus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface AuthRequiredModalProps {
@@ -21,7 +21,12 @@ const AuthRequiredModal = ({ isOpen, onClose, actionType }: AuthRequiredModalPro
   const navigate = useNavigate();
 
   const handleSignIn = () => {
-    navigate("/auth");
+    navigate("/auth?mode=signin");
+    onClose();
+  };
+
+  const handleCreateAccount = () => {
+    navigate("/auth?mode=signup");
     onClose();
   };
 
@@ -50,12 +55,6 @@ const AuthRequiredModal = ({ isOpen, onClose, actionType }: AuthRequiredModalPro
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid gap-4 py-4">
-          <p className="text-sm text-gray-500">
-            Create an account or sign in to join the conversation and interact with other members of the community.
-          </p>
-        </div>
-
         <DialogFooter className="sm:justify-between flex flex-col sm:flex-row gap-2">
           <Button
             variant="outline"
@@ -66,10 +65,18 @@ const AuthRequiredModal = ({ isOpen, onClose, actionType }: AuthRequiredModalPro
           </Button>
           <Button 
             onClick={handleSignIn}
+            variant="secondary"
             className="sm:w-auto w-full gap-2"
           >
             <LogIn className="h-4 w-4" />
-            Sign in / Create account
+            Sign in
+          </Button>
+          <Button 
+            onClick={handleCreateAccount}
+            className="sm:w-auto w-full gap-2"
+          >
+            <UserPlus className="h-4 w-4" />
+            Create account
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -78,3 +85,4 @@ const AuthRequiredModal = ({ isOpen, onClose, actionType }: AuthRequiredModalPro
 };
 
 export default AuthRequiredModal;
+
