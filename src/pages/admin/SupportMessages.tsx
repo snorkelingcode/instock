@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CalendarIcon, Mail, MessageSquare, RefreshCw, Inbox, Archive, CheckCircle } from "lucide-react";
+import { CalendarIcon, Mail, MessageSquare, RefreshCw, Inbox, Archive, CheckCircle, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import { MessageList } from "@/components/support/MessageList";
@@ -36,9 +36,10 @@ const SupportMessages = () => {
   const [selectedMessage, setSelectedMessage] = useState<SupportMessage | null>(null);
   const { toast } = useToast();
 
-  const fetchMessages = async (status: 'new' | 'read' | 'replied' | 'archived' | null) => {
+  const fetchMessages = async (status: 'new' | 'read' | 'replied' | 'archived' | null, recipient: string | null = null) => {
     const { data, error } = await supabase.rpc('get_support_messages', { 
       _status: status,
+      _recipient: recipient,
       _limit: 100,
       _offset: 0
     });
@@ -49,7 +50,15 @@ const SupportMessages = () => {
 
   const { data: messages, isLoading, error, refetch } = useQuery({
     queryKey: ['support-messages', activeTab],
-    queryFn: () => fetchMessages(activeTab !== 'all' ? activeTab as 'new' | 'read' | 'replied' | 'archived' : null),
+    queryFn: () => {
+      if (activeTab === 'contact') {
+        return fetchMessages(null, 'contact');
+      } else if (activeTab !== 'all') {
+        return fetchMessages(activeTab as 'new' | 'read' | 'replied' | 'archived');
+      } else {
+        return fetchMessages(null);
+      }
+    },
   });
 
   const refreshMessages = () => {
@@ -66,13 +75,25 @@ const SupportMessages = () => {
     // If message is new, mark it as read
     if (message.status === 'new') {
       try {
-        await supabase
-          .from('support_messages')
-          .update({ 
-            status: 'read',
-            read_at: new Date().toISOString()
-          })
-          .eq('id', message.id);
+        if (message.recipient === 'contact') {
+          // This is a contact form submission
+          await supabase
+            .from('contact_submissions')
+            .update({ 
+              status: 'read',
+              read_at: new Date().toISOString()
+            })
+            .eq('id', message.id);
+        } else {
+          // This is a regular support message
+          await supabase
+            .from('support_messages')
+            .update({ 
+              status: 'read',
+              read_at: new Date().toISOString()
+            })
+            .eq('id', message.id);
+        }
           
         // Refetch to update counts
         refetch();
@@ -154,6 +175,13 @@ const SupportMessages = () => {
                       Archived
                     </TabsTrigger>
                     <TabsTrigger
+                      value="contact"
+                      className="rounded-none border-b-2 border-transparent px-4 py-3 data-[state=active]:border-primary data-[state=active]:bg-transparent"
+                    >
+                      <FileText className="mr-2 h-4 w-4" />
+                      Contact Forms
+                    </TabsTrigger>
+                    <TabsTrigger
                       value="all"
                       className="rounded-none border-b-2 border-transparent px-4 py-3 data-[state=active]:border-primary data-[state=active]:bg-transparent"
                     >
@@ -189,6 +217,14 @@ const SupportMessages = () => {
                       />
                     </TabsContent>
                     <TabsContent value="archived" className="h-full m-0">
+                      <MessageList 
+                        messages={messages || []} 
+                        isLoading={isLoading} 
+                        onSelect={handleSelectMessage}
+                        selectedId={selectedMessage?.id}
+                      />
+                    </TabsContent>
+                    <TabsContent value="contact" className="h-full m-0">
                       <MessageList 
                         messages={messages || []} 
                         isLoading={isLoading} 

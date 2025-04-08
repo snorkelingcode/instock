@@ -17,6 +17,7 @@ interface ResponsePayload {
   messageId: string;
   body: string;
   userId: string;
+  isContactForm?: boolean;
 }
 
 serve(async (req) => {
@@ -26,9 +27,9 @@ serve(async (req) => {
   }
 
   try {
-    const { messageId, body, userId }: ResponsePayload = await req.json();
+    const { messageId, body, userId, isContactForm = false }: ResponsePayload = await req.json();
     
-    console.log("Received support response request:", { messageId, userId });
+    console.log("Received support response request:", { messageId, userId, isContactForm });
 
     if (!messageId || !body || !userId) {
       return new Response(
@@ -40,22 +41,67 @@ serve(async (req) => {
       );
     }
 
-    // Get original message
-    const { data: message, error: messageError } = await supabase
-      .from("support_messages")
-      .select("*")
-      .eq("id", messageId)
-      .single();
+    let recipientEmail: string;
+    let subject: string;
+    let messageBody: string | null = null;
+    
+    if (isContactForm) {
+      // Get contact form submission
+      const { data: contactSubmission, error: contactError } = await supabase
+        .from("contact_submissions")
+        .select("*")
+        .eq("id", messageId)
+        .single();
 
-    if (messageError || !message) {
-      console.error("Error fetching original message:", messageError);
-      return new Response(
-        JSON.stringify({ error: "Failed to find original message" }),
-        {
-          status: 404,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
+      if (contactError || !contactSubmission) {
+        console.error("Error fetching contact submission:", contactError);
+        return new Response(
+          JSON.stringify({ error: "Failed to find contact submission" }),
+          {
+            status: 404,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+      
+      recipientEmail = contactSubmission.email;
+      subject = `Re: Your message to TCG Updates - ${contactSubmission.inquiry_type}`;
+      messageBody = contactSubmission.message;
+      
+      // Update contact submission status to replied
+      await supabase
+        .from("contact_submissions")
+        .update({ status: "replied" })
+        .eq("id", messageId);
+        
+    } else {
+      // Get original message from support_messages
+      const { data: message, error: messageError } = await supabase
+        .from("support_messages")
+        .select("*")
+        .eq("id", messageId)
+        .single();
+
+      if (messageError || !message) {
+        console.error("Error fetching original message:", messageError);
+        return new Response(
+          JSON.stringify({ error: "Failed to find original message" }),
+          {
+            status: 404,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+      
+      recipientEmail = message.sender_email;
+      subject = `Re: ${message.subject}`;
+      messageBody = message.body;
+      
+      // Update the message status to 'replied'
+      await supabase
+        .from("support_messages")
+        .update({ status: "replied" })
+        .eq("id", messageId);
     }
 
     // Get user info
@@ -88,8 +134,8 @@ serve(async (req) => {
 
       await smtpClient.send({
         from: `TCG Updates <noreply@tcgupdates.com>`,
-        to: message.sender_email,
-        subject: `Re: ${message.subject}`,
+        to: recipientEmail,
+        subject: subject,
         content: `
         <html>
           <body>
@@ -98,7 +144,7 @@ serve(async (req) => {
             <p>Best regards,<br/>
             TCG Updates Support Team</p>
             <hr>
-            <p><small>This is in response to your inquiry: "${message.subject}"</small></p>
+            ${messageBody ? `<p><small>This is in response to your message: "${messageBody}"</small></p>` : ''}
           </body>
         </html>`,
         html: `
@@ -109,12 +155,12 @@ serve(async (req) => {
             <p>Best regards,<br/>
             TCG Updates Support Team</p>
             <hr>
-            <p><small>This is in response to your inquiry: "${message.subject}"</small></p>
+            ${messageBody ? `<p><small>This is in response to your message: "${messageBody}"</small></p>` : ''}
           </body>
         </html>`,
       });
       
-      console.log("Email sent successfully to:", message.sender_email);
+      console.log("Email sent successfully to:", recipientEmail);
     } catch (emailError) {
       console.error("Error sending email:", emailError);
       return new Response(
@@ -126,14 +172,35 @@ serve(async (req) => {
       );
     }
 
-    // Record the response in the database
-    const { data: responseData, error: responseError } = await supabase
+    // Record the response
+    let responseTable: string;
+    let responseData: any;
+    
+    if (isContactForm) {
+      responseTable = "contact_responses";
+      responseData = {
+        submission_id: messageId,
+        body: body,
+        sent_by: userData.user.email,
+        delivery_status: "sent"
+      };
+    } else {
+      responseTable = "support_responses";
+      responseData = {
+        message_id: messageId,
+        body: body,
+        sent_by: userData.user.email,
+        delivery_status: "sent"
+      };
+    }
+
+    const { data: savedResponse, error: responseError } = await supabase
       .from("support_responses")
       .insert({
         message_id: messageId,
         body: body,
-        sent_by: userData.user.email,
-        delivery_status: "sent" // We're now sending the email directly
+        sent_by: userData.user.id,
+        delivery_status: "sent"
       })
       .select();
 
@@ -148,24 +215,13 @@ serve(async (req) => {
       );
     }
 
-    // Update the message status to 'replied'
-    const { error: updateError } = await supabase
-      .from("support_messages")
-      .update({ status: "replied" })
-      .eq("id", messageId);
-
-    if (updateError) {
-      console.error("Error updating message status:", updateError);
-      // We still continue as the response was saved
-    }
-
     console.log("Support response sent and recorded successfully");
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         message: "Response sent", 
-        id: responseData[0].id 
+        id: savedResponse[0].id 
       }),
       {
         status: 200,

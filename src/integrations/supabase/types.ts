@@ -272,6 +272,48 @@ export type Database = {
           },
         ]
       }
+      contact_submissions: {
+        Row: {
+          created_at: string
+          email: string
+          first_name: string
+          id: string
+          inquiry_type: Database["public"]["Enums"]["inquiry_type"]
+          last_name: string
+          message: string
+          newsletter_signup: boolean
+          read_at: string | null
+          status: Database["public"]["Enums"]["message_status"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          first_name: string
+          id?: string
+          inquiry_type: Database["public"]["Enums"]["inquiry_type"]
+          last_name: string
+          message: string
+          newsletter_signup?: boolean
+          read_at?: string | null
+          status?: Database["public"]["Enums"]["message_status"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          first_name?: string
+          id?: string
+          inquiry_type?: Database["public"]["Enums"]["inquiry_type"]
+          last_name?: string
+          message?: string
+          newsletter_signup?: boolean
+          read_at?: string | null
+          status?: Database["public"]["Enums"]["message_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       jobs: {
         Row: {
           completed_at: string | null
@@ -1488,6 +1530,25 @@ export type Database = {
           replies_count: number
         }[]
       }
+      get_contact_submissions: {
+        Args: { _status?: Database["public"]["Enums"]["message_status"] }
+        Returns: {
+          id: string
+          subject: string
+          body: string
+          html_body: string
+          sender_email: string
+          sender_name: string
+          recipient: string
+          status: Database["public"]["Enums"]["message_status"]
+          thread_id: string
+          created_at: string
+          updated_at: string
+          read_at: string
+          attachment_urls: string[]
+          response_count: number
+        }[]
+      }
       get_featured_article: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -1653,6 +1714,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
+      inquiry_type: "question" | "suggestion" | "partnership" | "bug" | "other"
       message_status: "new" | "read" | "replied" | "archived"
       model_category: "display" | "holder" | "marker" | "promotional" | "other"
     }
@@ -1771,6 +1833,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user"],
+      inquiry_type: ["question", "suggestion", "partnership", "bug", "other"],
       message_status: ["new", "read", "replied", "archived"],
       model_category: ["display", "holder", "marker", "promotional", "other"],
     },

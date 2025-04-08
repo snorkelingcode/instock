@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
@@ -117,11 +118,15 @@ export const MessageDetail = ({ message, onClose, onStatusChange }: MessageDetai
     
     setIsSending(true);
     try {
+      // Check if this is a contact form submission
+      const isContactForm = message.recipient === 'contact';
+      
       const response = await supabase.functions.invoke('send-support-response', {
         body: {
           messageId: message.id,
           body: replyContent,
-          userId: user.id
+          userId: user.id,
+          isContactForm
         }
       });
       
@@ -151,12 +156,23 @@ export const MessageDetail = ({ message, onClose, onStatusChange }: MessageDetai
 
   const handleArchive = async () => {
     try {
-      const { error } = await supabase
-        .from('support_messages')
-        .update({ status: 'archived' })
-        .eq('id', message.id);
-      
-      if (error) throw error;
+      if (message.recipient === 'contact') {
+        // This is a contact form submission
+        const { error } = await supabase
+          .from('contact_submissions')
+          .update({ status: 'archived' })
+          .eq('id', message.id);
+        
+        if (error) throw error;
+      } else {
+        // This is a regular support message
+        const { error } = await supabase
+          .from('support_messages')
+          .update({ status: 'archived' })
+          .eq('id', message.id);
+        
+        if (error) throw error;
+      }
       
       toast({
         title: "Message Archived",
@@ -175,6 +191,12 @@ export const MessageDetail = ({ message, onClose, onStatusChange }: MessageDetai
     }
   };
 
+  // Determine if this is a contact form submission
+  const isContactForm = message.recipient === 'contact';
+  const subjectDisplay = isContactForm 
+    ? message.subject.replace('Contact Form: ', '') 
+    : message.subject;
+
   return (
     <div className="h-full flex flex-col">
       <div className="p-4 border-b flex justify-between items-center bg-gray-50">
@@ -188,7 +210,12 @@ export const MessageDetail = ({ message, onClose, onStatusChange }: MessageDetai
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <h2 className="text-lg font-semibold truncate">{message.subject || '(No Subject)'}</h2>
+            <h2 className="text-lg font-semibold truncate">
+              {isContactForm ? (
+                <span className="text-blue-600">[Contact Form] </span>
+              ) : null}
+              {subjectDisplay || '(No Subject)'}
+            </h2>
             <div className="text-sm text-gray-500">
               From: {message.sender_name || message.sender_email}
             </div>
@@ -224,7 +251,7 @@ export const MessageDetail = ({ message, onClose, onStatusChange }: MessageDetai
                 <span className="mx-2">&lt;{message.sender_email}&gt;</span>
               </div>
               <div className="text-gray-500 text-sm">
-                To: {message.recipient}@tcgupdates.com
+                To: {isContactForm ? "Contact Form" : `${message.recipient}@tcgupdates.com`}
               </div>
             </div>
             
@@ -284,7 +311,9 @@ export const MessageDetail = ({ message, onClose, onStatusChange }: MessageDetai
                 <div className="flex justify-between items-start mb-4">
                   <div className="text-gray-500 text-sm">
                     <span className="font-medium">Admin Response</span>
-                    <span className="mx-2">from {message.recipient}@tcgupdates.com</span>
+                    <span className="mx-2">
+                      from {isContactForm ? "TCG Updates Support" : `${message.recipient}@tcgupdates.com`}
+                    </span>
                   </div>
                   <div className="text-gray-500 text-xs">
                     {formatDate(response.sent_at)}
@@ -310,7 +339,7 @@ export const MessageDetail = ({ message, onClose, onStatusChange }: MessageDetai
       <div className="p-4 border-t bg-gray-50">
         <div className="mb-2">
           <label htmlFor="reply" className="text-sm font-medium">
-            Reply as {message.recipient}@tcgupdates.com
+            Reply as {isContactForm ? "TCG Updates Support" : `${message.recipient}@tcgupdates.com`}
           </label>
         </div>
         <Textarea
