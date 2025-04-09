@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { SMTPClient } from "https://deno.land/x/smtp@v0.7.0/mod.ts";
@@ -70,10 +69,9 @@ serve(async (req) => {
       
       // Update contact submission status to replied
       await supabase
-        .rpc("update_contact_submission_status", {
-          _id: messageId,
-          _status: "replied"
-        });
+        .from("contact_submissions")
+        .update({ status: "replied" })
+        .eq("id", messageId);
         
     } else {
       // Get original message from support_messages

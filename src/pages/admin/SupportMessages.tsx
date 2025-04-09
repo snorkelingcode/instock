@@ -76,11 +76,13 @@ const SupportMessages = () => {
     if (message.status === 'new') {
       try {
         if (message.recipient === 'contact') {
-          // This is a contact form submission
-          await supabase.rpc('update_contact_submission_status', {
-            _id: message.id,
-            _status: 'read',
-            _read_at: new Date().toISOString()
+          // This is a contact form submission - use the functions endpoint
+          await supabase.functions.invoke('update-contact-status', {
+            body: {
+              id: message.id,
+              status: 'read',
+              read_at: new Date().toISOString()
+            }
           });
         } else {
           // This is a regular support message

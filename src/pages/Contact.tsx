@@ -51,7 +51,7 @@ const ContactPage = () => {
       inquiryType: "question",
       message: "",
       newsletter: false,
-      terms: false,
+      terms: false as unknown as true, // Cast to make TypeScript happy
     },
   });
   
@@ -59,13 +59,16 @@ const ContactPage = () => {
     setIsSubmitting(true);
     
     try {
-      const { error } = await supabase.rpc('insert_contact_submission', {
-        _first_name: values.firstName,
-        _last_name: values.lastName,
-        _email: values.email,
-        _inquiry_type: values.inquiryType,
-        _message: values.message,
-        _newsletter_signup: values.newsletter
+      // Call the function to get support messages
+      const { error } = await supabase.functions.invoke('send-contact-form', {
+        body: {
+          first_name: values.firstName,
+          last_name: values.lastName,
+          email: values.email,
+          inquiry_type: values.inquiryType,
+          message: values.message,
+          newsletter_signup: values.newsletter
+        }
       });
       
       if (error) throw error;

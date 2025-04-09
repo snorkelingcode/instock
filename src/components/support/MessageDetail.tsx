@@ -157,10 +157,12 @@ export const MessageDetail = ({ message, onClose, onStatusChange }: MessageDetai
   const handleArchive = async () => {
     try {
       if (message.recipient === 'contact') {
-        // This is a contact form submission - use RPC function
-        const { error } = await supabase.rpc('update_contact_submission_status', {
-          _id: message.id,
-          _status: 'archived'
+        // This is a contact form submission - use the functions endpoint
+        const { error } = await supabase.functions.invoke('update-contact-status', {
+          body: {
+            id: message.id,
+            status: 'archived'
+          }
         });
         
         if (error) throw error;
