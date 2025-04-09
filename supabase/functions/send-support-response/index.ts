@@ -70,9 +70,10 @@ serve(async (req) => {
       
       // Update contact submission status to replied
       await supabase
-        .from("contact_submissions")
-        .update({ status: "replied" })
-        .eq("id", messageId);
+        .rpc("update_contact_submission_status", {
+          _id: messageId,
+          _status: "replied"
+        });
         
     } else {
       // Get original message from support_messages
@@ -173,35 +174,17 @@ serve(async (req) => {
     }
 
     // Record the response
-    let responseTable: string;
-    let responseData: any;
-    
-    if (isContactForm) {
-      responseTable = "contact_responses";
-      responseData = {
-        submission_id: messageId,
-        body: body,
-        sent_by: userData.user.email,
-        delivery_status: "sent"
-      };
-    } else {
-      responseTable = "support_responses";
-      responseData = {
-        message_id: messageId,
-        body: body,
-        sent_by: userData.user.email,
-        delivery_status: "sent"
-      };
-    }
+    let responseTable = "support_responses";
+    let responseData = {
+      message_id: messageId,
+      body: body,
+      sent_by: userData.user.id,
+      delivery_status: "sent"
+    };
 
     const { data: savedResponse, error: responseError } = await supabase
-      .from("support_responses")
-      .insert({
-        message_id: messageId,
-        body: body,
-        sent_by: userData.user.id,
-        delivery_status: "sent"
-      })
+      .from(responseTable)
+      .insert(responseData)
       .select();
 
     if (responseError) {

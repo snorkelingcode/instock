@@ -77,13 +77,11 @@ const SupportMessages = () => {
       try {
         if (message.recipient === 'contact') {
           // This is a contact form submission
-          await supabase
-            .from('contact_submissions')
-            .update({ 
-              status: 'read',
-              read_at: new Date().toISOString()
-            })
-            .eq('id', message.id);
+          await supabase.rpc('update_contact_submission_status', {
+            _id: message.id,
+            _status: 'read',
+            _read_at: new Date().toISOString()
+          });
         } else {
           // This is a regular support message
           await supabase
