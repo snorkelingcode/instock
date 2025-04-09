@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -22,14 +21,12 @@ import {
 } from "@/components/ui/form";
 import { supabase } from "@/integrations/supabase/client";
 
-// Define form schema
 const contactFormSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
   email: z.string().email("Invalid email address"),
   inquiryType: z.enum(["question", "suggestion", "partnership", "bug", "other"]),
   message: z.string().min(10, "Message must be at least 10 characters"),
-  newsletter: z.boolean().default(false),
   terms: z.literal(true, {
     errorMap: () => ({ message: "You must accept the terms and conditions" }),
   }),
@@ -41,7 +38,6 @@ const ContactPage = () => {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Define form
   const form = useForm<ContactFormValues>({
     resolver: zodResolver(contactFormSchema),
     defaultValues: {
@@ -50,7 +46,6 @@ const ContactPage = () => {
       email: "",
       inquiryType: "question",
       message: "",
-      newsletter: false,
       terms: false as unknown as true, // Cast to make TypeScript happy
     },
   });
@@ -59,15 +54,13 @@ const ContactPage = () => {
     setIsSubmitting(true);
     
     try {
-      // Call the function to get support messages
       const { error } = await supabase.functions.invoke('send-contact-form', {
         body: {
           first_name: values.firstName,
           last_name: values.lastName,
           email: values.email,
           inquiry_type: values.inquiryType,
-          message: values.message,
-          newsletter_signup: values.newsletter
+          message: values.message
         }
       });
       
@@ -199,26 +192,6 @@ const ContactPage = () => {
                       />
                     </FormControl>
                     <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="newsletter"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-start space-x-2 space-y-0">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                    <div className="space-y-1 leading-none">
-                      <FormLabel className="font-normal">
-                        Subscribe to our newsletter for product restock alerts and TCG news
-                      </FormLabel>
-                    </div>
                   </FormItem>
                 )}
               />
