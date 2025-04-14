@@ -2,6 +2,9 @@
 {
   "version": 2,
   "rewrites": [
+    { "source": "/sitemap.xml", "destination": "https://etgkuasmqjidwtaxrfww.supabase.co/functions/v1/dynamic-sitemap?type=all" },
+    { "source": "/sitemap-static.xml", "destination": "https://etgkuasmqjidwtaxrfww.supabase.co/functions/v1/dynamic-sitemap?type=static" },
+    { "source": "/sitemap-articles.xml", "destination": "https://etgkuasmqjidwtaxrfww.supabase.co/functions/v1/dynamic-sitemap?type=articles" },
     { "source": "/news", "destination": "/index.html" },
     { "source": "/products", "destination": "/index.html" },
     { "source": "/market", "destination": "/index.html" },

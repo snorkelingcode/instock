@@ -15,7 +15,8 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "GET, OPTIONS",
-  "Content-Type": "application/xml; charset=utf-8"
+  "Content-Type": "application/xml; charset=utf-8",
+  "Cache-Control": "public, max-age=3600"
 };
 
 serve(async (req) => {
@@ -32,7 +33,7 @@ serve(async (req) => {
   try {
     // Get URL parameters
     const url = new URL(req.url);
-    const sitemapType = url.searchParams.get("type") || "static";
+    const sitemapType = url.searchParams.get("type") || "all";
     
     console.log("Generating sitemap type:", sitemapType);
     
@@ -43,6 +44,8 @@ serve(async (req) => {
       sitemapContent = generateStaticSitemap();
     } else if (sitemapType === "articles") {
       sitemapContent = await generateArticlesSitemap();
+    } else if (sitemapType === "all") {
+      sitemapContent = generateIndexSitemap();
     } else {
       return new Response(
         JSON.stringify({ error: "Invalid sitemap type" }),
@@ -58,7 +61,7 @@ serve(async (req) => {
     
     console.log("Sitemap generated successfully, length:", sitemapContent.length);
     
-    // Return the XML sitemap with the correct content type and no BOM
+    // Return the XML sitemap with the correct content type
     return new Response(sitemapContent, {
       status: 200,
       headers: corsHeaders,
@@ -79,54 +82,63 @@ serve(async (req) => {
   }
 });
 
+// Generate index sitemap that links to other sitemaps
+function generateIndexSitemap(): string {
+  const baseUrl = "https://www.tcgupdates.com";
+  const today = new Date().toISOString().split('T')[0];
+  
+  let sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n`;
+  sitemap += `<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
+  
+  // Add reference to static sitemap
+  sitemap += `  <sitemap>\n`;
+  sitemap += `    <loc>${baseUrl}/sitemap-static.xml</loc>\n`;
+  sitemap += `    <lastmod>${today}</lastmod>\n`;
+  sitemap += `  </sitemap>\n`;
+  
+  // Add reference to articles sitemap
+  sitemap += `  <sitemap>\n`;
+  sitemap += `    <loc>${baseUrl}/sitemap-articles.xml</loc>\n`;
+  sitemap += `    <lastmod>${today}</lastmod>\n`;
+  sitemap += `  </sitemap>\n`;
+  
+  sitemap += `</sitemapindex>`;
+  return sitemap;
+}
+
 // Generate sitemap for static pages
 function generateStaticSitemap(): string {
-  // UPDATED: Using www subdomain as per your Vercel configuration
   const baseUrl = "https://www.tcgupdates.com";
   const today = new Date().toISOString().split('T')[0];
   
   const staticUrls = [
-    "",                // Home page
-    "/news",
-    "/products",       // Updated order to match your navigation
-    "/market",
-    "/sets",
-    "/sets/pokemon",
-    "/about",
-    "/contact",
-    "/privacy",
-    "/terms",
-    "/cookies",
-    "/psa-market",     // Added missing pages
-    "/articles"
+    { path: "", changefreq: "daily", priority: "1.0" },
+    { path: "/news", changefreq: "daily", priority: "0.9" },
+    { path: "/products", changefreq: "daily", priority: "0.9" },
+    { path: "/market", changefreq: "daily", priority: "0.8" },
+    { path: "/sets", changefreq: "weekly", priority: "0.8" },
+    { path: "/sets/pokemon", changefreq: "weekly", priority: "0.8" },
+    { path: "/about", changefreq: "monthly", priority: "0.7" },
+    { path: "/contact", changefreq: "monthly", priority: "0.7" },
+    { path: "/privacy", changefreq: "monthly", priority: "0.5" },
+    { path: "/terms", changefreq: "monthly", priority: "0.5" },
+    { path: "/cookies", changefreq: "monthly", priority: "0.5" },
+    { path: "/psa-market", changefreq: "daily", priority: "0.8" },
   ];
   
   let sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n`;
-  sitemap += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
+  sitemap += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"\n`;
+  sitemap += `        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"\n`;
+  sitemap += `        xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9\n`;
+  sitemap += `        http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">\n`;
   
   // Add each static URL to the sitemap
   for (const url of staticUrls) {
     sitemap += `  <url>\n`;
-    sitemap += `    <loc>${baseUrl}${url}</loc>\n`;
+    sitemap += `    <loc>${baseUrl}${url.path}</loc>\n`;
     sitemap += `    <lastmod>${today}</lastmod>\n`;
-    
-    // Set appropriate changefreq and priority
-    let changefreq = "weekly";
-    let priority = "0.8";
-    
-    if (url === "") {
-      changefreq = "daily";
-      priority = "1.0";
-    } else if (url === "/news" || url === "/products" || url === "/market" || url === "/psa-market") {
-      changefreq = "daily";
-      priority = "0.9";
-    } else if (url === "/privacy" || url === "/terms" || url === "/cookies") {
-      changefreq = "monthly";
-      priority = "0.5";
-    }
-    
-    sitemap += `    <changefreq>${changefreq}</changefreq>\n`;
-    sitemap += `    <priority>${priority}</priority>\n`;
+    sitemap += `    <changefreq>${url.changefreq}</changefreq>\n`;
+    sitemap += `    <priority>${url.priority}</priority>\n`;
     sitemap += `  </url>\n`;
   }
   
@@ -136,16 +148,15 @@ function generateStaticSitemap(): string {
 
 // Generate sitemap for articles
 async function generateArticlesSitemap(): Promise<string> {
-  // UPDATED: Using www subdomain as per your Vercel configuration
   const baseUrl = "https://www.tcgupdates.com";
   
   try {
     // Fetch published articles from the database
     const { data: articles, error } = await supabase
       .from("articles")
-      .select("id, title, created_at, updated_at")
+      .select("id, title, created_at, updated_at, published_at, featured")
       .eq("published", true)
-      .order("created_at", { ascending: false });
+      .order("published_at", { ascending: false });
     
     if (error) {
       console.error("Error fetching articles:", error);
@@ -156,42 +167,50 @@ async function generateArticlesSitemap(): Promise<string> {
     console.log(`Found ${articles?.length || 0} published articles`);
     
     let sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n`;
-    sitemap += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
+    sitemap += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"\n`;
+    sitemap += `        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"\n`;
+    sitemap += `        xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9\n`;
+    sitemap += `        http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">\n`;
+    
+    // Add the articles index page
+    sitemap += `  <url>\n`;
+    sitemap += `    <loc>${baseUrl}/articles</loc>\n`;
+    sitemap += `    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>\n`;
+    sitemap += `    <changefreq>daily</changefreq>\n`;
+    sitemap += `    <priority>0.8</priority>\n`;
+    sitemap += `  </url>\n`;
     
     // Add each article URL to the sitemap
     if (articles && articles.length > 0) {
       for (const article of articles) {
-        // Create slug from title (simplified version)
+        // Create slug from title
         const slug = createSlug(article.title);
+        const lastMod = article.updated_at || article.published_at || article.created_at;
+        const priority = article.featured ? "0.8" : "0.7";
         
         sitemap += `  <url>\n`;
         sitemap += `    <loc>${baseUrl}/articles/${slug}</loc>\n`;
-        sitemap += `    <lastmod>${article.updated_at?.split('T')[0] || article.created_at.split('T')[0]}</lastmod>\n`;
-        sitemap += `    <changefreq>monthly</changefreq>\n`;
-        sitemap += `    <priority>0.7</priority>\n`;
+        sitemap += `    <lastmod>${new Date(lastMod).toISOString().split('T')[0]}</lastmod>\n`;
+        sitemap += `    <changefreq>weekly</changefreq>\n`;
+        sitemap += `    <priority>${priority}</priority>\n`;
         sitemap += `  </url>\n`;
       }
-    } else {
-      // Add at least one example article URL to avoid empty sitemap
-      sitemap += `  <url>\n`;
-      sitemap += `    <loc>${baseUrl}/articles</loc>\n`;
-      sitemap += `    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>\n`;
-      sitemap += `    <changefreq>weekly</changefreq>\n`;
-      sitemap += `    <priority>0.8</priority>\n`;
-      sitemap += `  </url>\n`;
     }
     
     sitemap += `</urlset>`;
     return sitemap;
   } catch (dbError) {
     console.error("Database error:", dbError);
-    // Fallback sitemap with just the articles index page
+    // Return a basic sitemap with just the articles index page
     let sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n`;
-    sitemap += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
+    sitemap += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"\n`;
+    sitemap += `        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"\n`;
+    sitemap += `        xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9\n`;
+    sitemap += `        http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">\n`;
     sitemap += `  <url>\n`;
     sitemap += `    <loc>${baseUrl}/articles</loc>\n`;
     sitemap += `    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>\n`;
-    sitemap += `    <changefreq>weekly</changefreq>\n`;
+    sitemap += `    <changefreq>daily</changefreq>\n`;
     sitemap += `    <priority>0.8</priority>\n`;
     sitemap += `  </url>\n`;
     sitemap += `</urlset>`;
