@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 // @ts-ignore
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
@@ -9,14 +10,17 @@ const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") as string;
 // Initialize Supabase client
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-// CORS headers
+// Enhanced CORS headers
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "GET, OPTIONS"
+  "Access-Control-Allow-Methods": "GET, OPTIONS",
+  "Content-Type": "application/xml; charset=utf-8"
 };
 
 serve(async (req) => {
+  console.log("Dynamic sitemap function called with URL:", req.url);
+  
   // Handle CORS
   if (req.method === "OPTIONS") {
     return new Response(null, {
@@ -52,13 +56,12 @@ serve(async (req) => {
       );
     }
     
+    console.log("Sitemap generated successfully, length:", sitemapContent.length);
+    
     // Return the XML sitemap with the correct content type and no BOM
     return new Response(sitemapContent, {
       status: 200,
-      headers: {
-        "Content-Type": "application/xml; charset=utf-8",
-        ...corsHeaders,
-      },
+      headers: corsHeaders,
     });
   } catch (error) {
     console.error("Error generating sitemap:", error);
@@ -163,7 +166,7 @@ async function generateArticlesSitemap(): Promise<string> {
         
         sitemap += `  <url>\n`;
         sitemap += `    <loc>${baseUrl}/articles/${slug}</loc>\n`;
-        sitemap += `    <lastmod>${article.updated_at.split('T')[0]}</lastmod>\n`;
+        sitemap += `    <lastmod>${article.updated_at?.split('T')[0] || article.created_at.split('T')[0]}</lastmod>\n`;
         sitemap += `    <changefreq>monthly</changefreq>\n`;
         sitemap += `    <priority>0.7</priority>\n`;
         sitemap += `  </url>\n`;

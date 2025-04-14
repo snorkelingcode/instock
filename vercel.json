@@ -6,14 +6,16 @@
       "src": "/api/sitemap-static.xml",
       "dest": "https://etgkuasmqjidwtaxrfww.supabase.co/functions/v1/dynamic-sitemap?type=static",
       "headers": {
-        "Content-Type": "application/xml"
+        "Content-Type": "application/xml",
+        "Access-Control-Allow-Origin": "*"
       }
     },
     {
       "src": "/api/sitemap-articles.xml",
       "dest": "https://etgkuasmqjidwtaxrfww.supabase.co/functions/v1/dynamic-sitemap?type=articles",
       "headers": {
-        "Content-Type": "application/xml"
+        "Content-Type": "application/xml",
+        "Access-Control-Allow-Origin": "*"
       }
     },
     {
