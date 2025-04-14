@@ -12,28 +12,25 @@ https://tcgupdates.com/*         https://www.tcgupdates.com/:splat  301!
 /sitemap-articles.xml            /sitemap-articles.xml  200  Content-Type=application/xml
 /robots.txt                      /robots.txt   200  Content-Type=text/plain
 
-# Future Mediavine Journey support (commented out until approved)
-# /journey-api/*                 https://journey.mediavine.com/:splat  200
-
-# Special rules to help search engines index SPA pages
-/news                        /index.html   200
-/products                    /index.html   200
-/market                      /index.html   200
-/sets                        /index.html   200
-/sets/pokemon                /index.html   200
-/about                       /index.html   200
-/contact                     /index.html   200
-/privacy                     /index.html   200
-/terms                       /index.html   200
-/cookies                     /index.html   200
-/article/*                   /index.html   200
-/articles/*                  /index.html   200
-/psa-market                  /index.html   200
-/psa-market/*                /index.html   200
-/psa-card/*                  /index.html   200
+# Special rules to help search engines index SPA pages correctly
+/news                        /index.html   200!
+/products                    /index.html   200!
+/market                      /index.html   200!
+/sets                        /index.html   200!
+/sets/pokemon                /index.html   200!
+/about                       /index.html   200!
+/contact                     /index.html   200!
+/privacy                     /index.html   200!
+/terms                       /index.html   200!
+/cookies                     /index.html   200!
+/article/*                   /index.html   200!
+/articles/*                  /index.html   200!
+/psa-market                  /index.html   200!
+/psa-market/*                /index.html   200!
+/psa-card/*                  /index.html   200!
 
 # Backward compatibility for old article URLs
-/article/:id                 /articles/:id  301
+/article/:id                 /articles/:id  301!
 
-# Fallback for SPA routing
+# Default rule
 /*                           /index.html   200
