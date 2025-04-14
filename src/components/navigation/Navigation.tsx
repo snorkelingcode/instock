@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -83,7 +82,7 @@ const Navigation = () => {
                     to="/market"
                     className="py-3 px-6 text-red-600 font-medium border-b border-gray-200 hover:bg-red-50 transition-colors text-left"
                   >
-                    Market
+                    Products
                   </Link>
                 </SheetClose>
                 <SheetClose asChild>
@@ -91,7 +90,7 @@ const Navigation = () => {
                     to="/products"
                     className="py-3 px-6 text-red-600 font-medium border-b border-gray-200 hover:bg-red-50 transition-colors text-left"
                   >
-                    Products
+                    Market
                   </Link>
                 </SheetClose>
                 <SheetClose asChild>
@@ -237,13 +236,13 @@ const Navigation = () => {
             News
           </Link>
           <Link to="/market" className="hover:text-red-200 transition-colors">
-            Market
+            Products
           </Link>
           <Link
             to="/products"
             className="hover:text-red-200 transition-colors"
           >
-            Products
+            Market
           </Link>
           <Link to="/sets" className="hover:text-red-200 transition-colors">
             Sets
