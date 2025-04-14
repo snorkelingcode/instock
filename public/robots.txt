@@ -1,3 +1,4 @@
+
 User-agent: *
 Allow: /
 Allow: /about
@@ -26,5 +27,5 @@ Allow: /journey-api/
 
 # Sitemaps
 Sitemap: https://www.tcgupdates.com/sitemap.xml
-Sitemap: https://www.tcgupdates.com/api/sitemap-static.xml
-Sitemap: https://www.tcgupdates.com/api/sitemap-articles.xml
+Sitemap: https://www.tcgupdates.com/sitemap-static.xml
+Sitemap: https://www.tcgupdates.com/sitemap-articles.xml
