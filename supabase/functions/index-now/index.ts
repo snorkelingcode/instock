@@ -1,8 +1,3 @@
-
-// Follow this setup guide to integrate the Deno language server with your editor:
-// https://deno.land/manual/getting_started/setup_your_environment
-// This enables autocomplete, go to definition, etc.
-
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 
 // Main handler for the IndexNow edge function
@@ -36,6 +31,9 @@ serve(async (req) => {
     let indexNowBody;
     let bingResponse, googleResponse, yandexResponse;
     
+    // UPDATED: Using www subdomain as per your Vercel configuration
+    const baseUrl = "https://www.tcgupdates.com";
+    
     if (url) {
       // Single URL submission
       indexNowBody = {
@@ -52,7 +50,7 @@ serve(async (req) => {
       });
       
       // Send to Google Indexing API (simplified - in real implementation would require OAuth2)
-      const pingGoogleUrl = `https://www.google.com/ping?sitemap=https://tcgupdates.com/sitemap.xml`;
+      const pingGoogleUrl = `https://www.google.com/ping?sitemap=${baseUrl}/sitemap.xml`;
       googleResponse = await fetch(pingGoogleUrl, {
         method: "GET",
         headers: {
@@ -83,7 +81,7 @@ serve(async (req) => {
       });
       
       // Send to Google Indexing API (simplified)
-      const pingGoogleUrl = `https://www.google.com/ping?sitemap=https://tcgupdates.com/sitemap.xml`;
+      const pingGoogleUrl = `https://www.google.com/ping?sitemap=${baseUrl}/sitemap.xml`;
       googleResponse = await fetch(pingGoogleUrl, {
         method: "GET",
         headers: {
