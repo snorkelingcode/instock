@@ -1,0 +1,73 @@
+
+{
+  "version": 2,
+  "routes": [
+    {
+      "src": "/api/sitemap-static.xml",
+      "dest": "https://etgkuasmqjidwtaxrfww.supabase.co/functions/v1/dynamic-sitemap?type=static",
+      "headers": {
+        "Content-Type": "application/xml"
+      }
+    },
+    {
+      "src": "/api/sitemap-articles.xml",
+      "dest": "https://etgkuasmqjidwtaxrfww.supabase.co/functions/v1/dynamic-sitemap?type=articles",
+      "headers": {
+        "Content-Type": "application/xml"
+      }
+    },
+    {
+      "src": "/sitemap.xml",
+      "dest": "/sitemap.xml",
+      "headers": {
+        "Content-Type": "application/xml"
+      }
+    },
+    {
+      "src": "/robots.txt",
+      "dest": "/robots.txt",
+      "headers": {
+        "Content-Type": "text/plain"
+      }
+    }
+  ],
+  "rewrites": [
+    { "source": "/news", "destination": "/index.html" },
+    { "source": "/products", "destination": "/index.html" },
+    { "source": "/market", "destination": "/index.html" },
+    { "source": "/sets", "destination": "/index.html" },
+    { "source": "/sets/pokemon", "destination": "/index.html" },
+    { "source": "/about", "destination": "/index.html" },
+    { "source": "/contact", "destination": "/index.html" },
+    { "source": "/privacy", "destination": "/index.html" },
+    { "source": "/terms", "destination": "/index.html" },
+    { "source": "/cookies", "destination": "/index.html" },
+    { "source": "/article/(.*)", "destination": "/index.html" },
+    { "source": "/articles/(.*)", "destination": "/index.html" },
+    { "source": "/psa-market", "destination": "/index.html" },
+    { "source": "/psa-market/(.*)", "destination": "/index.html" },
+    { "source": "/psa-card/(.*)", "destination": "/index.html" }
+  ],
+  "redirects": [
+    {
+      "source": "http://tcgupdates.com/:path*",
+      "destination": "https://www.tcgupdates.com/:path*",
+      "permanent": true
+    },
+    {
+      "source": "http://www.tcgupdates.com/:path*",
+      "destination": "https://www.tcgupdates.com/:path*",
+      "permanent": true
+    },
+    {
+      "source": "https://tcgupdates.com/:path*",
+      "destination": "https://www.tcgupdates.com/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/article/:id",
+      "destination": "/articles/:id",
+      "permanent": true
+    }
+  ]
+}

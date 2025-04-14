@@ -9,9 +9,9 @@ https://tcgupdates.com/*         https://www.tcgupdates.com/:splat  301!
 # Future Mediavine Journey support (commented out until approved)
 # /journey-api/*                 https://journey.mediavine.com/:splat  200
 
-# API endpoints for sitemaps (fix URL formatting and add dynamic-sitemap)
-/api/sitemap-static.xml          https://etgkuasmqjidwtaxrfww.functions.supabase.co/dynamic-sitemap?type=static 200 Content-Type=application/xml
-/api/sitemap-articles.xml        https://etgkuasmqjidwtaxrfww.functions.supabase.co/dynamic-sitemap?type=articles 200 Content-Type=application/xml
+# API endpoints for sitemaps
+/api/sitemap-static.xml          https://etgkuasmqjidwtaxrfww.supabase.co/functions/v1/dynamic-sitemap?type=static 200 Content-Type=application/xml
+/api/sitemap-articles.xml        https://etgkuasmqjidwtaxrfww.supabase.co/functions/v1/dynamic-sitemap?type=articles 200 Content-Type=application/xml
 
 # Ensure sitemap.xml is served with the correct content type
 /sitemap.xml                     /sitemap.xml  200  Content-Type=application/xml
