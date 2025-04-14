@@ -5,6 +5,7 @@
     { "source": "/sitemap.xml", "destination": "https://etgkuasmqjidwtaxrfww.supabase.co/functions/v1/dynamic-sitemap?type=all" },
     { "source": "/sitemap-static.xml", "destination": "https://etgkuasmqjidwtaxrfww.supabase.co/functions/v1/dynamic-sitemap?type=static" },
     { "source": "/sitemap-articles.xml", "destination": "https://etgkuasmqjidwtaxrfww.supabase.co/functions/v1/dynamic-sitemap?type=articles" },
+    { "source": "/robots.txt", "destination": "/robots.txt" },
     { "source": "/news", "destination": "/index.html" },
     { "source": "/products", "destination": "/index.html" },
     { "source": "/market", "destination": "/index.html" },
@@ -33,7 +34,7 @@
       "headers": [
         {
           "key": "Content-Type",
-          "value": "application/xml"
+          "value": "application/xml; charset=utf-8"
         },
         {
           "key": "Cache-Control",
@@ -46,7 +47,7 @@
       "headers": [
         {
           "key": "Content-Type",
-          "value": "application/xml"
+          "value": "application/xml; charset=utf-8"
         },
         {
           "key": "Cache-Control",
@@ -59,11 +60,24 @@
       "headers": [
         {
           "key": "Content-Type",
-          "value": "application/xml"
+          "value": "application/xml; charset=utf-8"
         },
         {
           "key": "Cache-Control",
           "value": "public, max-age=3600"
+        }
+      ]
+    },
+    {
+      "source": "/robots.txt",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "text/plain"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400"
         }
       ]
     }
