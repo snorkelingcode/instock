@@ -1,4 +1,3 @@
-
 User-agent: *
 Allow: /
 Allow: /about
@@ -13,13 +12,19 @@ Allow: /terms
 Allow: /cookies
 Allow: /article/
 Allow: /articles/
+Allow: /psa-market
+Allow: /psa-card/
 
 # Disallow admin sections
 Disallow: /admin/
 Disallow: /auth/
 
-# Sitemaps
-Sitemap: https://tcgupdates.com/sitemap.xml
-Sitemap: https://tcgupdates.com/api/sitemap-static.xml
-Sitemap: https://tcgupdates.com/api/sitemap-articles.xml
+# Future Mediavine Journey support (ready for when you get approved)
+User-agent: Journey
+Allow: /
+Allow: /journey-api/
 
+# Sitemaps
+Sitemap: https://www.tcgupdates.com/sitemap.xml
+Sitemap: https://www.tcgupdates.com/api/sitemap-static.xml
+Sitemap: https://www.tcgupdates.com/api/sitemap-articles.xml
