@@ -1,4 +1,3 @@
-
 {
   "version": 2,
   "rewrites": [
@@ -19,26 +18,10 @@
     { "source": "/psa-card/(.*)", "destination": "/index.html" }
   ],
   "redirects": [
-    {
-      "source": "http://tcgupdates.com/:path*",
-      "destination": "https://www.tcgupdates.com/:path*",
-      "permanent": true
-    },
-    {
-      "source": "http://www.tcgupdates.com/:path*",
-      "destination": "https://www.tcgupdates.com/:path*",
-      "permanent": true
-    },
-    {
-      "source": "https://tcgupdates.com/:path*",
-      "destination": "https://www.tcgupdates.com/:path*",
-      "permanent": true
-    },
-    {
-      "source": "/article/:id",
-      "destination": "/articles/:id",
-      "permanent": true
-    }
+    { "source": "http://tcgupdates.com/:path*", "destination": "https://www.tcgupdates.com/:path*", "permanent": true },
+    { "source": "http://www.tcgupdates.com/:path*", "destination": "https://www.tcgupdates.com/:path*", "permanent": true },
+    { "source": "https://tcgupdates.com/:path*", "destination": "https://www.tcgupdates.com/:path*", "permanent": true },
+    { "source": "/article/:id", "destination": "/articles/:id", "permanent": true }
   ],
   "headers": [
     {
