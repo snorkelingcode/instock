@@ -1,38 +1,40 @@
+# Ensure HTTP to HTTPS redirects
+http://tcgupdates.com/*          https://www.tcgupdates.com/:splat  301!
+http://www.tcgupdates.com/*      https://www.tcgupdates.com/:splat  301!
 
-# Redirect all routes to index.html for SPA handling
-/*    /index.html   200
+# Redirect non-www to www (per your Vercel configuration)
+https://tcgupdates.com/*         https://www.tcgupdates.com/:splat  301!
 
-# Redirect www to non-www
-https://www.tcgupdates.com/*  https://tcgupdates.com/:splat  301!
-
-# Redirect old domain to the new one
-https://fixthesupplyissue.com/*  https://tcgupdates.com/:splat  301!
-https://www.fixthesupplyissue.com/*  https://tcgupdates.com/:splat  301!
+# Future Mediavine Journey support (commented out until approved)
+# /journey-api/*                 https://journey.mediavine.com/:splat  200
 
 # API endpoints for sitemaps (point to the dynamic sitemap edge function)
-/api/sitemap-static.xml  https://etgkuasmqjidwtaxrfww.supabase.co/functions/v1/dynamic-sitemap?type=static 200 Content-Type=application/xml
-/api/sitemap-articles.xml https://etgkuasmqjidwtaxrfww.supabase.co/functions/v1/dynamic-sitemap?type=articles 200 Content-Type=application/xml
+/api/sitemap-static.xml      https://etgkuasmqjidwtaxrfww.supabase.co/functions/v1/dynamic-sitemap?type=static 200 Content-Type=application/xml
+/api/sitemap-articles.xml    https://etgkuasmqjidwtaxrfww.supabase.co/functions/v1/dynamic-sitemap?type=articles 200 Content-Type=application/xml
 
 # Ensure sitemap.xml is served with the correct content type
-/sitemap.xml  /sitemap.xml  200  Content-Type=application/xml
-/robots.txt  /robots.txt  200  Content-Type=text/plain
+/sitemap.xml                 /sitemap.xml  200  Content-Type=application/xml
+/robots.txt                  /robots.txt   200  Content-Type=text/plain
 
 # Special rules to help search engines index SPA pages
-/news              /index.html   200
-/market            /index.html   200
-/products          /index.html   200
-/sets              /index.html   200
-/sets/pokemon      /index.html   200
-/about             /index.html   200
-/contact           /index.html   200
-/privacy           /index.html   200
-/terms             /index.html   200
-/cookies           /index.html   200
-/article/*         /index.html   200
-/articles/*        /index.html   200
-/psa-market        /index.html   200
-/psa-market/*      /index.html   200
-/psa-card/*        /index.html   200
+/news                        /index.html   200
+/products                    /index.html   200
+/market                      /index.html   200
+/sets                        /index.html   200
+/sets/pokemon                /index.html   200
+/about                       /index.html   200
+/contact                     /index.html   200
+/privacy                     /index.html   200
+/terms                       /index.html   200
+/cookies                     /index.html   200
+/article/*                   /index.html   200
+/articles/*                  /index.html   200
+/psa-market                  /index.html   200
+/psa-market/*                /index.html   200
+/psa-card/*                  /index.html   200
 
 # Backward compatibility for old article URLs
-/article/:id   /articles/:slug   301
+/article/:id                 /articles/:id  301
+
+# Fallback for SPA routing
+/*                           /index.html   200
