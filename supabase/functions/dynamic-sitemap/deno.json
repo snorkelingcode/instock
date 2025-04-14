@@ -5,7 +5,7 @@
   },
   "tasks": {
     "dev": "deno run --allow-net --allow-env --allow-read index.ts",
-    "deploy": "supabase functions deploy dynamic-sitemap"
+    "deploy": "supabase functions deploy dynamic-sitemap --no-verify-jwt"
   },
   "importMap": "../import_map.json"
 }
