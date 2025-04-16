@@ -23,9 +23,26 @@
     { "source": "/psa-card/:path*", "destination": "/index.html" }
   ],
   "redirects": [
-    { "source": "/:path*", "has": [{ "type": "host", "value": "tcgupdates.com" }], "destination": "https://www.tcgupdates.com/:path*", "permanent": true },
-    { "source": "/:path*", "has": [{ "type": "host", "value": "www.tcgupdates.com" }], "destination": "https://www.tcgupdates.com/:path*", "permanent": true, "statusCode": 308 },
-    { "source": "/article/:id", "destination": "/articles/:id", "permanent": true }
+    { 
+      "source": "/:path*", 
+      "has": [{ "type": "host", "value": "tcgupdates.com" }], 
+      "destination": "https://www.tcgupdates.com/:path*", 
+      "permanent": true,
+      "statusCode": 301
+    },
+    { 
+      "source": "/:path*", 
+      "has": [{ "type": "host", "value": "www.tcgupdates.com" }], 
+      "destination": "https://www.tcgupdates.com/:path*", 
+      "permanent": true, 
+      "statusCode": 308
+    },
+    { 
+      "source": "/article/:id", 
+      "destination": "/articles/:id", 
+      "permanent": true,
+      "statusCode": 301
+    }
   ],
   "headers": [
     {
