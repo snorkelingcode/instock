@@ -24,7 +24,6 @@ const Navigation = () => {
   return (
     <nav className="bg-red-600 text-white py-4 relative">
       <div className="container mx-auto px-4 flex justify-between items-center relative z-50">
-        {/* Logo only */}
         <Link to="/" className="flex items-center">
           <img 
             src="/lovable-uploads/3a088818-3512-46b0-898d-16a118d744fa.png" 
@@ -33,7 +32,6 @@ const Navigation = () => {
           />
         </Link>
 
-        {/* Mobile Menu Button */}
         <Sheet>
           <SheetTrigger asChild className="md:hidden">
             <Button variant="ghost" size="icon" className="text-white hover:bg-red-700">
@@ -43,7 +41,6 @@ const Navigation = () => {
           </SheetTrigger>
           <SheetContent side="left" className="w-full p-0 bg-white">
             <div className="flex flex-col h-full">
-              {/* Logo centered at the top */}
               <div className="flex justify-center py-6 border-b border-gray-200">
                 <img 
                   src="/lovable-uploads/e60afbdf-2426-466b-ae0b-ebe03404efc4.png" 
@@ -52,13 +49,11 @@ const Navigation = () => {
                 />
               </div>
               
-              {/* Close button */}
               <SheetClose className="absolute top-4 right-4 rounded-sm opacity-70 ring-offset-white transition-opacity hover:opacity-100 focus:outline-none">
                 <X className="h-6 w-6" color="#ea384c" />
                 <span className="sr-only">Close</span>
               </SheetClose>
               
-              {/* Navigation Links */}
               <div className="flex flex-col py-4 overflow-y-auto">
                 <SheetClose asChild>
                   <Link
@@ -89,11 +84,9 @@ const Navigation = () => {
                     to="/market"
                     className="py-3 px-6 text-red-600 font-medium border-b border-gray-200 hover:bg-red-50 transition-colors text-left"
                   >
-                    PSA Market
+                    Market
                   </Link>
                 </SheetClose>
-                
-                {/* Forge link removed */}
                 
                 {user ? (
                   <>
@@ -202,7 +195,6 @@ const Navigation = () => {
           </SheetContent>
         </Sheet>
 
-        {/* Desktop Menu */}
         <div className="hidden md:flex items-center space-x-6">
           <Link to="/" className="hover:text-red-200 transition-colors">
             Home
@@ -214,7 +206,7 @@ const Navigation = () => {
             Products
           </Link>
           <Link to="/market" className="hover:text-red-200 transition-colors">
-            PSA Market
+            Market
           </Link>
           <Link
             to="/sets"
@@ -234,8 +226,6 @@ const Navigation = () => {
           >
             Contact
           </Link>
-          
-          {/* Forge link removed */}
           
           {user ? (
             <DropdownMenu>
