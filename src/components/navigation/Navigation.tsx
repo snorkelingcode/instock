@@ -60,7 +60,6 @@ const Navigation = () => {
               
               {/* Navigation Links */}
               <div className="flex flex-col py-4 overflow-y-auto">
-                {/* Reordered navigation links */}
                 <SheetClose asChild>
                   <Link
                     to="/"
@@ -79,7 +78,7 @@ const Navigation = () => {
                 </SheetClose>
                 <SheetClose asChild>
                   <Link
-                    to="/market"
+                    to="/products"
                     className="py-3 px-6 text-red-600 font-medium border-b border-gray-200 hover:bg-red-50 transition-colors text-left"
                   >
                     Products
@@ -87,34 +86,10 @@ const Navigation = () => {
                 </SheetClose>
                 <SheetClose asChild>
                   <Link
-                    to="/products"
+                    to="/market"
                     className="py-3 px-6 text-red-600 font-medium border-b border-gray-200 hover:bg-red-50 transition-colors text-left"
                   >
-                    Market
-                  </Link>
-                </SheetClose>
-                <SheetClose asChild>
-                  <Link
-                    to="/sets"
-                    className="py-3 px-6 text-red-600 font-medium border-b border-gray-200 hover:bg-red-50 transition-colors text-left"
-                  >
-                    Sets
-                  </Link>
-                </SheetClose>
-                <SheetClose asChild>
-                  <Link
-                    to="/about"
-                    className="py-3 px-6 text-red-600 font-medium border-b border-gray-200 hover:bg-red-50 transition-colors text-left"
-                  >
-                    About
-                  </Link>
-                </SheetClose>
-                <SheetClose asChild>
-                  <Link
-                    to="/contact"
-                    className="py-3 px-6 text-red-600 font-medium border-b border-gray-200 hover:bg-red-50 transition-colors text-left"
-                  >
-                    Contact
+                    PSA Market
                   </Link>
                 </SheetClose>
                 
@@ -235,16 +210,16 @@ const Navigation = () => {
           <Link to="/news" className="hover:text-red-200 transition-colors">
             News
           </Link>
-          <Link to="/market" className="hover:text-red-200 transition-colors">
+          <Link to="/products" className="hover:text-red-200 transition-colors">
             Products
           </Link>
+          <Link to="/market" className="hover:text-red-200 transition-colors">
+            PSA Market
+          </Link>
           <Link
-            to="/products"
+            to="/sets"
             className="hover:text-red-200 transition-colors"
           >
-            Market
-          </Link>
-          <Link to="/sets" className="hover:text-red-200 transition-colors">
             Sets
           </Link>
           <Link
