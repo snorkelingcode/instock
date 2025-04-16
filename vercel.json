@@ -16,16 +16,15 @@
     { "source": "/privacy", "destination": "/index.html" },
     { "source": "/terms", "destination": "/index.html" },
     { "source": "/cookies", "destination": "/index.html" },
-    { "source": "/article/(.*)", "destination": "/index.html" },
-    { "source": "/articles/(.*)", "destination": "/index.html" },
+    { "source": "/article/:path*", "destination": "/index.html" },
+    { "source": "/articles/:path*", "destination": "/index.html" },
     { "source": "/psa-market", "destination": "/index.html" },
-    { "source": "/psa-market/(.*)", "destination": "/index.html" },
-    { "source": "/psa-card/(.*)", "destination": "/index.html" }
+    { "source": "/psa-market/:path*", "destination": "/index.html" },
+    { "source": "/psa-card/:path*", "destination": "/index.html" }
   ],
   "redirects": [
-    { "source": "http://tcgupdates.com/:path*", "destination": "https://www.tcgupdates.com/:path*", "permanent": true },
-    { "source": "http://www.tcgupdates.com/:path*", "destination": "https://www.tcgupdates.com/:path*", "permanent": true },
-    { "source": "https://tcgupdates.com/:path*", "destination": "https://www.tcgupdates.com/:path*", "permanent": true },
+    { "source": "/:path*", "has": [{ "type": "host", "value": "tcgupdates.com" }], "destination": "https://www.tcgupdates.com/:path*", "permanent": true },
+    { "source": "/:path*", "has": [{ "type": "host", "value": "www.tcgupdates.com" }], "destination": "https://www.tcgupdates.com/:path*", "permanent": true, "statusCode": 308 },
     { "source": "/article/:id", "destination": "/articles/:id", "permanent": true }
   ],
   "headers": [
