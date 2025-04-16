@@ -24,15 +24,15 @@
   ],
   "redirects": [
     { 
-      "source": "/:path*", 
+      "source": "/", 
       "has": [{ "type": "host", "value": "tcgupdates.com" }], 
-      "destination": "https://www.tcgupdates.com/:path*", 
+      "destination": "https://www.tcgupdates.com/", 
       "permanent": true
     },
     { 
-      "source": "/:path*", 
-      "has": [{ "type": "host", "value": "www.tcgupdates.com" }], 
-      "destination": "https://www.tcgupdates.com/:path*", 
+      "source": "/:path((?!api|_next/static|_next/image|favicon.ico).*)", 
+      "has": [{ "type": "host", "value": "tcgupdates.com" }], 
+      "destination": "https://www.tcgupdates.com/:path", 
       "permanent": true
     },
     { 
