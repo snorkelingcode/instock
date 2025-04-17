@@ -8,10 +8,11 @@
   border-color: #4f46e5;
 }
 
-[contenteditable="true"]:empty:before {
-  content: attr(placeholder);
+.rich-text-editor:empty:before {
+  content: attr(data-placeholder);
   color: #9ca3af;
   position: absolute;
+  pointer-events: none;
 }
 
 /* Styling for the editor content elements */

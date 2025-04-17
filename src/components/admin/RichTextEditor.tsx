@@ -1,10 +1,11 @@
+
 import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Bold, Italic, Underline, AlignLeft, AlignCenter, 
-  AlignRight, List, ListOrdered, Link, HeadingOne, 
-  HeadingTwo, HeadingThree, Image as ImageIcon 
+  AlignRight, List, ListOrdered, Link, Heading1, 
+  Heading2, Heading3, Image as ImageIcon 
 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
@@ -141,7 +142,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
               onClick={() => execCommand('formatBlock', '<h1>')}
               type="button"
             >
-              <HeadingOne className="h-4 w-4" />
+              <Heading1 className="h-4 w-4" />
             </Button>
             <Button
               variant="ghost"
@@ -149,7 +150,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
               onClick={() => execCommand('formatBlock', '<h2>')}
               type="button"
             >
-              <HeadingTwo className="h-4 w-4" />
+              <Heading2 className="h-4 w-4" />
             </Button>
             <Button
               variant="ghost"
@@ -157,7 +158,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
               onClick={() => execCommand('formatBlock', '<h3>')}
               type="button"
             >
-              <HeadingThree className="h-4 w-4" />
+              <Heading3 className="h-4 w-4" />
             </Button>
 
             <div className="h-6 border-l mx-1" />
@@ -266,9 +267,9 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
             contentEditable
             onInput={handleContentChange}
             onBlur={handleContentChange}
-            className="p-4 min-h-[300px] outline-none"
+            className="p-4 min-h-[300px] outline-none rich-text-editor"
             style={{ minHeight }}
-            placeholder={placeholder}
+            data-placeholder={placeholder}
             dangerouslySetInnerHTML={{ __html: value }}
           />
         </TabsContent>
