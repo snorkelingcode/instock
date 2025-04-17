@@ -7,13 +7,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, X, Image as ImageIcon, Video, Code, FileText } from "lucide-react";
+import { Plus, X, Image as ImageIcon, Video } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Article, ArticleFormData } from "@/types/article";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import RichTextEditor from "./RichTextEditor";
 
 const CATEGORIES = [
   "Product News",
@@ -123,6 +123,10 @@ const ArticleEditor = () => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleContentChange = (content: string) => {
+    setFormData(prev => ({ ...prev, content }));
   };
 
   const handleCheckboxChange = (name: string, checked: boolean) => {
@@ -435,41 +439,12 @@ const ArticleEditor = () => {
           </div>
           
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="content">Article Content</Label>
-              <ToggleGroup 
-                type="single" 
-                value={editorMode} 
-                onValueChange={(value) => value && setEditorMode(value as 'plain' | 'html')}
-                className="border rounded-md"
-              >
-                <ToggleGroupItem value="plain" className="px-3 py-2 h-auto">
-                  <FileText className="h-4 w-4 mr-2" />
-                  Plain Text
-                </ToggleGroupItem>
-                <ToggleGroupItem value="html" className="px-3 py-2 h-auto">
-                  <Code className="h-4 w-4 mr-2" />
-                  HTML
-                </ToggleGroupItem>
-              </ToggleGroup>
-            </div>
-            <Textarea
-              id="content"
-              name="content"
-              placeholder={editorMode === 'html' ? 
-                "Enter HTML content here..." : 
-                "Write your article content here"
-              }
+            <Label htmlFor="content">Article Content</Label>
+            <RichTextEditor
               value={formData.content}
-              onChange={handleChange}
-              required
-              className={`min-h-[300px] font-mono ${editorMode === 'html' ? 'bg-gray-50' : ''}`}
+              onChange={handleContentChange}
+              minHeight="300px"
             />
-            {editorMode === 'html' && (
-              <p className="text-sm text-muted-foreground">
-                Enter valid HTML content. Basic tags like p, h1-h6, ul, ol, li, strong, em, and a are supported.
-              </p>
-            )}
           </div>
           
           <div className="space-y-2">
@@ -576,45 +551,6 @@ const ArticleEditor = () => {
                 </div>
               </TabsContent>
             </Tabs>
-          </div>
-          
-          <div className="space-y-2">
-            <Label>Additional Images</Label>
-            <div className="border rounded-md p-4">
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
-                {formData.additional_images?.map((image, index) => (
-                  <div key={index} className="relative">
-                    <img 
-                      src={image} 
-                      alt={`Additional ${index}`} 
-                      className="w-full h-24 object-cover rounded"
-                    />
-                    <Button 
-                      type="button" 
-                      variant="destructive" 
-                      size="sm" 
-                      className="absolute top-2 right-2" 
-                      onClick={() => removeAdditionalImage(index)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-                
-                <label className="cursor-pointer border-2 border-dashed rounded flex items-center justify-center h-24 bg-gray-50">
-                  <div className="flex flex-col items-center">
-                    <Plus className="h-6 w-6 text-gray-400 mb-1" />
-                    <span className="text-xs text-gray-500">Add Image</span>
-                  </div>
-                  <Input 
-                    type="file" 
-                    accept="image/*" 
-                    className="hidden" 
-                    onChange={handleAdditionalImageChange} 
-                  />
-                </label>
-              </div>
-            </div>
           </div>
           
           <div className="space-y-2">
