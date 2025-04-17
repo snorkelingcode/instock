@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -8,12 +7,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, X, Image as ImageIcon, Video } from "lucide-react";
+import { Plus, X, Image as ImageIcon, Video, Code, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Article, ArticleFormData } from "@/types/article";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 const CATEGORIES = [
   "Product News",
@@ -61,6 +61,7 @@ const ArticleEditor = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [youtubeError, setYoutubeError] = useState("");
+  const [editorMode, setEditorMode] = useState<'plain' | 'html'>('plain');
 
   useEffect(() => {
     if (!isLoading && !isAdmin) {
@@ -223,6 +224,17 @@ const ArticleEditor = () => {
       .getPublicUrl(filePath);
       
     return data.publicUrl;
+  };
+
+  const validateHtmlContent = (content: string): boolean => {
+    try {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(content, 'text/html');
+      const errors = doc.getElementsByTagName('parsererror');
+      return errors.length === 0;
+    } catch (e) {
+      return false;
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -423,16 +435,41 @@ const ArticleEditor = () => {
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="content">Article Content</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="content">Article Content</Label>
+              <ToggleGroup 
+                type="single" 
+                value={editorMode} 
+                onValueChange={(value) => value && setEditorMode(value as 'plain' | 'html')}
+                className="border rounded-md"
+              >
+                <ToggleGroupItem value="plain" className="px-3 py-2 h-auto">
+                  <FileText className="h-4 w-4 mr-2" />
+                  Plain Text
+                </ToggleGroupItem>
+                <ToggleGroupItem value="html" className="px-3 py-2 h-auto">
+                  <Code className="h-4 w-4 mr-2" />
+                  HTML
+                </ToggleGroupItem>
+              </ToggleGroup>
+            </div>
             <Textarea
               id="content"
               name="content"
-              placeholder="Write your article content here"
+              placeholder={editorMode === 'html' ? 
+                "Enter HTML content here..." : 
+                "Write your article content here"
+              }
               value={formData.content}
               onChange={handleChange}
               required
-              className="min-h-[300px]"
+              className={`min-h-[300px] font-mono ${editorMode === 'html' ? 'bg-gray-50' : ''}`}
             />
+            {editorMode === 'html' && (
+              <p className="text-sm text-muted-foreground">
+                Enter valid HTML content. Basic tags like p, h1-h6, ul, ol, li, strong, em, and a are supported.
+              </p>
+            )}
           </div>
           
           <div className="space-y-2">
