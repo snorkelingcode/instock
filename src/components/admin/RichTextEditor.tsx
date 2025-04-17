@@ -36,12 +36,26 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   
   const editorRef = useRef<HTMLDivElement>(null);
 
-  // Update editor content when value prop changes
+  // Initialize editor content
   useEffect(() => {
-    if (editorRef.current && !htmlMode) {
+    if (editorRef.current) {
+      editorRef.current.innerHTML = value;
+    }
+  }, []);
+
+  // Update editor content when value prop changes from outside
+  useEffect(() => {
+    if (!htmlMode && editorRef.current && document.activeElement !== editorRef.current) {
       editorRef.current.innerHTML = value;
     }
   }, [value, htmlMode]);
+
+  // Handle HTML mode toggle
+  useEffect(() => {
+    if (htmlMode && editorRef.current) {
+      setTextareaValue(editorRef.current.innerHTML);
+    }
+  }, [htmlMode]);
 
   const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newValue = e.target.value;
