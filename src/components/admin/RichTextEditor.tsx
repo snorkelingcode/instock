@@ -36,6 +36,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   
   const editorRef = useRef<HTMLDivElement>(null);
 
+  // Update editor content when value prop changes
   useEffect(() => {
     if (editorRef.current && !htmlMode) {
       editorRef.current.innerHTML = value;
@@ -264,13 +265,12 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
 
           <div
             ref={editorRef}
-            contentEditable
+            contentEditable={true}
             onInput={handleContentChange}
             onBlur={handleContentChange}
             className="p-4 min-h-[300px] outline-none rich-text-editor"
             style={{ minHeight }}
             data-placeholder={placeholder}
-            dangerouslySetInnerHTML={{ __html: value }}
           />
         </TabsContent>
 
