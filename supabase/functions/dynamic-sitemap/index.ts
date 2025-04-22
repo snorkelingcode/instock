@@ -10,7 +10,7 @@ const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") as string;
 // Initialize Supabase client
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-// Enhanced CORS headers with proper XML content type
+// Enhanced CORS headers
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -122,7 +122,8 @@ function generateStaticSitemap(): string {
     { path: "/contact", changefreq: "monthly", priority: "0.7" },
     { path: "/privacy", changefreq: "monthly", priority: "0.5" },
     { path: "/terms", changefreq: "monthly", priority: "0.5" },
-    { path: "/cookies", changefreq: "monthly", priority: "0.5" }
+    { path: "/cookies", changefreq: "monthly", priority: "0.5" },
+    { path: "/psa-market", changefreq: "daily", priority: "0.8" },
   ];
   
   let sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n`;

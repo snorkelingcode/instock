@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -12,7 +11,6 @@ import NotFound from "./pages/NotFound";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Products from "./pages/Products";
-import Market from "./pages/Market";
 import News from "./pages/News";
 import ArticleDetails from "./pages/ArticleDetails";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
@@ -32,6 +30,8 @@ import ManageTCGReleases from "./pages/admin/ManageTCGReleases";
 import ManageModels from "./pages/admin/ManageModels";
 import ManageProducts from "./pages/admin/ManageProducts";
 import UserManagement from "./pages/admin/UserManagement";
+import PSAMarket from "./pages/PSAMarket";
+import PSACardDetails from "./pages/PSACardDetails";
 import ManageMarket from "./pages/admin/ManageMarket";
 import SupportMessages from "./pages/admin/SupportMessages";
 import CommentModeration from "./pages/admin/CommentModeration";
@@ -60,11 +60,15 @@ const App = () => {
                 <Route path="/" element={<PageCacheWrapper><Index /></PageCacheWrapper>} />
                 <Route path="/about" element={<PageCacheWrapper><About /></PageCacheWrapper>} />
                 <Route path="/contact" element={<PageCacheWrapper><Contact /></PageCacheWrapper>} />
-                <Route path="/market" element={<PageCacheWrapper><Market /></PageCacheWrapper>} />
+                <Route path="/market" element={<PageCacheWrapper><PSAMarket /></PageCacheWrapper>} />
                 <Route path="/products" element={<PageCacheWrapper><Products /></PageCacheWrapper>} />
+                <Route path="/psa-market" element={<PageCacheWrapper><PSAMarket /></PageCacheWrapper>} />
+                <Route path="/psa-market/:id" element={<PageCacheWrapper><PSACardDetails /></PageCacheWrapper>} />
+                <Route path="/psa-card/:id" element={<PageCacheWrapper><PSACardDetails /></PageCacheWrapper>} />
                 <Route path="/news" element={<PageCacheWrapper><News /></PageCacheWrapper>} />
                 
                 <Route path="/article/:id" element={<PageCacheWrapper><ArticleDetails /></PageCacheWrapper>} />
+                
                 <Route path="/articles/:slug" element={<PageCacheWrapper><ArticleDetails /></PageCacheWrapper>} />
                 
                 <Route path="/privacy" element={<PageCacheWrapper><PrivacyPolicy /></PageCacheWrapper>} />
@@ -79,6 +83,7 @@ const App = () => {
                     </RequireAuth>
                   } 
                 />
+                
                 <Route path="/sets" element={<PageCacheWrapper><Sets /></PageCacheWrapper>} />
                 <Route path="/sets/pokemon" element={<PageCacheWrapper><PokemonSets /></PageCacheWrapper>} />
                 <Route path="/sets/pokemon/:setId" element={<PageCacheWrapper><PokemonSetDetails /></PageCacheWrapper>} />
@@ -116,6 +121,7 @@ const App = () => {
                     </RequireAdmin>
                   } 
                 />
+                
                 <Route 
                   path="/admin/tcg-releases" 
                   element={
@@ -124,6 +130,7 @@ const App = () => {
                     </RequireAdmin>
                   } 
                 />
+                
                 <Route 
                   path="/admin/products" 
                   element={
@@ -132,6 +139,7 @@ const App = () => {
                     </RequireAdmin>
                   } 
                 />
+                
                 <Route 
                   path="/admin/users" 
                   element={
@@ -140,6 +148,9 @@ const App = () => {
                     </RequireAdmin>
                   } 
                 />
+                
+                <Route path="/admin/psa-market" element={<PSAMarket />} />
+                
                 <Route 
                   path="/admin/manage-market" 
                   element={
@@ -148,6 +159,7 @@ const App = () => {
                     </RequireAdmin>
                   } 
                 />
+                
                 <Route 
                   path="/admin/models" 
                   element={
@@ -156,6 +168,7 @@ const App = () => {
                     </RequireAdmin>
                   } 
                 />
+                
                 <Route 
                   path="/admin/support" 
                   element={
@@ -164,6 +177,7 @@ const App = () => {
                     </RequireAdmin>
                   } 
                 />
+                
                 <Route 
                   path="/admin/comment-moderation" 
                   element={
@@ -172,6 +186,7 @@ const App = () => {
                     </RequireAdmin>
                   } 
                 />
+                
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </SitemapManager>

@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
@@ -5,39 +6,39 @@ export interface MarketDataItem {
   id: string;
   card_name: string;
   grading_service: string;
+  certification_number?: string; // Added certification number field
+  population_10?: number;
+  population_9?: number;
+  population_8?: number;
+  population_7?: number;
+  population_6?: number;
+  population_5?: number;
+  population_4?: number;
+  population_3?: number;
+  population_2?: number;
+  population_1?: number;
+  population_auth?: number;
+  price_10?: number;
+  price_9?: number;
+  price_8?: number;
+  price_7?: number;
+  price_6?: number;
+  price_5?: number;
+  price_4?: number;
+  price_3?: number;
+  price_2?: number;
+  price_1?: number;
+  price_auth?: number;
   card_image?: string;
-  certification_number?: string;
+  market_cap?: number;
+  total_population?: number;
+  created_at?: string;
+  updated_at?: string;
+  language?: string;
+  year?: string;
   franchise?: string;
   series?: string;
   card_set?: string;
-  year?: string;
-  language?: string;
-  total_population?: number;
-  population_auth?: number;
-  population_1?: number;
-  population_2?: number;
-  population_3?: number;
-  population_4?: number;
-  population_5?: number;
-  population_6?: number;
-  population_7?: number;
-  population_8?: number;
-  population_9?: number;
-  population_10?: number;
-  price_auth?: number;
-  price_1?: number;
-  price_2?: number;
-  price_3?: number;
-  price_4?: number;
-  price_5?: number;
-  price_6?: number;
-  price_7?: number;
-  price_8?: number;
-  price_9?: number;
-  price_10?: number;
-  market_cap?: number;
-  created_at?: string;
-  updated_at?: string;
 }
 
 export const marketDataService = {

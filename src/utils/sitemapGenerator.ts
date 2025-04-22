@@ -116,34 +116,3 @@ export function generateSitemapXml(urls: SitemapUrl[]): string {
   
   return xml;
 }
-
-/**
- * Validates an XML string to ensure it's properly formatted
- */
-export function validateXml(xmlString: string): boolean {
-  try {
-    // Check for XML declaration
-    if (!xmlString.trim().startsWith('<?xml')) {
-      console.error('XML does not start with declaration');
-      return false;
-    }
-    
-    // Use DOMParser to validate XML (in browser environments)
-    if (typeof DOMParser !== 'undefined') {
-      const parser = new DOMParser();
-      const xmlDoc = parser.parseFromString(xmlString, "application/xml");
-      
-      // Check for parsing errors
-      const errorNode = xmlDoc.querySelector('parsererror');
-      if (errorNode) {
-        console.error('XML parsing error:', errorNode.textContent);
-        return false;
-      }
-    }
-    
-    return true;
-  } catch (error) {
-    console.error('XML validation error:', error);
-    return false;
-  }
-}

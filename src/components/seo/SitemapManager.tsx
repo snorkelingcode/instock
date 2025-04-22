@@ -59,48 +59,6 @@ const SitemapManager: React.FC<SitemapManagerProps> = ({ children }) => {
     };
   }, []);
   
-  // Function to check if the sitemaps are valid
-  const checkSitemapValidity = async () => {
-    try {
-      // Array of sitemap URLs to check
-      const sitemapUrls = [
-        "https://www.tcgupdates.com/sitemap.xml",
-        "https://www.tcgupdates.com/sitemap-static.xml",
-        "https://www.tcgupdates.com/sitemap-articles.xml"
-      ];
-      
-      // Check each sitemap
-      for (const url of sitemapUrls) {
-        const response = await fetch(url, { 
-          method: "GET",
-          headers: {
-            "Accept": "application/xml"
-          }
-        });
-        
-        if (!response.ok) {
-          console.error(`Sitemap ${url} returned status: ${response.status}`);
-          continue;
-        }
-        
-        const contentType = response.headers.get("Content-Type");
-        if (!contentType || !contentType.includes("application/xml")) {
-          console.error(`Sitemap ${url} has incorrect Content-Type: ${contentType}`);
-        }
-        
-        // Try to parse the XML to check if it's valid
-        const text = await response.text();
-        if (!text.trim().startsWith('<?xml')) {
-          console.error(`Sitemap ${url} doesn't start with XML declaration`);
-        }
-        
-        console.log(`Sitemap ${url} is valid`);
-      }
-    } catch (error) {
-      console.error("Error checking sitemaps:", error);
-    }
-  };
-  
   // Helper function to manually trigger sitemap regeneration
   const regenerateSitemaps = async () => {
     try {
@@ -121,9 +79,6 @@ const SitemapManager: React.FC<SitemapManagerProps> = ({ children }) => {
         title: "Success",
         description: "Sitemaps have been regenerated",
       });
-      
-      // Check validity after regenerating
-      await checkSitemapValidity();
     } catch (err) {
       console.error("Error regenerating sitemaps:", err);
       toast({
