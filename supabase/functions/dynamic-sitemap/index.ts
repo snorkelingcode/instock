@@ -10,7 +10,7 @@ const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") as string;
 // Initialize Supabase client
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-// Enhanced CORS headers
+// Enhanced CORS headers with proper XML content type
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -87,7 +87,6 @@ function generateIndexSitemap(): string {
   const baseUrl = "https://www.tcgupdates.com";
   const today = new Date().toISOString().split('T')[0];
   
-  // Ensure no whitespace before XML declaration
   let sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n`;
   sitemap += `<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
   
@@ -123,11 +122,9 @@ function generateStaticSitemap(): string {
     { path: "/contact", changefreq: "monthly", priority: "0.7" },
     { path: "/privacy", changefreq: "monthly", priority: "0.5" },
     { path: "/terms", changefreq: "monthly", priority: "0.5" },
-    { path: "/cookies", changefreq: "monthly", priority: "0.5" },
-    { path: "/psa-market", changefreq: "daily", priority: "0.8" },
+    { path: "/cookies", changefreq: "monthly", priority: "0.5" }
   ];
   
-  // Ensure no whitespace before XML declaration
   let sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n`;
   sitemap += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"\n`;
   sitemap += `        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"\n`;
@@ -168,7 +165,6 @@ async function generateArticlesSitemap(): Promise<string> {
     // Check if we got any articles
     console.log(`Found ${articles?.length || 0} published articles`);
     
-    // Ensure no whitespace before XML declaration
     let sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n`;
     sitemap += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"\n`;
     sitemap += `        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"\n`;
@@ -205,7 +201,6 @@ async function generateArticlesSitemap(): Promise<string> {
   } catch (dbError) {
     console.error("Database error:", dbError);
     // Return a basic sitemap with just the articles index page
-    // Ensure no whitespace before XML declaration
     let sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n`;
     sitemap += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"\n`;
     sitemap += `        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"\n`;
