@@ -12,12 +12,12 @@ Allow: /terms
 Allow: /cookies
 Allow: /article/
 Allow: /articles/
-Allow: /psa-market
-Allow: /psa-card/
 
 # Disallow admin sections
 Disallow: /admin/
 Disallow: /auth/
+Disallow: /psa-market/
+Disallow: /psa-card/
 
 # Future Mediavine Journey support (ready for when you get approved)
 User-agent: Journey
