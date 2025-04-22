@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -30,8 +31,6 @@ import ManageTCGReleases from "./pages/admin/ManageTCGReleases";
 import ManageModels from "./pages/admin/ManageModels";
 import ManageProducts from "./pages/admin/ManageProducts";
 import UserManagement from "./pages/admin/UserManagement";
-import PSAMarket from "./pages/PSAMarket";
-import PSACardDetails from "./pages/PSACardDetails";
 import ManageMarket from "./pages/admin/ManageMarket";
 import SupportMessages from "./pages/admin/SupportMessages";
 import CommentModeration from "./pages/admin/CommentModeration";

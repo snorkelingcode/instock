@@ -1,4 +1,3 @@
-
 {
   "version": 2,
   "rewrites": [
@@ -17,10 +16,7 @@
     { "source": "/terms", "destination": "/index.html" },
     { "source": "/cookies", "destination": "/index.html" },
     { "source": "/article/:slug", "destination": "/index.html" },
-    { "source": "/articles/:slug", "destination": "/index.html" },
-    { "source": "/psa-market", "destination": "/index.html" },
-    { "source": "/psa-market/:slug", "destination": "/index.html" },
-    { "source": "/psa-card/:slug", "destination": "/index.html" }
+    { "source": "/articles/:slug", "destination": "/index.html" }
   ],
   "redirects": [
     { 

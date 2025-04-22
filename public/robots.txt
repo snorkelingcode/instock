@@ -25,4 +25,3 @@ Allow: /journey-api/
 
 # Sitemaps
 Sitemap: https://www.tcgupdates.com/sitemap.xml
-
