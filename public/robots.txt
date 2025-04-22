@@ -13,8 +13,6 @@ Allow: /terms
 Allow: /cookies
 Allow: /article/
 Allow: /articles/
-Allow: /psa-market
-Allow: /psa-card/
 
 # Disallow admin sections
 Disallow: /admin/
@@ -27,3 +25,4 @@ Allow: /journey-api/
 
 # Sitemaps
 Sitemap: https://www.tcgupdates.com/sitemap.xml
+

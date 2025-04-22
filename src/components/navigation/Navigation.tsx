@@ -31,7 +31,6 @@ const Navigation = () => {
             className="h-16 -my-2"
           />
         </Link>
-
         <Sheet>
           <SheetTrigger asChild className="md:hidden">
             <Button variant="ghost" size="icon" className="text-white hover:bg-red-700">
@@ -48,12 +47,10 @@ const Navigation = () => {
                   className="h-24"
                 />
               </div>
-              
               <SheetClose className="absolute top-4 right-4 rounded-sm opacity-70 ring-offset-white transition-opacity hover:opacity-100 focus:outline-none">
                 <X className="h-6 w-6" color="#ea384c" />
                 <span className="sr-only">Close</span>
               </SheetClose>
-              
               <div className="flex flex-col py-4 overflow-y-auto">
                 <SheetClose asChild>
                   <Link
@@ -87,7 +84,6 @@ const Navigation = () => {
                     Market
                   </Link>
                 </SheetClose>
-                
                 {user ? (
                   <>
                     <SheetClose asChild>
@@ -194,7 +190,6 @@ const Navigation = () => {
             </div>
           </SheetContent>
         </Sheet>
-
         <div className="hidden md:flex items-center space-x-6">
           <Link to="/" className="hover:text-red-200 transition-colors">
             Home
@@ -226,7 +221,6 @@ const Navigation = () => {
           >
             Contact
           </Link>
-          
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
