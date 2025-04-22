@@ -12,6 +12,7 @@ import NotFound from "./pages/NotFound";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Products from "./pages/Products";
+import Market from "./pages/Market";
 import News from "./pages/News";
 import ArticleDetails from "./pages/ArticleDetails";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
@@ -59,7 +60,7 @@ const App = () => {
                 <Route path="/" element={<PageCacheWrapper><Index /></PageCacheWrapper>} />
                 <Route path="/about" element={<PageCacheWrapper><About /></PageCacheWrapper>} />
                 <Route path="/contact" element={<PageCacheWrapper><Contact /></PageCacheWrapper>} />
-                <Route path="/market" element={<PageCacheWrapper><Products /></PageCacheWrapper>} />
+                <Route path="/market" element={<PageCacheWrapper><Market /></PageCacheWrapper>} />
                 <Route path="/products" element={<PageCacheWrapper><Products /></PageCacheWrapper>} />
                 <Route path="/news" element={<PageCacheWrapper><News /></PageCacheWrapper>} />
                 
