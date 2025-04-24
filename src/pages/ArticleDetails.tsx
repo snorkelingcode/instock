@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 import { format, parseISO } from 'date-fns';
@@ -177,10 +178,11 @@ const ArticleDetails = () => {
     }
   };
 
-  const formatContent = (content: string) => {
-    const paragraphs = content.split('\n').filter(paragraph => paragraph.trim() !== '');
-    return paragraphs.map(paragraph => `<p class="mb-6">${paragraph}</p>`).join('');
-  };
+  // Remove this function as we're now directly using the HTML content
+  // const formatContent = (content: string) => {
+  //   const paragraphs = content.split('\n').filter(paragraph => paragraph.trim() !== '');
+  //   return paragraphs.map(paragraph => `<p class="mb-6">${paragraph}</p>`).join('');
+  // };
 
   const handleGoBack = () => {
     navigate(-1);
@@ -258,9 +260,9 @@ const ArticleDetails = () => {
             
             <div className="relative">
               <div 
-                className="prose prose-lg max-w-none bg-white p-5 rounded-lg shadow-sm" 
+                className="prose prose-lg max-w-none bg-white p-5 rounded-lg shadow-sm article-content" 
                 dangerouslySetInnerHTML={{ 
-                  __html: formatContent(article.content)
+                  __html: article.content
                 }} 
               />
             </div>
